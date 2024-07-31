@@ -1,0 +1,41 @@
+---
+# yaml-language-server: $schema=../../job-schema.json
+- job:
+    step: bronze
+    topic: monarch
+    item: scd1
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/monarch
+      parser: monarch
+      keys: [id]
+- job:
+    step: bronze
+    topic: monarch
+    item: scd2
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/monarch
+      parser: monarch
+      keys: [id]
+- job:
+    step: bronze
+    topic: monarch
+    item: delta
+    tags: [test]
+    options:
+      mode: register
+      uri: abfss://fabricks@$datahub/raw/delta/monarch
+      keys: [id]
+      extender: monarch
+- job:
+    step: bronze
+    topic: monarch
+    item: memory
+    tags: [test]
+    options:
+      mode: register
+      uri: abfss://fabricks@$datahub/raw/delta/monarch
+      keys: [id]

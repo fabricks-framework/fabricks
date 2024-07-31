@@ -1,0 +1,26 @@
+---
+# yaml-language-server: $schema=../../../job-schema.json
+- job:
+    step: gold
+    topic: scd1
+    item: update
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
+- job:
+    step: gold
+    topic: scd1
+    item: complete
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: complete
+- job:
+    step: gold
+    topic: scd1
+    item: memory
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: memory

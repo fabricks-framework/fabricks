@@ -1,0 +1,71 @@
+{% if filter == "latest" %}
+    __filter_latest_timestamp as (
+        select {% if has_source %} t.__source, {% endif %} max(t.__timestamp) as __max_timestamp
+        from {{ parent_filter }} t
+        {% if has_source %} group by t.__source {% endif %}
+    ),
+    __filtered as (
+        select
+            {% for field in fields %} {{ field }}, {% endfor %}
+            s.__operation,
+            s.__timestamp,
+            s.__hash,
+            s.__key,
+            {% if has_source %} s.__source, {% endif %}
+            {% if has_metadata %} s.__metadata, {% endif %}
+            {% if has_rescued_data %} __rescued_data, {% endif %}
+        from {{ parent_filter }} s
+        where
+            true
+            and exists (
+                select 1
+                from __filter_latest_timestamp m
+                where
+                    true and s.__timestamp = m.__max_timestamp
+                    {% if has_source %} and s.__source == m.__source {% endif %}
+            )
+    ),
+{% else %}
+    __filter_updated_timestamp as (
+        select
+            {% if has_source %} t.__source,
+            {% endif %}
+            {% if cdc == "nocdc" %} coalesce(max(t.__timestamp), cast('0001-01-01' as timestamp)) as __max_timestamp
+            {% endif %}
+            {% if cdc == "scd1" %} coalesce(max(t.__timestamp), cast('0001-01-01' as timestamp)) as __max_timestamp
+            {% endif %}
+            {% if cdc == "scd2" %} coalesce(max(t.__valid_from), cast('0001-01-01' as timestamp)) as __max_timestamp
+            {% endif %}
+        from {{ tgt }} t
+        where true
+        {% if has_source %}
+                and exists (select 1 from {{ parent_filter }} s where s.__source == t.__source) group by t.__source
+        {% endif %}
+    ),
+    __filtered as (
+        select
+            {% for field in fields %} {{ field }},
+            {% endfor %}
+            s.__operation,
+            s.__timestamp,
+            s.__hash,
+            s.__key,
+            {% if has_source %} s.__source,
+            {% endif %}
+            {% if has_metadata %} s.__metadata,
+            {% endif %}
+            {% if has_rescued_data %} __rescued_data,
+            {% endif %}
+        from {{ parent_filter }} s
+        where
+            true
+            and exists (
+                select 1
+                from __filter_updated_timestamp m
+                where
+                    true and s.__timestamp > m.__max_timestamp
+                    {% if has_source %} and s.__source == m.__source
+                    {% endif %}
+            )
+    ),
+{% endif %}

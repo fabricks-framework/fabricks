@@ -1,0 +1,12 @@
+[
+    {
+        "id": 6,
+        "name": "Albert II",
+        "doubleField": 0.20220501,
+        "newField": false,
+        "BEL_DeleteDateUtc": null,
+        "BEL_RestoredDateUtc": null,
+        "BEL_IsFullLoad": true,
+        "BEL_UpdateDateUtc": "2022-05-01 01:00:00"
+    }
+]

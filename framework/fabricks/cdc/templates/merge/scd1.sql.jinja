@@ -1,0 +1,72 @@
+{% if format == "dataframe" %}
+  merge into {{ tgt }} t using {{ "{src}" }} s
+  {% endif %}
+  {% if format == "view" %}
+  merge into {{ tgt }} t using {{ src }} s
+  {% endif %}
+  {% if has_key %}
+  on t.__key == s.__merge_key
+  {% else %}
+  on
+  {% for k in keys %}
+  t.{{ k }} <=> s.{{ k }}
+  {% endfor %}
+  {% endif %}
+  {% if has_source %}
+  and t.__source == s.__source 
+  {% endif %}
+  {% if update_where %}
+  {{ update_where }}
+  {% endif %}
+  when matched
+  and __merge_condition == 'upsert' then
+  update
+  set
+    {% for f in fields %}
+    {{ f }} = s.{{f}},
+    {% endfor %}
+    {% if has_timestamp %}
+    __timestamp = s.__timestamp,
+    {% endif %}
+    {%if has_metadata%}
+    __metadata.updated = cast(current_date() as timestamp),    
+    {%endif%}
+    {% if has_hash %}
+    __hash = s.__hash,
+    {% endif %}
+    {% if has_rescued_data %}
+    __rescued_data = s.__rescued_data,
+    {% endif %}
+    {%if soft_delete %}
+    __is_current = s.__is_current,
+    __is_deleted = s.__is_deleted,
+    {% endif %}
+  {%if soft_delete %}
+  -- soft delete
+  when matched
+  and __merge_condition == 'delete' then
+  update
+  set
+    __is_current = False,
+    __is_deleted = True,
+    {%if has_metadata%}
+    __metadata.updated = cast(current_date() as timestamp),
+    {%endif%}
+  {%else%}
+  -- delete
+  when matched
+  and __merge_condition == 'delete' then
+  delete
+  {% endif %}
+  when not matched
+  and __merge_condition == 'upsert' then
+  insert (
+    {% for c in columns %}
+    {{ c }},
+    {% endfor %}
+  )
+  values (
+    {% for c in columns %}
+    s.{{ c }},
+    {% endfor %}
+  )

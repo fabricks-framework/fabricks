@@ -1,0 +1,52 @@
+---
+# yaml-language-server: $schema=../../../job-schema.json
+- job:
+    step: semantic
+    topic: fact
+    item: zstd
+    tags: [test]
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: step_option
+    tags: [test]
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: job_option
+    tags: [test]
+    options:
+      mode: complete
+    table_options:
+      properties: 
+          delta.minReaderVersion: 2
+          delta.minWriterVersion: 5
+          delta.columnMapping.mode: none
+- job:
+    step: semantic
+    topic: fact
+    item: schema_drift
+    tags: [test]
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: powerbi
+    tags: [test]
+    options:
+      mode: complete
+    table_options:
+      powerbi: true
+- job:
+    step: semantic
+    topic: fact
+    item: table
+    tags: [test]
+    options:
+      mode: complete
+      table: gold.fact_overwrite

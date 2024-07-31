@@ -1,0 +1,9 @@
+---
+# yaml-language-server: $schema=../../../job-schema.json
+- job:
+    step: transf
+    topic: fact
+    item: memory
+    tags: [test]
+    options:
+      mode: memory

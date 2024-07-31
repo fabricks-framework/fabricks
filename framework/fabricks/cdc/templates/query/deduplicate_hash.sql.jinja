@@ -1,0 +1,21 @@
+__deduplicate_hash as (
+    select
+        *,
+        lag(__hash) over (
+            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp asc
+        ) as __deduplicate_hash_previous__hash,
+        lag(__operation) over (
+            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp asc
+        ) as __deduplicate_hash_previous_operation
+    from {{ parent_deduplicate_hash }}
+    where true
+),
+__deduplicated_hash as (
+    select *
+    from __deduplicate_hash
+    where
+        true
+        and not (
+            __hash <=> __deduplicate_hash_previous__hash and __operation <=> __deduplicate_hash_previous_operation
+        )
+),

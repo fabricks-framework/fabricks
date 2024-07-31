@@ -1,0 +1,24 @@
+---
+# yaml-language-server: $schema=../../job-schema.json
+- job:
+    step: bronze
+    topic: king
+    item: scd1
+    tags: [test]
+    options:
+      mode: append
+      uri: abfss://fabricks@$datahub/raw/king
+      parser: monarch
+      keys: [id]
+      source: king
+- job:
+    step: bronze
+    topic: king
+    item: scd2
+    tags: [test]
+    options:
+      mode: append
+      uri: abfss://fabricks@$datahub/raw/king
+      parser: monarch
+      keys: [id]
+      source: king

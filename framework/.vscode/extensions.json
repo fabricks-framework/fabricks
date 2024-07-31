@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "databricks.databricks",
+        "databricks.sqltools-databricks-driver",
+        "eamodio.gitlens",
+        "emeraldwalk.runonsave",
+        "github.copilot",
+        "streetsidesoftware.code-spell-checker",
+    ]
+}

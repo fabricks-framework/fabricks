@@ -1,0 +1,26 @@
+from databricks.sdk.runtime import spark
+
+from fabricks.core.dags.base import BaseDags
+from fabricks.core.dags.log import DagsLogger, DagsTableLogger
+
+
+class DagTerminator(BaseDags):
+    def __init__(self, schedule_id: str):
+        self.schedule_id = schedule_id
+        super().__init__(schedule_id=schedule_id)
+
+    def terminate(self):
+        df = self.get_logs()
+        self.write_logs(df)
+
+        error_df = spark.sql("select * from {df} where status = 'failed'", df=df)
+        for row in error_df.collect():
+            DagsLogger.error(f"{row['job']} failed (🔥)")
+
+        DagsTableLogger.table.truncate_partition(self.schedule_id)
+
+        table = self.get_table()
+        table.drop()
+
+        if not error_df.isEmpty():
+            raise ValueError(f"{error_df.count()} job(s) failed")

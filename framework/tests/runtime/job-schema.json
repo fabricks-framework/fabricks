@@ -1,0 +1,712 @@
+{
+    "type": "array",
+    "items": {
+        "$ref": "#/$defs/JobWrapper"
+    },
+    "$defs": {
+        "CalculatedColumn": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "expr": {
+                    "type": "string"
+                }
+            }
+        },
+        "BronzeOptions": {
+            "type": "object",
+            "properties": {
+                "parents": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "filter_where": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "mode": {
+                    "enum": [
+                        "memory",
+                        "append",
+                        "register"
+                    ]
+                },
+                "storage_account": {
+                    "type": "string"
+                },
+                "container": {
+                    "type": "string"
+                },
+                "root": {
+                    "type": "string"
+                },
+                "parser": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "calculated_columns": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/CalculatedColumn"
+                    }
+                },
+                "type": {
+                    "enum": [
+                        "update",
+                        "delete",
+                        "complete"
+                    ]
+                }
+            }
+        },
+        "Constraint": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "expr": {
+                    "type": "string"
+                }
+            }
+        },
+        "BaseTableOptions": {
+            "type": "object",
+            "properties": {
+                "partition_by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "indexes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "constraints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Constraint"
+                    }
+                }
+            }
+        },
+        "UnpivotOptions": {
+            "type": "object",
+            "properties": {
+                "untouched_columns": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "touched_name": {
+                    "type": "string"
+                },
+                "touched_value": {
+                    "type": "string"
+                }
+            }
+        },
+        "ReadOption": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "ParserOptions": {
+            "type": "object",
+            "properties": {
+                "file_format": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "unpivot": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "unpivot_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/UnpivotOptions"
+                        }
+                    ]
+                },
+                "read_options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/ReadOption"
+                    }
+                }
+            }
+        },
+        "CheckOptions": {
+            "type": "object",
+            "properties": {
+                "pre_run": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "post_run": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "JobBronze": {
+            "type": "object",
+            "required": [
+                "step",
+                "topic",
+                "item",
+                "options"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "step": {
+                    "enum": [
+                        "bronze"
+                    ]
+                },
+                "topic": {
+                    "type": "string"
+                },
+                "item": {
+                    "type": "string"
+                },
+                "options": {
+                    "$ref": "#/$defs/BronzeOptions"
+                },
+                "table_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/BaseTableOptions"
+                        }
+                    ]
+                },
+                "parser_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/ParserOptions"
+                        }
+                    ]
+                },
+                "check_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/CheckOptions"
+                        }
+                    ]
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "schedule": {
+                    "enum": [
+                        "daily",
+                        "weekly",
+                        "on-demand"
+                    ]
+                }
+            }
+        },
+        "SilverOptions": {
+            "type": "object",
+            "properties": {
+                "parents": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "filter_where": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "mode": {
+                    "enum": [
+                        "memory",
+                        "append",
+                        "register",
+                        "update",
+                        "complete"
+                    ]
+                },
+                "change_data_capture": {
+                    "enum": [
+                        "nocdc",
+                        "scd1",
+                        "scd2"
+                    ]
+                },
+                "order_by": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "transform": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "JobSilver": {
+            "type": "object",
+            "required": [
+                "step",
+                "topic",
+                "item",
+                "options"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "step": {
+                    "enum": [
+                        "silver"
+                    ]
+                },
+                "topic": {
+                    "type": "string"
+                },
+                "item": {
+                    "type": "string"
+                },
+                "options": {
+                    "$ref": "#/$defs/SilverOptions"
+                },
+                "table_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/BaseTableOptions"
+                        }
+                    ]
+                },
+                "check_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/CheckOptions"
+                        }
+                    ]
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "schedule": {
+                    "enum": [
+                        "daily",
+                        "weekly",
+                        "on-demand"
+                    ]
+                }
+            }
+        },
+        "GoldOptions": {
+            "type": "object",
+            "properties": {
+                "parents": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "filter_where": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "mode": {
+                    "enum": [
+                        "memory",
+                        "append",
+                        "register",
+                        "update",
+                        "complete"
+                    ]
+                },
+                "change_data_capture": {
+                    "enum": [
+                        "nocdc",
+                        "scd1",
+                        "scd2"
+                    ]
+                },
+                "update_where": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "sink": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "hard_delete": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "delete_missing": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "notebook": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "AdvancedTableOptions": {
+            "type": "object",
+            "properties": {
+                "partition_by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "indexes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "constraints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Constraint"
+                    }
+                },
+                "identity": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "WriteOption": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "SinkOptions": {
+            "type": "object",
+            "properties": {
+                "storage_account": {
+                    "type": "string"
+                },
+                "container": {
+                    "type": "string"
+                },
+                "root": {
+                    "type": "string"
+                },
+                "mode": {
+                    "enum": [
+                        "complete",
+                        "update"
+                    ]
+                },
+                "file_name": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "file_format": {
+                    "enum": [
+                        "json_array",
+                        "json",
+                        "csv",
+                        "parquet"
+                    ]
+                },
+                "partition_by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "write_options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/WriteOption"
+                    }
+                },
+                "calculated_columns": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/CalculatedColumn"
+                    }
+                }
+            }
+        },
+        "JobGold": {
+            "type": "object",
+            "required": [
+                "step",
+                "topic",
+                "item",
+                "options"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "step": {
+                    "enum": [
+                        "gold"
+                    ]
+                },
+                "topic": {
+                    "type": "string"
+                },
+                "item": {
+                    "type": "string"
+                },
+                "options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/GoldOptions"
+                        }
+                    ]
+                },
+                "table_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/AdvancedTableOptions"
+                        }
+                    ]
+                },
+                "sink_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/SinkOptions"
+                        }
+                    ]
+                },
+                "check_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/CheckOptions"
+                        }
+                    ]
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "schedule": {
+                    "enum": [
+                        "daily",
+                        "weekly",
+                        "on-demand"
+                    ]
+                }
+            }
+        },
+        "SemanticOptions": {
+            "type": "object",
+            "properties": {
+                "parents": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "filter_where": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "mode": {
+                    "enum": [
+                        "complete"
+                    ]
+                },
+                "update_where": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "JobSemantic": {
+            "type": "object",
+            "required": [
+                "step",
+                "topic",
+                "item"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "step": {
+                    "enum": [
+                        "semantic"
+                    ]
+                },
+                "topic": {
+                    "type": "string"
+                },
+                "item": {
+                    "type": "string"
+                },
+                "options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/SemanticOptions"
+                        }
+                    ]
+                },
+                "table_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/AdvancedTableOptions"
+                        }
+                    ]
+                },
+                "check_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/CheckOptions"
+                        }
+                    ]
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "schedule": {
+                    "enum": [
+                        "daily",
+                        "weekly",
+                        "on-demand"
+                    ]
+                }
+            }
+        },
+        "JobWrapper": {
+            "type": "object",
+            "required": [
+                "job"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "job": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/JobBronze"
+                        },
+                        {
+                            "$ref": "#/$defs/JobSilver"
+                        },
+                        {
+                            "$ref": "#/$defs/JobGold"
+                        },
+                        {
+                            "$ref": "#/$defs/JobSemantic"
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

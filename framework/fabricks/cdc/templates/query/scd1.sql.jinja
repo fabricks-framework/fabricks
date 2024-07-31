@@ -1,0 +1,112 @@
+__scd1_base as (
+    select
+        *,
+        {% if not rectify %} __operation as __original_operation, {% endif %}
+        lead(__operation) over (
+            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp asc
+        ) as __scd1_next_operation
+    from {{ parent_cdc }}
+),
+__scd1_last_key as (
+    -- take last update as it is the latest picture
+    select
+        *,
+        row_number() over (
+            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp desc
+        ) as __scd1_rn
+    from __scd1_base
+    where true and __operation == 'upsert'
+    {% if mode == "update" %}
+        {% if has_rows %}
+            -- take first delete ONLY if no upsert is present
+            union all
+            select
+                *,
+                row_number() over (
+                    partition by {% if has_source %} __source, {% endif %} __key order by __timestamp asc
+                ) as __scd1_rn
+            from __scd1_base b
+            where
+                true
+                and __operation == 'delete'
+                and not exists (
+                    select 1
+                    from __scd1_base b2
+                    where
+                        true and b.__key == b2.__key
+                        {% if has_source %} and b.__source == b2.__source {% endif %} and b2.__operation == 'upsert'
+                )
+        {% endif %}
+    {% endif %}
+),
+__scd1 as (
+    select
+        *,
+        __scd1_next_operation <=> 'delete'
+        or __operation == 'delete' as __is_deleted,
+        not (__scd1_next_operation <=> 'delete' or __operation == 'delete') as __is_current
+    from __scd1_last_key
+    where true and __scd1_rn == 1
+),
+{% if mode == "complete" %}
+    __final as (
+        select
+            {% for field in fields %} s.{{ field }}, {% endfor %},
+            {% if has_identity %} __identity, {% endif %}
+            s.__key,
+            s.__timestamp,
+            {% if soft_delete %} s.__is_current, s.__is_deleted, {% endif %}
+            s.__hash,
+            {% if has_source %} s.__source, {% endif %}
+            {% if has_metadata %} s.__metadata, {% endif %}
+            {% if has_rescued_data %} s.__rescued_data, {% endif %}
+        from __scd1 s
+        where true {% if not soft_delete %} and s.__is_current {% endif %}
+    )
+{% else %}
+    __merge_condition as (
+        select s.*, s.__key as __merge_key, o.__merge_condition
+        from __scd1 s
+        left join
+            (
+                select 'upsert' as __operation, 'upsert' as __merge_condition
+                {% if has_rows %}
+                    union all
+                    select 'delete' as __operation, 'delete' as __merge_condition
+                {% endif %}
+            ) o
+            on s.__operation = o.__operation
+    ),
+    {% if has_rows %}
+        __scd1_no_fake_update as (
+            select *
+            from __merge_condition m left
+            anti join
+                __current c on m.__key == c.__key and m.__hash = c.__hash
+                {% if has_source %} and m.__source = c.__source {% endif %} and m.__operation == 'upsert'
+        ),
+    {% endif %}
+    __final as (
+        select
+            __merge_key,
+            __merge_condition,
+            {% for field in fields %} {{ field }},
+            {% endfor %},
+            {% if has_identity %} __identity,
+            {% endif %}
+            __key,
+            __timestamp,
+            {% if soft_delete %} __is_current, __is_deleted,
+            {% endif %}
+            __hash,
+            {% if has_source %} __source,
+            {% endif %}
+            {% if has_metadata %} __metadata,
+            {% endif %}
+            {% if has_rescued_data %} __rescued_data,
+            {% endif %}
+        {% if has_rows %} from __scd1_no_fake_update m
+        {% else %} from __merge_condition m
+        {% endif %}
+    )
+{% endif %}

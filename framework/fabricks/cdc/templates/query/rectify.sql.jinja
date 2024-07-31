@@ -1,0 +1,120 @@
+{% import 'query/hash.sql.jinja' as h -%}
+
+{% if mode == "update" %}
+    __rectified_base as (
+        select
+            {% for field in fields %} {{ field }}, {% endfor %}
+            s.__operation,
+            s.__operation as __original_operation,
+            s.__timestamp,
+            s.__timestamp as __original_timestamp,
+            s.__hash,
+            s.__key,
+            {% if has_identity %} s.__identity, {% endif %}
+            {% if has_source %} s.__source, {% endif %}
+            {% if has_metadata %} s.__metadata, {% endif %}
+            {% if has_rescued_data %} s.__rescued_data, {% endif %}
+        from {{ parent_rectify }} s
+        {% if has_rows %}
+            union all
+            select *
+            from __current
+        {% endif %}
+    ),
+{% endif %}
+__rectified_next_operation as (
+    select
+        *,
+        lead(__operation) over (
+            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp asc
+        ) as __rectified_next_operation
+    {% if mode == "update" %} from __rectified_base p
+    {% else %} from {{ parent_rectify }}
+    {% endif %}
+),
+__rectified_timestamps as (
+    select
+        {% if has_source %} __source, {% endif %}
+        __timestamp,
+        lead(__timestamp) over (
+            {% if has_source %}partition by __source {% endif %} order by __timestamp asc
+        ) as __rectified_next_timestamp,
+        lead(if(max(__operation) == 'reload', __timestamp, null)) ignore nulls over (
+            {% if has_source %}partition by __source {% endif %} order by __timestamp asc
+        ) as __rectified_next_timestamp_reload,
+    from __rectified_next_operation
+    group by {% if has_source %} __source, {% endif %} __timestamp
+),
+__rectified_is_deleted_next as (
+    select
+        cur.*,
+        t.* except ({% if has_source %}t.__source, {% endif %} t.__timestamp),
+        -- there is more reload
+        __rectified_next_timestamp_reload is not null as __rectify_more_reload,
+        -- the next operation is bedore the next reload
+        if(
+            __rectify_more_reload, t.__rectified_next_timestamp < t.__rectified_next_timestamp_reload, true
+        ) as __rectify_key_next_operation_before_next_reload,
+        -- the record is deleted
+        cur.__operation == 'delete' as __rectified_key_is_deleted,
+        -- the record is not found in next reload
+        __rectify_more_reload and nxt.__timestamp is null as __rectified_key_not_found_in_next_reload,
+        -- there is no more operation
+        t.__rectified_next_timestamp is null as __rectified_no_more_operation,
+        -- the record is deleted before next reload
+        __rectify_key_next_operation_before_next_reload
+        and cur.__rectified_next_operation <=> 'delete' as __rectified_key_is_deleted_next,
+        -- the record is updated before next reload
+        __rectify_key_next_operation_before_next_reload
+        and cur.__rectified_next_operation <=> 'upsert' as __rectified_key_is_updated_next,
+        case
+            when __rectified_key_is_deleted
+            then false
+            when __rectified_key_is_updated_next
+            then false
+            when __rectified_key_is_deleted_next
+            then false
+            when __rectified_no_more_operation
+            then false
+            when __rectified_key_not_found_in_next_reload
+            then true
+            else false
+        end as __rectified_is_deleted_next
+    from __rectified_next_operation cur
+    left join
+        __rectified_timestamps t on cur.__timestamp = t.__timestamp
+        {% if has_source %} and cur.__source == t.__source {% endif %}
+    left join
+        __rectified_next_operation nxt
+        on t.__rectified_next_timestamp_reload = nxt.__timestamp
+        and cur.__key == nxt.__key
+        {% if has_source %} and cur.__source == nxt.__source {% endif %}
+),
+{% if mode == "complete" %} __rectified as ( {% else %} __rectified_operation as (
+{% endif %}
+    select
+        c.* except (c.__operation, c.__timestamp),
+        if(c.__operation == 'delete', 'delete', d2.__rectified_operation) as __operation,
+        case
+            when c.__operation == 'delete'
+            then c.__timestamp
+            when d2.__rectified_operation == 'upsert'
+            then c.__timestamp
+            else c.__rectified_next_timestamp_reload
+        end as __timestamp
+    from __rectified_is_deleted_next c
+    cross join
+        (
+            select false as __is_deleted, 'upsert' as __rectified_operation
+            union all
+            select true as __is_deleted, 'delete' as __rectified_operation
+            union all
+            select true as __is_deleted, 'upsert' as __rectified_operation
+        ) d2
+        on c.__rectified_is_deleted_next = d2.__is_deleted
+),
+{% if mode == "update" %}
+    __rectified as (
+        select * from __rectified_operation where not (__original_operation == 'current' and __operation == 'upsert')
+    ),
+{% endif %}

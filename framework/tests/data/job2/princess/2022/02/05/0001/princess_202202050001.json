@@ -1,0 +1,22 @@
+[
+    {
+        "id": 7001,
+        "name": "Elisabeth",
+        "doubleField": 0.20220205,
+        "newField": false,
+        "BEL_DeleteDateUtc": null,
+        "BEL_RestoredDateUtc": null,
+        "BEL_IsFullLoad": true,
+        "BEL_UpdateDateUtc": "2022-02-05 01:00:00"
+    },
+    {
+        "id": 7004,
+        "name": "Eleonore",
+        "doubleField": 0.20220205,
+        "newField": false,
+        "BEL_DeleteDateUtc": null,
+        "BEL_RestoredDateUtc": null,
+        "BEL_IsFullLoad": true,
+        "BEL_UpdateDateUtc": "2022-02-05 01:00:00"
+    }
+]

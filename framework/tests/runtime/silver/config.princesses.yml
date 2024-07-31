@@ -1,0 +1,97 @@
+---
+# yaml-language-server: $schema=../../job-schema.json
+- job:
+    step: silver
+    topic: princess
+    item: extend
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+      extender: add_country
+- job:
+    step: silver
+    topic: princess
+    item: manual
+    options:
+      type: manual
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: princess
+    item: encrypt
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: princess
+    item: drop
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: princess
+    item: latest
+    tags: [test]
+    options:
+      mode: latest
+- job:
+    step: silver
+    topic: princess
+    item: append
+    tags: [test]
+    options:
+      mode: append
+- job:
+    step: silver
+    topic: princess
+    item: schema_drift
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: princess
+    item: order_duplicate
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+      order_duplicate_by:
+        order_by: desc
+- job:
+    step: silver
+    topic: princess
+    item: calculated_column
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+      order_duplicate_by:
+        order_by: asc
+- job:
+    step: silver
+    topic: princess
+    item: check
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+    check_options:
+      max_rows: 2
+- job:
+    step: silver
+    topic: princess
+    item: combine
+    tags: [test]
+    options:
+      mode: combine
+      parents:
+        - silver.princess_extend
+        - silver.princess_calculated_column
+        - silver.princess_append

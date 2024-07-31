@@ -1,0 +1,54 @@
+{% if format == "dataframe" %}
+  merge into {{ tgt }} t using {{ "{src}" }} s
+  {% endif %}
+  {% if format == "view" %}
+  merge into {{ tgt }} t using {{ src }} s
+  {% endif %}
+  {% if has_key %}
+  on t.__key == s.__merge_key
+  {% else %}
+  on
+  {% for k in keys %}
+  t.{{ k }} <=> s.{{ k }} and
+  {% endfor %}
+  {% endif %}
+  and t.__is_current 
+  {% if has_source %}
+  and t.__source == s.__source 
+  {% endif %}
+  when matched
+  and __merge_condition == 'update' then
+  update
+  set
+    __valid_to = s.__valid_from - interval 1 seconds,
+    __is_current = False,
+    {%if soft_delete %}
+    __is_deleted = False,
+    {% endif %}
+    {%if has_metadata%}
+    __metadata.updated = cast(current_date() as timestamp),
+    {%endif%}
+  when matched
+  and __merge_condition == 'delete' then
+  update
+  set
+    __valid_to = s.__valid_from - interval 1 seconds,
+    __is_current = False,
+    {%if soft_delete %}
+    __is_deleted = True,
+    {% endif %}
+    {%if has_metadata%}
+    __metadata.updated = cast(current_date() as timestamp),
+    {%endif%}
+  when not matched
+  and __merge_condition == 'insert' then
+  insert (
+    {% for c in columns %}
+    {{ c }},
+    {% endfor %}
+  )
+  values (
+    {% for c in columns %}
+    s.{{ c }},
+    {% endfor %}
+  )

@@ -1,0 +1,10 @@
+__final as (
+    select *
+    from {{ parent_cdc }}
+    {% if filter %}
+        where
+            true
+            -- operation current added by filter
+            and __operation <> 'current'
+    {% endif %}
+)

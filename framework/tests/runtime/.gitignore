@@ -1,0 +1,12 @@
+# generated files
+data.parquet 
+_delta_log
+.part-*.crc
+part-*.parquet
+log
+test_notebook/**/metadir
+checkpoints
+# raw is generated out of raw_json
+out
+expected/**/*.parquet
+config.debug.yml

@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=../../job-schema.json
+- job:
+    step: silver
+    topic: king_and_queen
+    item: scd1
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+      parents: [bronze.queen_scd1, bronze.king_scd1]
+- job:
+    step: silver
+    topic: king_and_queen
+    item: scd2
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd2
+      parents: [bronze.queen_scd2, bronze.king_scd2]

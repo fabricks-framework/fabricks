@@ -1,0 +1,34 @@
+{% import 'query/hash.sql.jinja' as h -%}
+
+with
+    {% if format == "query" %} __query as ({{ src }}), {% endif %}
+    __base as (
+        select
+            *
+            {% if all_overwrite %} except ({% for o in all_overwrite %}{{ o }}, {% endfor %}),
+            {% else %},
+            {% endif %}
+            {% if add_calculated_columns %} {% for c in add_calculated_columns %} {{ c }}, {% endfor %} {% endif %}
+            {% if add_timestamp %} cast(current_date() as timestamp) as __timestamp, {% endif %}
+            {% if add_operation %} cast('{{ add_operation }}' as string) as __operation, {% endif %}
+            {% if add_source %} cast('{{ add_source }}' as string) as __source, {% endif %}
+            {% if add_hash %} {{ h.hash(fields=hashes) }} as __hash, {% endif %}
+            {% if add_key %} {{ h.hash(fields=keys) }} as __key, {% endif %}
+            {% if add_metadata %}
+                struct(
+                    {% if cdc == "nocdc" %}current_timestamp() as inserted,
+                    {% else %}current_timestamp() as inserted, current_timestamp() as updated,
+                    {% endif %}
+                ) as __metadata,
+            {% endif %}
+        {% if format == "query" %} from __query
+        {% else %}
+            {% if format == "table" %} from {{ src }}
+            {% endif %}
+            {% if format == "global_temp_view" %} from {{ src }}
+            {% endif %}
+            {% if format == "dataframe" %} from {{ "{src}" }}
+            {% endif %}
+        {% endif %}
+        {% if filter_where %} where {{ filter_where }} {% endif %}
+    ),

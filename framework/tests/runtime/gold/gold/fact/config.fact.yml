@@ -1,0 +1,77 @@
+---
+# yaml-language-server: $schema=../../../job-schema.json
+- job:
+    step: gold
+    topic: fact
+    item: udf
+    tags: [test]
+    options:
+      mode: complete
+- job:
+    step: gold
+    topic: fact
+    item: manual
+    tags: [test]
+    options:
+      type: manual
+      mode: complete
+- job:
+    step: gold
+    topic: fact
+    item: notebook
+    tags: [test]
+    options:
+      mode: complete
+      notebook: true
+- job:
+    step: gold
+    topic: fact
+    item: dependency
+    options:
+      mode: complete
+- job:
+    step: gold
+    topic: fact
+    item: memory
+    tags: [test]
+    options:
+      mode: memory
+- job:
+    step: gold
+    topic: fact
+    item: option
+    options:
+      mode: complete
+    table_options:
+      identity: true
+      liquid_clustering: true
+      cluster_by: [monarch]
+      properties:
+        country: Belgium
+      comment: Strength lies in unity
+    spark_options:
+      sql:
+        spark.databricks.delta.properties.defaults.autoOptimize.optimizeWrite: false
+        spark.databricks.delta.properties.defaults.enableChangeDataFeed: true
+- job:
+    step: gold
+    topic: fact
+    item: order_duplicate
+    tags: [test]
+    options:
+      mode: complete
+- job:
+    step: gold
+    topic: fact
+    item: deduplicate
+    tags: [test]
+    options:
+      mode: complete
+      deduplicate: true
+- job:
+    step: gold
+    topic: fact
+    item: overwrite
+    tags: [test]
+    options:
+      mode: complete

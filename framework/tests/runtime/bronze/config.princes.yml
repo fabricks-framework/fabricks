@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=../../job-schema.json
+- job:
+    step: bronze
+    topic: prince
+    item: special_char
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/prince
+      parser: monarch
+      keys: ['@Id']
+- job:
+    step: bronze
+    topic: prince
+    item: deletelog
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/prince
+      parser: monarch
+      keys: ['@Id']

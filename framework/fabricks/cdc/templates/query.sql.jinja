@@ -1,0 +1,11 @@
+{% include 'query/context.sql.jinja' %}
+{% include 'query/base.sql.jinja' %}
+{% if filter %} {% include 'query/filter.sql.jinja' %} {% endif %}
+{% if deduplicate_key %} {% include 'query/deduplicate_key.sql.jinja' %} {% endif %}
+{% if mode == "update" %} {% if has_rows %} {% include 'query/current.sql.jinja' %} {% endif %} {% endif %}
+{% if rectify %} {% include 'query/rectify.sql.jinja' %} {% endif %}
+{% if deduplicate_hash %} {% include 'query/deduplicate_hash.sql.jinja' %} {% endif %}
+{% if cdc == "nocdc" %} {% include 'query/nocdc.sql.jinja' %} {% endif %}
+{% if cdc == "scd1" %} {% include 'query/scd1.sql.jinja' %} {% endif %}
+{% if cdc == "scd2" %} {% include 'query/scd2.sql.jinja' %} {% endif %}
+{% include 'query/final.sql.jinja' %}

@@ -1,0 +1,61 @@
+---
+# yaml-language-server: $schema=../../../job-schema.json
+- job:
+    step: gold
+    topic: check
+    item: fail
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      pre_run: true
+- job:
+    step: gold
+    topic: check
+    item: warning
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      post_run: true
+- job:
+    step: gold
+    topic: check
+    item: max_rows
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      max_rows: 2
+- job:
+    step: gold
+    topic: check
+    item: min_rows
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      min_rows: 2
+- job:
+    step: gold
+    topic: check
+    item: count_must_equal
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      count_must_equal: fabricks.dummy
+- job:
+    step: gold
+    topic: check
+    item: duplicate_key
+    tags: [test]
+    options:
+      mode: complete
+- job:
+    step: gold
+    topic: check
+    item: duplicate_identity
+    tags: [test]
+    options:
+      mode: complete

@@ -1,0 +1,12 @@
+[
+    {
+        "id": 4,
+        "name": "Leopold III",
+        "doubleField": 0.20220305,
+        "newField": true,
+        "BEL_DeleteDateUtc": null,
+        "BEL_RestoredDateUtc": null,
+        "BEL_IsFullLoad": false,
+        "BEL_UpdateDateUtc": "2022-03-01 00:12:34"
+    }
+]

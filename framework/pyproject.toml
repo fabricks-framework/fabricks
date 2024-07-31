@@ -1,0 +1,78 @@
+[tool.poetry]
+name = "fabricks"
+version = "2024.7.1.5"
+description = ""
+authors = ["BMS DWH Team <bi_support@bmsuisse.ch>"]
+readme = "README.md"
+packages = [{ include = "fabricks" }]
+
+[tool.poetry.dependencies]
+azure-identity = ">=1.10.0"
+azure-data-tables = "^12.5.0"
+azure-storage-blob = ">=12.14.1"
+azure-storage-queue = "^12.10.0"
+databricks-sdk = ">=0.29.0"
+jinja2 = ">=2.11.3"
+python = ">=3.9,<4"
+python-dotenv = ">=1.0.1"
+sqlglot = ">=22.1.1"
+
+[tool.poetry.group.build.dependencies]
+azure-identity = ">=1.10.0"
+requirements-parser = ">=0.5.0"
+toml = ">=0.10.2"
+
+[tool.poetry.group.test.dependencies]
+pandas = ">=1.5.3"
+pytest = ">=7.1.2"
+pytest-order = ">=1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+databricks-cli = ">=0.18.0"
+databricks-connect = ">=11.0.0"
+delta-spark = ">=2.1.0"
+pyspark = ">=3.3"
+
+[tool.poetry.group.format.dependencies]
+autoflake = "^2.3.1"
+isort = "^5.13.2"
+notebook = ">=6.4.12"
+pycln = "^2.4.0"
+pyright = ">=1.1.261"
+ruff = ">=0.4.3"
+shandy-sqlfmt = ">=0.21.0"
+yamlfix = ">=1.14.0"
+
+[tool.poetry.group.deployment.dependencies]
+requests = ">=2.28.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+venv = ".venv"
+venvPath = "."
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+exclude = [".venv"]
+
+[tool.ruff]
+line-length = 119
+target-version = "py310"
+
+[tool.yamlfix]
+line_length = 119
+
+[tool.sqlfmt]
+line_length = 119
+
+[tool.pycln]
+all = false
+
+[tool.autoflake]
+remove-all-unused-imports = true
+remove-duplicate-keys = true
+remove-unused-variables = true
+expand-star-imports = true
+exclude = ["_init__.py"]

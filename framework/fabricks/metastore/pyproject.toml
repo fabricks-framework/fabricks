@@ -1,0 +1,20 @@
+[build-system]
+requires = [ "poetry_core>=1.0.0",]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "fabricks-metastore"
+version = "2024.7.1.5"
+description = "Fabricks - Metastore"
+license = "MIT"
+authors = [ "BMS DWH Team <bi_support@bmsuisse.ch>",]
+readme = "README.md"
+packages = [{include="fabricks"}]
+
+[tool.black]
+line-length = 119
+
+[tool.poetry.dependencies]
+python = ">=3.9,<4"
+"fabricks.utils" = { path = "../utils", develop = true }
+"fabricks.context" = { path = "../context", develop = true }

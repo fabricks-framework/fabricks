@@ -1,0 +1,32 @@
+{% import 'query/hash.sql.jinja' as h -%}
+
+__current as (
+    select
+        {% for field in fields %} {{ field }}, {% endfor %}
+        'current' as __operation,
+        'current' as __original_operation,
+        {% if has_timestamp %}
+            {% if cdc == "nocdc" %} __timestamp as __timestamp, {% endif %}
+            {% if cdc == "scd1" %} __timestamp as __timestamp, {% endif %}
+            {% if cdc == "scd2" %} __valid_from as __timestamp, {% endif %}
+        {% else %} cast('0001-01-01' as timestamp) as __timestamp,
+        {% endif %}
+        __timestamp as __original_timestamp,
+        {% if has_hash %} __hash,
+        {% else %} {{ h.hash(fields=hashes) }} as __hash,
+        {% endif %}
+        {% if has_identity %} __identity, {% endif %}
+        {% if has_key %} __key,
+        {% else %} {{ h.hash(fields=keys) }} as __key,
+        {% endif %}
+        {% if has_source %} __source, {% endif %}
+        {% if has_metadata %} __metadata, {% endif %}
+        {% if has_rescued_data %} __rescued_data, {% endif %}
+    from {{ tgt }} t
+    where
+        true
+        {% if cdc == "scd2" %} and __is_current {% endif %}
+        {% if cdc == "scd1" %} {% if soft_delete %} and __is_current {% endif %} {% endif %}
+        {% if has_source %} and exists (select 1 from __base s where s.__source == t.__source) {% endif %}
+        {% if update_where %} and {{ update_where }} {% endif %}
+),

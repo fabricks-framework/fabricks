@@ -1,0 +1,14 @@
+__deduplicate_key as (
+    select
+        *,
+        row_number() over (
+            partition by {% if has_source %} __source, {% endif %} __key, __timestamp
+            order by
+                /* prioritize delete over upsert */
+                __operation asc,
+                {% if has_order_by %} {% for o in order_duplicate_by %} {{ o }}, {% endfor %} {% endif %}
+        ) as __deduplicate_key_rn
+    from {{ parent_deduplicate_key }}
+    where true
+),
+__deduplicated_key as (select *, from __deduplicate_key where __deduplicate_key_rn == 1),

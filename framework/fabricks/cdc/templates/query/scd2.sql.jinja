@@ -1,0 +1,114 @@
+__scd2_base as (
+    select
+        *,
+        {% if not rectify %} __operation as __original_operation, {% endif %}
+        lead(__operation) over (
+            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp
+        ) as __scd2_next_operation,
+        lead(__timestamp) over (
+            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp
+        ) as __scd2_next_timestamp
+    from {{ parent_cdc }}
+),
+__scd2 as (
+    select
+        *,
+        __timestamp as __valid_from,
+        coalesce(__scd2_next_timestamp - interval 1 second, cast('9999-12-31' as timestamp)) as __valid_to,
+        __operation <> 'delete' and __valid_to <=> '9999-12-31' as __is_current,
+        __operation == 'delete' or __scd2_next_operation <=> 'delete' as __is_deleted,
+        {% if mode == "update" %}
+            row_number() over (
+                partition by __key{% if has_source %}, __source{% endif %} order by __timestamp asc
+            ) as __scd2_rn
+        {% endif %}
+    from __scd2_base
+),
+{% if mode == "complete" %}
+    __complete as (select s.* from __scd2 s where true and not __operation <=> 'delete'),
+    __final as (
+        select
+            {% for field in fields %} {{ field }}, {% endfor %},
+            {% if has_identity %} __identity, {% endif %}
+            __key,
+            if(
+                __valid_from == min(__valid_from) over (partition by null),
+                cast('1900-01-01' as timestamp),
+                __valid_from
+            ) as __valid_from,
+            __valid_to,
+            __is_current,
+            {% if soft_delete %} __is_deleted, {% endif %}
+            __hash,
+            {% if has_source %} __source, {% endif %}
+            {% if has_metadata %} __metadata, {% endif %}
+            {% if has_rescued_data %} __rescued_data, {% endif %}
+        from __complete
+    )
+{% else %}
+    {% if has_rows %}
+        __scd2_no_fake_update as (
+            select
+                * except (__scd2_rn),
+                row_number() over (partition by `__key` order by `__timestamp` asc) as `__scd2_rn`
+            from __scd2 s left
+            anti join
+                __current c on s.__key == c.__key and s.__hash == c.__hash
+                {% if has_source %} and s.__source == c.__source {% endif %}
+                and s.__operation == 'upsert'
+                and s.__scd2_rn == 1
+        ),
+    {% endif %}
+    __merge_condition as (
+        select s.*, if(__merge_condition == 'insert', null, __key) as __merge_key, o.__merge_condition
+        {% if has_rows %} from __scd2_no_fake_update s
+        {% else %} from __scd2 s
+        {% endif %}
+        inner join
+            (
+                select 'upsert' as __operation, 'insert' as __merge_condition
+                {% if has_rows %}
+                    union all
+                    select 'upsert' as __operation, 'update' as __merge_condition
+                    union all
+                    select 'delete' as __operation, 'delete' as __merge_condition
+                {% endif %}
+            ) o
+            on s.__operation = o.__operation
+        -- only the first record can be an update or a delete
+        where (s.__scd2_rn == 1 and o.__merge_condition in ('update', 'delete')) or o.__merge_condition == 'insert'
+    ),
+    __final as (
+        select
+            __merge_key,
+            __merge_condition,
+            {% for field in fields %} {{ field }},
+            {% endfor %},
+            {% if has_identity %} __identity,
+            {% endif %}
+            __key,
+            {% if fix_valid_from %}
+                {% if not has_rows %}
+                    if(
+                        __valid_from == min(__valid_from) over (partition by null),
+                        cast('1900-01-01' as timestamp),
+                        __valid_from
+                    ) as __valid_from,
+                {% else %} __valid_from,
+                {% endif %}
+            {% else %} __valid_from,
+            {% endif %}
+            __valid_to,
+            __is_current and __merge_condition == 'insert' as __is_current,
+            {% if soft_delete %} __is_deleted,
+            {% endif %}
+            __hash,
+            {% if has_source %} __source,
+            {% endif %}
+            {% if has_metadata %} __metadata,
+            {% endif %}
+            {% if has_rescued_data %} __rescued_data,
+            {% endif %}
+        from __merge_condition m
+    )
+{% endif %}

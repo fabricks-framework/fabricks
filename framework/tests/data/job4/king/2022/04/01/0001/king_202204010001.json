@@ -1,0 +1,12 @@
+[
+    {
+        "id": 5,
+        "name": "Baudouin",
+        "doubleField": 0.20220401,
+        "newField": true,
+        "BEL_DeleteDateUtc": null,
+        "BEL_RestoredDateUtc": null,
+        "BEL_IsFullLoad": false,
+        "BEL_UpdateDateUtc": "2022-04-01 01:00:00"
+    }
+]

@@ -1,0 +1,12 @@
+[
+    {
+        "id": 8,
+        "name": "Philippe",
+        "doubleField": 0.20221002,
+        "newField": true,
+        "BEL_DeleteDateUtc": null,
+        "BEL_RestoredDateUtc": null,
+        "BEL_IsFullLoad": true,
+        "BEL_UpdateDateUtc": "2022-10-02 01:00:00"
+    }
+]
