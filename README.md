@@ -42,3 +42,7 @@ We're just getting started with open-sourcing Fabricks! There are lot's of areas
 ## More infos
 
 See [Framework Readme](framework/README.md)
+
+## Related Projects
+
+- We use [odbc2deltalake](https://github.com/bmsuisse/odbc2deltalake) for lot's of sql server data ingestion in a pre_run notebook
