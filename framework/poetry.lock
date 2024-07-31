@@ -730,21 +730,6 @@ files = [
 ]
 
 [[package]]
-name = "delta-spark"
-version = "3.2.0"
-description = "Python APIs for using Delta Lake with Apache Spark"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "delta-spark-3.2.0.tar.gz", hash = "sha256:641967828e47c64805f8c746513da80bea24b5f19b069cdcf64561cd3692e11d"},
-    {file = "delta_spark-3.2.0-py3-none-any.whl", hash = "sha256:c4ff3fa7218e58a702cb71eb64384b0005c4d6f0bbdd0fe0b38a53564d946e09"},
-]
-
-[package.dependencies]
-importlib-metadata = ">=1.0.0"
-pyspark = ">=3.5.0,<3.6.0"
-
-[[package]]
 name = "distro"
 version = "1.9.0"
 description = "Distro - an OS platform information API"
@@ -2561,26 +2546,6 @@ all = ["twine (>=3.4.1)"]
 dev = ["twine (>=3.4.1)"]
 
 [[package]]
-name = "pyspark"
-version = "3.5.1"
-description = "Apache Spark Python API"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "pyspark-3.5.1.tar.gz", hash = "sha256:dd6569e547365eadc4f887bf57f153e4d582a68c4b490de475d55b9981664910"},
-]
-
-[package.dependencies]
-py4j = "0.10.9.7"
-
-[package.extras]
-connect = ["googleapis-common-protos (>=1.56.4)", "grpcio (>=1.56.0)", "grpcio-status (>=1.56.0)", "numpy (>=1.15)", "pandas (>=1.0.5)", "pyarrow (>=4.0.0)"]
-ml = ["numpy (>=1.15)"]
-mllib = ["numpy (>=1.15)"]
-pandas-on-spark = ["numpy (>=1.15)", "pandas (>=1.0.5)", "pyarrow (>=4.0.0)"]
-sql = ["numpy (>=1.15)", "pandas (>=1.0.5)", "pyarrow (>=4.0.0)"]
-
-[[package]]
 name = "pytest"
 version = "8.3.2"
 description = "pytest: simple powerful testing with Python"
@@ -3686,4 +3651,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "1720be9f1853e272285f9e67881606def60952c7fedda3c3eba983bcee232eae"
+content-hash = "26eef428c6fa7994753af631668a35f6eb56a0e753461a3ad8a2f682f249e1c6"

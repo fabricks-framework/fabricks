@@ -30,8 +30,6 @@ pytest-order = ">=1.0.1"
 [tool.poetry.group.dev.dependencies]
 databricks-cli = ">=0.18.0"
 databricks-connect = ">=11.0.0"
-delta-spark = ">=2.1.0"
-pyspark = ">=3.3"
 
 [tool.poetry.group.format.dependencies]
 autoflake = "^2.3.1"
