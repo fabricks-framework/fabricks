@@ -17,6 +17,7 @@ jobs:
         python-version: ["3.11"]
 
     steps:
+      - uses: databricks/setup-cli@main
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
@@ -29,6 +30,12 @@ jobs:
       - name: Install dependencies
         run: poetry install --all-extras --with test
         working-directory: framework
+      - name: Deploy Bundle
+        run: databricks bundle deploy --target test
+        env:
+          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+
       - name: Pyright
         run: poetry run pyright fabricks
         working-directory: framework
