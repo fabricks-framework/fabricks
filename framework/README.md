@@ -40,6 +40,8 @@ After the library is installed, you can import it in your notebooks or scripts u
 
 The Fabricks runtime configuration is defined in a YAML file. This file specifies the settings for the Fabricks runtime, including options for the runtime environment, path options, Spark options, and the configuration for different stages of the data pipeline (bronze, silver, gold, etc.).
 
+A sample can be found in the [tests](tests/runtime/fabricks/conf.5589296195699698.yml)
+
 ## Configuration Options
 
 - `name`: The name of the configuration.
@@ -60,14 +62,23 @@ The configuration file defines the settings for different stages of the data pip
   - `name`: The name of the stage.
   - `path_options`: Options for the storage path.
   - `options`: Options for the stage.
+  
+  For some samples, see in the [tests/runtime/bronze Folder](tests/runtime/bronze)
 - `silver`: The intermediate stage of the data pipeline. This includes:
   - `name`: The name of the stage.
   - `path_options`: Options for the storage path.
   - `options`: Options for the stage.
+
+  For some samples, see in the [tests/runtime/silver Folder](tests/runtime/silver)
 - `gold`: The final stage of the data pipeline. This includes:
   - `name`: The name of the stage.
   - `path_options`: Options for the storage path.
   - `options`: Options for the stage.
+
+  
+  For some samples, see in the [tests/runtime/gold Folder](tests/runtime/gold)
+
+The folder names and the stage names can be configures in the main Fabricks config, you don't have t o stick with the defaults
 
 ## Other Configurations
 
