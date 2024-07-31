@@ -35,7 +35,7 @@ jobs:
         env:
           DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
           DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
-
+          
       - name: Pyright
         run: poetry run pyright fabricks
         working-directory: framework
