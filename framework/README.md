@@ -1,189 +1,136 @@
-# Fabricks
+# 🧱 Fabricks: Simplifying **Databricks** Data Pipelines
 
-Fabricks is a Python framework developed to help create a lake house in Databricks. It simplifies the process of building and maintaining data pipelines by providing a standardized approach to defining and managing data processing workflows.
+**Fabricks** (**F**ramework for **Databricks**) is a Python framework designed to streamline the creation of lakehouses in **Databricks**. It offers a standardized approach to defining and managing data processing workflows, making it easier to build and maintain robust data pipelines.
 
-Though Fabricks is currently really meant to be run on Databricks, the code using Fabricks is really portable - you'll almost exclusively
-write SQL-Select Code - no need to manually write DDL/DML/Merge queries. Later on we might add support for other platforms as well, eg. DuckDB or Open Source Spark.
+## 🌟 Key Features
 
+- 📄 **YAML Configuration**: Easy-to-modify workflow definitions
+- 🔍 **SQL-Based Business Logic**: Familiar and powerful data processing
+- 🔄 **Version Control**: Track changes and roll back when needed
+- 🔌 **Seamless Data Source Integration**: Effortlessly add new sources
+- 📊 **Change Data Capture (CDC)**: Track and handle data changes over time
+- 🔧 **Flexible Schema Management**: Drop and create tables as needed
 
+## 🚀 Getting Started
 
-## Features
+### 📦 Installation
 
-- YAML configuration files: Fabricks uses YAML files for configuration, making it easy to define and modify workflows without requiring significant changes to the code.
-- SQL files for business logic: Business logic is defined in SQL files, providing a familiar and powerful tool for data processing.
-- Version control: Fabricks supports version control, ensuring that changes are tracked and can be rolled back if necessary.
-- Seamless integration of new data sources: Fabricks can easily integrate new data sources into existing workflows.
-- Change Data Capture: Fabricks supports Change Data Capture, allowing it to track and handle changes in the data over time.
-- Drop and create: Fabricks can drop and create tables as needed, providing flexibility in managing the data schema.
+1. Navigate to your **Databricks** workspace
+2. Select your target cluster
+3. Click on the `Libraries` tab
+4. Choose `Install New`
+5. Select `PyPI` as the library source
+6. Enter `fabricks` in the package text box
+7. Click `Install`
 
-## Getting Started
+Once installed, import **Fabricks** in your notebooks or scripts:
 
-To get started with Fabricks, you'll need to install it and set up your first project. Here's a basic guide on how to do that:
+```python
+import fabricks
+```
 
-### Installation
+## 🏗️ Project Configuration
 
-To install Fabricks, you need to install the library on your Databricks cluster. Follow the steps below:
+### 🔧 Runtime Configuration
 
-1. Navigate to your Databricks workspace.
-2. Select the cluster where you want to install the library.
-3. Click on the `Libraries` tab.
-4. Click on `Install New`.
-5. Choose `PyPI` from the library source dropdown.
-6. Enter `fabricks` in the package text box.
-7. Click `Install`.
+Define your **Fabricks** runtime in a YAML file. Here's a basic structure:
 
-After the library is installed, you can import it in your notebooks or scripts using `import fabricks`.
+```yaml
+name: MyFabricksProject
+options:
+  secret_scope: my_secret_scope
+  timeout: 3600
+  workers: 4
+path_options:
+  storage: /mnt/data
+spark_options:
+  sql:
+    option1: value1
+    option2: value2
 
-### Setting Up Your First Project
+# Pipeline Stages
+bronze:
+  name: Bronze Stage
+  path_options:
+    storage: /mnt/bronze
+  options:
+    option1: value1
 
-# Fabricks Runtime Configuration
+silver:
+  name: Silver Stage
+  path_options:
+    storage: /mnt/silver
+  options:
+    option1: value1
 
-The Fabricks runtime configuration is defined in a YAML file. This file specifies the settings for the Fabricks runtime, including options for the runtime environment, path options, Spark options, and the configuration for different stages of the data pipeline (bronze, silver, gold, etc.).
+gold:
+  name: Gold Stage
+  path_options:
+    storage: /mnt/gold
+  options:
+    option1: value1
+```
 
-A sample can be found in the [tests](tests/runtime/fabricks/conf.5589296195699698.yml)
+## 🥉 Bronze Step
 
-## Configuration Options
-
-- `name`: The name of the configuration.
-- `options`: General options for the runtime. This includes:
-  - `secret_scope`: The name of the secret scope in Databricks.
-  - `timeout`: The timeout for the runtime in seconds.
-  - `workers`: The number of workers for the runtime.
-- `path_options`: Options for the storage path. This includes:
-  - `storage`: The storage path for the data.
-- `spark_options`: Options for Spark. This includes:
-  - `sql`: SQL options for Spark.
-
-## Data Pipeline Stages
-
-The configuration file defines the settings for different stages of the data pipeline:
-
-- `bronze`: The initial stage of the data pipeline. This includes:
-  - `name`: The name of the stage.
-  - `path_options`: Options for the storage path.
-  - `options`: Options for the stage.
-  
-  For some samples, see in the [tests/runtime/bronze Folder](tests/runtime/bronze)
-- `silver`: The intermediate stage of the data pipeline. This includes:
-  - `name`: The name of the stage.
-  - `path_options`: Options for the storage path.
-  - `options`: Options for the stage.
-
-  For some samples, see in the [tests/runtime/silver Folder](tests/runtime/silver)
-- `gold`: The final stage of the data pipeline. This includes:
-  - `name`: The name of the stage.
-  - `path_options`: Options for the storage path.
-  - `options`: Options for the stage.
-
-  
-  For some samples, see in the [tests/runtime/gold Folder](tests/runtime/gold)
-
-The folder names and the stage names can be configures in the main Fabricks config, you don't have t o stick with the defaults
-
-## Other Configurations
-
-- `powerbi`: Configuration for PowerBI integration.
-- `databases`: Configuration for the databases.
-- `credentials`: Credentials for accessing different resources.
-- `variables`: Variables used in the configuration.
-
-Please note that this is a basic documentation based on the provided YAML file. The actual configuration options may vary depending on the specific requirements of your project.
-
-# Bronze Step Configuration
-
-The "bronze" step in Fabricks is the initial stage of the data pipeline. It is responsible for ingesting raw data and storing it in a "bronze" table for further processing. The configuration for the "bronze" step is defined in a YAML file. Each job in the "bronze" step has the following configuration options:
-
-- `step`: The step in the data pipeline. For these jobs, it is always "bronze".
-- `topic`: The topic of the job. This is usually the name of the data source.
-- `item`: The item of the job. This is usually the name of the specific data item being processed.
-- `tags`: Tags for the job. These can be used to categorize or filter jobs.
-- `options`: Options for the job. This includes:
-  - `mode`: The mode of the job. This can be "append", "memory", or "register".
-  - `uri`: The URI of the data source. This is usually an Azure Blob File System (ABFS) URI.
-  - `parser`: The parser to use for the data. This can be "monarch", "parquet", etc.
-  - `keys`: The keys for the data. These are the columns that uniquely identify each row in the data.
-  - `source`: The source of the data. This is usually the same as the topic.
-  - `extender`: The extender for the data. This is used to extend the data with additional columns or transformations.
-  - `encrypted_columns`: The columns in the data that are encrypted. These columns will be decrypted during the "bronze" step.
-  - `calculated_columns`: The columns in the data that are calculated. These columns will be calculated during the "bronze" step.
-
-Here's an example of a "bronze" step job:
+The initial stage for raw data ingestion:
 
 ```yaml
 - job:
     step: bronze
-    topic: king
-    item: scd1
-    tags: [test]
+    topic: sales_data
+    item: daily_transactions
+    tags: [raw, sales]
     options:
       mode: append
-      uri: abfss://fabricks@$datahub/raw/king
-      parser: monarch
-      keys: [id]
-      source: king
+      uri: abfss://fabricks@$datahub/raw/sales
+      parser: parquet
+      keys: [transaction_id]
+      source: pos_system
 ```
 
-# Silver Step Configuration
+## 🥈 Silver Step
 
-The "silver" step in Fabricks is the intermediate stage of the data pipeline. It is responsible for processing the raw data ingested in the "bronze" step and storing it in a "silver" table for further processing. The configuration for the "silver" step is defined in a YAML file. Each job in the "silver" step has the following configuration options:
-
-- `step`: The step in the data pipeline. For these jobs, it is always "silver".
-- `topic`: The topic of the job. This is usually the name of the data source.
-- `item`: The item of the job. This is usually the name of the specific data item being processed.
-- `tags`: Tags for the job. These can be used to categorize or filter jobs.
-- `options`: Options for the job. This includes:
-  - `mode`: The mode of the job. This can be "update", "memory", "latest", "append", "combine", etc.
-  - `change_data_capture`: The type of Change Data Capture (CDC) to use. This can be "scd1", "scd2", "nocdc", etc.
-  - `parents`: The parent jobs that this job depends on. These are usually "bronze" step jobs.
-  - `extender`: The extender for the data. This is used to extend the data with additional columns or transformations.
-  - `order_duplicate_by`: The order to use when removing duplicates. This can be "asc" or "desc".
-  - `check_options`: Options for checking the data. This includes:
-    - `max_rows`: The maximum number of rows to check.
-  - `stream`: Whether to stream the data. This can be "true" or "false".
-
-Here's an example of a "silver" step job:
+The intermediate stage for data processing:
 
 ```yaml
 - job:
     step: silver
-    topic: king_and_queen
-    item: scd1
-    tags: [test]
+    topic: sales_analytics
+    item: daily_summary
+    tags: [processed, sales]
     options:
       mode: update
       change_data_capture: scd1
-      parents: [bronze.queen_scd1, bronze.king_scd1]
+      parents: [bronze.daily_transactions]
+      extender: sales_extender
+      check_options:
+        max_rows: 1000000
 ```
-# Gold Step Configuration
 
-The "gold" step in Fabricks is the final stage of the data pipeline. It is responsible for processing the data from the "silver" step and storing it in a "gold" table for consumption. The configuration for the "gold" step is defined in a YAML file. Each job in the "gold" step has the following configuration options:
+## 🥇 Gold Step
 
-- `step`: The step in the data pipeline. For these jobs, it is always "gold".
-- `topic`: The topic of the job. This is usually the name of the data source.
-- `item`: The item of the job. This is usually the name of the specific data item being processed.
-- `tags`: Tags for the job. These can be used to categorize or filter jobs.
-- `options`: Options for the job. This includes:
-  - `mode`: The mode of the job. This can be "complete", "memory", etc.
-  - `change_data_capture`: The type of Change Data Capture (CDC) to use. This can be "scd1", "scd2", "nocdc", etc.
-
-Here's an example of a "gold" step job:
+The final stage for data consumption:
 
 ```yaml
 - job:
     step: gold
-    topic: scd2
-    item: complete
-    tags: [test]
+    topic: sales_reports
+    item: monthly_summary
+    tags: [report, sales]
     options:
-      change_data_capture: scd2
       mode: complete
-````
+      change_data_capture: scd2
+```
 
-## Usage
+## 📚 Usage
 
-// Instructions on how to use the framework go here
+// Detailed usage instructions to be added here
 
+## 📄 License
 
-## License
+This project is licensed under the MIT License.
 
-This project is licensed under the terms of the MIT license.
+---
+
+For more information, visit [**Fabricks** Documentation](https://fabricks.readthedocs.io) 📚
