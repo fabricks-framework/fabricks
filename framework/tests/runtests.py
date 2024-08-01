@@ -9,7 +9,9 @@ from databricks.sdk.runtime import dbutils
 from fabricks.context import IS_TEST, PATH_RUNTIME
 from fabricks.context.log import Logger
 from fabricks.utils.helpers import run_notebook
+framework_path = str(PATH_RUNTIME.pathlib.parent.parent.absolute())
 sys.path.append(PATH_RUNTIME)
+sys.path.append(framework_path)
 
 # COMMAND ----------
 
