@@ -6,8 +6,7 @@ import sys
 from fabricks.context import IS_TEST, PATH_RUNTIME
 from fabricks.context.log import Logger
 from fabricks.metastore.database import Database
-from pathlib import Path
-framework_path = str((Path(PATH_RUNTIME).parent.parent).absolute())
+framework_path = str((PATH_RUNTIME.parent.parent).absolute())
 print(framework_path)
 sys.path.append(framework_path)
 from tests.types import paths
