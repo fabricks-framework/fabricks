@@ -1,4 +1,5 @@
-# Welcome to Fabricks Framework
+# Welcome to Fabricks 
+## (F)r(a)mework for Data(bricks) 🏗️🧱
 
 [![PyPI version](https://badge.fury.io/py/fabricks.svg)](https://pypi.org/project/fabricks/)
 
