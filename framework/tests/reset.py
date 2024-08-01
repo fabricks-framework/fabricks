@@ -7,7 +7,8 @@ from pyspark.sql import Row
 from fabricks.core import get_job
 from fabricks.utils.helpers import run_in_parallel
 import sys
-from fabricks.context.log import Logger, PATH_RUNTIME
+from fabricks.context.log import Logger
+from fabricks.context import PATH_RUNTIME
 
 framework_path = str(PATH_RUNTIME.pathlib.parent.parent.absolute())
 print(framework_path)
