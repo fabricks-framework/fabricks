@@ -36,7 +36,15 @@ jobs:
           DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
           DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
         working-directory: framework
-        
+
+      - name: run Test Job on Databricks
+        run: | 
+          JOB_ID_NAME=$(databricks jobs list -t test --name fabricks_test_test )
+          JOB_ID=$(echo "$JOB_ID_NAME" | cut -d ' ' -f1)
+          echo "$JOB_ID"
+          databricks jobs run-now $JOB_ID -t test
+        working-directory: framework
+
       - name: Pyright
         run: poetry run pyright fabricks
         working-directory: framework

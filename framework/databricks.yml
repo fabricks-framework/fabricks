@@ -8,6 +8,113 @@ artifacts:
     build: poetry build
     type: whl
     
+resources:
+  jobs:
+    fabricks_test_job:
+      name: "${bundle.name}_${bundle.target}"
+      parameters:
+        - name: schedule
+          default: test
+      tasks:
+        - task_key: cluster
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/cluster.py"
+          job_cluster_key: fabricks_test_cluster
+          libraries:
+            - whl: ./dist/*.whl
+        - task_key: initialize
+          depends_on:
+          - task_key: cluster
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/initialize.py"
+          job_cluster_key: fabricks_test_cluster
+        - task_key: bronze
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+          job_cluster_key: fabricks_test_cluster
+        - task_key: gold
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+          job_cluster_key: fabricks_test_cluster
+        - task_key: semantic
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+          job_cluster_key: fabricks_test_cluster
+        - task_key: silver
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+            source: WORKSPACE
+          job_cluster_key: fabricks_test_cluster
+        - task_key: transf
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+            source: WORKSPACE
+          job_cluster_key: fabricks_test_cluster
+        - task_key: transf
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+            source: WORKSPACE
+          job_cluster_key: fabricks_test_cluster
+        - task_key: terminate
+          depends_on:
+          - task_key: transf
+          - task_key: bronze
+          - task_key: semantic
+          - task_key: gold
+          - task_key: silver
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/terminate.py"
+            source: WORKSPACE
+          job_cluster_key: fabricks_test_cluster
+      job_clusters:
+        - job_cluster_key: fabricks_test_cluster
+          new_cluster:
+            cluster_name: ""
+            spark_version: 14.3.x-scala2.12
+            azure_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK_AZURE
+              spot_bid_max_price: -1
+            node_type_id: Standard_D4ds_v4
+            driver_node_type_id: Standard_D8ds_v4
+            enable_elastic_disk: true
+            init_scripts:
+              - workspace:
+                  destination: ${workspace.file_path}/tests/initscript_test.sh
+            data_security_mode: LEGACY_SINGLE_USER_STANDARD
+            runtime_engine: PHOTON
+            autoscale:
+              min_workers: 1
+              max_workers: 8
+
+
+        
+      # We could also specify a target here, but we use the default target.
+      # target: dev
 
 targets:
   # The 'dev' target, for development purposes. This target is the default.
@@ -41,4 +148,4 @@ targets:
     run_as:
       # This runs as adrian.ehrsam@bmsuisse.ch in production. We could also use a service principal here,
       # see https://docs.databricks.com/dev-tools/bundles/permissions.html.
-      user_name: fabricks_ci_cd
+      service_principal_name: c626f9c3-6337-480d-bf2f-48266569df06
