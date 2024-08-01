@@ -1,0 +1,190 @@
+# These is the default bundle configuration if not otherwise overridden in
+# the "targets" top-level mapping.
+bundle: # Required.
+  name: fabricks_test
+
+artifacts:
+  fabricks_tool:
+    build: poetry build
+    type: whl
+    
+resources:
+  jobs:
+    fabricks_test_job:
+      name: "${bundle.name}_${bundle.target}_pytest"
+      parameters:
+        - name: schedule
+          default: test
+      tasks:
+        - task_key: cluster
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/cluster.py"
+          job_cluster_key: fabricks_test_cluster
+          libraries:
+            - whl: ./dist/*.whl
+        - task_key: run_tests
+          depends_on:
+          - task_key: cluster
+          notebook_task:
+            notebook_path: "tests/runtests.py"
+            source: WORKSPACE
+          job_cluster_key: fabricks_test_cluster
+      job_clusters:
+        - job_cluster_key: fabricks_test_cluster
+          new_cluster:
+            cluster_name: ""
+            spark_version: 14.3.x-scala2.12
+            azure_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK_AZURE
+              spot_bid_max_price: -1
+            node_type_id: Standard_D4ds_v4
+            driver_node_type_id: Standard_D8ds_v4
+            enable_elastic_disk: true
+            init_scripts:
+              - workspace:
+                  destination: ${workspace.file_path}/tests/initscript_test.sh
+            data_security_mode: LEGACY_SINGLE_USER_STANDARD
+            runtime_engine: PHOTON
+            autoscale:
+              min_workers: 1
+              max_workers: 8
+    fabricks_run_job:
+      name: "${bundle.name}_${bundle.target}_run"
+      parameters:
+        - name: schedule
+          default: test
+      tasks:
+        - task_key: cluster
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/cluster.py"
+          job_cluster_key: fabricks_test_cluster
+          libraries:
+            - whl: ./dist/*.whl
+        - task_key: initialize
+          depends_on:
+          - task_key: cluster
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/initialize.py"
+          job_cluster_key: fabricks_test_cluster
+        - task_key: bronze
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+          job_cluster_key: fabricks_test_cluster
+        - task_key: gold
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+          job_cluster_key: fabricks_test_cluster
+        - task_key: semantic
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+          job_cluster_key: fabricks_test_cluster
+        - task_key: silver
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+            source: WORKSPACE
+          job_cluster_key: fabricks_test_cluster
+        - task_key: transf
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+            source: WORKSPACE
+          job_cluster_key: fabricks_test_cluster
+        - task_key: transf
+          depends_on:
+          - task_key: initialize
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/process.py"
+            base_parameters:
+              step: "{{task.name}}"
+            source: WORKSPACE
+          job_cluster_key: fabricks_test_cluster
+        - task_key: terminate
+          depends_on:
+          - task_key: transf
+          - task_key: bronze
+          - task_key: semantic
+          - task_key: gold
+          - task_key: silver
+          notebook_task:
+            notebook_path: "fabricks/api/notebooks/terminate.py"
+            source: WORKSPACE
+          job_cluster_key: fabricks_test_cluster
+      job_clusters:
+        - job_cluster_key: fabricks_test_cluster
+          new_cluster:
+            cluster_name: ""
+            spark_version: 14.3.x-scala2.12
+            azure_attributes:
+              first_on_demand: 1
+              availability: SPOT_WITH_FALLBACK_AZURE
+              spot_bid_max_price: -1
+            node_type_id: Standard_D4ds_v4
+            driver_node_type_id: Standard_D8ds_v4
+            enable_elastic_disk: true
+            init_scripts:
+              - workspace:
+                  destination: ${workspace.file_path}/tests/initscript_test.sh
+            data_security_mode: LEGACY_SINGLE_USER_STANDARD
+            runtime_engine: PHOTON
+            autoscale:
+              min_workers: 1
+              max_workers: 8
+
+
+        
+      # We could also specify a target here, but we use the default target.
+      # target: dev
+
+targets:
+  # The 'dev' target, for development purposes. This target is the default.
+  dev:
+    # We use 'mode: development' to indicate this is a personal development copy:
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default
+    # - The 'development' mode is used for Delta Live Tables pipelines
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-3468806430305972.12.azuredatabricks.net
+
+  ## Optionally, there could be a 'staging' target here.
+  ## (See Databricks docs on CI/CD at https://docs.databricks.com/dev-tools/bundles/ci-cd.html.)
+  #
+  # staging:
+  #   workspace:
+  #     host: https://adb-3468806430305972.12.azuredatabricks.net
+
+  # The 'prod' target, used for production deployment.
+  test:
+    # We use 'mode: production' to indicate this is a production deployment.
+    # Doing so enables strict verification of the settings below.
+    mode: production
+    workspace:
+      host: https://adb-5589296195699698.18.azuredatabricks.net
+      # We always use /Users/adrian.ehrsam@bmsuisse.ch for all resources to make sure we only have a single copy.
+      # If this path results in an error, please make sure you have a recent version of the CLI installed.
+      root_path: /Workspace/fabricks_test/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      # This runs as adrian.ehrsam@bmsuisse.ch in production. We could also use a service principal here,
+      # see https://docs.databricks.com/dev-tools/bundles/permissions.html.
+      service_principal_name: c626f9c3-6337-480d-bf2f-48266569df06

@@ -4,9 +4,16 @@ from logging import DEBUG
 from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql import Row
 
-from fabricks.context.log import Logger
 from fabricks.core import get_job
 from fabricks.utils.helpers import run_in_parallel
+import sys
+from fabricks.context.log import Logger
+from fabricks.context import PATH_RUNTIME
+
+framework_path = str(PATH_RUNTIME.pathlib.parent.parent.absolute())
+print(framework_path)
+sys.path.append(framework_path)
+
 from tests.types import paths
 from tests.utils import landing_to_raw
 

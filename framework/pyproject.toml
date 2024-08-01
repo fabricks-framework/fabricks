@@ -28,7 +28,6 @@ pytest = ">=7.1.2"
 pytest-order = ">=1.0.1"
 
 [tool.poetry.group.dev.dependencies]
-databricks-cli = ">=0.18.0"
 databricks-connect = ">=11.0.0"
 
 [tool.poetry.group.format.dependencies]
@@ -53,7 +52,7 @@ venv = ".venv"
 venvPath = "."
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
-exclude = [".venv"]
+exclude = [".venv", "fabricks/api/notebooks"]
 
 [tool.ruff]
 line-length = 119

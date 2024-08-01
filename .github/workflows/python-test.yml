@@ -17,6 +17,7 @@ jobs:
         python-version: ["3.11"]
 
     steps:
+      - uses: databricks/setup-cli@main
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
@@ -29,9 +30,29 @@ jobs:
       - name: Install dependencies
         run: poetry install --all-extras --with test
         working-directory: framework
+      
       - name: Pyright
         run: poetry run pyright fabricks
         working-directory: framework
+
+      - name: Deploy Bundle
+        run: databricks bundle deploy --target test
+        env:
+          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+        working-directory: framework
+
+      - name: run Test Job on Databricks
+        run: | 
+          JOB_ID_NAME=$(databricks jobs list -t test --name fabricks_test_test_pytest )
+          JOB_ID=$(echo "$JOB_ID_NAME" | cut -d ' ' -f1)
+          echo "$JOB_ID"
+          databricks jobs run-now $JOB_ID -t test --timeout 30m
+        working-directory: framework
+        env:
+          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+
       #- name: Test with pytest (no benchmarks)
       #  run: poetry run python -m pytest --maxfail 3
       #  working-directory: framework

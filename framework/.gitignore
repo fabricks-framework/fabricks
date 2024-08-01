@@ -169,3 +169,5 @@ typings
 # Package
 _build
 _buildtest
+*.exe
+.databricks
