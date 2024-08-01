@@ -47,7 +47,7 @@ jobs:
           JOB_ID_NAME=$(databricks jobs list -t test --name fabricks_test_test_pytest )
           JOB_ID=$(echo "$JOB_ID_NAME" | cut -d ' ' -f1)
           echo "$JOB_ID"
-          databricks jobs run-now $JOB_ID -t test --timeout 30min
+          databricks jobs run-now $JOB_ID -t test --timeout 30m
         working-directory: framework
         env:
           DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
