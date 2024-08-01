@@ -52,7 +52,7 @@ venv = ".venv"
 venvPath = "."
 pythonVersion = "3.10"
 typeCheckingMode = "basic"
-exclude = [".venv"]
+exclude = [".venv", "fabricks/api/notebooks"]
 
 [tool.ruff]
 line-length = 119
