@@ -77,7 +77,7 @@ class DagProcessor(BaseDags):
                 DagsLogger.info("starting", extra=self.extra(j))
 
                 try:
-                    dbutils.notebook.run(
+                    dbutils.notebook.run( # type: ignore
                         PATH_NOTEBOOKS.join("run").get_notebook_path(),
                         self.step.timeouts.job,
                         {
@@ -87,7 +87,7 @@ class DagProcessor(BaseDags):
                             "job_id": j.get("JobId"),
                             "job": j.get("Job"),
                         },
-                    )
+                    ) # type: ignore
 
                 except Exception:
                     DagsLogger.warning("🤯 (failed)", extra={"step": str(self.step), "job": j.get("Job")})
