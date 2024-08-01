@@ -30,6 +30,11 @@ jobs:
       - name: Install dependencies
         run: poetry install --all-extras --with test
         working-directory: framework
+      
+      - name: Pyright
+        run: poetry run pyright fabricks
+        working-directory: framework
+
       - name: Deploy Bundle
         run: databricks bundle deploy --target test
         env:
@@ -48,9 +53,6 @@ jobs:
           DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
           DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
 
-      - name: Pyright
-        run: poetry run pyright fabricks
-        working-directory: framework
       #- name: Test with pytest (no benchmarks)
       #  run: poetry run python -m pytest --maxfail 3
       #  working-directory: framework
