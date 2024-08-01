@@ -16,10 +16,6 @@ Logger.setLevel(INFO)
 
 # COMMAND ----------
 
-assert os.environ.get("FABRICKS_RUNTIME") == "/Workspace/Repos/bmeurope/fabricks/tests/runtime"
-
-# COMMAND ----------
-
 assert IS_TEST
 
 # COMMAND ----------
