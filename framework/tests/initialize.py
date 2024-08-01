@@ -2,9 +2,14 @@
 from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
-
+import sys
+from fabricks.context import IS_TEST, PATH_RUNTIME
 from fabricks.context.log import Logger
 from fabricks.metastore.database import Database
+from pathlib import Path
+framework_path = Path(PATH_RUNTIME + "../../").absolute()
+print(framework_path)
+sys.path.append(framework_path)
 from tests.types import paths
 from tests.utils import create_expected_views, git_to_landing, landing_to_raw
 
