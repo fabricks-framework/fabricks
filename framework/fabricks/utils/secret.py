@@ -22,10 +22,13 @@ class ApplicationRegistration(Secret):
 class AccessKey(Secret):
     key: str
 
+_scopes = None
 
 def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
-    scopes = [s.name for s in dbutils.secrets.listScopes()]
-    assert secret_scope in scopes, "scope {secret_scope} not found"
+    global _scopes
+    if not _scopes or secret_scope not in _scopes: # we get the scopes only once, unless you search for something new
+        _scopes = [s.name for s in dbutils.secrets.listScopes()]
+    assert secret_scope in _scopes, "scope {secret_scope} not found"
     return dbutils.secrets.get(scope=secret_scope, key=name)
 
 
