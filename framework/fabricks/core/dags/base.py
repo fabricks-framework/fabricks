@@ -15,13 +15,16 @@ from fabricks.utils.secret import AccessKey, get_secret_from_secret_scope
 class BaseDags:
     def __init__(self, schedule_id: str):
         self.schedule_id = schedule_id
+        self._connection_string = None
 
     def get_connection_string(self) -> str:
-        storage_account = FABRICKS_STORAGE.get_storage_account()
-        secret = get_secret_from_secret_scope("bmskv", f"{storage_account}-access-key")
-        access_key = cast(AccessKey, secret).key
-        connection_string = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={access_key};EndpointSuffix=core.windows.net"
-        return connection_string
+        if not self._connection_string:
+            storage_account = FABRICKS_STORAGE.get_storage_account()
+            secret = get_secret_from_secret_scope("bmskv", f"{storage_account}-access-key")
+            access_key = cast(AccessKey, secret).key
+            connection_string = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={access_key};EndpointSuffix=core.windows.net"
+            self._connection_string = connection_string
+        return self._connection_string
 
     def get_table(self) -> AzureTable:
         cs = self.get_connection_string()
