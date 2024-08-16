@@ -5,7 +5,7 @@ from azure.data.tables import TableClient, TableServiceClient
 from pyspark.sql import DataFrame
 
 
-class AzureTable(TableClient):
+class AzureTable:
     def __init__(
         self,
         name: str,
@@ -24,9 +24,13 @@ class AzureTable(TableClient):
         assert connection_string
         self.connection_string = connection_string
 
+        self._table_client = None
+
     @property
     def table_service_client(self) -> TableServiceClient:
-        return TableServiceClient.from_connection_string(self.connection_string, table_name=self.name)
+        if not self._table_client:
+            self._table_client = TableServiceClient.from_connection_string(self.connection_string)
+        return self._table_client
 
     @property
     def table(self) -> TableClient:
@@ -43,6 +47,14 @@ class AzureTable(TableClient):
 
     def list_all(self) -> List:
         return self.query("")
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *args, **kwargs) -> None:
+        if self._table_client is not None:
+            self._table_client.close()
+            
 
     def submit(self, operations: List, retry: Optional[bool] = True):
         try:

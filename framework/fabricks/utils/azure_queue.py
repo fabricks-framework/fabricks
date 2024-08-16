@@ -5,7 +5,7 @@ from azure.core.exceptions import ResourceExistsError
 from azure.storage.queue import QueueClient
 
 
-class AzureQueue(QueueClient):
+class AzureQueue:
     def __init__(
         self,
         name: str,
@@ -23,10 +23,13 @@ class AzureQueue(QueueClient):
 
         assert connection_string
         self.connection_string = connection_string
+        self._queue_client = None
 
     @property
     def queue_client(self) -> QueueClient:
-        return QueueClient.from_connection_string(self.connection_string, queue_name=self.name)
+        if not self._queue_client:
+            self._queue_client = QueueClient.from_connection_string(self.connection_string, queue_name=self.name)
+        return self._queue_client
 
     def create_if_not_exists(self):
         try:
@@ -61,3 +64,10 @@ class AzureQueue(QueueClient):
 
     def delete(self):
         self.queue_client.delete_queue()
+
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *args, **kwargs):
+        if self._queue_client is not None:
+            self._queue_client.close()

@@ -15,6 +15,6 @@ def generate(schedule: str) -> Tuple[str, DataFrame, DataFrame]:
     Returns:
         Tuple[str, DataFrame, DataFrame]: A tuple containing the schedule ID, job dataframe, and dependency dataframe.
     """
-    g = DagGenerator(schedule)
-    schedule_id, job_df, dep_df = g.generate()
-    return schedule_id, job_df, dep_df
+    with DagGenerator(schedule) as g:
+        schedule_id, job_df, dep_df = g.generate()
+        return schedule_id, job_df, dep_df

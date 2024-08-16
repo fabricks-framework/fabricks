@@ -16,6 +16,7 @@ class BaseDags:
     def __init__(self, schedule_id: str):
         self.schedule_id = schedule_id
         self._connection_string = None
+        self._table = None
 
     def get_connection_string(self) -> str:
         if not self._connection_string:
@@ -27,9 +28,17 @@ class BaseDags:
         return self._connection_string
 
     def get_table(self) -> AzureTable:
-        cs = self.get_connection_string()
-        table = AzureTable(f"t{self.schedule_id}", connection_string=cs)
-        return table
+        if not self._table:
+            cs = self.get_connection_string()
+            self._table = AzureTable(f"t{self.schedule_id}", connection_string=cs)            
+        return self._table
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *args, **kwargs):
+        if self._table is not None:
+            self._table.__exit__()
 
     def get_logs(self, step: Optional[str] = None) -> DataFrame:
         q = f"PartitionKey eq '{self.schedule_id}'"
