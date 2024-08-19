@@ -3,11 +3,10 @@ from typing import Optional, Tuple
 from uuid import uuid4
 
 from databricks.sdk.runtime import spark
+from fabricks.core.dags.base import BaseDags
+from fabricks.core.dags.log import DagsTableLogger
+from fabricks.utils.azure_queue import AzureQueue
 from pyspark.sql import DataFrame
-
-from framework.fabricks.core.dags.base import BaseDags
-from framework.fabricks.core.dags.log import DagsTableLogger
-from framework.fabricks.utils.azure_queue import AzureQueue
 
 
 class DagGenerator(BaseDags):

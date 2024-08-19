@@ -1,10 +1,9 @@
 from typing import Optional
 
 from databricks.sdk.runtime import spark
+from fabricks.core.jobs.get_job import get_job
+from fabricks.utils.helpers import run_in_parallel
 from pyspark.sql import Row
-
-from framework.fabricks.core.jobs.get_job import get_job
-from framework.fabricks.utils.helpers import run_in_parallel
 
 
 def optimize(schedule_id: Optional[str] = None):
@@ -36,7 +35,7 @@ def optimize(schedule_id: Optional[str] = None):
             """
         )
     else:
-        df = spark.sql("select * from framework.fabricks.jobs where not mode = 'memory'")
+        df = spark.sql("select * from fabricks.jobs where not mode = 'memory'")
 
     def _optimize(row: Row):
         job = get_job(step=row["step"], job_id=row["job_id"])

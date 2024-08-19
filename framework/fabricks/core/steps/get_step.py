@@ -1,7 +1,7 @@
 from typing import Union
 
-from framework.fabricks.core.jobs.base.types import Steps, TStep
-from framework.fabricks.core.steps.base import BaseStep
+from fabricks.core.jobs.base.types import Steps, TStep
+from fabricks.core.steps.base import BaseStep
 
 
 def get_step(step: Union[TStep, str]) -> BaseStep:

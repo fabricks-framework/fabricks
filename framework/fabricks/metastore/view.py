@@ -3,10 +3,9 @@ from uuid import uuid4
 
 import pandas as pd
 from databricks.sdk.runtime import spark as _spark
+from fabricks.context.log import Logger
+from fabricks.metastore.relational import Relational
 from pyspark.sql import DataFrame, SparkSession
-
-from framework.fabricks.context.log import Logger
-from framework.fabricks.metastore.relational import Relational
 
 
 class View(Relational):

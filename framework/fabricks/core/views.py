@@ -1,9 +1,8 @@
 from databricks.sdk.runtime import spark
-
-from framework.fabricks.context import PATH_VIEWS
-from framework.fabricks.context.log import Logger
-from framework.fabricks.utils.path import Path
-from framework.fabricks.utils.sqlglot import fix as fix_sql
+from fabricks.context import PATH_VIEWS
+from fabricks.context.log import Logger
+from fabricks.utils.path import Path
+from fabricks.utils.sqlglot import fix as fix_sql
 
 
 def _create_or_replace_view(path: Path):

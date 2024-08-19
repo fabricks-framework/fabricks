@@ -1,8 +1,7 @@
 from typing import Optional
 
+from fabricks.cdc.scd import SCD
 from pyspark.sql import SparkSession
-
-from framework.fabricks.cdc.scd import SCD
 
 
 class SCD1(SCD):

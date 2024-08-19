@@ -1,10 +1,9 @@
 from typing import Optional, cast, overload
 
+from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.base.types import Bronzes, Golds, Silvers, TBronze, TGold, TSilver
+from fabricks.core.jobs.get_job_id import get_job_id
 from pyspark.sql import Row
-
-from framework.fabricks.core.jobs.base.job import BaseJob
-from framework.fabricks.core.jobs.base.types import Bronzes, Golds, Silvers, TBronze, TGold, TSilver
-from framework.fabricks.core.jobs.get_job_id import get_job_id
 
 
 @overload
@@ -88,7 +87,7 @@ def _get_job(
     job_id: Optional[str] = None,
 ):
     if step in Bronzes:
-        from framework.fabricks.core.jobs.bronze import Bronze
+        from fabricks.core.jobs.bronze import Bronze
 
         step = cast(TBronze, step)
         if job_id is not None:
@@ -99,7 +98,7 @@ def _get_job(
             job = Bronze.from_step_topic_item(step=step, topic=topic, item=item)
 
     elif step in Silvers:
-        from framework.fabricks.core.jobs.silver import Silver
+        from fabricks.core.jobs.silver import Silver
 
         step = cast(TSilver, step)
         if job_id is not None:
@@ -110,7 +109,7 @@ def _get_job(
             job = Silver.from_step_topic_item(step=step, topic=topic, item=item)
 
     elif step in Golds:
-        from framework.fabricks.core.jobs.gold import Gold
+        from fabricks.core.jobs.gold import Gold
 
         step = cast(TGold, step)
         if job_id is not None:

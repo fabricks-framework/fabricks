@@ -1,4 +1,4 @@
-from framework.fabricks.context.runtime import (
+from fabricks.context.runtime import (
     BRONZE,
     CONF_RUNTIME,
     FABRICKS_STORAGE,
@@ -20,7 +20,7 @@ from framework.fabricks.context.runtime import (
     STEPS,
     VARIABLES,
 )
-from framework.fabricks.context.spark import build_spark_session
+from fabricks.context.spark import build_spark_session
 
 __all__ = [
     "BRONZE",

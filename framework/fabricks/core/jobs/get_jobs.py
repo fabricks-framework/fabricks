@@ -2,17 +2,16 @@ from dataclasses import dataclass
 from typing import List, Optional, TypedDict, Union
 
 from databricks.sdk.runtime import spark
+from fabricks.context import IS_LIVE, PATHS_RUNTIME
+from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.base.types import Modes, TStep
+from fabricks.core.jobs.get_job import get_job
+from fabricks.utils.helpers import concat_dfs, run_in_parallel
+from fabricks.utils.path import Path
+from fabricks.utils.read import read_yaml
+from fabricks.utils.schema import get_schema_for_type
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr
-
-from framework.fabricks.context import IS_LIVE, PATHS_RUNTIME
-from framework.fabricks.core.jobs.base.job import BaseJob
-from framework.fabricks.core.jobs.base.types import Modes, TStep
-from framework.fabricks.core.jobs.get_job import get_job
-from framework.fabricks.utils.helpers import concat_dfs, run_in_parallel
-from framework.fabricks.utils.path import Path
-from framework.fabricks.utils.read import read_yaml
-from framework.fabricks.utils.schema import get_schema_for_type
 
 
 class GenericOptions(TypedDict):
@@ -46,7 +45,7 @@ def _get_jobs() -> DataFrame:
         df = concat_dfs(dfs)
 
     else:
-        df = spark.sql("select * from framework.fabricks.jobs")
+        df = spark.sql("select * from fabricks.jobs")
 
     return df
 

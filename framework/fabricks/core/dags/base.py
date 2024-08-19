@@ -2,14 +2,13 @@ import re
 from typing import Optional, cast
 
 from databricks.sdk.runtime import spark
+from fabricks.context import FABRICKS_STORAGE
+from fabricks.core.dags.log import DagsTableLogger
+from fabricks.metastore.table import Table
+from fabricks.utils.azure_table import AzureTable
+from fabricks.utils.secret import AccessKey, get_secret_from_secret_scope
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
-
-from framework.fabricks.context import FABRICKS_STORAGE
-from framework.fabricks.core.dags.log import DagsTableLogger
-from framework.fabricks.metastore.table import Table
-from framework.fabricks.utils.azure_table import AzureTable
-from framework.fabricks.utils.secret import AccessKey, get_secret_from_secret_scope
 
 
 class BaseDags:

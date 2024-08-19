@@ -1,7 +1,7 @@
 import subprocess
 from typing import List, Optional, Union
 
-from framework.fabricks.utils.path import Path
+from fabricks.utils.path import Path
 
 
 def pip_package(

@@ -1,12 +1,11 @@
 from typing import Any, Optional, Union, cast
 
+from fabricks.cdc import SCD1
+from fabricks.context.log import Logger
+from fabricks.core.jobs.base.configurator import Configurator
+from fabricks.metastore.view import create_or_replace_global_temp_view
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr, lit
-
-from framework.fabricks.cdc import SCD1
-from framework.fabricks.context.log import Logger
-from framework.fabricks.core.jobs.base.configurator import Configurator
-from framework.fabricks.metastore.view import create_or_replace_global_temp_view
 
 
 class Generator(Configurator):

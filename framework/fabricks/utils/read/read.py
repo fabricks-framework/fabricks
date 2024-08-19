@@ -1,10 +1,9 @@
 from typing import List, Optional, Union, overload
 
 from databricks.sdk.runtime import spark as _spark
+from fabricks.utils.path import Path
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructType
-
-from framework.fabricks.utils.path import Path
 
 
 @overload

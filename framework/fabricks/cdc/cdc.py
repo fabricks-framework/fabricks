@@ -1,4 +1,4 @@
-from framework.fabricks.cdc.base import BaseCDC
+from fabricks.cdc.base import BaseCDC
 
 
 class CDC(BaseCDC):

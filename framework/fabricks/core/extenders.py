@@ -2,7 +2,7 @@ import sys
 from importlib.util import spec_from_file_location
 from typing import Callable
 
-from framework.fabricks.context import PATH_EXTENDERS
+from fabricks.context import PATH_EXTENDERS
 
 EXTENDERS: dict[str, Callable] = {}
 

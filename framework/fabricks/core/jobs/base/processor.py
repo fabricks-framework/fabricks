@@ -1,13 +1,12 @@
 from typing import Optional
 
+from fabricks.context import SECRET_SCOPE
+from fabricks.context.log import Logger, flush
+from fabricks.core.jobs.base.error import CheckFailedException, CheckWarningException, InvokerFailedException
+from fabricks.core.jobs.base.invoker import Invoker
+from fabricks.utils.write import write_stream
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
-
-from framework.fabricks.context import SECRET_SCOPE
-from framework.fabricks.context.log import Logger, flush
-from framework.fabricks.core.jobs.base.error import CheckFailedException, CheckWarningException, InvokerFailedException
-from framework.fabricks.core.jobs.base.invoker import Invoker
-from framework.fabricks.utils.write import write_stream
 
 
 class Processor(Invoker):
@@ -17,7 +16,7 @@ class Processor(Invoker):
             name = self.step_conf.get("options", {}).get("extender", None)
 
         if name:
-            from framework.fabricks.core.extenders import get_extender
+            from fabricks.core.extenders import get_extender
 
             Logger.debug(f"extend ({name})", extra={"job": self})
             df = df.transform(get_extender(name))

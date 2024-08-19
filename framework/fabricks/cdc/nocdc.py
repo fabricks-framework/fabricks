@@ -1,9 +1,8 @@
 from typing import Optional, Union
 
+from fabricks.cdc.base import BaseCDC
+from fabricks.metastore.table import Table
 from pyspark.sql import DataFrame, SparkSession
-
-from framework.fabricks.cdc.base import BaseCDC
-from framework.fabricks.metastore.table import Table
 
 
 class NoCDC(BaseCDC):

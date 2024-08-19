@@ -2,10 +2,10 @@ import logging
 from functools import wraps
 from typing import Callable, cast
 
-from framework.fabricks.context.runtime import FABRICKS_STORAGE, SECRET_SCOPE
-from framework.fabricks.utils.azure_table import AzureTable
-from framework.fabricks.utils.log import get_logger
-from framework.fabricks.utils.secret import AccessKey, get_secret_from_secret_scope
+from fabricks.context.runtime import FABRICKS_STORAGE, SECRET_SCOPE
+from fabricks.utils.azure_table import AzureTable
+from fabricks.utils.log import get_logger
+from fabricks.utils.secret import AccessKey, get_secret_from_secret_scope
 
 storage_account = FABRICKS_STORAGE.get_storage_account()
 secret = get_secret_from_secret_scope(SECRET_SCOPE, f"{storage_account}-access-key")

@@ -1,6 +1,6 @@
-from framework.fabricks.context.log import Logger
-from framework.fabricks.core.jobs.base.error import CheckFailedException, CheckWarningException
-from framework.fabricks.core.jobs.base.generator import Generator
+from fabricks.context.log import Logger
+from fabricks.core.jobs.base.error import CheckFailedException, CheckWarningException
+from fabricks.core.jobs.base.generator import Generator
 
 
 class Checker(Generator):

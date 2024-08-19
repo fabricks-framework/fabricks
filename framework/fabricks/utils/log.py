@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from typing import Tuple
 
-from framework.fabricks.utils.azure_table import AzureTable
+from fabricks.utils.azure_table import AzureTable
 
 GREY = "\33[90m"
 BLACK = "\33[30m"

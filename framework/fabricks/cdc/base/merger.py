@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from typing import Optional, Union
 
+from fabricks.cdc.base.processor import Processor
+from fabricks.context.log import Logger
+from fabricks.metastore.table import Table
+from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.utils.sqlglot import fix as fix_sql
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
-
-from framework.fabricks.cdc.base.processor import Processor
-from framework.fabricks.context.log import Logger
-from framework.fabricks.metastore.table import Table
-from framework.fabricks.metastore.view import create_or_replace_global_temp_view
-from framework.fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Merger(Processor):

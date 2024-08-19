@@ -26,7 +26,7 @@ resources:
           depends_on:
           - task_key: cluster
           notebook_task:
-            notebook_path: "tests/runtests.py"
+            notebook_path: "tests/integration/runtests.py"
             source: WORKSPACE
           job_cluster_key: fabricks_test_cluster
       job_clusters:
@@ -43,7 +43,7 @@ resources:
             enable_elastic_disk: true
             init_scripts:
               - workspace:
-                  destination: ${workspace.file_path}/tests/init.sh
+                  destination: ${workspace.file_path}/tests/integration/init.sh
             data_security_mode: LEGACY_SINGLE_USER_STANDARD
             runtime_engine: PHOTON
             autoscale:
@@ -143,7 +143,7 @@ resources:
             enable_elastic_disk: true
             init_scripts:
               - workspace:
-                  destination: ${workspace.file_path}/tests/init.sh
+                  destination: ${workspace.file_path}/tests/integration/init.sh
             data_security_mode: LEGACY_SINGLE_USER_STANDARD
             runtime_engine: PHOTON
             autoscale:

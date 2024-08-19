@@ -1,12 +1,12 @@
 import json
 from typing import Optional, overload
 
-from framework.fabricks.context import PATH_RUNTIME
-from framework.fabricks.context.log import Logger
-from framework.fabricks.core.jobs.base.checker import Checker
-from framework.fabricks.core.jobs.base.error import InvokerFailedException
-from framework.fabricks.core.schedules import get_schedule
-from framework.fabricks.utils.path import Path
+from fabricks.context import PATH_RUNTIME
+from fabricks.context.log import Logger
+from fabricks.core.jobs.base.checker import Checker
+from fabricks.core.jobs.base.error import InvokerFailedException
+from fabricks.core.schedules import get_schedule
+from fabricks.utils.path import Path
 
 
 class Invoker(Checker):

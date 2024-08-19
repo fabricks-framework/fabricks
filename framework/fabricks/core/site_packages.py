@@ -1,10 +1,9 @@
 import sys
 
 from databricks.sdk.runtime import dbutils, spark
-
-from framework.fabricks.context import FABRICKS_STORAGE, PATH_LIBRARIES, PATH_REQUIREMENTS
-from framework.fabricks.context.log import Logger
-from framework.fabricks.utils.pip import pip_requirements, pip_wheel
+from fabricks.context import FABRICKS_STORAGE, PATH_LIBRARIES, PATH_REQUIREMENTS
+from fabricks.context.log import Logger
+from fabricks.utils.pip import pip_requirements, pip_wheel
 
 
 def collect_site_packages(nofail: bool = False):

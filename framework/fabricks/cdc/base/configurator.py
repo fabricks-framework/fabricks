@@ -5,10 +5,9 @@ from typing import List, Optional, Union
 
 from databricks.sdk.runtime import dbutils as _dbutils
 from databricks.sdk.runtime import spark as _spark
+from fabricks.metastore.database import Database
+from fabricks.metastore.table import Table
 from pyspark.sql import DataFrame, SparkSession
-
-from framework.fabricks.metastore.database import Database
-from framework.fabricks.metastore.table import Table
 
 
 class Configurator(ABC):

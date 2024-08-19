@@ -2,11 +2,10 @@ from typing import Optional
 
 from databricks.sdk.runtime import dbutils as _dbutils
 from databricks.sdk.runtime import spark as _spark
+from fabricks.context.log import Logger
+from fabricks.metastore.database import Database
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import SparkSession
-
-from framework.fabricks.context.log import Logger
-from framework.fabricks.metastore.database import Database
 
 
 class Relational:
