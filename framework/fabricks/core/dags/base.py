@@ -30,12 +30,12 @@ class BaseDags:
     def get_table(self) -> AzureTable:
         if not self._table:
             cs = self.get_connection_string()
-            self._table = AzureTable(f"t{self.schedule_id}", connection_string=cs)            
+            self._table = AzureTable(f"t{self.schedule_id}", connection_string=cs)
         return self._table
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args, **kwargs):
         if self._table is not None:
             self._table.__exit__()

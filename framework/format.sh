@@ -1,5 +1,3 @@
-cd ..
-
 if [[ "$OSTYPE" == "linux-gnu"* ]] 
 then
     source .venv/bin/activate

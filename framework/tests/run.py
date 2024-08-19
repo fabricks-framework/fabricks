@@ -89,4 +89,4 @@ run_in_parallel(_run, gold)
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")
+dbutils.notebook.exit("exit (0)")  # type: ignore

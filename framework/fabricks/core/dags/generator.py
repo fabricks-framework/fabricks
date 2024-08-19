@@ -146,8 +146,8 @@ class DagGenerator(BaseDags):
         for row in step_df.collect():
             step = self.remove_invalid_characters(row.Step)
             with AzureQueue(f"q{step}{self.schedule_id}", connection_string=cs) as queue:
-              queue.create_if_not_exists()
-              queue.clear()
+                queue.create_if_not_exists()
+                queue.clear()
 
         time.sleep(60)
 

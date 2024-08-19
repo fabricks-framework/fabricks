@@ -47,14 +47,13 @@ class AzureTable:
 
     def list_all(self) -> List:
         return self.query("")
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args, **kwargs) -> None:
         if self._table_client is not None:
             self._table_client.close()
-            
 
     def submit(self, operations: List, retry: Optional[bool] = True):
         try:

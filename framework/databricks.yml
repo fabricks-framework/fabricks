@@ -43,7 +43,7 @@ resources:
             enable_elastic_disk: true
             init_scripts:
               - workspace:
-                  destination: ${workspace.file_path}/tests/initscript_test.sh
+                  destination: ${workspace.file_path}/tests/init.sh
             data_security_mode: LEGACY_SINGLE_USER_STANDARD
             runtime_engine: PHOTON
             autoscale:
@@ -143,7 +143,7 @@ resources:
             enable_elastic_disk: true
             init_scripts:
               - workspace:
-                  destination: ${workspace.file_path}/tests/initscript_test.sh
+                  destination: ${workspace.file_path}/tests/init.sh
             data_security_mode: LEGACY_SINGLE_USER_STANDARD
             runtime_engine: PHOTON
             autoscale:

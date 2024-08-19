@@ -67,7 +67,7 @@ class AzureQueue:
 
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args, **kwargs):
         if self._queue_client is not None:
             self._queue_client.close()

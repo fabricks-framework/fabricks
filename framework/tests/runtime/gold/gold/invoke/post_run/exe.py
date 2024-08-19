@@ -44,4 +44,4 @@ assert schedule_variables.get("var1") == "1", f"var1 {schedule_variables.get('va
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")
+dbutils.notebook.exit("exit (0)")  # type: ignore

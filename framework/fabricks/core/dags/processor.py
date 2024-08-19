@@ -25,9 +25,11 @@ class DagProcessor(BaseDags):
 
     @property
     def queue(self) -> AzureQueue:
-        if not self._azure_queue:            
+        if not self._azure_queue:
             step = self.remove_invalid_characters(str(self.step))
-            self._azure_queue =  AzureQueue(f"q{step}{self.schedule_id}", connection_string=self.get_connection_string())
+            self._azure_queue = AzureQueue(
+                f"q{step}{self.schedule_id}", connection_string=self.get_connection_string()
+            )
         return self._azure_queue
 
     @property
@@ -82,17 +84,17 @@ class DagProcessor(BaseDags):
                 DagsLogger.info("starting", extra=self.extra(j))
 
                 try:
-                    dbutils.notebook.run( # type: ignore
-                        PATH_NOTEBOOKS.join("run").get_notebook_path(), # type: ignore
-                        self.step.timeouts.job, # type: ignore
+                    dbutils.notebook.run(  # type: ignore
+                        PATH_NOTEBOOKS.join("run").get_notebook_path(),  # type: ignore
+                        self.step.timeouts.job,  # type: ignore
                         {
                             "schedule_id": self.schedule_id,
                             "schedule": self.schedule,  # needed to pass schedule variables to the job
                             "step": str(self.step),
                             "job_id": j.get("JobId"),
                             "job": j.get("Job"),
-                        }, # type: ignore
-                    ) # type: ignore
+                        },  # type: ignore
+                    )  # type: ignore
 
                 except Exception:
                     DagsLogger.warning("🤯 (failed)", extra={"step": str(self.step), "job": j.get("Job")})
@@ -169,7 +171,7 @@ class DagProcessor(BaseDags):
 
     def __enter__(self):
         return super().__enter__()
-    
+
     def __exit__(self, *args, **kwargs):
         if self._azure_queue:
             self._azure_queue.__exit__()

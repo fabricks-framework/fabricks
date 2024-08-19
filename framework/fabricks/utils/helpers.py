@@ -74,7 +74,7 @@ def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
     if timeout is None:
         timeout = 3600
 
-    dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs}) # type: ignore
+    dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs})  # type: ignore
 
 
 def xxhash64(s: Any):

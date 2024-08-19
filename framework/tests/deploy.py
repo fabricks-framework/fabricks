@@ -28,4 +28,4 @@ print("")
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")
+dbutils.notebook.exit("exit (0)")  # type: ignore
