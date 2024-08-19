@@ -1,5 +1,6 @@
-from fabricks.core.udfs import udf
 from pyspark.sql import SparkSession
+
+from fabricks.core.udfs import udf
 
 
 @udf(name="identity")

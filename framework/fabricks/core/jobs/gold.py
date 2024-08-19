@@ -2,6 +2,8 @@ import re
 from typing import List, Optional, cast
 
 from databricks.sdk.runtime import dbutils
+from pyspark.sql import DataFrame
+
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import Logger
 from fabricks.core.jobs.base.job import BaseJob
@@ -9,7 +11,6 @@ from fabricks.core.jobs.base.types import TGold
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.path import Path
-from pyspark.sql import DataFrame
 
 
 class Gold(BaseJob):

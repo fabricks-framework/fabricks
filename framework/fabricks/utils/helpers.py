@@ -3,9 +3,10 @@ from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
 
 from databricks.sdk.runtime import dbutils, spark
-from fabricks.utils.path import Path
 from pyspark.sql import DataFrame
 from typing_extensions import deprecated
+
+from fabricks.utils.path import Path
 
 
 def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str:

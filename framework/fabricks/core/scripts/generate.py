@@ -1,7 +1,8 @@
 from typing import Tuple
 
-from fabricks.core.dags.generator import DagGenerator
 from pyspark.sql import DataFrame
+
+from fabricks.core.dags.generator import DagGenerator
 
 
 def generate(schedule: str) -> Tuple[str, DataFrame, DataFrame]:

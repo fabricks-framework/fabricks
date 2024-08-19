@@ -1,11 +1,12 @@
 from typing import Optional
 
 from databricks.sdk.runtime import spark
-from fabricks.core.jobs.base import BaseJob
 from pandas.testing import assert_frame_equal
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, length, lower, when
 from pyspark.sql.types import DoubleType, StringType
+
+from fabricks.core.jobs.base import BaseJob
 
 
 def value_to_none(df: DataFrame) -> DataFrame:

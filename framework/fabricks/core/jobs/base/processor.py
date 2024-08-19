@@ -1,12 +1,13 @@
 from typing import Optional
 
+from pyspark.sql import DataFrame
+from pyspark.sql.functions import expr
+
 from fabricks.context import SECRET_SCOPE
 from fabricks.context.log import Logger, flush
 from fabricks.core.jobs.base.error import CheckFailedException, CheckWarningException, InvokerFailedException
 from fabricks.core.jobs.base.invoker import Invoker
 from fabricks.utils.write import write_stream
-from pyspark.sql import DataFrame
-from pyspark.sql.functions import expr
 
 
 class Processor(Invoker):

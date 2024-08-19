@@ -6,6 +6,7 @@
 from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
+
 from fabricks.context.log import Logger
 from fabricks.metastore.database import Database
 from tests.integration.types import paths

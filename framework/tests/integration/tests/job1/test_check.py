@@ -1,6 +1,7 @@
 from logging import ERROR
 
 import pytest
+
 from fabricks.context.log import Logger
 from fabricks.core import get_job
 from tests.integration.compare import get_last_error

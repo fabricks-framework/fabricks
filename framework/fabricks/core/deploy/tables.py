@@ -1,8 +1,9 @@
 from databricks.sdk.runtime import spark
+from pyspark.sql.types import LongType, StringType, StructField, StructType, TimestampType
+
 from fabricks.cdc import NoCDC
 from fabricks.context.log import Logger
 from fabricks.metastore.table import Table
-from pyspark.sql.types import LongType, StringType, StructField, StructType, TimestampType
 
 
 def deploy_tables(drop: bool = False):

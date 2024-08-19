@@ -1,9 +1,10 @@
 from typing import Optional, cast, overload
 
 from databricks.sdk.runtime import spark
+from pyspark.sql import Row
+
 from fabricks.context import IS_LIVE
 from fabricks.core.jobs.base.types import Bronzes, Golds, JobConf, Silvers, TBronze, TGold, TSilver, TStep
-from pyspark.sql import Row
 
 
 @overload

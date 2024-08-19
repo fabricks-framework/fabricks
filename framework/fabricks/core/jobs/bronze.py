@@ -1,5 +1,8 @@
 from typing import Optional, cast
 
+from pyspark.sql import DataFrame, Row
+from pyspark.sql.functions import expr, lit, md5
+
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES
 from fabricks.context.log import Logger
@@ -12,8 +15,6 @@ from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.helpers import concat_ws
 from fabricks.utils.path import Path
 from fabricks.utils.read import read
-from pyspark.sql import DataFrame, Row
-from pyspark.sql.functions import expr, lit, md5
 
 
 class Bronze(BaseJob):

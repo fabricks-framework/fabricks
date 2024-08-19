@@ -1,8 +1,9 @@
 from typing import Union
 
+from pyspark.sql import DataFrame
+
 from fabricks.cdc.base import BaseCDC
 from fabricks.metastore.table import Table
-from pyspark.sql import DataFrame
 
 
 class SCD(BaseCDC):

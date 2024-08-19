@@ -2,6 +2,7 @@ from logging import ERROR
 
 import pytest
 from databricks.sdk.runtime import spark
+
 from fabricks.context.log import Logger
 from fabricks.core import get_job
 from tests.integration.compare import compare_silver_to_expected

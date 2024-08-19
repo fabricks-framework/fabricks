@@ -3,15 +3,16 @@ from typing import List, Optional, Union, overload
 
 from databricks.sdk.runtime import spark
 from delta import DeltaTable
-from fabricks.context.log import Logger
-from fabricks.metastore.relational import Relational
-from fabricks.utils.path import Path
-from fabricks.utils.sqlglot import fix
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, max
 from pyspark.sql.types import StructType
 from typing_extensions import deprecated
+
+from fabricks.context.log import Logger
+from fabricks.metastore.relational import Relational
+from fabricks.utils.path import Path
+from fabricks.utils.sqlglot import fix
 
 
 class Table(Relational):

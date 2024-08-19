@@ -2,6 +2,7 @@ from logging import ERROR
 
 import pytest
 from databricks.sdk.runtime import spark
+
 from fabricks.cdc import NoCDC
 from fabricks.context.log import Logger
 

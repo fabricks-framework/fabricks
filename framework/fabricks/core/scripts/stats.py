@@ -1,8 +1,9 @@
 from databricks.sdk.runtime import spark
+from pyspark.sql import Row
+
 from fabricks.cdc import NoCDC
 from fabricks.core.jobs.base.types import Steps
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
-from pyspark.sql import Row
 
 
 def collect_stats():

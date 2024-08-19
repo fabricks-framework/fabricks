@@ -6,8 +6,9 @@
 from logging import DEBUG
 from typing import Any, cast
 
-import fabricks.core.scripts as s
 from databricks.sdk.runtime import dbutils, display
+
+import fabricks.core.scripts as s
 from fabricks.context.log import Logger
 from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core import get_step

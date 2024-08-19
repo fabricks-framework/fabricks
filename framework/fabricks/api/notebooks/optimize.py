@@ -1,7 +1,8 @@
 # Databricks notebook source
 from databricks.sdk.runtime import dbutils
-from fabricks.core.scripts import optimize
 from pyspark.errors.exceptions.base import IllegalArgumentException
+
+from fabricks.core.scripts import optimize
 
 # COMMAND ----------
 

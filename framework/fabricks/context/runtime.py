@@ -4,6 +4,7 @@ from typing import Final, List
 
 import yaml
 from databricks.sdk.runtime import spark
+
 from fabricks.utils.path import Path
 
 try:

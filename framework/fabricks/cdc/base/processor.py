@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import Optional, Union
 
+from jinja2 import Environment, PackageLoader
+from pyspark.sql import DataFrame
+
 from fabricks.cdc.base.generator import Generator
 from fabricks.context.log import Logger
 from fabricks.metastore.table import Table
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.sqlglot import fix as fix_sql
-from jinja2 import Environment, PackageLoader
-from pyspark.sql import DataFrame
 
 
 class Processor(Generator):

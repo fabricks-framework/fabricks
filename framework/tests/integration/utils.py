@@ -3,10 +3,11 @@ from typing import Any, List, Union, cast
 
 import pandas as pd
 from databricks.sdk.runtime import dbutils, spark
+from pyspark.sql.functions import expr
+
 from fabricks.context.log import Logger
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
-from pyspark.sql.functions import expr
 from tests.integration.types import paths
 
 

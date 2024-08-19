@@ -2,6 +2,7 @@ from logging import ERROR
 
 import pytest
 from databricks.sdk.runtime import spark
+
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import Logger
 from fabricks.metastore.table import Table

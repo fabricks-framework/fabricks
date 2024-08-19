@@ -1,9 +1,10 @@
 from typing import Optional
 
 from databricks.sdk.runtime import spark
+from pyspark.sql import Row
+
 from fabricks.core.jobs.get_job import get_job
 from fabricks.utils.helpers import run_in_parallel
-from pyspark.sql import Row
 
 
 def optimize(schedule_id: Optional[str] = None):

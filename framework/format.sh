@@ -1,13 +1,11 @@
-cd ..
-
 if [[ "$OSTYPE" == "linux-gnu"* ]] 
 then
-    source framework/.venv/bin/activate
+    source ./.venv/bin/activate
 elif [[ "$OSTYPE" == "darwin23" ]]
 then
-    source framework/.venv/bin/activate
+    source ./.venv/bin/activate
 else
-    source framework/.venv/Scripts/activate
+    source ./.venv/Scripts/activate
 fi
 
 while getopts :f:p:s:y:g:c:a option
@@ -55,36 +53,36 @@ fi
 if [ "$all" = "true" ] || [ "$python" = "true" ]
 then
     echo "🌟 autoflake(ing) 🌟"
-    autoflake -r -i .
+    poetry run autoflake -r -i .
     echo "🌟 isort(ing) 🌟"
-    isort .
+    poetry run isort .
     echo "🌟 pycln(ing) 🌟"
-    pycln .
+    poetry run pycln .
 fi
 
 if [ "$all" = "true" ] || [ "$ruff" = "true" ] || [ "$python" = "true" ]
 then
     echo "🧙 ruff(ing) 🧙"
-    ruff format .
-    ruff check . --fix
+    poetry run ruff format .
+    poetry run ruff check . --fix
 fi
 
 if [ "$all" = "true" ] || [ "$python" = "true" ]
 then
     echo "🌟 pyright(ing) 🌟"
-    pyright .
+    poetry run pyright .
 fi
 
 if [ "$all" = "true" ] || [ "$sql" = "true" ]
 then
     echo "🌟 sqlfmt(ing) 🌟"
-    sqlfmt .
+    poetry run sqlfmt .
 fi
 
 if [ "$all" = "true" ] || [ "$yaml" = "true" ]
 then
     echo "🌟 yamlfix(ing) 🌟"
-    yamlfix . --exclude .venv --exclude .dev --exclude .idea --include *.yml
+    poetry run yamlfix . --exclude .venv --exclude .dev --exclude .idea --include *.yml
 fi
 
 if [ "$all" = "true" ] || [ "$git" = "true" ]

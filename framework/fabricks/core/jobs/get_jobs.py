@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from typing import List, Optional, TypedDict, Union
 
 from databricks.sdk.runtime import spark
+from pyspark.sql import DataFrame, Row
+from pyspark.sql.functions import expr
+
 from fabricks.context import IS_LIVE, PATHS_RUNTIME
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.base.types import Modes, TStep
@@ -10,8 +13,6 @@ from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import Path
 from fabricks.utils.read import read_yaml
 from fabricks.utils.schema import get_schema_for_type
-from pyspark.sql import DataFrame, Row
-from pyspark.sql.functions import expr
 
 
 class GenericOptions(TypedDict):

@@ -2,6 +2,7 @@ from logging import ERROR
 
 import pytest
 from databricks.sdk.runtime import dbutils
+
 from fabricks.context.log import Logger
 from fabricks.core import get_job
 

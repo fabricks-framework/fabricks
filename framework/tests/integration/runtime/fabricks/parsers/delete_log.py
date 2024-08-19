@@ -1,13 +1,14 @@
 from typing import Optional
 
-from fabricks.core.parsers import BaseParser, ParserOptions
-from fabricks.utils.helpers import concat_dfs
-from fabricks.utils.path import Path
-from fabricks.utils.read import read
 from py4j.protocol import Py4JError
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, lit, when
+
+from fabricks.core.parsers import BaseParser, ParserOptions
+from fabricks.utils.helpers import concat_dfs
+from fabricks.utils.path import Path
+from fabricks.utils.read import read
 
 
 class DeleteLogBaseParser(BaseParser):

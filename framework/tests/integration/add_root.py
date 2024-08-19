@@ -1,15 +1,13 @@
 # Databricks notebook source
-import sys
 import os
+import sys
 
 # COMMAND ----------
 
-root = os.path.abspath('../..')
+root = os.path.abspath("../..")
 
 # COMMAND ----------
 
 sys.path.append(root)
 
 # COMMAND ----------
-
-

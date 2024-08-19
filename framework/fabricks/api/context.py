@@ -1,4 +1,5 @@
 from databricks.sdk.runtime import dbutils, spark
+
 from fabricks.context import BRONZE, GOLD, SECRET_SCOPE, SILVER
 from fabricks.core.jobs.base.types import Bronzes, Golds, Silvers
 

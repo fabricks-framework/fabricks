@@ -1,6 +1,9 @@
 from typing import Optional, Union, cast
 
 from databricks.sdk.runtime import spark
+from pyspark.sql import DataFrame, Row
+from pyspark.sql.functions import expr, md5
+
 from fabricks.cdc import SCD1
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import Logger
@@ -13,8 +16,6 @@ from fabricks.metastore.table import Table
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.read.read_yaml import read_yaml
 from fabricks.utils.schema import get_schema_for_type
-from pyspark.sql import DataFrame, Row
-from pyspark.sql.functions import expr, md5
 
 
 class BaseStep:
