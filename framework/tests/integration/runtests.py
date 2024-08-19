@@ -69,7 +69,7 @@ k = " or ".join(tests)
 
 res = pytest.main(
     [
-        "tests",
+        "jobs",
         "-v",
         "-p",
         "no:cacheprovider",
