@@ -1,5 +1,7 @@
 [tool.poetry]
 name = "fabricks"
+version = "0.9.0.0"
+description = ""
 authors = ["BMS DWH Team <bi_support@bmsuisse.ch>"]
 readme = "README.md"
 packages = [{ include = "fabricks" }]
