@@ -36,7 +36,7 @@ jobs:
         working-directory: framework
 
       - name: Deploy Bundle
-        run: databricks bundle deploy --target test
+        run: databricks bundle deploy --target test --force-lock
         env:
           DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
           DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
