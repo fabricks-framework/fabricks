@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run ./add_fabricks
+
+# COMMAND ----------
+
 from databricks.sdk.runtime import dbutils
 from pyspark.errors.exceptions.base import IllegalArgumentException
 

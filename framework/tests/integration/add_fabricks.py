@@ -9,5 +9,3 @@ root = os.path.abspath("../..")
 # COMMAND ----------
 
 sys.path.append(root)
-
-# COMMAND ----------

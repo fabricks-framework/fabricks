@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run ./add_fabricks
+
+# COMMAND ----------
+
 import json
 
 from databricks.sdk.runtime import dbutils

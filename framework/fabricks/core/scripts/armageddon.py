@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, Union, cast
 
 from fabricks.context import FABRICKS_STORAGE
@@ -11,6 +12,8 @@ from fabricks.metastore.database import Database
 
 
 def armageddon(steps: Optional[Union[TStep, List[TStep], str, List[str]]]):
+    Logger.setLevel(logging.INFO)
+
     if steps is None:
         steps = Steps
     assert steps is not None

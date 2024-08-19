@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %run ./add_root
+# MAGIC %run ./add_fabricks
 
 # COMMAND ----------
 

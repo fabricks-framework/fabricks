@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %run ./add_root
+# MAGIC %run ./add_fabricks
 
 # COMMAND ----------
 
@@ -48,7 +48,6 @@ display(job_df)
 display(dependency_df)
 
 # COMMAND ----------
-
 
 def _schedule(task: Any):
     step = get_step(step=cast(TStep, task))

@@ -177,3 +177,7 @@ _buildtest
 
 # Ruff
 .ruff_cache
+
+# Debug
+🔧.*
+🔎.*

@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %run ./add_root
+# MAGIC %run ./add_fabricks
 
 # COMMAND ----------
 
@@ -13,6 +13,10 @@ from tests.integration.types import steps
 
 # COMMAND ----------
 
+print(steps)
+
+# COMMAND ----------
+
 Logger.setLevel(DEBUG)
 
 # COMMAND ----------
@@ -22,3 +26,7 @@ armageddon(steps=steps)
 # COMMAND ----------
 
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
+
+# COMMAND ----------
+
+

@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run ./add_fabricks
+
+# COMMAND ----------
+
 from databricks.sdk.runtime import dbutils, display
 
 from fabricks.core.scripts import generate
