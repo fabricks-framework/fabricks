@@ -21,7 +21,7 @@ resources:
           job_cluster_key: fabricks_test_cluster
           libraries:
             - whl: ./dist/*.whl
-        - task_key: run_tests
+        - task_key: runtests
           depends_on:
             - task_key: cluster
           notebook_task:
