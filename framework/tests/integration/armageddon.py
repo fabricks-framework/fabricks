@@ -28,5 +28,3 @@ armageddon(steps=steps)
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
 
 # COMMAND ----------
-
-
