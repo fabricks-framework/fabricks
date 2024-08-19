@@ -51,8 +51,8 @@ __scd2 as (
             select
                 * except (__scd2_rn),
                 row_number() over (partition by `__key` order by `__timestamp` asc) as `__scd2_rn`
-            from __scd2 s left
-            anti join
+            from __scd2 s
+            left anti join
                 __current c on s.__key == c.__key and s.__hash == c.__hash
                 {% if has_source %} and s.__source == c.__source {% endif %}
                 and s.__operation == 'upsert'
