@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run ./add_root
+
+# COMMAND ----------
+
 from logging import DEBUG
 from typing import Any, cast
 

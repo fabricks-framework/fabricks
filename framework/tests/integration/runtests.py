@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run ./add_root
+
+# COMMAND ----------
+
 import sys
 from logging import ERROR, INFO
 
@@ -64,7 +68,7 @@ k = " or ".join(tests)
 
 res = pytest.main(
     [
-        ".",
+        "tests",
         "-v",
         "-p",
         "no:cacheprovider",
@@ -74,7 +78,7 @@ res = pytest.main(
 
 # COMMAND ----------
 
-assert res.value == 0, "failed"  # type: ignore
+.assert res.value == 0, "failed"  # type: ignore
 
 # COMMAND ----------
 

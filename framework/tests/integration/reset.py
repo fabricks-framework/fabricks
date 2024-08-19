@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run ./add_root
+
+# COMMAND ----------
+
 from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils, spark
