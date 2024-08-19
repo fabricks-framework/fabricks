@@ -2,7 +2,7 @@ from typing import Tuple
 
 from pyspark.sql import DataFrame
 
-from fabricks.core.dags.generator import DagGenerator
+from framework.fabricks.core.dags.generator import DagGenerator
 
 
 def generate(schedule: str) -> Tuple[str, DataFrame, DataFrame]:

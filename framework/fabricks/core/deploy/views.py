@@ -1,8 +1,8 @@
 from databricks.sdk.runtime import spark
 
-from fabricks.context.log import Logger
-from fabricks.core.jobs.base.types import Steps
-from fabricks.utils.sqlglot import fix as fix_sql
+from framework.fabricks.context.log import Logger
+from framework.fabricks.core.jobs.base.types import Steps
+from framework.fabricks.utils.sqlglot import fix as fix_sql
 
 
 def deploy_views():
@@ -35,7 +35,7 @@ def create_or_replace_jobs_view():
         df = spark.sql("show tables in fabricks").where(f"tableName like '{table}'")
         if not df.isEmpty():
             try:
-                spark.sql(f"select options.change_data_capture from fabricks.{table}")
+                spark.sql(f"select options.change_data_capture from framework.fabricks.{table}")
                 change_data_capture = "coalesce(options.change_data_capture, 'nocdc') as change_data_capture"
             except Exception:
                 change_data_capture = "'nocdc' as change_data_capture"

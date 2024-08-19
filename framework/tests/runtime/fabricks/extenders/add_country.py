@@ -1,7 +1,7 @@
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
 
-from fabricks.core.extenders import extender
+from framework.fabricks.core.extenders import extender
 
 
 @extender(name="add_country")

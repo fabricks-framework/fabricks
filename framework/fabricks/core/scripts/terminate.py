@@ -1,4 +1,4 @@
-from fabricks.core.dags.terminator import DagTerminator
+from framework.fabricks.core.dags.terminator import DagTerminator
 
 
 def terminate(schedule_id: str):

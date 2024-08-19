@@ -2,9 +2,9 @@ from logging import ERROR
 
 import pytest
 
-from fabricks.context import PATH_RUNTIME
-from fabricks.context.log import Logger
-from fabricks.utils.helpers import run_notebook
+from framework.fabricks.context import PATH_RUNTIME
+from framework.fabricks.context.log import Logger
+from framework.fabricks.utils.helpers import run_notebook
 
 Logger.setLevel(ERROR)
 

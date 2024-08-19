@@ -1,9 +1,8 @@
-from fabricks.context.runtime import (
+from framework.fabricks.context.runtime import (
     BRONZE,
     CONF_RUNTIME,
     FABRICKS_STORAGE,
     GOLD,
-    IS_DEBUG,
     IS_LIVE,
     IS_TEST,
     PATH_EXTENDERS,
@@ -20,9 +19,8 @@ from fabricks.context.runtime import (
     SILVER,
     STEPS,
     VARIABLES,
-    VERSION,
 )
-from fabricks.context.spark import build_spark_session
+from framework.fabricks.context.spark import build_spark_session
 
 __all__ = [
     "BRONZE",
@@ -30,7 +28,6 @@ __all__ = [
     "CONF_RUNTIME",
     "FABRICKS_STORAGE",
     "GOLD",
-    "IS_DEBUG",
     "IS_LIVE",
     "IS_TEST",
     "PATH_EXTENDERS",
@@ -47,5 +44,4 @@ __all__ = [
     "SILVER",
     "STEPS",
     "VARIABLES",
-    "VERSION",
 ]

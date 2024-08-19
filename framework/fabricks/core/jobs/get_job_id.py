@@ -1,6 +1,6 @@
 from typing import Optional, overload
 
-from fabricks.utils.helpers import md5
+from framework.fabricks.utils.helpers import md5
 
 
 @overload

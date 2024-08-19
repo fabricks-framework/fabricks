@@ -3,10 +3,10 @@ from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context.log import Logger
-from fabricks.core import get_job
-from fabricks.utils.helpers import run_in_parallel
-from tests.utils import landing_to_raw
+from framework.fabricks.context.log import Logger
+from framework.fabricks.core import get_job
+from framework.fabricks.utils.helpers import run_in_parallel
+from framework.tests.utils import landing_to_raw
 
 # COMMAND ----------
 
@@ -89,4 +89,4 @@ run_in_parallel(_run, gold)
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

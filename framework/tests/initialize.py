@@ -3,10 +3,10 @@ from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context.log import Logger
-from fabricks.metastore.database import Database
-from tests.types import paths
-from tests.utils import create_expected_views, git_to_landing, landing_to_raw
+from framework.fabricks.context.log import Logger
+from framework.fabricks.metastore.database import Database
+from framework.tests.types import paths
+from framework.tests.utils import create_expected_views, git_to_landing, landing_to_raw
 
 # COMMAND ----------
 
@@ -48,4 +48,4 @@ if expected:
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

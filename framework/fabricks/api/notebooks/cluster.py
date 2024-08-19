@@ -3,4 +3,4 @@ from databricks.sdk.runtime import dbutils
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

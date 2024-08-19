@@ -1,7 +1,7 @@
 from databricks.sdk.runtime import spark
 
-from fabricks.core.dags.base import BaseDags
-from fabricks.core.dags.log import DagsLogger, DagsTableLogger
+from framework.fabricks.core.dags.base import BaseDags
+from framework.fabricks.core.dags.log import DagsLogger, DagsTableLogger
 
 
 class DagTerminator(BaseDags):

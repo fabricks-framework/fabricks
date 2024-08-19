@@ -1,5 +1,5 @@
-from fabricks.core.deploy.tables import deploy_tables
-from fabricks.core.deploy.views import deploy_views
+from framework.fabricks.core.deploy.tables import deploy_tables
+from framework.fabricks.core.deploy.views import deploy_views
 
 
 class deploy:

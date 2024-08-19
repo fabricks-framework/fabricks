@@ -5,15 +5,15 @@ from typing import Optional, Union
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
 
-from fabricks.cdc.base.generator import Generator
-from fabricks.context.log import Logger
-from fabricks.metastore.table import Table
-from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.utils.sqlglot import fix as fix_sql
+from framework.fabricks.cdc.base.generator import Generator
+from framework.fabricks.context.log import Logger
+from framework.fabricks.metastore.table import Table
+from framework.fabricks.metastore.view import create_or_replace_global_temp_view
+from framework.fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Processor(Generator):
-    def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[DataFrame]:
+    def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
         if isinstance(src, DataFrame):
             name = f"{self.database}_{'_'.join(self.levels)}__data"
             global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False))

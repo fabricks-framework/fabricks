@@ -1,4 +1,4 @@
-from fabricks.core.jobs.base.processor import Processor
+from framework.fabricks.core.jobs.base.processor import Processor
 
 
 class BaseJob(Processor):

@@ -4,16 +4,16 @@ from typing import Optional, Union, cast
 from pyspark.dbutils import DBUtils
 from pyspark.sql import DataFrame, SparkSession
 
-from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
-from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
-from fabricks.context.log import Logger
-from fabricks.context.spark import build_spark_session
-from fabricks.core.jobs.base.types import Modes, Options, Paths, Timeouts, TStep
-from fabricks.core.jobs.get_job_conf import get_job_conf
-from fabricks.core.jobs.get_job_id import get_job_id
-from fabricks.metastore.table import Table
-from fabricks.utils.fdict import FDict
-from fabricks.utils.path import Path
+from framework.fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
+from framework.fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
+from framework.fabricks.context.log import Logger, flush
+from framework.fabricks.context.spark import build_spark_session
+from framework.fabricks.core.jobs.base.types import Modes, Options, Paths, Timeouts, TStep
+from framework.fabricks.core.jobs.get_job_conf import get_job_conf
+from framework.fabricks.core.jobs.get_job_id import get_job_id
+from framework.fabricks.metastore.table import Table
+from framework.fabricks.utils.fdict import FDict
+from framework.fabricks.utils.path import Path
 
 
 class Configurator(ABC):
@@ -217,7 +217,7 @@ class Configurator(ABC):
     def get_cdc_context(self, df: DataFrame) -> dict:
         raise NotImplementedError()
 
-    def get_cdc_data(self, stream: Optional[bool] = False) -> Optional[DataFrame]:
+    def get_cdc_data(self, stream: bool = False) -> Optional[DataFrame]:
         df = self.get_data(stream)
         if df:
             cdc_context = self.get_cdc_context(df)
@@ -233,7 +233,7 @@ class Configurator(ABC):
         return self._mode
 
     @abstractmethod
-    def get_data(self, stream: Optional[bool] = False, transform: Optional[bool] = False) -> Optional[DataFrame]:
+    def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> Optional[DataFrame]:
         """
         Retrieves the data for the job.
 
@@ -259,13 +259,14 @@ class Configurator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    @flush
     def run(
         self,
-        retry: Optional[int] = 1,
+        retry: Optional[bool] = True,
         schedule: Optional[str] = None,
         schedule_id: Optional[str] = None,
-        invoke: Optional[bool] = None,
-    ) -> Optional[int]:
+        invoke: Optional[bool] = True,
+    ):
         raise NotImplementedError()
 
     def optimize(

@@ -1,11 +1,13 @@
+cd ..
+
 if [[ "$OSTYPE" == "linux-gnu"* ]] 
 then
-    source .venv/bin/activate
+    source framework/.venv/bin/activate
 elif [[ "$OSTYPE" == "darwin23" ]]
 then
-    source .venv/bin/activate
+    source framework/.venv/bin/activate
 else
-    source .venv/Scripts/activate
+    source framework/.venv/Scripts/activate
 fi
 
 while getopts :f:p:s:y:g:c:a option

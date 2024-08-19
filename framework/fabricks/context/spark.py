@@ -3,8 +3,8 @@ from typing import Optional, Tuple
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
 
-from fabricks.context.runtime import CONF_RUNTIME, SECRET_SCOPE
-from fabricks.utils.secret import add_secret_to_spark, get_secret_from_secret_scope
+from framework.fabricks.context.runtime import CONF_RUNTIME, SECRET_SCOPE
+from framework.fabricks.utils.secret import add_secret_to_spark, get_secret_from_secret_scope
 
 
 def build_spark_session(new: Optional[bool] = False, log: Optional[bool] = False) -> Tuple[SparkSession, DBUtils]:

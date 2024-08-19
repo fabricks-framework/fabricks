@@ -3,10 +3,10 @@ from logging import ERROR
 import pytest
 from databricks.sdk.runtime import spark
 
-from fabricks.context.log import Logger
-from fabricks.core import get_job
-from fabricks.metastore.table import Table
-from tests.compare import compare_gold_to_expected
+from framework.fabricks.context.log import Logger
+from framework.fabricks.core import get_job
+from framework.fabricks.metastore.table import Table
+from framework.tests.compare import compare_gold_to_expected
 
 Logger.setLevel(ERROR)
 

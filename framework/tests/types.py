@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Final
 
-from fabricks.context import FABRICKS_STORAGE, PATH_RUNTIME
-from fabricks.utils.path import Path
+from framework.fabricks.context import FABRICKS_STORAGE, PATH_RUNTIME
+from framework.fabricks.utils.path import Path
 
 
 @dataclass(frozen=True)

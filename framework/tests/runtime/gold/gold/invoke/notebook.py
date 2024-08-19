@@ -33,4 +33,4 @@ assert arg1 == "1"
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

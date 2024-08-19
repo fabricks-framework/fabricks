@@ -1,1 +1,1 @@
-select * from fabricks.jobs where topic = 'monarch'
+select * from framework.fabricks.jobs where topic = 'monarch'

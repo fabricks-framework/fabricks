@@ -1,6 +1,6 @@
 from pyspark.sql import DataFrame
 
-from fabricks.core.extenders import extender
+from framework.fabricks.core.extenders import extender
 
 
 @extender(name="drop__cols")

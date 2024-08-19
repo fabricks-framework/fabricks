@@ -3,8 +3,8 @@ from logging import ERROR
 import pytest
 from databricks.sdk.runtime import spark
 
-from fabricks.cdc import NoCDC
-from fabricks.context.log import Logger
+from framework.fabricks.cdc import NoCDC
+from framework.fabricks.context.log import Logger
 
 Logger.setLevel(ERROR)
 

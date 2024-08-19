@@ -5,10 +5,10 @@ import pandas as pd
 from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql.functions import expr
 
-from fabricks.context.log import Logger
-from fabricks.utils.helpers import concat_dfs
-from fabricks.utils.path import Path
-from tests.types import paths
+from framework.fabricks.context.log import Logger
+from framework.fabricks.utils.helpers import concat_dfs
+from framework.fabricks.utils.path import Path
+from framework.tests.types import paths
 
 
 def convert_parquet_to_delta(topic: str):

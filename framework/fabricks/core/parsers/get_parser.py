@@ -2,9 +2,9 @@ import sys
 from importlib.util import spec_from_file_location
 from typing import Optional
 
-from fabricks.context import PATH_PARSERS
-from fabricks.core.parsers.base import PARSERS, BaseParser
-from fabricks.core.parsers.types import ParserOptions
+from framework.fabricks.context import PATH_PARSERS
+from framework.fabricks.core.parsers.base import PARSERS, BaseParser
+from framework.fabricks.core.parsers.types import ParserOptions
 
 
 def get_parser(name: str, parser_options: Optional[ParserOptions] = None) -> BaseParser:

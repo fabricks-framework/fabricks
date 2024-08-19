@@ -2,7 +2,6 @@
 import json
 
 from databricks.sdk.runtime import dbutils
-
 from fabricks.core.dags.log import DagsLogger, DagsTableLogger
 from fabricks.core.jobs import get_job
 
@@ -84,4 +83,4 @@ finally:
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

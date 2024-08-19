@@ -5,10 +5,10 @@ from typing import List, Optional, Union
 from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
 
-from fabricks.cdc.base.configurator import Configurator
-from fabricks.context.log import Logger
-from fabricks.metastore.table import Table
-from fabricks.utils.sqlglot import fix as fix_sql
+from framework.fabricks.cdc.base.configurator import Configurator
+from framework.fabricks.context.log import Logger
+from framework.fabricks.metastore.table import Table
+from framework.fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Generator(Configurator):

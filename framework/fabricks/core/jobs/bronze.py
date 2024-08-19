@@ -3,18 +3,18 @@ from typing import Optional, cast
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr, lit, md5
 
-from fabricks.cdc.nocdc import NoCDC
-from fabricks.context import VARIABLES
-from fabricks.context.log import Logger
-from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.jobs.base.types import TBronze
-from fabricks.core.parsers import BaseParser
-from fabricks.core.parsers.get_parser import get_parser
-from fabricks.core.utils import clean
-from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.utils.helpers import concat_ws
-from fabricks.utils.path import Path
-from fabricks.utils.read import read
+from framework.fabricks.cdc.nocdc import NoCDC
+from framework.fabricks.context import VARIABLES
+from framework.fabricks.context.log import Logger
+from framework.fabricks.core.jobs.base.job import BaseJob
+from framework.fabricks.core.jobs.base.types import TBronze
+from framework.fabricks.core.parsers import BaseParser
+from framework.fabricks.core.parsers.get_parser import get_parser
+from framework.fabricks.core.utils import clean
+from framework.fabricks.metastore.view import create_or_replace_global_temp_view
+from framework.fabricks.utils.helpers import concat_ws
+from framework.fabricks.utils.path import Path
+from framework.fabricks.utils.read import read
 
 
 class Bronze(BaseJob):
@@ -153,7 +153,7 @@ class Bronze(BaseJob):
             )
         return df
 
-    def get_data(self, stream: bool = False, transform: bool = False) -> DataFrame:
+    def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> Optional[DataFrame]:
         df = self.parse(stream)
         df = self.filter_where(df)
         df = self.encrypt(df)
@@ -254,7 +254,7 @@ class Bronze(BaseJob):
     def create_or_replace_view(self):
         Logger.warning("create or replace view not allowed", extra={"job": self})
 
-    def overwrite_schema(self):
+    def overwrite_schema(self, df: Optional[DataFrame] = None):
         Logger.warning("schema overwrite not allowed", extra={"job": self})
 
     def get_cdc_context(self, df: DataFrame) -> dict:
@@ -304,7 +304,7 @@ class Bronze(BaseJob):
         else:
             super().truncate()
 
-    def restore(self):
+    def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
         if self.mode == "register":
             Logger.info("register (no restore)", extra={"job": self})
         else:

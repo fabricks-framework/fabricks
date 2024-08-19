@@ -3,8 +3,8 @@ from typing import Optional, cast, overload
 from databricks.sdk.runtime import spark
 from pyspark.sql import Row
 
-from fabricks.context import IS_LIVE
-from fabricks.core.jobs.base.types import Bronzes, Golds, JobConf, Silvers, TBronze, TGold, TSilver, TStep
+from framework.fabricks.context import IS_LIVE
+from framework.fabricks.core.jobs.base.types import Bronzes, Golds, JobConf, Silvers, TBronze, TGold, TSilver, TStep
 
 
 @overload
@@ -23,7 +23,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
     invoker_options = row["invoker_options"].asDict() if row["invoker_options"] else None
 
     if step in Bronzes:
-        from fabricks.core.jobs.base.types import JobConfBronze
+        from framework.fabricks.core.jobs.base.types import JobConfBronze
 
         assert options is not None, "no option"
         parser_options = row["parser_options"].asDict() if row["parser_options"] else None
@@ -43,7 +43,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
         )
 
     elif step in Silvers:
-        from fabricks.core.jobs.base.types import JobConfSilver
+        from framework.fabricks.core.jobs.base.types import JobConfSilver
 
         assert options is not None, "no option"
         step = cast(TSilver, step)
@@ -61,7 +61,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
         )
 
     elif step in Golds:
-        from fabricks.core.jobs.base.types import JobConfGold
+        from framework.fabricks.core.jobs.base.types import JobConfGold
 
         assert options is not None, "no option"
         step = cast(TGold, step)
@@ -89,7 +89,7 @@ def get_job_conf(
     item: Optional[str] = None,
 ) -> JobConf:
     if IS_LIVE:
-        from fabricks.core.steps import get_step
+        from framework.fabricks.core.steps import get_step
 
         s = get_step(step=step)
         if topic:
@@ -97,7 +97,7 @@ def get_job_conf(
         else:
             df = s.get_jobs()
     else:
-        df = spark.sql(f"select * from fabricks.{step}_jobs")
+        df = spark.sql(f"select * from framework.fabricks.{step}_jobs")
 
     assert df, f"{step} not found"
 

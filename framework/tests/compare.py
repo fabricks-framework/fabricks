@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, length, lower, when
 from pyspark.sql.types import DoubleType, StringType
 
-from fabricks.core.jobs.base import BaseJob
+from framework.fabricks.core.jobs.base import BaseJob
 
 
 def value_to_none(df: DataFrame) -> DataFrame:

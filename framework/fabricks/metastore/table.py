@@ -9,10 +9,10 @@ from pyspark.sql.functions import expr, max
 from pyspark.sql.types import StructType
 from typing_extensions import deprecated
 
-from fabricks.context.log import Logger
-from fabricks.metastore.relational import Relational
-from fabricks.utils.path import Path
-from fabricks.utils.sqlglot import fix
+from framework.fabricks.context.log import Logger
+from framework.fabricks.metastore.relational import Relational
+from framework.fabricks.utils.path import Path
+from framework.fabricks.utils.sqlglot import fix
 
 
 class Table(Relational):

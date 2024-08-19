@@ -2,8 +2,8 @@ from typing import Iterable
 
 from databricks.sdk.runtime import spark
 
-from fabricks.cdc import NoCDC
-from fabricks.context.runtime import BRONZE, GOLD, SILVER
+from framework.fabricks.cdc import NoCDC
+from framework.fabricks.context.runtime import BRONZE, GOLD, SILVER
 
 
 def collect_steps():

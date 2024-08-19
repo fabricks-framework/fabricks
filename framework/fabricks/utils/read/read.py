@@ -4,7 +4,7 @@ from databricks.sdk.runtime import spark as _spark
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructType
 
-from fabricks.utils.path import Path
+from framework.fabricks.utils.path import Path
 
 
 @overload

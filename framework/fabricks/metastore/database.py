@@ -5,10 +5,10 @@ from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
 from typing_extensions import deprecated
 
-from fabricks.context import PATHS_STORAGE
-from fabricks.context.log import Logger
-from fabricks.metastore.utils import get_tables, get_views
-from fabricks.utils.path import Path
+from framework.fabricks.context import PATHS_STORAGE
+from framework.fabricks.context.log import Logger
+from framework.fabricks.metastore.utils import get_tables, get_views
+from framework.fabricks.utils.path import Path
 
 
 class Database:

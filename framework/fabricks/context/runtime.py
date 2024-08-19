@@ -5,7 +5,7 @@ from typing import Final, List
 import yaml
 from databricks.sdk.runtime import spark
 
-from fabricks.utils.path import Path
+from framework.fabricks.utils.path import Path
 
 try:
     runtime = Path(os.environ["FABRICKS_RUNTIME"], assume_git=True)
@@ -16,10 +16,6 @@ try:
     assert notebooks, "notebooks mandatory in cluster config"
     PATH_NOTEBOOKS: Final[Path] = notebooks
 
-    version = os.environ["FABRICKS_VERSION"]
-    assert version, "version mandatory in cluster config"
-    VERSION: Final[str] = version
-
     PATH_LIBRARIES = "/dbfs/mnt/fabricks/site-packages"
     spark._sc._python_includes.append(PATH_LIBRARIES)  # type: ignore
     sys.path.append(PATH_LIBRARIES)
@@ -29,12 +25,6 @@ try:
     except Exception:
         is_test = False
     IS_TEST: Final[bool] = is_test
-
-    try:
-        is_debug = os.environ["FABRICKS_IS_DEBUG"] == "TRUE"
-    except Exception:
-        is_debug = False
-    IS_DEBUG: Final[bool] = is_debug
 
     try:
         is_live = os.environ["FABRICKS_IS_LIVE"] == "TRUE"

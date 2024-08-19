@@ -5,10 +5,10 @@ from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, lit, when
 
-from fabricks.core.parsers import BaseParser, ParserOptions
-from fabricks.utils.helpers import concat_dfs
-from fabricks.utils.path import Path
-from fabricks.utils.read import read
+from framework.fabricks.core.parsers import BaseParser, ParserOptions
+from framework.fabricks.utils.helpers import concat_dfs
+from framework.fabricks.utils.path import Path
+from framework.fabricks.utils.read import read
 
 
 class DeleteLogBaseParser(BaseParser):
@@ -48,10 +48,10 @@ class DeleteLogBaseParser(BaseParser):
 
     def _parse_delete_log(
         self,
-        stream: bool,
         data_path: Path,
         schema_path: Path,
         spark: SparkSession,
+        stream: bool,
     ) -> Optional[DataFrame]:
         data_path = data_path.append("__deletelog")
         schema_path = schema_path.append("__deletelog")
@@ -82,11 +82,11 @@ class DeleteLogBaseParser(BaseParser):
 
     def parse(
         self,
-        stream: bool,
         data_path: Path,
         schema_path: Path,
         spark: SparkSession,
-    ) -> Optional[DataFrame]:
+        stream: bool,
+    ) -> DataFrame:
         dfs = []
 
         df = self._parse(stream=stream, data_path=data_path, schema_path=schema_path, spark=spark)
@@ -95,12 +95,9 @@ class DeleteLogBaseParser(BaseParser):
         df_del = self._parse_delete_log(stream=stream, data_path=data_path, schema_path=schema_path, spark=spark)
         dfs.append(df_del)
 
-        if dfs:
-            df = concat_dfs(dfs)
-            df = self.add_timestamp_from_file_path(df)
-            df = self.nullify(df)
-            # avoid fake updates based on the BEL_UpdateDateUtc
-            df = df.drop("BEL_IsFullLoad", "BEL_UpdateDateUtc", "BEL_DeleteDateUtc")
-            return df
-
-        return None
+        df = concat_dfs(dfs)
+        df = self.add_timestamp_from_file_path(df)
+        df = self.nullify(df)
+        # avoid fake updates based on the BEL_UpdateDateUtc
+        df = df.drop("BEL_IsFullLoad", "BEL_UpdateDateUtc", "BEL_DeleteDateUtc")
+        return df

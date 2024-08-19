@@ -5,9 +5,9 @@ from uuid import uuid4
 from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame
 
-from fabricks.core.dags.base import BaseDags
-from fabricks.core.dags.log import DagsTableLogger
-from fabricks.utils.azure_queue import AzureQueue
+from framework.fabricks.core.dags.base import BaseDags
+from framework.fabricks.core.dags.log import DagsTableLogger
+from framework.fabricks.utils.azure_queue import AzureQueue
 
 
 class DagGenerator(BaseDags):

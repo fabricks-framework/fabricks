@@ -2,8 +2,8 @@ from typing import List, Optional, Union, get_args
 
 from pyspark.sql import DataFrame
 
-from fabricks.utils.path import Path
-from fabricks.utils.read.types import IOModes
+from framework.fabricks.utils.path import Path
+from framework.fabricks.utils.read.types import IOModes
 
 
 def write_delta(

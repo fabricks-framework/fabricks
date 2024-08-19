@@ -1,8 +1,7 @@
 # Databricks notebook source
 from databricks.sdk.runtime import dbutils
-from pyspark.errors.exceptions.base import IllegalArgumentException
-
 from fabricks.core.scripts import terminate
+from pyspark.errors.exceptions.base import IllegalArgumentException
 
 # COMMAND ----------
 
@@ -24,4 +23,4 @@ terminate(schedule_id=schedule_id)
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

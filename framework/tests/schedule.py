@@ -2,15 +2,15 @@
 from logging import DEBUG
 from typing import Any, cast
 
+import fabricks.core.scripts as s
 from databricks.sdk.runtime import dbutils, display
 
-import fabricks.core.scripts as s
-from fabricks.context.log import Logger
-from fabricks.context.runtime import PATH_NOTEBOOKS
-from fabricks.core import get_step
-from fabricks.core.jobs.base.types import TStep
-from fabricks.utils.helpers import run_in_parallel, run_notebook
-from tests.types import steps
+from framework.fabricks.context.log import Logger
+from framework.fabricks.context.runtime import PATH_NOTEBOOKS
+from framework.fabricks.core import get_step
+from framework.fabricks.core.jobs.base.types import TStep
+from framework.fabricks.utils.helpers import run_in_parallel, run_notebook
+from framework.tests.types import steps
 
 # COMMAND ----------
 
@@ -69,4 +69,4 @@ if terminate:
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

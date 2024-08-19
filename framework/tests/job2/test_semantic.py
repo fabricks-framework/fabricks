@@ -2,8 +2,8 @@ from logging import ERROR
 
 import pytest
 
-from fabricks.context.log import Logger
-from fabricks.metastore.table import Table
+from framework.fabricks.context.log import Logger
+from framework.fabricks.metastore.table import Table
 
 Logger.setLevel(ERROR)
 

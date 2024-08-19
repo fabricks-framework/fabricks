@@ -3,9 +3,9 @@ from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context.log import Logger
-from fabricks.core.scripts.armageddon import armageddon
-from tests.types import steps
+from framework.fabricks.context.log import Logger
+from framework.fabricks.core.scripts.armageddon import armageddon
+from framework.tests.types import steps
 
 # COMMAND ----------
 
@@ -17,4 +17,4 @@ armageddon(steps=steps)
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

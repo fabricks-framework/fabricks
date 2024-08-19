@@ -3,15 +3,15 @@ from typing import Optional, cast
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr
 
-from fabricks.cdc.nocdc import NoCDC
-from fabricks.context.log import Logger
-from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.jobs.base.types import TBronze, TSilver
-from fabricks.core.jobs.bronze import Bronze
-from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.utils.helpers import concat_dfs
-from fabricks.utils.read.read import read
-from fabricks.utils.sqlglot import fix as fix_sql
+from framework.fabricks.cdc.nocdc import NoCDC
+from framework.fabricks.context.log import Logger
+from framework.fabricks.core.jobs.base.job import BaseJob
+from framework.fabricks.core.jobs.base.types import TBronze, TSilver
+from framework.fabricks.core.jobs.bronze import Bronze
+from framework.fabricks.metastore.view import create_or_replace_global_temp_view
+from framework.fabricks.utils.helpers import concat_dfs
+from framework.fabricks.utils.read.read import read
+from framework.fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Silver(BaseJob):
@@ -87,7 +87,7 @@ class Silver(BaseJob):
             )
         return df
 
-    def get_data(self, stream: bool = True, transform: Optional[bool] = False) -> DataFrame:
+    def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> DataFrame:
         dep_df = self.get_dependencies()
         assert dep_df, "not dependency found"
         dep_df = dep_df.orderBy("parent_id")
@@ -123,9 +123,11 @@ class Silver(BaseJob):
                             metadata=False,
                             spark=self.spark,
                         )
-                    if dependencies > 1:
-                        assert "__source" in df.columns, "__source not found"
-                    dfs.append(df)
+
+                    if df:
+                        if dependencies > 1:
+                            assert "__source" in df.columns, "__source not found"
+                        dfs.append(df)
                 except Exception as e:
                     Logger.exception("🙈", extra={"job": self})
                     raise e
@@ -220,7 +222,7 @@ class Silver(BaseJob):
         self.truncate()
         self.run()
 
-    def overwrite_schema(self):
+    def overwrite_schema(self, df: Optional[DataFrame] = None):
         Logger.warning("overwrite schema not allowed", extra={"job": self})
 
     def get_cdc_context(self, df: DataFrame) -> dict:

@@ -6,7 +6,7 @@ from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql import DataFrame
 from typing_extensions import deprecated
 
-from fabricks.utils.path import Path
+from framework.fabricks.utils.path import Path
 
 
 def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str:

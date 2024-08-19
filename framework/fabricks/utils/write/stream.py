@@ -3,7 +3,7 @@ from typing import Callable, Optional
 from pyspark.sql import DataFrame
 from pyspark.sql.streaming.query import StreamingQuery
 
-from fabricks.utils.path import Path
+from framework.fabricks.utils.path import Path
 
 
 def write_stream(

@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import List, Literal, Optional, TypedDict, Union
 
-from fabricks.cdc.base.types import ChangeDataCaptures
-from fabricks.context import BRONZE, GOLD, SILVER
-from fabricks.core.parsers import ParserOptions
-from fabricks.utils.fdict import FDict
-from fabricks.utils.path import Path
+from framework.fabricks.cdc.base.types import ChangeDataCaptures
+from framework.fabricks.context import BRONZE, GOLD, SILVER
+from framework.fabricks.core.parsers import ParserOptions
+from framework.fabricks.utils.fdict import FDict
+from framework.fabricks.utils.path import Path
 
 TBronze = Literal["bronze"]
 TSilver = Literal["silver"]
@@ -119,7 +119,6 @@ StepOptions = Union[BronzeOptions, SilverOptions, GoldOptions]
 
 @dataclass
 class BaseJobConf:
-    step: TStep
     job_id: str
     topic: str
     item: str

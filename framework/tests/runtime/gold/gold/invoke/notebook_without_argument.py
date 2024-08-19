@@ -21,4 +21,4 @@ assert item == "notebook_without_argument"
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

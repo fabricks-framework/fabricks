@@ -1,6 +1,5 @@
 # Databricks notebook source
 from databricks.sdk.runtime import dbutils, display
-
 from fabricks.core.scripts import generate
 
 # COMMAND ----------
@@ -35,4 +34,4 @@ dbutils.jobs.taskValues.set(key="schedule", value=schedule)
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

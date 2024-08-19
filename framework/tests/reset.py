@@ -4,11 +4,11 @@ from logging import DEBUG
 from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql import Row
 
-from fabricks.context.log import Logger
-from fabricks.core import get_job
-from fabricks.utils.helpers import run_in_parallel
-from tests.types import paths
-from tests.utils import landing_to_raw
+from framework.fabricks.context.log import Logger
+from framework.fabricks.core import get_job
+from framework.fabricks.utils.helpers import run_in_parallel
+from framework.tests.types import paths
+from framework.tests.utils import landing_to_raw
 
 # COMMAND ----------
 
@@ -49,7 +49,7 @@ def _reset(row: Row):
 
 # COMMAND ----------
 
-df = spark.sql("select * from fabricks.jobs")
+df = spark.sql("select * from framework.fabricks.jobs")
 
 # COMMAND ----------
 
@@ -57,4 +57,4 @@ run_in_parallel(_reset, df, workers=16)
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # type: ignore
