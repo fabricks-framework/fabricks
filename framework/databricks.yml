@@ -3,6 +3,10 @@
 # the "targets" top-level mapping.
 bundle:  # Required.
   name: fabricks_test
+artifacts:
+  fabricks_tool:
+    build: poetry build
+    type: whl
 resources:
   jobs:
     fabricks_test_job:
