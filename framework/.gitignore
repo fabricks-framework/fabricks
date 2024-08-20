@@ -171,3 +171,13 @@ _build
 _buildtest
 *.exe
 .databricks
+
+# Visual Studio Code
+.vscode
+
+# Ruff
+.ruff_cache
+
+# Debug
+🔧.*
+🔎.*

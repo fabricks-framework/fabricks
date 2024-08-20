@@ -119,7 +119,6 @@ StepOptions = Union[BronzeOptions, SilverOptions, GoldOptions]
 
 @dataclass
 class BaseJobConf:
-    step: TStep
     job_id: str
     topic: str
     item: str

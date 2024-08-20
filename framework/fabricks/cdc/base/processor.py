@@ -13,7 +13,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Processor(Generator):
-    def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[DataFrame]:
+    def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
         if isinstance(src, DataFrame):
             name = f"{self.database}_{'_'.join(self.levels)}__data"
             global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False))

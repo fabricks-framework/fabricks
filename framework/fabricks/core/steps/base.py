@@ -142,9 +142,9 @@ class BaseStep:
             job = get_job(step=self.name, job_id=row["job_id"])
             try:
                 df = job.get_dependencies()
+                return df
             except:  # noqa E722
                 errors.append(job)
-            return df
 
         job_df = self.get_jobs()
         if job_df:

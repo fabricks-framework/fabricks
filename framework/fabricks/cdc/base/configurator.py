@@ -48,6 +48,7 @@ class Configurator(ABC):
     def create_table(
         self,
         src: Union[DataFrame, Table, str],
+        partitioning: Optional[bool] = False,
         partition_by: Optional[Union[List[str], str]] = None,
         identity: Optional[bool] = False,
         liquid_clustering: Optional[bool] = False,
@@ -62,7 +63,7 @@ class Configurator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def create_or_replace_view(self, query: Optional[str] = None):
+    def create_or_replace_view(self, src: Union[Table, str], **kwargs):
         raise NotImplementedError()
 
     @property
@@ -134,11 +135,11 @@ class Configurator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def update_schema(self, **kwargs):
+    def update_schema(self, src: Union[DataFrame, Table, str], **kwargs):
         raise NotImplementedError()
 
     @abstractmethod
-    def overwrite_schema(self):
+    def overwrite_schema(self, src: Union[DataFrame, Table, str]):
         raise NotImplementedError()
 
     def __str__(self):

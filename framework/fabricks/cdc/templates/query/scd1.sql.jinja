@@ -42,8 +42,7 @@ __scd1_last_key as (
 __scd1 as (
     select
         *,
-        __scd1_next_operation <=> 'delete'
-        or __operation == 'delete' as __is_deleted,
+        __scd1_next_operation <=> 'delete' or __operation == 'delete' as __is_deleted,
         not (__scd1_next_operation <=> 'delete' or __operation == 'delete') as __is_current
     from __scd1_last_key
     where true and __scd1_rn == 1
@@ -80,8 +79,8 @@ __scd1 as (
     {% if has_rows %}
         __scd1_no_fake_update as (
             select *
-            from __merge_condition m left
-            anti join
+            from __merge_condition m
+            left anti join
                 __current c on m.__key == c.__key and m.__hash = c.__hash
                 {% if has_source %} and m.__source = c.__source {% endif %} and m.__operation == 'upsert'
         ),

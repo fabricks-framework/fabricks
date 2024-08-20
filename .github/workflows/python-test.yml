@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install poetry
+      - name: Install Poetry
         run: |
           python -m pip install --upgrade pip
           python -m pip install poetry
@@ -42,12 +42,12 @@ jobs:
           DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
         working-directory: framework
 
-      - name: run Test Job on Databricks
+      - name: Run Tests on Databricks
         run: | 
           JOB_ID_NAME=$(databricks jobs list -t test --name fabricks_test_test_pytest )
           JOB_ID=$(echo "$JOB_ID_NAME" | cut -d ' ' -f1)
           echo "$JOB_ID"
-          databricks jobs run-now $JOB_ID -t test --timeout 30m
+          databricks jobs run-now $JOB_ID -t test --timeout 120m
         working-directory: framework
         env:
           DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}

@@ -33,7 +33,7 @@ jobs:
     - name: Install Poetry
       run: poetry install --all-extras
       working-directory: framework
-    - name: Build package
+    - name: Build Package
       run: poetry build -o ../dist
       working-directory: framework
     - name: Publish package to PyPI

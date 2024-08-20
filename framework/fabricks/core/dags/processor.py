@@ -19,17 +19,24 @@ class DagProcessor(BaseDags):
     def __init__(self, schedule_id: str, schedule: str, step: Union[TStep, str]):
         self.step = get_step(step=step)
         self.schedule = schedule
-
+        self._azure_queue = None
+        self._azure_table = None
         super().__init__(schedule_id=schedule_id)
 
     @property
     def queue(self) -> AzureQueue:
-        step = self.remove_invalid_characters(str(self.step))
-        return AzureQueue(f"q{step}{self.schedule_id}", connection_string=self.get_connection_string())
+        if not self._azure_queue:
+            step = self.remove_invalid_characters(str(self.step))
+            self._azure_queue = AzureQueue(
+                f"q{step}{self.schedule_id}", connection_string=self.get_connection_string()
+            )
+        return self._azure_queue
 
     @property
     def table(self) -> AzureTable:
-        return AzureTable(f"t{self.schedule_id}", connection_string=self.get_connection_string())
+        if not self._azure_table:
+            self._azure_table = AzureTable(f"t{self.schedule_id}", connection_string=self.get_connection_string())
+        return self._azure_table
 
     def extra(self, d: dict) -> dict:
         return {
@@ -77,17 +84,17 @@ class DagProcessor(BaseDags):
                 DagsLogger.info("starting", extra=self.extra(j))
 
                 try:
-                    dbutils.notebook.run( # type: ignore
-                        PATH_NOTEBOOKS.join("run").get_notebook_path(), # type: ignore
-                        self.step.timeouts.job, # type: ignore
+                    dbutils.notebook.run(  # type: ignore
+                        PATH_NOTEBOOKS.join("run").get_notebook_path(),  # type: ignore
+                        self.step.timeouts.job,  # type: ignore
                         {
                             "schedule_id": self.schedule_id,
                             "schedule": self.schedule,  # needed to pass schedule variables to the job
                             "step": str(self.step),
                             "job_id": j.get("JobId"),
                             "job": j.get("Job"),
-                        }, # type: ignore
-                    ) # type: ignore
+                        },  # type: ignore
+                    )  # type: ignore
 
                 except Exception:
                     DagsLogger.warning("🤯 (failed)", extra={"step": str(self.step), "job": j.get("Job")})
@@ -161,3 +168,13 @@ class DagProcessor(BaseDags):
 
     def __str__(self) -> str:
         return f"{str(self.step)} ({self.schedule_id})"
+
+    def __enter__(self):
+        return super().__enter__()
+
+    def __exit__(self, *args, **kwargs):
+        if self._azure_queue:
+            self._azure_queue.__exit__()
+        if self._azure_table:
+            self._azure_table.__exit__()
+        return super().__exit__(*args, **kwargs)

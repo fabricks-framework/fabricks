@@ -153,7 +153,7 @@ class Bronze(BaseJob):
             )
         return df
 
-    def get_data(self, stream: bool = False, transform: bool = False) -> DataFrame:
+    def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> Optional[DataFrame]:
         df = self.parse(stream)
         df = self.filter_where(df)
         df = self.encrypt(df)
@@ -254,7 +254,7 @@ class Bronze(BaseJob):
     def create_or_replace_view(self):
         Logger.warning("create or replace view not allowed", extra={"job": self})
 
-    def overwrite_schema(self):
+    def overwrite_schema(self, df: Optional[DataFrame] = None):
         Logger.warning("schema overwrite not allowed", extra={"job": self})
 
     def get_cdc_context(self, df: DataFrame) -> dict:
@@ -304,7 +304,7 @@ class Bronze(BaseJob):
         else:
             super().truncate()
 
-    def restore(self):
+    def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
         if self.mode == "register":
             Logger.info("register (no restore)", extra={"job": self})
         else:

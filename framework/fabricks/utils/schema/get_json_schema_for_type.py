@@ -44,11 +44,11 @@ def _get_json_schema_for_type(proptype: Type, def_list: dict[str, dict], is_root
     if (sys.version_info >= (3, 10) and isinstance(proptype, types.UnionType)) or (
         hasattr(proptype, "__origin__") and proptype.__origin__ == Union
     ):
-        if len(proptype.__args__) == 2 and proptype.__args__[0] == type(None):
+        if len(proptype.__args__) == 2 and proptype.__args__[0] == type(None):  # noqa E721
             t = _get_json_schema_for_type(proptype.__args__[1], def_list, is_root=False, is_nullable=True)
             return t
 
-        if len(proptype.__args__) == 2 and proptype.__args__[1] == type(None):
+        if len(proptype.__args__) == 2 and proptype.__args__[1] == type(None):  # noqa E721
             t = _get_json_schema_for_type(proptype.__args__[0], def_list, is_root=False, is_nullable=True)
             return t
 
@@ -58,7 +58,7 @@ def _get_json_schema_for_type(proptype: Type, def_list: dict[str, dict], is_root
 
         return {"oneOf": one_of_types}
 
-    if proptype == type(None):
+    if proptype == type(None):  # noqa E721
         return {"type": "null"}
 
     if proptype == str:  # noqa E721

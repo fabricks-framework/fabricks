@@ -87,7 +87,7 @@ class Silver(BaseJob):
             )
         return df
 
-    def get_data(self, stream: bool = True, transform: Optional[bool] = False) -> DataFrame:
+    def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> DataFrame:
         dep_df = self.get_dependencies()
         assert dep_df, "not dependency found"
         dep_df = dep_df.orderBy("parent_id")
@@ -123,9 +123,11 @@ class Silver(BaseJob):
                             metadata=False,
                             spark=self.spark,
                         )
-                    if dependencies > 1:
-                        assert "__source" in df.columns, "__source not found"
-                    dfs.append(df)
+
+                    if df:
+                        if dependencies > 1:
+                            assert "__source" in df.columns, "__source not found"
+                        dfs.append(df)
                 except Exception as e:
                     Logger.exception("🙈", extra={"job": self})
                     raise e
@@ -220,7 +222,7 @@ class Silver(BaseJob):
         self.truncate()
         self.run()
 
-    def overwrite_schema(self):
+    def overwrite_schema(self, df: Optional[DataFrame] = None):
         Logger.warning("overwrite schema not allowed", extra={"job": self})
 
     def get_cdc_context(self, df: DataFrame) -> dict:

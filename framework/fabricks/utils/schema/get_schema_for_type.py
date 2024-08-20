@@ -53,14 +53,14 @@ def get_schema_for_type(proptype: Type) -> DataType:  # type: ignore
         return get_schema_for_type(type(proptype.__args__[0]))  # For literal types we assume first type is correct
 
     if hasattr(proptype, "__origin__") and proptype.__origin__ == Union:
-        if len(proptype.__args__) == 2 and proptype.__args__[0] == type(None):
+        if len(proptype.__args__) == 2 and proptype.__args__[0] == type(None):  # noqa E721
             return get_schema_for_type(proptype.__args__[1])
-        if len(proptype.__args__) == 2 and proptype.__args__[1] == type(None):
+        if len(proptype.__args__) == 2 and proptype.__args__[1] == type(None):  # noqa E721
             return get_schema_for_type(proptype.__args__[0])
 
         return _merge_struct_types([get_schema_for_type(f) for f in proptype.__args__])
 
-    if proptype == type(None):
+    if proptype == type(None):  # noqa E721
         return NullType()
 
     if proptype == str:  # noqa E721

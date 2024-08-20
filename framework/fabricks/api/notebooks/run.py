@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run ./add_fabricks
+
+# COMMAND ----------
+
 import json
 
 from databricks.sdk.runtime import dbutils
@@ -84,4 +88,4 @@ finally:
 
 # COMMAND ----------
 
-dbutils.notebook.exit("exit (0)")
+dbutils.notebook.exit(value="exit (0)")  # type: ignore
