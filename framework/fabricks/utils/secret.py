@@ -27,7 +27,7 @@ class AccessKey(Secret):
 _scopes = None
 
 
-@lru_cache(maxsize=128)
+@lru_cache(maxsize=None)
 def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
     global _scopes
     if not _scopes or secret_scope not in _scopes:  # we get the scopes only once, unless you search for something new
