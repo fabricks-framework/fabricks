@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from functools import lru_cache
 
 from databricks.sdk.runtime import dbutils, spark
 
@@ -26,6 +27,7 @@ class AccessKey(Secret):
 _scopes = None
 
 
+@lru_cache(maxsize=None)
 def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
     global _scopes
     if not _scopes or secret_scope not in _scopes:  # we get the scopes only once, unless you search for something new
