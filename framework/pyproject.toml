@@ -7,8 +7,8 @@ readme = "README.md"
 packages = [{ include = "fabricks" }]
 
 [tool.poetry.dependencies]
-azure-identity = ">=1.10.0"
 azure-data-tables = "^12.5.0"
+azure-identity = ">=1.10.0"
 azure-storage-blob = ">=12.14.1"
 azure-storage-queue = "^12.10.0"
 databricks-connect = ">=11.0.0"
@@ -16,6 +16,7 @@ databricks-sdk = ">=0.29.0"
 jinja2 = ">=2.11.3"
 python = ">=3.9,<4"
 python-dotenv = ">=1.0.1"
+pyyaml = "^6.0.2"
 sqlglot = ">=22.1.1"
 
 [tool.poetry.group.build.dependencies]
