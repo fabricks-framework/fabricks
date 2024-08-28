@@ -28,7 +28,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install poetry
       - name: Install dependencies
-        run: poetry install --all-extras --with test
+        run: poetry install --all-extras --with test,dev
         working-directory: framework
       
       - name: Pyright
