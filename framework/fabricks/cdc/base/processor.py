@@ -76,6 +76,10 @@ class Processor(Generator):
             if mode == "update" and has_timestamp and has_rows:
                 filter = "update"
 
+        # override filter if update and table is empty
+        if filter == "update" and not has_rows:
+            filter = None
+
         if self.slowly_changing_dimension:
             if deduplicate is None:
                 deduplicate = True
