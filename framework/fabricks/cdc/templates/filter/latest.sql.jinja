@@ -1,0 +1,3 @@
+select {% if has_source %} t.__source, {% endif %} max(t.__timestamp) as __max_timestamp
+from {{ parent_filter }} t
+{% if has_source %} group by t.__source {% endif %}

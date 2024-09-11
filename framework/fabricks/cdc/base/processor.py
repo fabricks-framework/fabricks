@@ -273,6 +273,12 @@ class Processor(Generator):
     def get_query(self, src: Union[DataFrame, Table, str], fix: Optional[bool] = True, **kwargs) -> str:
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
+
+        if context.get("filter"):
+            filter = environment.get_template("filter.sql.jinja")
+            sql = filter.render(**context)
+            print(sql)
+
         query = environment.get_template("query.sql.jinja")
 
         try:
