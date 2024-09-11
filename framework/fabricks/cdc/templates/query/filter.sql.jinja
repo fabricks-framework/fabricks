@@ -9,7 +9,5 @@ __filtered as (
         {% if has_metadata %} s.__metadata, {% endif %}
         {% if has_rescued_data %} __rescued_data, {% endif %}
     from {{ parent_filter }} s
-    where
-        true
-        and ({{ filter }})
+    where true and ({{ filter }})
 ),

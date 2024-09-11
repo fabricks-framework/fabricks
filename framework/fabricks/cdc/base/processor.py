@@ -297,7 +297,6 @@ class Processor(Generator):
 
         return self.spark.sql(sql).collect()[0][0]
 
-    
     def get_query(self, src: Union[DataFrame, Table, str], fix: Optional[bool] = True, **kwargs) -> str:
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
