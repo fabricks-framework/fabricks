@@ -1,4 +1,4 @@
-__final as (
+__update as (
     select
         {% if has_source %} s.__source,
         {% endif %}
@@ -16,4 +16,16 @@ __final as (
     {% if has_source %}
         group by s.__source
     {% endif %}
+),
+__final as (
+  select 
+        concat_ws(
+          ' ',
+          ' (', 
+          concat('s.__timestamp > \'', `__max_timestamp`, '\''),
+          {% if has_source %} concat('and s.__source == \'', `__source`, '\''), {% endif %}
+          ' )'
+      ) as `filters`
+  from 
+    __update
 )

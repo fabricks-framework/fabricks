@@ -11,5 +11,5 @@ __filtered as (
     from {{ parent_filter }} s
     where
         true
-        and {{ filter }}
-)
+        and ({{ filter }})
+),

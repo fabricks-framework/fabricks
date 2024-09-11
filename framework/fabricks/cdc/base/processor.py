@@ -270,34 +270,52 @@ class Processor(Generator):
             "parent_final": parent_final,
         }
 
+    def fix_sql(self, sql: str) -> str:
+        try:
+            sql = sql.replace("{src}", "src")
+            sql = fix_sql(sql)
+            sql = sql.replace("`src`", "{src}")
+            Logger.debug("query", extra={"job": self, "sql": sql, "target": "buffer"})
+            return sql
+        except Exception as e:
+            Logger.exception("🙈", extra={"job": self, "sql": sql})
+            raise e
+
+    def get_query_filter(self, context: dict, fix: Optional[bool] = True, **kwargs) -> str:
+        environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
+        template = environment.get_template("filter.sql.jinja")
+
+        try:
+            sql = template.render(**context)
+            if fix:
+                sql = self.fix_sql(sql)
+            else:
+                Logger.debug("query", extra={"job": self, "sql": sql})
+        except Exception as e:
+            Logger.exception("🙈", extra={"job": self, "context": context})
+            raise e
+
+        return self.spark.sql(sql).collect()[0][0]
+
+    
     def get_query(self, src: Union[DataFrame, Table, str], fix: Optional[bool] = True, **kwargs) -> str:
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
         if context.get("filter"):
-            filter = environment.get_template("filter.sql.jinja")
-            sql = filter.render(**context)
-            print(sql)
+            query_filter = self.get_query_filter(context, fix=fix, **kwargs)
+            context["filter"] = query_filter
 
-        query = environment.get_template("query.sql.jinja")
-
+        template = environment.get_template("query.sql.jinja")
         try:
-            sql = query.render(**context)
+            sql = template.render(**context)
+            if fix:
+                sql = self.fix_sql(sql)
+            else:
+                Logger.debug("query", extra={"job": self, "sql": sql})
         except Exception as e:
             Logger.exception("🙈", extra={"job": self, "context": context})
             raise e
-
-        if fix:
-            try:
-                sql = sql.replace("{src}", "src")
-                sql = fix_sql(sql)
-                sql = sql.replace("`src`", "{src}")
-                Logger.debug("query", extra={"job": self, "sql": sql, "target": "buffer"})
-            except Exception as e:
-                Logger.exception("🙈", extra={"job": self, "sql": sql})
-                raise e
-        else:
-            Logger.debug("query", extra={"job": self, "sql": sql})
 
         return sql
 

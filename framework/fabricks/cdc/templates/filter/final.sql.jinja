@@ -1,0 +1,7 @@
+select 
+    array_join(
+      collect_list(`filters`),
+      ' or '
+    ) as `output`
+from
+  __final
