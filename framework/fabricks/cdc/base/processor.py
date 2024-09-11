@@ -64,7 +64,7 @@ class Processor(Generator):
         except Exception:
             has_rows = None
 
-        filter = kwargs.get("filter", None)
+        slice = kwargs.get("slice", None)
         rectify = kwargs.get("rectify", None)
         deduplicate = kwargs.get("deduplicate", None)
         deduplicate_key = kwargs.get("deduplicate_key", None)
@@ -72,13 +72,13 @@ class Processor(Generator):
         soft_delete = kwargs.get("soft_delete", None)
         fix_valid_from = kwargs.get("fix_valid_from", None)
 
-        if filter is None:
+        if slice is None:
             if mode == "update" and has_timestamp and has_rows:
-                filter = "update"
+                slice = "update"
 
-        # override filter if update and table is empty
-        if filter == "update" and not has_rows:
-            filter = None
+        # override slice if update and table is empty
+        if slice == "update" and not has_rows:
+            slice = None
 
         if self.slowly_changing_dimension:
             if deduplicate is None:
@@ -92,7 +92,7 @@ class Processor(Generator):
         if self.slowly_changing_dimension and mode == "update":
             fix_valid_from = fix_valid_from and self.table.rows == 0
 
-        transformed = filter or rectify or deduplicate or deduplicate_key or deduplicate_hash
+        transformed = slice or rectify or deduplicate or deduplicate_key or deduplicate_hash
 
         if deduplicate:
             deduplicate_key = True
@@ -138,14 +138,14 @@ class Processor(Generator):
         if add_metadata and "__metadata" in columns:
             all_overwrite.append("__metadata")
 
-        parent_filter = None
-        if filter:
-            parent_filter = "__base"
+        parent_slice = None
+        if slice:
+            parent_slice = "__base"
 
         parent_deduplicate_key = None
         if deduplicate_key:
-            if filter:
-                parent_deduplicate_key = "__filtered"
+            if slice:
+                parent_deduplicate_key = "__sliced"
             else:
                 parent_deduplicate_key = "__base"
 
@@ -153,8 +153,8 @@ class Processor(Generator):
         if rectify:
             if deduplicate_key:
                 parent_rectify = "__deduplicated_key"
-            elif filter:
-                parent_rectify = "__filtered"
+            elif slice:
+                parent_rectify = "__sliced"
             else:
                 parent_rectify = "__base"
 
@@ -164,8 +164,8 @@ class Processor(Generator):
                 parent_deduplicate_hash = "__rectified"
             elif deduplicate_key:
                 parent_deduplicate_hash = "__deduplicated_key"
-            elif filter:
-                parent_deduplicate_hash = "__filtered"
+            elif slice:
+                parent_deduplicate_hash = "__sliced"
             else:
                 parent_deduplicate_hash = "__base"
 
@@ -176,8 +176,8 @@ class Processor(Generator):
             parent_cdc = "__rectified"
         elif deduplicate_key:
             parent_cdc = "__deduplicated_key"
-        elif filter:
-            parent_cdc = "__filtered"
+        elif slice:
+            parent_cdc = "__sliced"
         else:
             parent_cdc = "__base"
 
@@ -226,7 +226,7 @@ class Processor(Generator):
             "keys": keys,
             "hashes": hashes,
             # options
-            "filter": filter,
+            "slice": slice,
             "rectify": rectify,
             "deduplicate": deduplicate,
             # extra
@@ -259,10 +259,12 @@ class Processor(Generator):
             "all_except": all_except,
             "all_overwrite": all_overwrite,
             # filter
+            "slices": None,
+            "sources": None,
             "filter_where": kwargs.get("filter_where"),
             "update_where": kwargs.get("update_where"),
             # parents
-            "parent_filter": parent_filter,
+            "parent_slice": parent_slice,
             "parent_rectify": parent_rectify,
             "parent_deduplicate_key": parent_deduplicate_key,
             "parent_deduplicate_hash": parent_deduplicate_hash,
@@ -281,7 +283,7 @@ class Processor(Generator):
             Logger.exception("🙈", extra={"job": self, "sql": sql})
             raise e
 
-    def get_query_filter(self, context: dict, fix: Optional[bool] = True, **kwargs) -> str:
+    def fix_context(self, context: dict, fix: Optional[bool] = True, **kwargs) -> dict:
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
         template = environment.get_template("filter.sql.jinja")
 
@@ -295,15 +297,22 @@ class Processor(Generator):
             Logger.exception("🙈", extra={"job": self, "context": context})
             raise e
 
-        return self.spark.sql(sql).collect()[0][0]
+        df = self.spark.sql(sql)
+        if context.get("slice"):
+            row = df.where("slices is not null").collect()[0]
+            context["slices"] = row.slices
+        if context.get("has_source"):
+            row = df.where("sources is not null").collect()[0]
+            context["sources"] = row.sources
+
+        return context
 
     def get_query(self, src: Union[DataFrame, Table, str], fix: Optional[bool] = True, **kwargs) -> str:
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
-        if context.get("filter"):
-            query_filter = self.get_query_filter(context, fix=fix, **kwargs)
-            context["filter"] = query_filter
+        if context.get("filter") or context.get("filter_where"):
+            context = self.fix_context(context, fix=fix, **kwargs)
 
         template = environment.get_template("query.sql.jinja")
         try:

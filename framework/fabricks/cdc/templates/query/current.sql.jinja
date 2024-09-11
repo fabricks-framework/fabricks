@@ -27,6 +27,6 @@ __current as (
         true
         {% if cdc == "scd2" %} and __is_current {% endif %}
         {% if cdc == "scd1" %} {% if soft_delete %} and __is_current {% endif %} {% endif %}
-        {% if has_source %} and exists (select 1 from __base s where s.__source == t.__source) {% endif %}
+        {% if has_source %} and ({{ sources }}) {% endif %}
         {% if update_where %} and {{ update_where }} {% endif %}
 ),

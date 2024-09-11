@@ -11,7 +11,7 @@ __update as (
             coalesce(max(t.__valid_from), cast('0001-01-01' as timestamp)) as __max_timestamp
         {% endif %}
     from {{ tgt }} t
-    {% if has_source %} right join {{ parent_filter }} s on s.__source == t.__source {% endif %}
+    {% if has_source %} right join {{ parent_slice }} s on s.__source == t.__source {% endif %}
     where true
     {% if has_source %} group by s.__source {% endif %}
 ),
@@ -23,6 +23,6 @@ __final as (
             concat('s.__timestamp > \'', `__max_timestamp`, '\''),
             {% if has_source %} concat('and s.__source == \'', `__source`, '\''), {% endif %}
             ' )'
-        ) as `filters`
+        ) as `slices`
     from __update
 )

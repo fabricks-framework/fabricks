@@ -10,8 +10,10 @@
 🗹 cdc: {{cdc}}{% endif %}
 {%- if mode %}
 🗹 mode: {{mode}}{% endif %}
-{%- if filter %}
-🗹 filter: {{filter}}{% endif %}
+{%- if slice %}
+🗹 slice: {{slice}}{% endif %}
+{%- if slices %}
+🗹 slices: {{slices}}{% endif %}
 {%- if rectify %}
 🗹 rectify: {{rectify}}{% endif %}
 {%- if deduplicate %}
@@ -29,6 +31,8 @@
 {%- if has_source %}
 🗹 has_source: {{has_source}}{% endif %}
 {%- if has_metadata %}
+{%- if sources %}
+🗹 sources: {{sources}}{% endif %}
 🗹 has_metadata: {{has_metadata}}{% endif %}
 {%- if has_timestamp %}
 🗹 has_timestamp: {{has_timestamp}}{% endif %}
@@ -66,8 +70,8 @@
 🗹 filter_where: {{filter_where}}{% endif %}
 {%- if update_where %}
 🗹 update_where: {{update_where}}{% endif %}
-{%- if parent_filter %}
-🗹 parent_filter: {{parent_filter}}{% endif %}
+{%- if parent_slice %}
+🗹 parent_slice: {{parent_slice}}{% endif %}
 {%- if parent_rectify %}
 🗹 parent_rectify: {{parent_rectify}}{% endif %}
 {%- if parent_deduplicate_key %}

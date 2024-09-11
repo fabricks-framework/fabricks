@@ -1,4 +1,5 @@
 {% include 'query/base.sql.jinja' %}
 {% if filter == "update" %} {% include 'filter/update.sql.jinja' %} {% endif %}
 {% if filter == "latest" %} {% include 'filter/latest.sql.jinja' %} {% endif %}
+{% if has_source %} {% include 'filter/slice.sql.jinja' %} {% endif %}
 {% include 'filter/final.sql.jinja' %}

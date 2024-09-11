@@ -1,4 +1,4 @@
-__filtered as (
+__sliced as (
     select
         {% for field in fields %} {{ field }}, {% endfor %}
         s.__operation,
@@ -8,6 +8,6 @@ __filtered as (
         {% if has_source %} s.__source, {% endif %}
         {% if has_metadata %} s.__metadata, {% endif %}
         {% if has_rescued_data %} __rescued_data, {% endif %}
-    from {{ parent_filter }} s
-    where true and ({{ filter }})
+    from {{ parent_slice }} s
+    where true and ({{ slices }})
 ),

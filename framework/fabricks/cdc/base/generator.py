@@ -27,7 +27,7 @@ class Generator(Configurator):
         **kwargs,
     ):
         kwargs["mode"] = "complete"
-        kwargs["filter"] = False
+        kwargs["slice"] = False
         kwargs["rectify"] = False
         kwargs["deduplicate"] = False
         df = self.get_data(src, **kwargs)
