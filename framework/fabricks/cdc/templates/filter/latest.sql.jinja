@@ -4,6 +4,7 @@ __latest as (
     {% if has_source %} group by t.__source {% endif %}
 )
 __final as (
+    select
     concat_ws(
         ' ',
         ' (',
