@@ -298,9 +298,10 @@ class Processor(Generator):
             raise e
 
         df = self.spark.sql(sql)
-        if context.get("slice"):
-            row = df.where("slices is not null").collect()[0]
-            context["slices"] = row.slices
+
+        row = df.where("slices is not null").collect()[0]
+        context["slices"] = row.slices
+        
         if context.get("has_source"):
             row = df.where("sources is not null").collect()[0]
             context["sources"] = row.sources
@@ -311,7 +312,7 @@ class Processor(Generator):
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
-        if context.get("slice") or context.get("has_source"):
+        if context.get("slice"):
             context = self.fix_context(context, fix=fix, **kwargs)
 
         template = environment.get_template("query.sql.jinja")
