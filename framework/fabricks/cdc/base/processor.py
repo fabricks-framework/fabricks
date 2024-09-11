@@ -292,7 +292,7 @@ class Processor(Generator):
             if fix:
                 sql = self.fix_sql(sql)
             else:
-                Logger.debug("query", extra={"job": self, "sql": sql})
+                Logger.debug("fix context", extra={"job": self, "sql": sql})
         except Exception as e:
             Logger.exception("🙈", extra={"job": self, "context": context})
             raise e
@@ -311,7 +311,7 @@ class Processor(Generator):
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
-        if context.get("filter") or context.get("filter_where"):
+        if context.get("slice") or context.get("has_source"):
             context = self.fix_context(context, fix=fix, **kwargs)
 
         template = environment.get_template("query.sql.jinja")
