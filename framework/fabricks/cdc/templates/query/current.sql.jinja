@@ -26,7 +26,9 @@ __current as (
     where
         true
         {% if cdc == "scd2" %} and __is_current {% endif %}
-        {% if cdc == "scd1" %} {% if soft_delete %} and __is_current {% endif %} {% endif %}
+        {% if cdc == "scd1" %}
+            {% if soft_delete %} and __is_current {% endif %}
+        {% endif %}
         {% if sources %} and ({{ sources }}) {% endif %}
         {% if update_where %} and {{ update_where }} {% endif %}
 ),

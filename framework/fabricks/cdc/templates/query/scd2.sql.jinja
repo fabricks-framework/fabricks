@@ -3,10 +3,12 @@ __scd2_base as (
         *,
         {% if not rectify %} __operation as __original_operation, {% endif %}
         lead(__operation) over (
-            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp
+            partition by {% if has_source %} __source, {% endif %} __key
+            order by __timestamp
         ) as __scd2_next_operation,
         lead(__timestamp) over (
-            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp
+            partition by {% if has_source %} __source, {% endif %} __key
+            order by __timestamp
         ) as __scd2_next_timestamp
     from {{ parent_cdc }}
 ),
@@ -14,18 +16,23 @@ __scd2 as (
     select
         *,
         __timestamp as __valid_from,
-        coalesce(__scd2_next_timestamp - interval 1 second, cast('9999-12-31' as timestamp)) as __valid_to,
+        coalesce(
+            __scd2_next_timestamp - interval 1 second, cast('9999-12-31' as timestamp)
+        ) as __valid_to,
         __operation <> 'delete' and __valid_to <=> '9999-12-31' as __is_current,
         __operation == 'delete' or __scd2_next_operation <=> 'delete' as __is_deleted,
         {% if mode == "update" %}
             row_number() over (
-                partition by __key{% if has_source %}, __source{% endif %} order by __timestamp asc
+                partition by __key{% if has_source %}, __source{% endif %}
+                order by __timestamp asc
             ) as __scd2_rn
         {% endif %}
     from __scd2_base
 ),
 {% if mode == "complete" %}
-    __complete as (select s.* from __scd2 s where true and not __operation <=> 'delete'),
+    __complete as (
+        select s.* from __scd2 s where true and not __operation <=> 'delete'
+    ),
     __final as (
         select
             {% for field in fields %} {{ field }}, {% endfor %},
@@ -50,7 +57,9 @@ __scd2 as (
         __scd2_no_fake_update as (
             select
                 * except (__scd2_rn),
-                row_number() over (partition by `__key` order by `__timestamp` asc) as `__scd2_rn`
+                row_number() over (
+                    partition by `__key` order by `__timestamp` asc
+                ) as `__scd2_rn`
             from __scd2 s
             left anti join
                 __current c on s.__key == c.__key and s.__hash == c.__hash
@@ -60,7 +69,10 @@ __scd2 as (
         ),
     {% endif %}
     __merge_condition as (
-        select s.*, if(__merge_condition == 'insert', null, __key) as __merge_key, o.__merge_condition
+        select
+            s.*,
+            if(__merge_condition == 'insert', null, __key) as __merge_key,
+            o.__merge_condition
         {% if has_rows %} from __scd2_no_fake_update s
         {% else %} from __scd2 s
         {% endif %}
@@ -76,7 +88,9 @@ __scd2 as (
             ) o
             on s.__operation = o.__operation
         -- only the first record can be an update or a delete
-        where (s.__scd2_rn == 1 and o.__merge_condition in ('update', 'delete')) or o.__merge_condition == 'insert'
+        where
+            (s.__scd2_rn == 1 and o.__merge_condition in ('update', 'delete'))
+            or o.__merge_condition == 'insert'
     ),
     __final as (
         select

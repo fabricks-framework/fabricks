@@ -2,7 +2,9 @@
 {% include 'query/base.sql.jinja' %}
 {% if slice %} {% include 'query/slice.sql.jinja' %} {% endif %}
 {% if deduplicate_key %} {% include 'query/deduplicate_key.sql.jinja' %} {% endif %}
-{% if mode == "update" %} {% if has_rows %} {% include 'query/current.sql.jinja' %} {% endif %} {% endif %}
+{% if mode == "update" %}
+    {% if has_rows %} {% include 'query/current.sql.jinja' %} {% endif %}
+{% endif %}
 {% if rectify %} {% include 'query/rectify.sql.jinja' %} {% endif %}
 {% if deduplicate_hash %} {% include 'query/deduplicate_hash.sql.jinja' %} {% endif %}
 {% if cdc == "nocdc" %} {% include 'query/nocdc.sql.jinja' %} {% endif %}
