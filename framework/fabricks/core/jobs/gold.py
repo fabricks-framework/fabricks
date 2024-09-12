@@ -157,7 +157,7 @@ class Gold(BaseJob):
                     context["add_operation"] = "upsert"
 
         if self.mode == "update" and self.change_data_capture == "scd2":
-            context["filter"] = "update"
+            context["slice"] = "update"
 
         if self.mode == "memory":
             context["mode"] = "complete"

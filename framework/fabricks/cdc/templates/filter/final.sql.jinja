@@ -1,0 +1,17 @@
+ {% if slice %}
+    select
+        array_join(collect_list(`slices`), ' or ') as `slices` ,
+        null as sources
+    from 
+    __final
+{% endif %}
+{%if slice and has_source %}
+    union all
+{% endif %}
+{% if has_source %}
+    select
+        null as slices,
+        array_join(collect_list(`sources`), ' or ') as `sources` 
+    from 
+    __source
+{% endif %}

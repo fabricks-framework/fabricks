@@ -1,0 +1,28 @@
+__update as (
+    select
+        {% if has_source %} s.__source, {% endif %}
+        {% if cdc == "nocdc" %}
+            coalesce(max(t.__timestamp), cast('0001-01-01' as timestamp)) as __max_timestamp
+        {% endif %}
+        {% if cdc == "scd1" %}
+            coalesce(max(t.__timestamp), cast('0001-01-01' as timestamp)) as __max_timestamp
+        {% endif %}
+        {% if cdc == "scd2" %}
+            coalesce(max(t.__valid_from), cast('0001-01-01' as timestamp)) as __max_timestamp
+        {% endif %}
+    from {{ tgt }} t
+    {% if has_source %} right join {{ parent_slice }} s on s.__source == t.__source {% endif %}
+    where true
+    {% if has_source %} group by s.__source {% endif %}
+),
+__final as (
+    select
+        concat_ws(
+            ' ',
+            ' (',
+            concat('s.__timestamp > \'', `__max_timestamp`, '\''),
+            {% if has_source %} concat('and s.__source == \'', `__source`, '\''), {% endif %}
+            ' )'
+        ) as `slices`
+    from __update
+)

@@ -1,0 +1,7 @@
+__source as (
+    select
+         concat('t.__source == \'', `__source`, '\'') as sources
+    from {{ parent_slice }}
+    group by all
+)
+ {% if slice %}, {% endif %}
