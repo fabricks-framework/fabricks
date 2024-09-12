@@ -1,9 +1,9 @@
-{% if has_source %} 
-__update_source as (
-    select __source, concat('t.__source == \'', `__source`, '\'') as sources
-    from {{ parent_slice }}
-    group by __source
-),
+{% if has_source %}
+    __update_source as (
+        select __source, concat('t.__source == \'', `__source`, '\'') as sources
+        from {{ parent_slice }}
+        group by __source
+    ),
 {% endif %}
 __update as (
     select
@@ -24,12 +24,12 @@ __update as (
 ),
 __final as (
     select
-        {% if has_source %}  sources, {% endif %}
+        {% if has_source %} sources, {% endif %}
         concat_ws(
             ' ',
             ' (',
             concat('s.__timestamp > \'', `__max_timestamp`, '\''),
-            {% if has_source %}  sources {% endif %}
+            {% if has_source %} sources {% endif %}
             ' )'
         ) as `slices`
     from __update
