@@ -5,16 +5,12 @@ __latest as (
 ),
 __final as (
     select
-        {% if has_source %}
-            concat('t.__source == \'', `__source`, '\'') as sources,
-        {% endif %}
+        {% if has_source %} concat('t.__source == \'', `__source`, '\'') as sources, {% endif %}
         concat_ws(
             ' ',
             ' (',
             concat('s.__timestamp == \'', `__max_timestamp`, '\''),
-            {% if has_source %}
-                concat('and s.__source == \'', `__source`, '\''),
-            {% endif %}
+            {% if has_source %} concat('and s.__source == \'', `__source`, '\''), {% endif %}
             ' )'
         ) as `slices`
     from __latest

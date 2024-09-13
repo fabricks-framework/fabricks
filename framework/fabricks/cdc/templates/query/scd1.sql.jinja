@@ -3,8 +3,7 @@ __scd1_base as (
         *,
         {% if not rectify %} __operation as __original_operation, {% endif %}
         lead(__operation) over (
-            partition by {% if has_source %} __source, {% endif %} __key
-            order by __timestamp asc
+            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp asc
         ) as __scd1_next_operation
     from {{ parent_cdc }}
 ),
@@ -13,8 +12,7 @@ __scd1_last_key as (
     select
         *,
         row_number() over (
-            partition by {% if has_source %} __source, {% endif %} __key
-            order by __timestamp desc
+            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp desc
         ) as __scd1_rn
     from __scd1_base
     where true and __operation == 'upsert'
@@ -25,8 +23,7 @@ __scd1_last_key as (
             select
                 *,
                 row_number() over (
-                    partition by {% if has_source %} __source, {% endif %} __key
-                    order by __timestamp asc
+                    partition by {% if has_source %} __source, {% endif %} __key order by __timestamp asc
                 ) as __scd1_rn
             from __scd1_base b
             where
@@ -37,8 +34,7 @@ __scd1_last_key as (
                     from __scd1_base b2
                     where
                         true and b.__key == b2.__key
-                        {% if has_source %} and b.__source == b2.__source {% endif %}
-                        and b2.__operation == 'upsert'
+                        {% if has_source %} and b.__source == b2.__source {% endif %} and b2.__operation == 'upsert'
                 )
         {% endif %}
     {% endif %}
@@ -47,9 +43,7 @@ __scd1 as (
     select
         *,
         __scd1_next_operation <=> 'delete' or __operation == 'delete' as __is_deleted,
-        not (
-            __scd1_next_operation <=> 'delete' or __operation == 'delete'
-        ) as __is_current
+        not (__scd1_next_operation <=> 'delete' or __operation == 'delete') as __is_current
     from __scd1_last_key
     where true and __scd1_rn == 1
 ),
@@ -88,8 +82,7 @@ __scd1 as (
             from __merge_condition m
             left anti join
                 __current c on m.__key == c.__key and m.__hash = c.__hash
-                {% if has_source %} and m.__source = c.__source {% endif %}
-                and m.__operation == 'upsert'
+                {% if has_source %} and m.__source = c.__source {% endif %} and m.__operation == 'upsert'
         ),
     {% endif %}
     __final as (
