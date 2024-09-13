@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fabricks"
-version = "0.9.5.3"
+version = "0.9.5.4"
 description = ""
 authors = ["BMS DWH Team <bi_support@bmsuisse.ch>"]
 readme = "README.md"
