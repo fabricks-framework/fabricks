@@ -297,13 +297,10 @@ class Processor(Generator):
             Logger.exception("🙈", extra={"job": self, "context": context})
             raise e
 
-        df = self.spark.sql(sql)
+        row = self.spark.sql(sql).collect()[0]
 
-        row = df.where("slices is not null").collect()[0]
         context["slices"] = row.slices
-        
         if context.get("has_source"):
-            row = df.where("sources is not null").collect()[0]
             context["sources"] = row.sources
 
         return context
