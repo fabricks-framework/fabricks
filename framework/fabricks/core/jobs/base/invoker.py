@@ -30,7 +30,8 @@ class Invoker(Checker):
                 path = PATH_RUNTIME.join(notebook)
 
                 arguments = options.arguments or {}  # type: ignore
-                timeout = arguments.get("timeout")
+                
+                timeout = options.get("timeout")
                 if timeout is None:
                     if position == "pre_run":
                         timeout = self.timeouts.pre_run
@@ -39,7 +40,7 @@ class Invoker(Checker):
                 else:
                     timeout = int(timeout)
 
-                self.invoke(path, arguments, timeout, schedule)
+                self.invoke(path=path, arguments=arguments, timeout=timeout, schedule=schedule)
             except Exception:
                 raise InvokerFailedException(position)
 
@@ -55,7 +56,8 @@ class Invoker(Checker):
                 path = PATH_RUNTIME.join(notebook)
 
                 arguments = options.get("arguments", {})  # type: ignore
-                timeout = arguments.get("timeout")
+
+                timeout = options.get("timeout")
                 if timeout is None:
                     if position == "pre_run":
                         timeout = self.timeouts.pre_run
@@ -64,7 +66,7 @@ class Invoker(Checker):
                 else:
                     timeout = int(timeout)
 
-                self.invoke(path, arguments, timeout, schedule)
+                self.invoke(path=path, arguments=arguments, timeout=timeout, schedule=schedule)
             except Exception:
                 raise InvokerFailedException(position)
 
@@ -108,6 +110,8 @@ class Invoker(Checker):
 
         if timeout is None:
             timeout = self.timeouts.job
+
+        print(timeout)
 
         self.dbutils.notebook.run(
             path.get_notebook_path(),

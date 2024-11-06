@@ -1,4 +1,8 @@
 # Databricks notebook source
+import time
+
+# COMMAND ----------
+
 from databricks.sdk.runtime import dbutils
 
 # COMMAND ----------
@@ -18,6 +22,10 @@ item = dbutils.widgets.get("item")
 assert step == "gold"
 assert topic == "invoke"
 assert item == "timeout"
+
+# COMMAND ----------
+
+time.sleep(20)
 
 # COMMAND ----------
 

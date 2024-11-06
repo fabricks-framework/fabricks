@@ -57,4 +57,4 @@
       mode: invoke
     invoker_options:
       notebook: gold/gold/invoke/timeout
-      timeout: 10
+      timeout: 5

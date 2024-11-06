@@ -49,6 +49,7 @@ class TableOptions(TypedDict):
 
 class _InvokeOptions(TypedDict):
     notebook: str
+    timeout: int
     arguments: Optional[dict[str, str]]
 
 
@@ -82,6 +83,7 @@ class BronzeOptions(TypedDict):
     encrypted_columns: Optional[List[str]]
     calculated_columns: Optional[dict[str, str]]
     operation: Optional[Operations]
+    timeout: Optional[int]
 
 
 class SilverOptions(TypedDict):
@@ -97,6 +99,7 @@ class SilverOptions(TypedDict):
     stream: Optional[bool]
     # else
     order_duplicate_by: Optional[dict[str, str]]
+    timeout: Optional[int]
 
 
 class GoldOptions(TypedDict):
@@ -112,7 +115,8 @@ class GoldOptions(TypedDict):
     table: Optional[str]
     notebook: Optional[bool]
     requirements: Optional[bool]
-
+    timeout: Optional[int]
+    
 
 StepOptions = Union[BronzeOptions, SilverOptions, GoldOptions]
 
@@ -185,6 +189,6 @@ class Options:
 
 @dataclass
 class Timeouts:
-    job: int
-    pre_run: int
-    post_run: int
+    jobs: int
+    pre_runs: int
+    post_runs: int
