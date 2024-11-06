@@ -3,6 +3,7 @@
     name: test
     options:
       secret_scope: bmskv
+      catalog: hive_metastore
       timeouts:
         step: 3600
         job: 3600
