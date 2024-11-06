@@ -117,8 +117,6 @@ class Invoker(Checker):
         if timeout is None:
             timeout = self.timeouts.job
 
-        print(timeout)
-
         self.dbutils.notebook.run(
             path.get_notebook_path(),
             timeout,

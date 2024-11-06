@@ -29,6 +29,19 @@
 - job:
     step: gold
     topic: invoke
+    item: timedout_pre_run
+    tags: [test]
+    options:
+      mode: memory
+    invoker_options:
+      pre_run:
+        timeout: 10
+        notebook: gold/gold/invoke/timedout
+        arguments:
+          arg1: 1
+- job:
+    step: gold
+    topic: invoke
     item: notebook
     tags: [test]
     options:
@@ -51,10 +64,10 @@
 - job:
     step: gold
     topic: invoke
-    item: timeout
+    item: timedout
     tags: [test]
     options:
       mode: invoke
-      timeout: 1
+      timeout: 10
     invoker_options:
-      notebook: gold/gold/invoke/timeout
+      notebook: gold/gold/invoke/timedout

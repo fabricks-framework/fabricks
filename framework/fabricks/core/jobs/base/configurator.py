@@ -142,11 +142,15 @@ class Configurator(ABC):
             job = self.options.job.get("timeout")
             if job is None:
                 job = self._get_timeout("job")
-            pre_run = self.options.invoker.get("timeout")
-            if pre_run is None:
+            
+            try:
+                pre_run = self.options.invoker.get_dict("pre_run").timeout
+            except:
                 pre_run = self._get_timeout("pre_run")
-            post_run = self.options.invoker.get("timeout")
-            if post_run is None:
+
+            try:
+                post_run = self.options.invoker.get_dict("post_run").timeout
+            except:
                 post_run = self._get_timeout("post_run")
 
             self._timeouts = Timeouts(

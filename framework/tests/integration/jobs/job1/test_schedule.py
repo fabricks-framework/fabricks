@@ -34,7 +34,12 @@ def test_job1_no_unexpected_failure():
           true
           and l.failed
           and l.topic not in ("check")
-          and l.job not in ("silver.princess_drop", "gold.invoke_failed_pre_run")
+          and l.job not in (
+            "silver.princess_drop", 
+            "gold.invoke_failed_pre_run", 
+            "gold_invoke_timedout",
+            "gold_invoke_timedout_pre_run",
+          )
         """
     )
     assert df.count() == 0, "unforced failure <> 0"
