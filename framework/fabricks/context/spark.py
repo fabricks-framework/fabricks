@@ -40,4 +40,4 @@ def build_spark_session(new: Optional[bool] = False, log: Optional[bool] = False
     return spark, DBUtils(spark)
 
 
-build_spark_session(new=True, log=True)
+SPARK, DBUTILS = build_spark_session(new=True, log=True)
