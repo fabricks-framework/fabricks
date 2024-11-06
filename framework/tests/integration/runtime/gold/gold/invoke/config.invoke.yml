@@ -55,6 +55,6 @@
     tags: [test]
     options:
       mode: invoke
+      timeout: 1
     invoker_options:
       notebook: gold/gold/invoke/timeout
-      timeout: 5

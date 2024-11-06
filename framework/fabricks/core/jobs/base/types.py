@@ -116,7 +116,7 @@ class GoldOptions(TypedDict):
     notebook: Optional[bool]
     requirements: Optional[bool]
     timeout: Optional[int]
-    
+
 
 StepOptions = Union[BronzeOptions, SilverOptions, GoldOptions]
 
@@ -189,6 +189,6 @@ class Options:
 
 @dataclass
 class Timeouts:
-    jobs: int
-    pre_runs: int
-    post_runs: int
+    job: int
+    pre_run: int
+    post_run: int

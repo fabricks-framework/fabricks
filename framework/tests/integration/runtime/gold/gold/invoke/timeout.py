@@ -1,9 +1,10 @@
 # Databricks notebook source
 import time
 
+from databricks.sdk.runtime import dbutils
+
 # COMMAND ----------
 
-from databricks.sdk.runtime import dbutils
 
 # COMMAND ----------
 

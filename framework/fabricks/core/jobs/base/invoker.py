@@ -30,17 +30,21 @@ class Invoker(Checker):
                 path = PATH_RUNTIME.join(notebook)
 
                 arguments = options.arguments or {}  # type: ignore
-                
-                timeout = options.get("timeout")
-                if timeout is None:
-                    if position == "pre_run":
-                        timeout = self.timeouts.pre_run
-                    elif position == "post_run":
-                        timeout = self.timeouts.post_run
-                else:
-                    timeout = int(timeout)
 
-                self.invoke(path=path, arguments=arguments, timeout=timeout, schedule=schedule)
+                if position == "pre_run":
+                    timeout = self.timeouts.pre_run
+                elif position == "post_run":
+                    timeout = self.timeouts.post_run
+                else:
+                    timeout = None
+
+                self.invoke(
+                    path=path,
+                    arguments=arguments,
+                    timeout=timeout,
+                    schedule=schedule,
+                )
+
             except Exception:
                 raise InvokerFailedException(position)
 
@@ -57,16 +61,18 @@ class Invoker(Checker):
 
                 arguments = options.get("arguments", {})  # type: ignore
 
-                timeout = options.get("timeout")
-                if timeout is None:
-                    if position == "pre_run":
-                        timeout = self.timeouts.pre_run
-                    elif position == "post_run":
-                        timeout = self.timeouts.post_run
-                else:
-                    timeout = int(timeout)
+                if position == "pre_run":
+                    timeout = self.timeouts.pre_run
+                elif position == "post_run":
+                    timeout = self.timeouts.post_run
 
-                self.invoke(path=path, arguments=arguments, timeout=timeout, schedule=schedule)
+                self.invoke(
+                    path=path,
+                    arguments=arguments,
+                    timeout=timeout,
+                    schedule=schedule,
+                )
+
             except Exception:
                 raise InvokerFailedException(position)
 
