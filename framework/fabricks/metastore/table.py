@@ -253,10 +253,10 @@ class Table(Relational):
             if not todo_df.isEmpty():
                 for row in todo_df.collect():
                     if row.operation == "add":
-                        Logger.debug(f"add column { row.column}", extra={"job": self})
+                        Logger.debug(f"add column {row.column}", extra={"job": self})
                     else:
                         Logger.debug(
-                            "update column { row.column} ({row.old_type} -> {row.new_type})",
+                            f"update column {row.column} ({row.old_type} -> {row.new_type})",
                             extra={"job": self},
                         )
 

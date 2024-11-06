@@ -1,0 +1,4 @@
+select
+    array_join(collect_list(`slices`), ' or ') as `slices`,
+    {% if has_source %} array_join(collect_list(`sources`), ' or ') as `sources` {% endif %}
+from __final

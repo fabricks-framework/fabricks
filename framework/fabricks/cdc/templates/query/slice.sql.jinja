@@ -1,0 +1,13 @@
+__sliced as (
+    select
+        {% for field in fields %} {{ field }}, {% endfor %}
+        s.__operation,
+        s.__timestamp,
+        s.__hash,
+        s.__key,
+        {% if has_source %} s.__source, {% endif %}
+        {% if has_metadata %} s.__metadata, {% endif %}
+        {% if has_rescued_data %} __rescued_data, {% endif %}
+    from {{ parent_slice }} s
+    where true and ({{ slices }})
+),

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fabricks"
-version = "0.9.5"
+version = "0.9.5.4"
 description = ""
 authors = ["BMS DWH Team <bi_support@bmsuisse.ch>"]
 readme = "README.md"
@@ -33,14 +33,14 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 autoflake = "^2.3.1"
+databricks-connect = ">=11.0.0"
 isort = "^5.13.2"
 notebook = ">=6.4.12"
 pycln = "^2.4.0"
 pyright = ">=1.1.261"
 ruff = ">=0.4.3"
-shandy-sqlfmt = ">=0.21.0"
+shandy-sqlfmt = "^0.23.2"
 yamlfix = ">=1.14.0"
-databricks-connect = ">=11.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

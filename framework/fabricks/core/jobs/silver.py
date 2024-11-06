@@ -276,7 +276,7 @@ class Silver(BaseJob):
         if self.mode == "memory":
             context["mode"] = "complete"
         if self.mode == "latest":
-            context["filter"] = "latest"
+            context["slice"] = "latest"
 
         if self.change_data_capture == "scd2":
             context["fix_valid_from"] = True
@@ -290,7 +290,7 @@ class Silver(BaseJob):
                 context["except"] = ["__operation"]
 
         if not self.stream and self.mode == "update":
-            context["filter"] = "update"
+            context["slice"] = "update"
 
         return context
 

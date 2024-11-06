@@ -1,0 +1,17 @@
+__latest as (
+    select {% if has_source %} __source, {% endif %} max(__timestamp) as __max_timestamp
+    from {{ parent_slice }}
+    {% if has_source %} group by __source {% endif %}
+),
+__final as (
+    select
+        {% if has_source %} concat('t.__source == \'', `__source`, '\'') as sources, {% endif %}
+        concat_ws(
+            ' ',
+            ' (',
+            concat('s.__timestamp == \'', `__max_timestamp`, '\''),
+            {% if has_source %} concat('and s.__source == \'', `__source`, '\''), {% endif %}
+            ' )'
+        ) as `slices`
+    from __latest
+)
