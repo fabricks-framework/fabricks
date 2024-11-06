@@ -1,8 +1,8 @@
 from logging import ERROR
 
 import pytest
-from databricks.sdk.runtime import spark
 
+from fabricks.context import SPARK
 from fabricks.context.log import Logger
 from fabricks.core import get_job
 
@@ -12,7 +12,7 @@ Logger.setLevel(ERROR)
 @pytest.mark.order(151)
 def test_job1_gold_fact_dependency():
     def check():
-        dep_df = spark.sql(
+        dep_df = SPARK.sql(
             """
             select
               j.job_id,

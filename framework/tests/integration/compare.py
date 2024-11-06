@@ -1,11 +1,11 @@
 from typing import Optional
 
-from databricks.sdk.runtime import spark
 from pandas.testing import assert_frame_equal
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, length, lower, when
 from pyspark.sql.types import DoubleType, StringType
 
+from fabricks.context import SPARK
 from fabricks.core.jobs.base import BaseJob
 
 
@@ -76,11 +76,11 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):
 
 def compare_silver_to_expected(job: BaseJob, cdc: str, iter: int):
     if job.mode == "memory":
-        df = spark.sql(f"select * from {job}")
+        df = SPARK.sql(f"select * from {job}")
     else:
         df = job.table.dataframe
 
-    expected_df = spark.read.table(f"expected.silver_{cdc}_job{iter}")
+    expected_df = SPARK.read.table(f"expected.silver_{cdc}_job{iter}")
     if job.topic in ["monarch", "memory", "regent"]:
         expected_df = expected_df.drop("__source")
 
@@ -89,12 +89,12 @@ def compare_silver_to_expected(job: BaseJob, cdc: str, iter: int):
 
 def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: Optional[str] = None):
     if job.mode == "memory":
-        df = spark.sql(f"select * from {job}")
+        df = SPARK.sql(f"select * from {job}")
     else:
         df = job.table.dataframe
 
     if str(job) == "gold.scd1_memory":
-        expected_df = spark.sql(
+        expected_df = SPARK.sql(
             f"""
         select
           id,
@@ -107,7 +107,7 @@ def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: Optional[
         """
         )
     else:
-        expected_df = spark.read.table(f"expected.gold_{cdc}_job{iter}")
+        expected_df = SPARK.read.table(f"expected.gold_{cdc}_job{iter}")
 
     if where:
         expected_df = expected_df.where(where)
@@ -117,7 +117,7 @@ def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: Optional[
 
 def get_last_error(job_id: str):
     return (
-        spark.sql(
+        SPARK.sql(
             f"""
             select 
               l.exception.message as error, 
@@ -139,7 +139,7 @@ def get_last_error(job_id: str):
 
 def get_last_status(job_id: str):
     return (
-        spark.sql(
+        SPARK.sql(
             f"""
             select 
               l.status,

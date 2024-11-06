@@ -1,9 +1,8 @@
 from typing import List, Optional, TypedDict
 
-from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame
 
-from fabricks.context import PATH_SCHEDULES
+from fabricks.context import PATH_SCHEDULES, SPARK
 from fabricks.context.log import Logger
 from fabricks.core.jobs.base.types import TStep
 from fabricks.utils.read.read_yaml import read_yaml
@@ -68,7 +67,7 @@ def _create_or_replace_view(name: str, options: DataFrame):
     sql = fix_sql(sql)
     Logger.debug(f"schedule - %sql\n---\n{sql}\n---")
 
-    spark.sql(sql)
+    SPARK.sql(sql)
 
 
 def create_or_replace_view(name: str):

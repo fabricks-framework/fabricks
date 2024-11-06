@@ -2,9 +2,9 @@ import time
 from typing import Optional, Tuple
 from uuid import uuid4
 
-from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame
 
+from fabricks.context import SPARK
 from fabricks.core.dags.base import BaseDags
 from fabricks.core.dags.log import DagsTableLogger
 from fabricks.utils.azure_queue import AzureQueue
@@ -17,7 +17,7 @@ class DagGenerator(BaseDags):
         super().__init__(schedule_id=schedule_id)
 
     def get_jobs(self) -> DataFrame:
-        return spark.sql(
+        return SPARK.sql(
             f"""
             with logs as (
               select 
@@ -55,7 +55,7 @@ class DagGenerator(BaseDags):
         if job_df is None:
             job_df = self.get_jobs()
 
-        return spark.sql(
+        return SPARK.sql(
             """
             select
               'dependencies' as PartitionKey, 
@@ -98,7 +98,7 @@ class DagGenerator(BaseDags):
         if job_df is None:
             job_df = self.get_jobs()
 
-        return spark.sql(
+        return SPARK.sql(
             """
             select
               Step
@@ -121,7 +121,7 @@ class DagGenerator(BaseDags):
         table.upsert(job_df)
         table.upsert(deps_df)
 
-        df = spark.sql(
+        df = SPARK.sql(
             """
             select
               ScheduleId as PartitionKey,

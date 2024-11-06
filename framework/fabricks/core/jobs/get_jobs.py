@@ -1,11 +1,10 @@
 from dataclasses import dataclass
 from typing import List, Optional, TypedDict, Union
 
-from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr
 
-from fabricks.context import IS_LIVE, PATHS_RUNTIME
+from fabricks.context import IS_LIVE, PATHS_RUNTIME, SPARK
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.base.types import Modes, TStep
 from fabricks.core.jobs.get_job import get_job
@@ -46,7 +45,7 @@ def _get_jobs() -> DataFrame:
         df = concat_dfs(dfs)
 
     else:
-        df = spark.sql("select * from fabricks.jobs")
+        df = SPARK.sql("select * from fabricks.jobs")
 
     return df
 

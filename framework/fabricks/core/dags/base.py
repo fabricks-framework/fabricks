@@ -1,11 +1,10 @@
 import re
 from typing import Optional, cast
 
-from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 
-from fabricks.context import FABRICKS_STORAGE
+from fabricks.context import FABRICKS_STORAGE, SPARK
 from fabricks.core.dags.log import DagsTableLogger
 from fabricks.metastore.table import Table
 from fabricks.utils.azure_table import AzureTable
@@ -46,11 +45,11 @@ class BaseDags:
             q += f" and Step eq '{step}'"
 
         d = DagsTableLogger.table.query(q)
-        df = spark.createDataFrame(d)
+        df = SPARK.createDataFrame(d)
         if "Exception" not in df.columns:
             df = df.withColumn("Exception", expr("null"))
 
-        df = spark.sql(
+        df = SPARK.sql(
             """
             select
               ScheduleId as schedule_id,

@@ -1,8 +1,8 @@
 from typing import Optional
 
-from databricks.sdk.runtime import spark
 from pyspark.sql import Row
 
+from fabricks.context import SPARK
 from fabricks.core.jobs.get_job import get_job
 from fabricks.utils.helpers import run_in_parallel
 
@@ -18,7 +18,7 @@ def vacuum(schedule_id: Optional[str] = None):
         None
     """
     if schedule_id is not None:
-        df = spark.sql(
+        df = SPARK.sql(
             f"""
             select
               j.step,
@@ -36,7 +36,7 @@ def vacuum(schedule_id: Optional[str] = None):
             """
         )
     else:
-        df = spark.sql("select * from fabricks.jobs where not mode = 'memory'")
+        df = SPARK.sql("select * from fabricks.jobs where not mode = 'memory'")
 
     def _vacuum(row: Row):
         job = get_job(step=row["step"], job_id=row["job_id"])

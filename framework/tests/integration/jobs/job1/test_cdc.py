@@ -1,9 +1,9 @@
 from logging import ERROR
 
 import pytest
-from databricks.sdk.runtime import spark
 
 from fabricks.cdc import NoCDC
+from fabricks.context import SPARK
 from fabricks.context.log import Logger
 
 Logger.setLevel(ERROR)
@@ -12,7 +12,7 @@ Logger.setLevel(ERROR)
 # TODO: add check for columns
 @pytest.mark.order(171)
 def test_job1_gold_nocdc_overwrite():
-    df = spark.sql("select 1 as dummy")
+    df = SPARK.sql("select 1 as dummy")
     nocdc = NoCDC("gold", "nocdc", "overwrite")
 
     nocdc.overwrite(df)
@@ -23,7 +23,7 @@ def test_job1_gold_nocdc_overwrite():
 
 @pytest.mark.order(172)
 def test_job1_gold_nocdc_append():
-    df = spark.sql("select 1 as dummy")
+    df = SPARK.sql("select 1 as dummy")
     nocdc = NoCDC("gold", "nocdc", "append")
 
     nocdc.append(df)

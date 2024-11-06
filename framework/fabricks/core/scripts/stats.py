@@ -1,15 +1,15 @@
-from databricks.sdk.runtime import spark
 from pyspark.sql import Row
 
 from fabricks.cdc import NoCDC
+from fabricks.context import SPARK
 from fabricks.core.jobs.base.types import Steps
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 
 
 def collect_stats():
     def _collect_tables(s: str):
-        df_table = spark.sql(f"show tables in {s}")
-        df_view = spark.sql(f"show views in {s}")
+        df_table = SPARK.sql(f"show tables in {s}")
+        df_view = SPARK.sql(f"show views in {s}")
 
         cond = [df_table.tableName == df_view.viewName]
         df_table = df_table.join(df_view, cond, how="left_anti")
@@ -24,11 +24,11 @@ def collect_stats():
         database = row["database"]
         job = f"{database}.{table}"
 
-        desc = spark.sql(f"describe detail {job}").collect()[0]
+        desc = SPARK.sql(f"describe detail {job}").collect()[0]
         bytes = desc["sizeInBytes"]
         files = desc["numFiles"]
 
-        df = spark.sql(
+        df = SPARK.sql(
             f"""
             select
               '{database}' as step,

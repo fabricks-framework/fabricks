@@ -1,7 +1,7 @@
-from databricks.sdk.runtime import spark
 from pyspark.sql.types import LongType, StringType, StructField, StructType, TimestampType
 
 from fabricks.cdc import NoCDC
+from fabricks.context import SPARK
 from fabricks.context.log import Logger
 from fabricks.metastore.table import Table
 
@@ -62,7 +62,7 @@ def create_table_log(drop: bool = False):
 
 def create_table_dummy(drop: bool = False):
     table = NoCDC("fabricks", "dummy")
-    df = spark.sql(
+    df = SPARK.sql(
         """
           select
           1 as __key,

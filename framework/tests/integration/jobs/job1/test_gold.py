@@ -1,8 +1,8 @@
 from logging import ERROR
 
 import pytest
-from databricks.sdk.runtime import spark
 
+from fabricks.context import SPARK
 from fabricks.context.log import Logger
 from fabricks.core import get_job
 from fabricks.metastore.table import Table
@@ -37,16 +37,16 @@ def test_job1_gold_scd2_update():
 
 @pytest.mark.order(129)
 def test_job1_gold_fact_udf():
-    addition = spark.sql("select addition from gold.fact_udf").collect()[0][0]
+    addition = SPARK.sql("select addition from gold.fact_udf").collect()[0][0]
     assert addition == "3", f"{addition} <> 3"
 
-    phone_number = spark.sql("select phone_number from gold.fact_udf").collect()[0][0]
+    phone_number = SPARK.sql("select phone_number from gold.fact_udf").collect()[0][0]
     assert phone_number.clean_phone_nr == "+32478478478", f"{phone_number} <> +32478478478"
 
 
 @pytest.mark.order(129)
 def test_job1_gold_fact_memory():
-    columns = spark.sql("select * from gold.fact_memory").columns
+    columns = SPARK.sql("select * from gold.fact_memory").columns
     assert "__it_should_not_be_found" not in columns, "__it_should_not_be_found found"
 
 

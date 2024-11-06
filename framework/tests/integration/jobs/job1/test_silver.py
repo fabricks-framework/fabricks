@@ -1,8 +1,8 @@
 from logging import ERROR
 
 import pytest
-from databricks.sdk.runtime import spark
 
+from fabricks.context import SPARK
 from fabricks.context.log import Logger
 from fabricks.core import get_job
 from fabricks.metastore.table import Table
@@ -65,7 +65,7 @@ def test_job1_silver_monarch_delta():
     compare_silver_to_expected(job=job, cdc="scd2", iter=1)
 
     data_type = (
-        spark.sql("describe extended silver.monarch_delta")
+        SPARK.sql("describe extended silver.monarch_delta")
         .where("col_name == 'decimalField'")
         .select("data_type")
         .collect()[0][0]

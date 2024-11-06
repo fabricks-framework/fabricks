@@ -1,11 +1,10 @@
 from typing import Optional, Union, cast
 
-from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr, md5
 
 from fabricks.cdc import SCD1
-from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
+from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import Logger
 from fabricks.core.jobs.base.types import Bronzes, Golds, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
@@ -36,7 +35,7 @@ class BaseStep:
         _runtime = PATHS_RUNTIME.get(self.name)
         assert _runtime
 
-        self.spark = spark
+        self.spark = SPARK
         self.storage = _storage
         self.runtime = _runtime
         self.database = Database(self.name)
@@ -265,8 +264,8 @@ class BaseStep:
             job.register()
 
         if drop:
-            spark.sql(f"drop database if exists {self.name} cascade ")
-            spark.sql(f"create database {self.name}")
+            SPARK.sql(f"drop database if exists {self.name} cascade ")
+            SPARK.sql(f"create database {self.name}")
         if update:
             self.update_jobs()
 

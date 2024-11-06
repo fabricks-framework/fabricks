@@ -1,11 +1,12 @@
-from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame
+
+from fabricks.context import SPARK
 
 
 def get_tables(schema: str) -> DataFrame:
-    table_df = spark.sql(f"show tables in {schema}")
-    view_df = spark.sql(f"show views in {schema}")
-    df = spark.sql(
+    table_df = SPARK.sql(f"show tables in {schema}")
+    view_df = SPARK.sql(f"show views in {schema}")
+    df = SPARK.sql(
         """
         select 
             database,
@@ -21,8 +22,8 @@ def get_tables(schema: str) -> DataFrame:
 
 
 def get_views(schema: str) -> DataFrame:
-    view_df = spark.sql(f"show views in {schema}")
-    df = spark.sql(
+    view_df = SPARK.sql(f"show views in {schema}")
+    df = SPARK.sql(
         """
         select 
             namespace as database,

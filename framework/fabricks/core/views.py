@@ -1,6 +1,4 @@
-from databricks.sdk.runtime import spark
-
-from fabricks.context import PATH_VIEWS
+from fabricks.context import PATH_VIEWS, SPARK
 from fabricks.context.log import Logger
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -17,7 +15,7 @@ def _create_or_replace_view(path: Path):
     sql = fix_sql(sql)
     Logger.debug(f"schedule - %sql\n---\n{sql}\n---")
 
-    spark.sql(sql)
+    SPARK.sql(sql)
 
 
 def create_or_replace_view(name: str):

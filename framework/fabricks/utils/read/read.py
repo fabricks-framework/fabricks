@@ -1,9 +1,9 @@
 from typing import List, Optional, Union, overload
 
-from databricks.sdk.runtime import spark as _spark
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructType
 
+from fabricks.context import SPARK
 from fabricks.utils.path import Path
 
 
@@ -69,7 +69,7 @@ def _read_stream(
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     if spark is None:
-        spark = _spark
+        spark = SPARK
     assert spark is not None
 
     if file_format == "table":
@@ -159,7 +159,7 @@ def _read_batch(
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     if spark is None:
-        spark = _spark
+        spark = SPARK
     assert spark is not None
 
     if file_format == "table":
@@ -247,7 +247,7 @@ def read(
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     if spark is None:
-        spark = _spark
+        spark = SPARK
     assert spark is not None
 
     if table is not None:

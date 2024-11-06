@@ -3,10 +3,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional, Union
 
-from databricks.sdk.runtime import dbutils as _dbutils
-from databricks.sdk.runtime import spark as _spark
 from pyspark.sql import DataFrame, SparkSession
 
+from fabricks.context import DBUTILS, SPARK
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 
@@ -20,10 +19,11 @@ class Configurator(ABC):
         spark: Optional[SparkSession] = None,
     ):
         if spark is None:
-            spark = _spark
+            spark = SPARK
         assert spark is not None
         self.spark: SparkSession = spark
-        self.dbutils = _dbutils
+
+        self.dbutils = DBUTILS
 
         self.database = Database(database)
         self.levels = levels

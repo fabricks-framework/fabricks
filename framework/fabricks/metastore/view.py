@@ -2,9 +2,9 @@ from typing import Optional, Union
 from uuid import uuid4
 
 import pandas as pd
-from databricks.sdk.runtime import spark as _spark
 from pyspark.sql import DataFrame, SparkSession
 
+from fabricks.context import SPARK
 from fabricks.context.log import Logger
 from fabricks.metastore.relational import Relational
 
@@ -17,7 +17,7 @@ class View(Relational):
         spark: Optional[SparkSession] = None,
     ) -> str:
         if spark is None:
-            spark = _spark
+            spark = SPARK
         assert spark is not None
 
         uuid = str(uuid4().hex)

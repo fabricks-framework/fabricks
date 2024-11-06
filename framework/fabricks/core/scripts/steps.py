@@ -1,8 +1,7 @@
 from typing import Iterable
 
-from databricks.sdk.runtime import spark
-
 from fabricks.cdc import NoCDC
+from fabricks.context import SPARK
 from fabricks.context.runtime import BRONZE, GOLD, SILVER
 
 
@@ -23,5 +22,5 @@ def collect_steps():
     _collect("silver", SILVER)
     _collect("gold", GOLD)
 
-    df = spark.createDataFrame(steps)
+    df = SPARK.createDataFrame(steps)
     NoCDC("fabricks", "steps").overwrite(df)
