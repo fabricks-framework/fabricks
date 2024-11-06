@@ -1,33 +1,37 @@
 [tool.poetry]
 name = "fabricks"
-version = "0.9.1"
+version = "0.9.5"
 description = ""
 authors = ["BMS DWH Team <bi_support@bmsuisse.ch>"]
 readme = "README.md"
 packages = [{ include = "fabricks" }]
 
+# Attention: You may never specify newer dependencies than latests Databricks LTS Runtime
+# Eg, PyYaml is at 6.0 there
 [tool.poetry.dependencies]
-azure-identity = ">=1.10.0"
 azure-data-tables = "^12.5.0"
+azure-identity = ">=1.10.0"
 azure-storage-blob = ">=12.14.1"
 azure-storage-queue = "^12.10.0"
-databricks-connect = ">=11.0.0"
-databricks-sdk = ">=0.29.0"
+databricks-sdk = ">=0.20.0"
 jinja2 = ">=2.11.3"
 python = ">=3.9,<4"
 python-dotenv = ">=1.0.1"
+pyyaml = ">=6.0.0"
 sqlglot = ">=22.1.1"
 
-[tool.poetry.group.build.dependencies]
-requirements-parser = ">=0.5.0"
-toml = ">=0.10.2"
+[tool.poetry.group.test]
+optional = true 
 
 [tool.poetry.group.test.dependencies]
 pandas = ">=1.5.3"
 pytest = ">=7.1.2"
 pytest-order = ">=1.0.1"
 
-[tool.poetry.group.format.dependencies]
+[tool.poetry.group.dev]
+optional = true 
+
+[tool.poetry.group.dev.dependencies]
 autoflake = "^2.3.1"
 isort = "^5.13.2"
 notebook = ">=6.4.12"
@@ -36,9 +40,7 @@ pyright = ">=1.1.261"
 ruff = ">=0.4.3"
 shandy-sqlfmt = ">=0.21.0"
 yamlfix = ">=1.14.0"
-
-[tool.poetry.group.deployment.dependencies]
-requests = ">=2.28.2"
+databricks-connect = ">=11.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

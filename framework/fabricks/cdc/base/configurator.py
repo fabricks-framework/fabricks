@@ -68,7 +68,16 @@ class Configurator(ABC):
 
     @property
     def allowed_leading_columns(self):
-        cols = ["__identity", "__key", "__timestamp", "__valid_from", "__valid_to"]
+        cols = [
+            "__identity",
+            "__source",
+            "__key",
+            "__timestamp",
+            "__valid_from",
+            "__valid_to",
+            "__is_current",
+            "__is_deleted",
+        ]
         if self.change_data_capture == "scd1":
             cols.remove("__valid_from")
             cols.remove("__valid_to")
@@ -79,10 +88,7 @@ class Configurator(ABC):
     @property
     def allowed_trailing_columns(self):
         cols = [
-            "__source",
             "__operation",
-            "__is_current",
-            "__is_deleted",
             "__metadata",
             "__hash",
             "__rescued_data",
