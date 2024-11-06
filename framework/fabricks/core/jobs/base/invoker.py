@@ -36,6 +36,8 @@ class Invoker(Checker):
                         timeout = self.timeouts.pre_run
                     elif position == "post_run":
                         timeout = self.timeouts.post_run
+                else:
+                    timeout = int(timeout)
 
                 self.invoke(path, arguments, timeout, schedule)
             except Exception:
@@ -59,6 +61,8 @@ class Invoker(Checker):
                         timeout = self.timeouts.pre_run
                     elif position == "post_run":
                         timeout = self.timeouts.post_run
+                else:
+                    timeout = int(timeout)
 
                 self.invoke(path, arguments, timeout, schedule)
             except Exception:

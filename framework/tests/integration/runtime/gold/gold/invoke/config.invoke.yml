@@ -48,3 +48,13 @@
       mode: invoke
     invoker_options:
       notebook: gold/gold/invoke/notebook_without_argument
+- job:
+    step: gold
+    topic: invoke
+    item: timeout
+    tags: [test]
+    options:
+      mode: invoke
+    invoker_options:
+      notebook: gold/gold/invoke/timeout
+      timeout: 10
