@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
 
-from fabricks.context.runtime import CONF_RUNTIME, SECRET_SCOPE
+from fabricks.context.runtime import CATALOG, CONF_RUNTIME, SECRET_SCOPE
 from fabricks.utils.secret import add_secret_to_spark, get_secret_from_secret_scope
 
 
@@ -11,9 +11,8 @@ def build_spark_session(new: Optional[bool] = False, log: Optional[bool] = False
     if new:
         spark = SparkSession.builder.getOrCreate().newSession()  # type: ignore
 
-        catalog = CONF_RUNTIME.get("options", {}).get("catalog")
-        if catalog:
-            spark.sql(f"use catalog {catalog};")
+        if CATALOG is not None:
+            spark.sql(f"use catalog {CATALOG};")
 
         # delta
         spark.sql("set spark.databricks.delta.schema.autoMerge.enabled = True;")
@@ -40,4 +39,4 @@ def build_spark_session(new: Optional[bool] = False, log: Optional[bool] = False
     return spark, DBUtils(spark)
 
 
-build_spark_session(new=True, log=True)
+SPARK, DBUTILS = build_spark_session(new=True, log=True)

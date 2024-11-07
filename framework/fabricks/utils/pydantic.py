@@ -1,7 +1,6 @@
 from typing import List, Literal, Type, TypeVar, Union, get_args, get_origin
 
 import yaml
-from databricks.sdk.runtime import spark
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import parse_obj_as
 from pyspark.sql import DataFrame, Row
@@ -15,6 +14,8 @@ from pyspark.sql.types import (
     StructField,
     StructType,
 )
+
+from fabricks.context import SPARK
 
 types_ = {
     str: StringType(),
@@ -86,7 +87,7 @@ class FBaseModel(PydanticBaseModel):
     @staticmethod
     def get_dataframe(data: Union[T, List[T]]) -> DataFrame:
         if isinstance(data, List):
-            df = spark.createDataFrame([d.dict() for d in data], data[0].schema_pyspark())  # type: ignore
+            df = SPARK.createDataFrame([d.dict() for d in data], data[0].schema_pyspark())  # type: ignore
         else:
-            df = spark.createDataFrame([data.dict()], data.schema_pyspark())  # type: ignore
+            df = SPARK.createDataFrame([data.dict()], data.schema_pyspark())  # type: ignore
         return df

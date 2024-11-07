@@ -1,9 +1,8 @@
 from logging import ERROR
 
 import pytest
-from databricks.sdk.runtime import spark
 
-from fabricks.context import PATH_RUNTIME
+from fabricks.context import PATH_RUNTIME, SPARK
 from fabricks.context.log import Logger
 from fabricks.metastore.table import Table
 from fabricks.utils.helpers import run_notebook
@@ -25,7 +24,7 @@ def test_job1_schedule():
 
 @pytest.mark.order(103)
 def test_job1_no_unexpected_failure():
-    df = spark.sql(
+    df = SPARK.sql(
         """
         select
           *
@@ -35,7 +34,12 @@ def test_job1_no_unexpected_failure():
           true
           and l.failed
           and l.topic not in ("check")
-          and l.job not in ("silver.princess_drop", "gold.invoke_failed_pre_run")
+          and l.job not in (
+            "silver.princess_drop", 
+            "gold.invoke_failed_pre_run", 
+            "gold.invoke_timedout",
+            "gold.invoke_timedout_pre_run"
+          )
         """
     )
     assert df.count() == 0, "unforced failure <> 0"

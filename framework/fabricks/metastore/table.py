@@ -1,7 +1,6 @@
 import re
 from typing import List, Optional, Union, overload
 
-from databricks.sdk.runtime import spark
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
@@ -9,6 +8,7 @@ from pyspark.sql.functions import expr, max
 from pyspark.sql.types import StructType
 from typing_extensions import deprecated
 
+from fabricks.context import SPARK
 from fabricks.context.log import Logger
 from fabricks.metastore.relational import Relational
 from fabricks.utils.path import Path
@@ -17,7 +17,7 @@ from fabricks.utils.sqlglot import fix
 
 class Table(Relational):
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, spark: Optional[SparkSession] = spark):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, spark: Optional[SparkSession] = SPARK):
         return cls(step, topic, item, spark=spark)
 
     @property

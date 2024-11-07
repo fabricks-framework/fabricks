@@ -1,8 +1,8 @@
 from logging import ERROR
 
 import pytest
-from databricks.sdk.runtime import spark
 
+from fabricks.context import SPARK
 from fabricks.context.log import Logger
 from fabricks.core import get_job
 from tests.integration.compare import compare_silver_to_expected
@@ -82,7 +82,7 @@ def test_job2_silver_princess_schema_drift():
     df = job.table.dataframe
     assert "newField" in df.columns, "newField not found in table"
 
-    df = spark.sql("select * from silver.princess_schema_drift__current")
+    df = SPARK.sql("select * from silver.princess_schema_drift__current")
     assert "newField" in df.columns, "newField not found in current view"
 
 

@@ -1,9 +1,8 @@
 from typing import Optional, cast, overload
 
-from databricks.sdk.runtime import spark
 from pyspark.sql import Row
 
-from fabricks.context import IS_LIVE
+from fabricks.context import IS_LIVE, SPARK
 from fabricks.core.jobs.base.types import Bronzes, Golds, JobConf, Silvers, TBronze, TGold, TSilver, TStep
 
 
@@ -97,7 +96,7 @@ def get_job_conf(
         else:
             df = s.get_jobs()
     else:
-        df = spark.sql(f"select * from fabricks.{step}_jobs")
+        df = SPARK.sql(f"select * from fabricks.{step}_jobs")
 
     assert df, f"{step} not found"
 

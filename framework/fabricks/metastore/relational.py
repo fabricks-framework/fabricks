@@ -1,10 +1,9 @@
 from typing import Optional
 
-from databricks.sdk.runtime import dbutils as _dbutils
-from databricks.sdk.runtime import spark as _spark
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import SparkSession
 
+from fabricks.context import DBUTILS, SPARK
 from fabricks.context.log import Logger
 from fabricks.metastore.database import Database
 
@@ -13,11 +12,13 @@ class Relational:
     def __init__(self, database: str, *levels: str, spark: Optional[SparkSession] = None):
         self.database = Database(database)
         self.levels = levels
+
         if spark is None:
-            spark = _spark
+            spark = SPARK
         assert spark is not None
         self.spark: SparkSession = spark
-        self.dbutils = _dbutils
+
+        self.dbutils = DBUTILS
 
     @property
     def name(self) -> str:

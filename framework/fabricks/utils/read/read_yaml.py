@@ -1,10 +1,10 @@
 from typing import Optional
 
 import yaml
-from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame
 from pyspark.sql.types import StructType
 
+from fabricks.context import SPARK
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
 
@@ -19,7 +19,7 @@ def read_yaml(
     if file_name:
         files = [f for f in files if file_name in f]
 
-    dfs = [spark.createDataFrame([], schema=schema)] if schema else []
+    dfs = [SPARK.createDataFrame([], schema=schema)] if schema else []
 
     for file in files:
         with open(file) as f:
@@ -27,10 +27,10 @@ def read_yaml(
 
         if schema:
             dt = [d[root] for d in data] if root else data
-            df = spark.createDataFrame(dt, schema=schema)
+            df = SPARK.createDataFrame(dt, schema=schema)
         else:
-            json = spark.sparkContext.parallelize(data)
-            df = spark.read.json(json)
+            json = SPARK.sparkContext.parallelize(data)
+            df = SPARK.read.json(json)
             if root:
                 df = df.select(f"{root}.*")
 
@@ -40,4 +40,4 @@ def read_yaml(
         df = concat_dfs(dfs)
         return df
 
-    return spark.createDataFrame([], schema=schema) if schema else None
+    return SPARK.createDataFrame([], schema=schema) if schema else None

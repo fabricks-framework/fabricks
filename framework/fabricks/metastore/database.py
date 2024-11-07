@@ -1,11 +1,10 @@
 from typing import Optional
 
-from databricks.sdk.runtime import spark as _spark
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
 from typing_extensions import deprecated
 
-from fabricks.context import PATHS_STORAGE
+from fabricks.context import PATHS_STORAGE, SPARK
 from fabricks.context.log import Logger
 from fabricks.metastore.utils import get_tables, get_views
 from fabricks.utils.path import Path
@@ -18,7 +17,7 @@ class Database:
         assert storage is not None
         self.storage = storage
         if spark is None:
-            spark = _spark
+            spark = SPARK
         assert spark is not None
         self.spark = spark
 

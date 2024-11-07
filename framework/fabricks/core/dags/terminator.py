@@ -1,5 +1,4 @@
-from databricks.sdk.runtime import spark
-
+from fabricks.context import SPARK
 from fabricks.core.dags.base import BaseDags
 from fabricks.core.dags.log import DagsLogger, DagsTableLogger
 
@@ -13,7 +12,7 @@ class DagTerminator(BaseDags):
         df = self.get_logs()
         self.write_logs(df)
 
-        error_df = spark.sql("select * from {df} where status = 'failed'", df=df)
+        error_df = SPARK.sql("select * from {df} where status = 'failed'", df=df)
         for row in error_df.collect():
             DagsLogger.error(f"{row['job']} failed (🔥)")
 

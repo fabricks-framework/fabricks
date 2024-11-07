@@ -3,10 +3,9 @@ import os
 import re
 from typing import Callable, List, Optional
 
-from databricks.sdk.runtime import spark as _spark
 from pyspark.sql import SparkSession
 
-from fabricks.context import PATH_UDFS
+from fabricks.context import PATH_UDFS, SPARK
 from fabricks.context.log import Logger
 from fabricks.core.site_packages import add_site_packages_to_path
 
@@ -49,7 +48,7 @@ def get_extension(udf: str) -> str:
 
 def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
     if spark is None:
-        spark = _spark
+        spark = SPARK
     assert spark is not None
 
     df = spark.sql("show functions in default")
@@ -71,7 +70,7 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
 
     """
     if spark is None:
-        spark = _spark
+        spark = SPARK
     assert spark is not None
 
     if not is_registered(udf, spark):
