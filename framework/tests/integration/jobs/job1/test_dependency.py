@@ -46,7 +46,7 @@ def test_job1_gold_fact_dependency():
         assert parents == expected_parents, f"{', '.join(parents)} <> {', '.join(expected_parents)}"
 
     check()
-    
+
     j = get_job(step="gold", topic="fact", item="dependency")
     j.update_dependencies()
     check()
