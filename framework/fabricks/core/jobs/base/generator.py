@@ -27,7 +27,7 @@ class Generator(Configurator):
 
     def get_dependencies(self) -> Optional[DataFrame]:
         import re
-
+        
         from fabricks.context import CATALOG
 
         df = self.get_data(self.stream)

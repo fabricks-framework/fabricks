@@ -38,7 +38,7 @@ def test_job1_no_unexpected_failure():
             "silver.princess_drop", 
             "gold.invoke_failed_pre_run", 
             "gold.invoke_timedout",
-            "gold.invoke_timedout_pre_run",
+            "gold.invoke_timedout_pre_run"
           )
         """
     )
