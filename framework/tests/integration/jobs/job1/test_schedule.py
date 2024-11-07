@@ -37,8 +37,8 @@ def test_job1_no_unexpected_failure():
           and l.job not in (
             "silver.princess_drop", 
             "gold.invoke_failed_pre_run", 
-            "gold_invoke_timedout",
-            "gold_invoke_timedout_pre_run",
+            "gold.invoke_timedout",
+            "gold.invoke_timedout_pre_run",
           )
         """
     )

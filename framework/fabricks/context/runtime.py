@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Final, List
+from typing import Final, List, Optional
 
 import yaml
 from databricks.sdk.runtime import spark
@@ -90,6 +90,8 @@ try:
     path_requirements = path_options.get("requirements")
     assert path_requirements, "requirements mandatory in path options"
     PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.join(path_requirements)
+
+    CATALOG: Optional[str] = CONF_RUNTIME.get("options", {}).get("catalog")
 
     def _get_storage_paths(objects: List[dict]) -> dict:
         d = {}

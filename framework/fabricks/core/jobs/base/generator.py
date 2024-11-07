@@ -27,17 +27,25 @@ class Generator(Configurator):
 
     def get_dependencies(self) -> Optional[DataFrame]:
         import re
+        
+        from fabricks.context import CATALOG
 
         df = self.get_data(self.stream)
         jvm = df._sc._jvm  # type: ignore
         explain_plan = cast(Any, jvm.PythonSQLUtils).explainString(cast(Any, df._jdf).queryExecution(), "extended")  # type: ignore
 
+        if CATALOG is None:
+            r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
+        else:
+            r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
+
         dependencies = []
-        r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
+
         matches = re.findall(r, explain_plan)
         matches = list(set(matches))
         for m in matches:
             dependencies.append(Row(self.job_id, m, "parser"))
+
         parents = self.options.job.get_list("parents") or []
         for p in parents:
             dependencies.append(Row(self.job_id, p, "job"))
