@@ -35,6 +35,13 @@ def test_job1_gold_scd2_update():
     compare_gold_to_expected(j, "scd2", 1)
 
 
+@pytest.mark.order(125)
+def test_job1_gold_scd2_correct_valid_from():
+    df = spark.sql("select min(`__valid_from`) <> '1900-01-01' from gold.scd2_correct_valid_from")
+    check = df.collect()[0][0]
+    assert check, "min __valid_from is 1900-01-01"
+
+
 @pytest.mark.order(129)
 def test_job1_gold_fact_udf():
     addition = SPARK.sql("select addition from gold.fact_udf").collect()[0][0]

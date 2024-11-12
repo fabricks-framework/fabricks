@@ -2,6 +2,7 @@ with
     dates as (
         select `id` as `id`, __valid_from as __timestamp, 'upsert' as __operation
         from silver.monarch_scd2
+        where __valid_from > '1900-01-02'
         union
         select `id` as `id`, __valid_to as __timestamp, 'delete' as __operation
         from silver.monarch_scd2
