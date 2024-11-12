@@ -21,15 +21,15 @@ from fabricks.context.runtime import (
     STEPS,
     VARIABLES,
 )
-from fabricks.context.spark import DBUTILS, SPARK, build_spark_session, init_spark_session, use_catalog
+from fabricks.context.spark_session import DBUTILS, SPARK, get_spark_session, init_spark_session
 
 __all__ = [
     "BRONZE",
-    "build_spark_session",
     "CATALOG",
     "CONF_RUNTIME",
     "DBUTILS",
     "FABRICKS_STORAGE",
+    "get_spark_session",
     "GOLD",
     "init_spark_session",
     "IS_LIVE",
@@ -48,6 +48,5 @@ __all__ = [
     "SILVER",
     "SPARK",
     "STEPS",
-    "use_catalog",
     "VARIABLES",
 ]

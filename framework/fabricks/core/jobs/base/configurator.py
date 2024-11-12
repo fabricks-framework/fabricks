@@ -7,7 +7,7 @@ from pyspark.sql import DataFrame, SparkSession
 from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import Logger, flush
-from fabricks.context.spark import build_spark_session
+from fabricks.context.spark_session import get_spark_session
 from fabricks.core.jobs.base.types import Modes, Options, Paths, Timeouts, TStep
 from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.core.jobs.get_job_id import get_job_id
@@ -85,7 +85,7 @@ class Configurator(ABC):
     @property
     def spark(self) -> SparkSession:
         if not self._spark:
-            spark, _ = build_spark_session(new=True)
+            spark, _ = get_spark_session(new=True)
 
             step_options = self.step_conf.get("spark_options", {})
             step_sql_options = step_options.get("sql", {})

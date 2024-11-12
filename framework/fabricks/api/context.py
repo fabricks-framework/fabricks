@@ -1,4 +1,4 @@
-from fabricks.context import BRONZE, DBUTILS, GOLD, SECRET_SCOPE, SILVER, SPARK, init_spark_session, use_catalog
+from fabricks.context import BRONZE, DBUTILS, GOLD, SECRET_SCOPE, SILVER, SPARK, init_spark_session
 from fabricks.core.jobs.base.types import Bronzes, Golds, Silvers
 
 # step
@@ -23,5 +23,4 @@ __all__ = [
     "SILVERS",
     "SPARK",
     "STEPS",
-    "use_catalog",
 ]
