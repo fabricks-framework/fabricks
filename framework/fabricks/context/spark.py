@@ -52,7 +52,8 @@ def use_catalog(spark: Optional[SparkSession] = None):
         spark = SparkSession.builder.getOrCreate()  # type: ignore
     assert spark is not None
 
-    spark.sql(f"use catalog {CATALOG};")
+    if CATALOG is not None:
+        spark.sql(f"use catalog {CATALOG};")
 
 
 def init_spark_session(spark: Optional[SparkSession] = None):
