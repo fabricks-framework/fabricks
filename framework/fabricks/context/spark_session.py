@@ -24,7 +24,7 @@ def add_credentials_to_spark_session(spark: Optional[SparkSession] = None):
     credentials = CONF_RUNTIME.get("credentials", {})
     for uri, secret in credentials.items():
         s = get_secret_from_secret_scope(secret_scope=SECRET_SCOPE, name=secret)
-        add_secret_to_spark(secret=s, uri=uri)
+        add_secret_to_spark(secret=s, uri=uri, spark=spark)
 
 
 def add_spark_options_to_spark_session(spark: Optional[SparkSession] = None):
@@ -41,11 +41,11 @@ def add_spark_options_to_spark_session(spark: Optional[SparkSession] = None):
     if spark_options:
         sql_options = spark_options.get("sql", {})
         for key, value in sql_options.items():
-            SPARK.sql(f"set {key} = {value};")
+            spark.sql(f"set {key} = {value};")
 
         conf_options = spark_options.get("conf", {})
         for key, value in conf_options.items():
-            SPARK.conf.set(key, value)
+            spark.conf.set(key, value)
 
 
 def get_spark_session(
@@ -60,9 +60,9 @@ def get_spark_session(
 
     assert spark is not None
 
-    add_catalog_to_spark(spark)
-    add_credentials_to_spark_session()
-    add_spark_options_to_spark_session()
+    add_catalog_to_spark(spark=spark)
+    add_credentials_to_spark_session(spark=spark)
+    add_spark_options_to_spark_session(spark=spark)
 
     return spark, DBUtils(spark)
 

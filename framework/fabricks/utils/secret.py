@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Optional
 
-from databricks.sdk.runtime import dbutils, spark
+from databricks.sdk.runtime import dbutils
+from pyspark.sql import SparkSession
 
 
 @dataclass
@@ -54,32 +56,39 @@ def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
         raise ValueError(f"{name} is not valid")
 
 
-def _add_secret_to_spark(key: str, value: str):
-    spark.conf.set(key, value)
-    # needed for check (invalid configuration value detected for fs.azure.account.key)
+def _add_secret_to_spark(key: str, value: str, spark: Optional[SparkSession] = None):
+    if spark is None:
+        from databricks.sdk.runtime import spark
+
+        spark = spark
+    assert spark is not None
+
+    spark.conf.set(key, value)  # needed for check (invalid configuration value detected for fs.azure.account.key)
     spark._jsc.hadoopConfiguration().set(key, value)  # type: ignore
 
 
-def add_secret_to_spark(secret: Secret, uri: str):
+def add_secret_to_spark(secret: Secret, uri: str, spark: Optional[SparkSession] = None):
+    if spark is None:
+        from databricks.sdk.runtime import spark
+
+        spark = spark
+    assert spark is not None
+
     if isinstance(secret, ApplicationRegistration):
-        _add_secret_to_spark(f"fs.azure.account.auth.type.{uri}", "OAuth")
+        _add_secret_to_spark(f"fs.azure.account.auth.type.{uri}", "OAuth", spark=spark)
         _add_secret_to_spark(
             f"fs.azure.account.oauth.provider.type.{uri}",
             "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider",
+            spark=spark,
         )
-        _add_secret_to_spark(
-            f"fs.azure.account.oauth2.client.id.{uri}",
-            secret.application_id,
-        )
-        _add_secret_to_spark(
-            f"fs.azure.account.oauth2.client.secret.{uri}",
-            secret.secret,
-        )
+        _add_secret_to_spark(f"fs.azure.account.oauth2.client.id.{uri}", secret.application_id, spark=spark)
+        _add_secret_to_spark(f"fs.azure.account.oauth2.client.secret.{uri}", secret.secret, spark=spark)
         _add_secret_to_spark(
             f"fs.azure.account.oauth2.client.endpoint.{uri}",
             f"https://login.microsoftonline.com/{secret.directory_id}/oauth2/token",
+            spark=spark,
         )
     elif isinstance(secret, AccessKey):
-        _add_secret_to_spark(f"fs.azure.account.key.{uri}", secret.key)
+        _add_secret_to_spark(f"fs.azure.account.key.{uri}", secret.key, spark=spark)
     else:
         raise ValueError("secret is not valid")
