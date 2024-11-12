@@ -279,7 +279,7 @@ class Silver(BaseJob):
             context["slice"] = "latest"
 
         if self.change_data_capture == "scd2":
-            context["fix_valid_from"] = True
+            context["correct_valid_from"] = True
 
         if nocdc:
             if "__operation" in df.columns:

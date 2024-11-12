@@ -111,6 +111,7 @@ class GoldOptions(TypedDict):
     parents: Optional[List[str]]
     # extra
     deduplicate: Optional[bool]
+    correct_valid_from: Optional[bool]
     # else
     table: Optional[str]
     notebook: Optional[bool]
