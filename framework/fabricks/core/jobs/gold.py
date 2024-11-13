@@ -140,6 +140,7 @@ class Gold(BaseJob):
             "deduplicate": False,  # assume no duplicate in gold
             "rectify": False,  # assume no reload in gold
             "order_duplicate_by": order_duplicate_by,
+            "correct_valid_from": self.options.job.get_boolean("correct_valid_from", True),
         }
 
         if self.slowly_changing_dimension:

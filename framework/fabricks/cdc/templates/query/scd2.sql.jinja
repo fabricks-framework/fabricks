@@ -31,11 +31,14 @@ __scd2 as (
             {% for field in fields %} {{ field }}, {% endfor %},
             {% if has_identity %} __identity, {% endif %}
             __key,
-            if(
-                __valid_from == min(__valid_from) over (partition by null),
-                cast('1900-01-01' as timestamp),
-                __valid_from
-            ) as __valid_from,
+            {% if correct_valid_from %}
+                if(
+                    __valid_from == min(__valid_from) over (partition by null),
+                    cast('1900-01-01' as timestamp),
+                    __valid_from
+                ) as __valid_from,
+            {% else %} __valid_from,
+            {% endif %}
             __valid_to,
             __is_current,
             {% if soft_delete %} __is_deleted, {% endif %}
@@ -87,7 +90,7 @@ __scd2 as (
             {% if has_identity %} __identity,
             {% endif %}
             __key,
-            {% if fix_valid_from %}
+            {% if correct_valid_from %}
                 {% if not has_rows %}
                     if(
                         __valid_from == min(__valid_from) over (partition by null),

@@ -24,3 +24,12 @@
     options:
       change_data_capture: scd2
       mode: memory
+- job:
+    step: gold
+    topic: scd2
+    item: correct_valid_from
+    tags: [test]
+    options:
+      change_data_capture: scd2
+      mode: memory
+      correct_valid_from: false

@@ -70,7 +70,7 @@ class Processor(Generator):
         deduplicate_key = kwargs.get("deduplicate_key", None)
         deduplicate_hash = kwargs.get("deduplicate_hash", None)
         soft_delete = kwargs.get("soft_delete", None)
-        fix_valid_from = kwargs.get("fix_valid_from", None)
+        correct_valid_from = kwargs.get("correct_valid_from", None)
 
         if slice is None:
             if mode == "update" and has_timestamp and has_rows:
@@ -90,7 +90,7 @@ class Processor(Generator):
             deduplicate_key = True
 
         if self.slowly_changing_dimension and mode == "update":
-            fix_valid_from = fix_valid_from and self.table.rows == 0
+            correct_valid_from = correct_valid_from and self.table.rows == 0
 
         transformed = slice or rectify or deduplicate or deduplicate_key or deduplicate_hash
 
@@ -254,7 +254,7 @@ class Processor(Generator):
             # extra
             "order_duplicate_by": order_duplicate_by,
             "soft_delete": soft_delete,
-            "fix_valid_from": fix_valid_from,
+            "correct_valid_from": correct_valid_from,
             # except
             "all_except": all_except,
             "all_overwrite": all_overwrite,

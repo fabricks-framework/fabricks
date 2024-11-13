@@ -1,11 +1,5 @@
-from databricks.sdk.runtime import dbutils, spark
-
-from fabricks.context import BRONZE, GOLD, SECRET_SCOPE, SILVER
+from fabricks.context import BRONZE, DBUTILS, GOLD, SECRET_SCOPE, SILVER, SPARK, init_spark_session
 from fabricks.core.jobs.base.types import Bronzes, Golds, Silvers
-
-# spark
-SPARK = spark
-DBUTILS = dbutils
 
 # step
 BRONZES = Bronzes
@@ -22,6 +16,7 @@ __all__ = [
     "GOLD",
     "Golds",
     "GOLDS",
+    "init_spark_session",
     "SECRET_SCOPE",
     "SILVER",
     "Silvers",
