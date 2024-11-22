@@ -1,5 +1,5 @@
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import expr, lit
+from pyspark.sql.functions import expr
 
 from fabricks.core.extenders import extender
 

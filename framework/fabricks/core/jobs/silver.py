@@ -105,7 +105,7 @@ class Silver(BaseJob):
             for row in dep_df.collect():
                 df = self.spark.sql(f"select * from {row.parent}")
                 dfs.append(df)
-                
+
             df = concat_dfs(dfs)
 
         else:
