@@ -5,6 +5,9 @@ class FDict:
     def __init__(self, options: Any):
         self.options = options
 
+    def to_dict(self) -> dict:
+        return self.options
+
     def get(self, key: str) -> Optional[Any]:
         return self.options.get(key)
 

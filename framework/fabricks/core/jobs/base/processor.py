@@ -12,15 +12,21 @@ from fabricks.utils.write import write_stream
 
 class Processor(Invoker):
     def extender(self, df: DataFrame) -> DataFrame:
-        extenders = self.options.job.get("extenders")
-        if not extenders:
-            extenders = self.step_conf.get("options", {}).get("extenders", None)
+        name = self.options.extender.get("extender")
+        if not name:
+            name = self.step_conf.get("extender_options", {}).get("extender", None)
 
-        for name in extenders:
+        if name:
             from fabricks.core.extenders import get_extender
 
             Logger.debug(f"extend ({name})", extra={"job": self})
-            df = df.transform(get_extender(name))
+
+            arguments = self.options.extender.get("arguments")
+            if not arguments:
+                arguments = self.step_conf.get("extender_options", {}).get("arguments", None)
+
+            extender = get_extender(name)
+            df = extender(df, **arguments)
 
         return df
 
