@@ -12,15 +12,16 @@ from fabricks.utils.write import write_stream
 
 class Processor(Invoker):
     def extender(self, df: DataFrame) -> DataFrame:
-        name = self.options.job.get("extender")
-        if not name:
-            name = self.step_conf.get("options", {}).get("extender", None)
+        extenders = self.options.job.get("extenders")
+        if not extenders:
+            extenders = self.step_conf.get("options", {}).get("extenders", None)
 
-        if name:
+        for name in extenders:
             from fabricks.core.extenders import get_extender
 
             Logger.debug(f"extend ({name})", extra={"job": self})
             df = df.transform(get_extender(name))
+
         return df
 
     def filter_where(self, df: DataFrame) -> DataFrame:

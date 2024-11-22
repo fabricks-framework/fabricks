@@ -192,6 +192,7 @@ class Configurator(ABC):
             check = self.conf.check_options or {}
             spark = self.conf.spark_options or {}
             invoker = self.conf.invoker_options or {}
+            extender = self.conf.extender_options or {}
 
             self._options = Options(
                 job=FDict(job),
@@ -199,6 +200,7 @@ class Configurator(ABC):
                 check=FDict(check),
                 spark=FDict(spark),
                 invoker=FDict(invoker),
+                extender=FDict(extender),
             )
         return self._options
 

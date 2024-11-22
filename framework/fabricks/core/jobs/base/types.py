@@ -60,6 +60,11 @@ class InvokerOptions(TypedDict):
     post_run: Optional[_InvokeOptions]
 
 
+class ExtenderOptions(TypedDict):
+    extender: str
+    arguments: Optional[dict[str, str]]
+
+
 class CheckOptions(TypedDict):
     pre_run: Optional[bool]
     post_run: Optional[bool]
@@ -78,7 +83,6 @@ class BronzeOptions(TypedDict):
     # default
     parents: Optional[List[str]]
     filter_where: Optional[str]
-    extender: Optional[str]
     # extra
     encrypted_columns: Optional[List[str]]
     calculated_columns: Optional[dict[str, str]]
@@ -93,7 +97,6 @@ class SilverOptions(TypedDict):
     # default
     parents: Optional[List[str]]
     filter_where: Optional[str]
-    extender: Optional[str]
     # extra
     deduplicate: Optional[bool]
     stream: Optional[bool]
@@ -138,6 +141,7 @@ class JobConfBronze(BaseJobConf):
     check_options: Optional[CheckOptions] = None
     spark_options: Optional[SparkOptions] = None
     invoker_options: Optional[InvokerOptions] = None
+    extender_options: Optional[ExtenderOptions] = None
     tags: Optional[List[str]] = None
     comment: Optional[str] = None
 
@@ -150,6 +154,7 @@ class JobConfSilver(BaseJobConf):
     check_options: Optional[CheckOptions] = None
     spark_options: Optional[SparkOptions] = None
     invoker_options: Optional[InvokerOptions] = None
+    extender_options: Optional[ExtenderOptions] = None
     tags: Optional[List[str]] = None
     comment: Optional[str] = None
 
@@ -162,6 +167,7 @@ class JobConfGold(BaseJobConf):
     check_options: Optional[CheckOptions] = None
     spark_options: Optional[SparkOptions] = None
     invoker_options: Optional[InvokerOptions] = None
+    extender_options: Optional[ExtenderOptions] = None
     tags: Optional[List[str]] = None
     comment: Optional[str] = None
 
@@ -186,6 +192,7 @@ class Options:
     table: FDict
     spark: FDict
     invoker: FDict
+    extender: FDict
 
 
 @dataclass

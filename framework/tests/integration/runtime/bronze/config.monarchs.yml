@@ -29,6 +29,7 @@
       mode: register
       uri: abfss://fabricks@$datahub/raw/delta/monarch
       keys: [id]
+    extender_options:
       extender: monarch
 - job:
     step: bronze

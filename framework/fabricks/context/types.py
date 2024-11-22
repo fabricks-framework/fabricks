@@ -52,7 +52,7 @@ class StepOptions(TypedDict):
     order: int
     workers: Optional[int]
     timeouts: StepTimeoutOptions
-    extender: Optional[str]
+    extenders: Optional[List[str]]
     pre_run: Optional[InvokeOptions]
     post_run: Optional[InvokeOptions]
 

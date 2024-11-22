@@ -51,7 +51,8 @@
       uri: abfss://fabricks@$datahub/raw/princess
       parser: parquet
       keys: [id]
-      extender: force_reload
+      extender_options:
+        extender:    force_reload
 - job:
     step: bronze
     topic: princess

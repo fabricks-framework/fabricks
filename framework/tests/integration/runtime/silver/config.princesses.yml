@@ -8,7 +8,8 @@
     options:
       mode: update
       change_data_capture: scd1
-      extender: add_country
+      extender_options:
+            extender:  add_country
 - job:
     step: silver
     topic: princess
