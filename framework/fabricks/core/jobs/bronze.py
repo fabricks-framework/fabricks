@@ -86,13 +86,13 @@ class Bronze(BaseJob):
             df = self.spark.sql(f"select * from {file_format}.`{self.data_path}`")
             assert len(df.columns) > 1, "external table must have at least one column"
         except Exception as e:
-            Logger.exception(f"read external table failed", extra={"job": self})
+            Logger.exception("read external table failed", extra={"job": self})
             raise e
 
         self.spark.sql(
             f"create table if not exists {self.qualified_name} using {file_format} location '{self.data_path}'"
         )
-        
+
     def drop_external_table(self):
         Logger.debug("drop external table", extra={"job": self})
         self.spark.sql(f"drop table if exists {self.qualified_name}")
@@ -123,13 +123,13 @@ class Bronze(BaseJob):
     def parser(self) -> BaseParser:
         if not self._parser:
             assert self.mode not in ["register"], f"{self.mode} not allowed"
-            
+
             name = self.options.job.get("parser")
             assert name is not None, "parser not found"
-            
+
             options = self.conf.parser_options or None  # type: ignore
             p = get_parser(name, options)
-            
+
             self._parser = p
 
         return self._parser
@@ -154,7 +154,7 @@ class Bronze(BaseJob):
                 )
             else:
                 df = self.spark.sql(f"select * from {self}")
-                
+
             # cleaning should done by parser
             df = clean(df)
 

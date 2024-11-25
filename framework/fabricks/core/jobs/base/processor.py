@@ -208,6 +208,7 @@ class Processor(Invoker):
             self.truncate()
             self.overwrite_schema()
             self.run(retry=False)
+
         except Exception as e:
             Logger.exception("🙈", extra={"job": self})
             raise e
