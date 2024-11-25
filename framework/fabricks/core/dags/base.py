@@ -4,7 +4,7 @@ from typing import Optional, cast
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 
-from fabricks.context import FABRICKS_STORAGE, SPARK
+from fabricks.context import FABRICKS_STORAGE, SECRET_SCOPE, SPARK
 from fabricks.core.dags.log import DagsTableLogger
 from fabricks.metastore.table import Table
 from fabricks.utils.azure_table import AzureTable
@@ -20,7 +20,7 @@ class BaseDags:
     def get_connection_string(self) -> str:
         if not self._connection_string:
             storage_account = FABRICKS_STORAGE.get_storage_account()
-            secret = get_secret_from_secret_scope("bmskv", f"{storage_account}-access-key")
+            secret = get_secret_from_secret_scope(SECRET_SCOPE, f"{storage_account}-access-key")
             access_key = cast(AccessKey, secret).key
             connection_string = f"DefaultEndpointsProtocol=https;AccountName={storage_account};AccountKey={access_key};EndpointSuffix=core.windows.net"
             self._connection_string = connection_string
