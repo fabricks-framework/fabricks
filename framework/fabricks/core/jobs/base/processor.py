@@ -22,9 +22,11 @@ class Processor(Invoker):
             Logger.debug(f"extend ({name})", extra={"job": self})
 
             arguments = self.options.extender.get("arguments")
-            if not arguments:
+            if arguments is None:
                 arguments = self.step_conf.get("extender_options", {}).get("arguments", None)
-
+            if arguments is None:
+                arguments = {}
+                
             extender = get_extender(name)
             df = extender(df, **arguments)
 
