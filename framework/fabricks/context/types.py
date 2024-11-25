@@ -4,7 +4,6 @@ from typing import List, Optional, TypedDict
 class RuntimePathOptions(TypedDict):
     storage: str
     udfs: str
-    extenders: str
     parsers: str
     schedules: str
     views: str
@@ -45,6 +44,11 @@ class StepPathOptions(TypedDict):
 
 class InvokeOptions(TypedDict):
     notebook: str
+    arguments: Optional[dict[str, str]]
+
+
+class ExtenderOptions(TypedDict):
+    extender: str
     arguments: Optional[dict[str, str]]
 
 
@@ -113,6 +117,7 @@ class Conf(TypedDict):
     name: str
     options: RuntimeOptions
     path_options: RuntimePathOptions
+    extender_options: Optional[ExtenderOptions]
     spark_options: SparkOptions
     bronze: Optional[List[Bronze]]
     silver: Optional[List[Silver]]

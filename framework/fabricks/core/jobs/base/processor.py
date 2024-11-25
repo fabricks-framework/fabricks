@@ -26,7 +26,7 @@ class Processor(Invoker):
                 arguments = self.step_conf.get("extender_options", {}).get("arguments", None)
             if arguments is None:
                 arguments = {}
-                
+
             extender = get_extender(name)
             df = extender(df, **arguments)
 

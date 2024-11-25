@@ -8,9 +8,9 @@
     options:
       mode: register
       uri: abfss://fabricks@$datahub/raw/delta/regent
-      extender_options:
-            extender:  monarch
       keys: [id]
+    extender_options:
+      extender:  monarch
 - job:
     step: bronze
     topic: regent
@@ -19,6 +19,6 @@
     options:
       mode: register
       uri: abfss://fabricks@$datahub/raw/delta/regent
-      extender_options:
-            extender:  monarch
       keys: [id]
+    extender_options:
+      extender:  monarch
