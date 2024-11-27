@@ -12,15 +12,24 @@ from fabricks.utils.write import write_stream
 
 class Processor(Invoker):
     def extender(self, df: DataFrame) -> DataFrame:
-        name = self.options.job.get("extender")
+        name = self.options.extenders.get("extender")
         if not name:
-            name = self.step_conf.get("options", {}).get("extender", None)
+            name = self.step_conf.get("extender_options", {}).get("extender", None)
 
         if name:
             from fabricks.core.extenders import get_extender
 
             Logger.debug(f"extend ({name})", extra={"job": self})
-            df = df.transform(get_extender(name))
+
+            arguments = self.options.extenders.get("arguments")
+            if arguments is None:
+                arguments = self.step_conf.get("extender_options", {}).get("arguments", None)
+            if arguments is None:
+                arguments = {}
+
+            extender = get_extender(name)
+            df = extender(df, **arguments)
+
         return df
 
     def filter_where(self, df: DataFrame) -> DataFrame:
@@ -199,6 +208,7 @@ class Processor(Invoker):
             self.truncate()
             self.overwrite_schema()
             self.run(retry=False)
+
         except Exception as e:
             Logger.exception("🙈", extra={"job": self})
             raise e

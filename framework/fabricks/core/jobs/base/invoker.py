@@ -19,10 +19,10 @@ class Invoker(Checker):
         self._step_position_invoke(position="post_run", schedule=schedule)
 
     def _job_position_invoke(self, position: str, schedule: Optional[str] = None):
-        if self.options.invoker.get(position):
+        if self.options.invokers.get(position):
             Logger.info(f"{position}-invoke", extra={"job": self})
             try:
-                options = self.options.invoker.get_dict(position)
+                options = self.options.invokers.get_dict(position)
                 assert options
 
                 notebook = options.notebook  # type: ignore
@@ -102,12 +102,12 @@ class Invoker(Checker):
 
         """
         if path is None:
-            notebook = self.options.invoker.get_dict("notebook")
+            notebook = self.options.invokers.get_dict("notebook")
             path = PATH_RUNTIME.join(notebook)
         assert path.exists(), f"{path} not found"
 
         if arguments is None:
-            arguments = self.options.invoker.get_dict("arguments") or {}
+            arguments = self.options.invokers.get_dict("arguments") or {}
 
         if schedule is not None:
             variables = get_schedule(schedule).select("options.variables").collect()[0][0]

@@ -81,6 +81,14 @@ class Bronze(BaseJob):
             file_format = "delta"
 
         Logger.debug(f"register external table ({self.data_path})", extra={"job": self})
+
+        try:
+            df = self.spark.sql(f"select * from {file_format}.`{self.data_path}`")
+            assert len(df.columns) > 1, "external table must have at least one column"
+        except Exception as e:
+            Logger.exception("read external table failed", extra={"job": self})
+            raise e
+
         self.spark.sql(
             f"create table if not exists {self.qualified_name} using {file_format} location '{self.data_path}'"
         )
@@ -115,11 +123,15 @@ class Bronze(BaseJob):
     def parser(self) -> BaseParser:
         if not self._parser:
             assert self.mode not in ["register"], f"{self.mode} not allowed"
+
             name = self.options.job.get("parser")
             assert name is not None, "parser not found"
+
             options = self.conf.parser_options or None  # type: ignore
             p = get_parser(name, options)
+
             self._parser = p
+
         return self._parser
 
     def parse(self, stream: bool = False) -> DataFrame:
@@ -142,8 +154,10 @@ class Bronze(BaseJob):
                 )
             else:
                 df = self.spark.sql(f"select * from {self}")
-            # cleaning done in parser
+
+            # cleaning should done by parser
             df = clean(df)
+
         else:
             df = self.parser.get_data(
                 stream=stream,
@@ -151,33 +165,42 @@ class Bronze(BaseJob):
                 schema_path=self.paths.schema,
                 spark=self.spark,
             )
+
         return df
 
     def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> Optional[DataFrame]:
         df = self.parse(stream)
         df = self.filter_where(df)
         df = self.encrypt(df)
+
         if transform:
             df = self.base_transform(df)
+
         return df
 
     def add_calculated_columns(self, df: DataFrame) -> DataFrame:
         calculated_columns = self.options.job.get_dict("calculated_columns")
+
         if calculated_columns:
             for key, value in calculated_columns.items():
                 Logger.debug(f"add calculated column ({key} -> {value})", extra={"job": self})
                 df = df.withColumn(key, expr(f"{value}"))
+
         return df
 
     def add_hash(self, df: DataFrame) -> DataFrame:
         if "__hash" not in df.columns:
             fields = [f"`{c}`" for c in df.columns if not c.startswith("__")]
             Logger.debug("add hash", extra={"job": self})
+
             if "__operation" in df.columns:
                 fields += ["__operation == 'delete'"]
+
             if "__source" in df.columns:
                 fields += ["__source"]
+
             df = df.withColumn("__hash", md5(expr(f"{concat_ws(fields)}")))
+
         return df
 
     def add_key(self, df: DataFrame) -> DataFrame:
@@ -185,10 +208,13 @@ class Bronze(BaseJob):
             fields = self.options.job.get_list("keys")
             if fields:
                 Logger.debug(f"add key ({', '.join(fields)})", extra={"job": self})
+
                 if "__source" in df.columns:
                     fields = fields + ["__source"]
+
                 fields = [f"`{f}`" for f in fields]
                 df = df.withColumn("__key", md5(expr(f"{concat_ws(fields)}")))
+
         return df
 
     def add_source(self, df: DataFrame) -> DataFrame:
@@ -197,6 +223,7 @@ class Bronze(BaseJob):
             if source:
                 Logger.debug(f"add source ({source})", extra={"job": self})
                 df = df.withColumn("__source", lit(source))
+
         return df
 
     def add_operation(self, df: DataFrame) -> DataFrame:
@@ -205,8 +232,10 @@ class Bronze(BaseJob):
             if operation:
                 Logger.debug(f"add operation ({operation})", extra={"job": self})
                 df = df.withColumn("__operation", lit(operation))
+
             else:
                 df = df.withColumn("__operation", lit("upsert"))
+
         return df
 
     def base_transform(self, df: DataFrame) -> DataFrame:
@@ -234,6 +263,7 @@ class Bronze(BaseJob):
                         """
                     ),
                 )
+
             else:
                 df = df.withColumn(
                     "__metadata",
@@ -249,6 +279,7 @@ class Bronze(BaseJob):
                         """
                     ),
                 )
+
         return df
 
     def create_or_replace_view(self):

@@ -20,6 +20,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
     check_options = row["check_options"].asDict() if row["check_options"] else None
     spark_options = row["spark_options"].asDict() if row["spark_options"] else None
     invoker_options = row["invoker_options"].asDict() if row["invoker_options"] else None
+    extender_options = row["extender_options"].asDict() if row["extender_options"] else None
 
     if step in Bronzes:
         from fabricks.core.jobs.base.types import JobConfBronze
@@ -37,6 +38,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
             table_options=table_options,
             check_options=check_options,
             invoker_options=invoker_options,
+            extender_options=extender_options,
             spark_options=spark_options,
             tags=row["tags"],
         )
@@ -55,6 +57,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
             table_options=table_options,
             check_options=check_options,
             invoker_options=invoker_options,
+            extender_options=extender_options,
             spark_options=spark_options,
             tags=row["tags"],
         )
@@ -73,6 +76,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
             table_options=table_options,
             check_options=check_options,
             invoker_options=invoker_options,
+            extender_options=extender_options,
             spark_options=spark_options,
             tags=row["tags"],
         )

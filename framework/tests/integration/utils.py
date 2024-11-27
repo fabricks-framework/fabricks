@@ -11,6 +11,11 @@ from fabricks.utils.path import Path
 from tests.integration.types import paths
 
 
+def create_empty_delta():
+    uri = f"{paths.raw}/delta/empty"
+    spark.sql(f"create table if not exists bronze_princess_no_column using delta location '{uri}'")
+
+
 def convert_parquet_to_delta(topic: str):
     dfs = []
 
@@ -103,6 +108,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
     convert_parquet_to_delta("regent")
     convert_parquet_to_delta("monarch")
+    create_empty_delta()
 
 
 def create_expected_views():
