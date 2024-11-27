@@ -10,7 +10,7 @@
       uri: abfss://fabricks@$datahub/raw/delta/regent
       keys: [id]
     extender_options:
-      extender:  monarch
+      - extender:  monarch
 - job:
     step: bronze
     topic: regent
@@ -21,4 +21,4 @@
       uri: abfss://fabricks@$datahub/raw/delta/regent
       keys: [id]
     extender_options:
-      extender:  monarch
+      - extender:  monarch

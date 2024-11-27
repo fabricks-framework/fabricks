@@ -52,7 +52,7 @@
       parser: parquet
       keys: [id]
     extender_options:
-      extender:    force_reload
+      - extender: force_reload
 - job:
     step: bronze
     topic: princess

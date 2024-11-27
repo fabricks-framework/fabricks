@@ -30,9 +30,10 @@
       uri: abfss://fabricks@$datahub/raw/delta/monarch
       keys: [id]
     extender_options:
-      extender: monarch
-      arguments:
-        why: not
+      - extender: monarch
+        arguments:
+          why: not
+      - extender: force_reload
 - job:
     step: bronze
     topic: monarch
