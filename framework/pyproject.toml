@@ -5,6 +5,8 @@ description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },
 ]
+# Attention: You may never specify newer dependencies than latests Databricks LTS Runtime
+# Eg, PyYaml is at 6.0 there
 dependencies = [
     "azure-data-tables >=12.5.0,<13",
     "azure-identity >=1.10.0",
