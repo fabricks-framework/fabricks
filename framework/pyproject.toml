@@ -68,7 +68,7 @@ packages = [
     "fabricks",
 ]
 
-[dependency_groups]
+[dependency-groups]
 test = [
     "pandas >=1.5.3",
     "pytest >=7.1.2",
