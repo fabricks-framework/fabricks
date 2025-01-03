@@ -53,36 +53,36 @@ fi
 if [ "$all" = "true" ] || [ "$python" = "true" ]
 then
     echo "🌟 autoflake(ing) 🌟"
-    poetry run autoflake -r -i .
+    uv run autoflake -r -i .
     echo "🌟 isort(ing) 🌟"
-    poetry run isort .
+    uv run isort .
     echo "🌟 pycln(ing) 🌟"
-    poetry run pycln .
+    uv run pycln .
 fi
 
 if [ "$all" = "true" ] || [ "$ruff" = "true" ] || [ "$python" = "true" ]
 then
     echo "🧙 ruff(ing) 🧙"
-    poetry run ruff format .
-    poetry run ruff check . --fix
+    uv run ruff format .
+    uv run ruff check . --fix
 fi
 
 if [ "$all" = "true" ] || [ "$python" = "true" ]
 then
     echo "🌟 pyright(ing) 🌟"
-    poetry run pyright .
+    uv run pyright .
 fi
 
 if [ "$all" = "true" ] || [ "$sql" = "true" ]
 then
     echo "🌟 sqlfmt(ing) 🌟"
-    poetry run sqlfmt .
+    uv run sqlfmt .
 fi
 
 if [ "$all" = "true" ] || [ "$yaml" = "true" ]
 then
     echo "🌟 yamlfix(ing) 🌟"
-    poetry run yamlfix . --exclude .venv --exclude .dev --exclude .idea --include *.yml
+    uv run yamlfix . --exclude .venv --exclude .dev --exclude .idea --include *.yml
 fi
 
 if [ "$all" = "true" ] || [ "$git" = "true" ]
