@@ -39,6 +39,7 @@ class Invoker(Checker):
                         arguments=arguments,
                         timeout=timeout,
                         schedule=schedule,
+                        position=position,
                     )
 
                 except Exception as e:
@@ -68,6 +69,7 @@ class Invoker(Checker):
                         arguments=arguments,
                         timeout=timeout,
                         schedule=schedule,
+                        position=position,
                     )
 
                 except Exception as e:
@@ -79,7 +81,7 @@ class Invoker(Checker):
                         raise e
 
     @overload
-    def invoke(self, path: Path, arguments: dict, timeout: Optional[int] = None, schedule: Optional[str] = None): ...
+    def invoke(self, path: Path, arguments: dict, timeout: Optional[int] = None, schedule: Optional[str] = None, position: Optional[str] = None): ...
 
     @overload
     def invoke(self, *, schedule: Optional[str] = None): ...
@@ -90,6 +92,7 @@ class Invoker(Checker):
         arguments: Optional[dict] = None,
         timeout: Optional[int] = None,
         schedule: Optional[str] = None,
+        position: Optional[str] = None,
     ):
         """
         Invokes a notebook job.
@@ -103,27 +106,25 @@ class Invoker(Checker):
             AssertionError: If the specified path does not exist.
 
         """
-        if path is None or arguments is None or timeout is None or schedule is None:
+        if position is None:
             invokers = self.options.invokers.get_list("run")
             assert len(invokers) == 1, "Only one run invoker is allowed"
             invoker = invokers[0]
 
-        if path is None:
             notebook = invoker.notebook
             path = PATH_RUNTIME.join(notebook)
+            assert path.exists(), f"{path} not found"
 
-        assert path.exists(), f"{path} not found"
-
-        if arguments is None:
             arguments = cast(Dict, invoker.arguments) or {}
+            timeout = invoker.timeout
+
+        if timeout is None:
+            timeout = self.timeout
 
         if schedule is not None:
             variables = get_schedule(schedule).select("options.variables").collect()[0][0]
         else:
             variables = {}
-
-        if timeout is None:
-            timeout = invoker.timeout or self.timeout
 
         self.dbutils.notebook.run(
             path.get_notebook_path(),
