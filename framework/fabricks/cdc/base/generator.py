@@ -74,7 +74,7 @@ class Generator(Configurator):
           {sql}
         )
         select
-          {','.join(columns)}
+          {",".join(columns)}
         from __view
         """
         sql = fix_sql(sql)

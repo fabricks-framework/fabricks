@@ -1,6 +1,8 @@
 import json
 from typing import Optional, overload
 
+from pyspark.sql import DataFrame
+
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import Logger
 from fabricks.core.jobs.base.checker import Checker
@@ -10,71 +12,77 @@ from fabricks.utils.path import Path
 
 
 class Invoker(Checker):
-    def pre_run_invoke(self, schedule: Optional[str] = None):
-        self._job_position_invoke(position="pre_run", schedule=schedule)
-        self._step_position_invoke(position="pre_run", schedule=schedule)
+    def invoke_pre_run(self, schedule: Optional[str] = None):
+        self._invoke_job(position="pre_run", schedule=schedule)
+        self._invoke_step(position="pre_run", schedule=schedule)
 
-    def post_run_invoke(self, schedule: Optional[str] = None):
-        self._job_position_invoke(position="post_run", schedule=schedule)
-        self._step_position_invoke(position="post_run", schedule=schedule)
+    def invoke_post_run(self, schedule: Optional[str] = None):
+        self._invoke_job(position="post_run", schedule=schedule)
+        self._invoke_step(position="post_run", schedule=schedule)
 
-    def _job_position_invoke(self, position: str, schedule: Optional[str] = None):
-        if self.options.invokers.get(position):
-            Logger.info(f"{position}-invoke", extra={"job": self})
-            try:
-                options = self.options.invokers.get_dict(position)
-                assert options
+    def _invoke_job(self, position: str, schedule: Optional[str] = None):
+        invokers = [i for i in self.options.invokers if i.get("position") == position]
 
-                notebook = options.notebook  # type: ignore
-                assert notebook, "notebook mandatory"
-                path = PATH_RUNTIME.join(notebook)
+        if invokers:
+            for i in invokers:
+                Logger.info(f"{position}-invoke", extra={"job": self})
+                try:
+                    options = i.get_dict("options")
+                    assert options
 
-                arguments = options.arguments or {}  # type: ignore
+                    notebook = options.notebook
+                    assert notebook, "notebook mandatory"
+                    path = PATH_RUNTIME.join(notebook)
 
-                if position == "pre_run":
-                    timeout = self.timeouts.pre_run
-                elif position == "post_run":
-                    timeout = self.timeouts.post_run
-                else:
-                    timeout = None
+                    arguments = options.arguments or {}
 
-                self.invoke(
-                    path=path,
-                    arguments=arguments,
-                    timeout=timeout,
-                    schedule=schedule,
-                )
+                    if position == "pre_run":
+                        timeout = self.timeouts.pre_run
+                    elif position == "post_run":
+                        timeout = self.timeouts.post_run
+                    else:
+                        timeout = None
 
-            except Exception:
-                raise InvokerFailedException(position)
+                    self.invoke(
+                        path=path,
+                        arguments=arguments,
+                        timeout=timeout,
+                        schedule=schedule,
+                    )
 
-    def _step_position_invoke(self, position: str, schedule: Optional[str] = None):
-        if self.step_conf.get("options", {}).get(position, None):
-            Logger.info(f"{self.step} - {position}-invoke")
-            try:
-                options = self.step_conf.get("options", {}).get(position, None)
-                assert options
+                except Exception:
+                    raise InvokerFailedException(position)
 
-                notebook = options.get("notebook")  # type: ignore
-                assert notebook, "notebook mandatory"
-                path = PATH_RUNTIME.join(notebook)
+    def _invoke_step(self, position: str, schedule: Optional[str] = None):
+        invokers = [i for i in self.step_conf.get("invokers", []) if i.get("position") == position]
 
-                arguments = options.get("arguments", {})  # type: ignore
+        if invokers:
+            for i in invokers:
+                Logger.info(f"{self.step} - {position}-invoke")
+                try:
+                    options = i.get_dict("options")
+                    assert options
 
-                if position == "pre_run":
-                    timeout = self.timeouts.pre_run
-                elif position == "post_run":
-                    timeout = self.timeouts.post_run
+                    notebook = options.get("notebook")
+                    assert notebook, "notebook mandatory"
+                    path = PATH_RUNTIME.join(notebook)
 
-                self.invoke(
-                    path=path,
-                    arguments=arguments,
-                    timeout=timeout,
-                    schedule=schedule,
-                )
+                    arguments = options.get("arguments", {})
 
-            except Exception:
-                raise InvokerFailedException(position)
+                    if position == "pre_run":
+                        timeout = self.timeouts.pre_run
+                    elif position == "post_run":
+                        timeout = self.timeouts.post_run
+
+                    self.invoke(
+                        path=path,
+                        arguments=arguments,
+                        timeout=timeout,
+                        schedule=schedule,
+                    )
+
+                except Exception:
+                    raise InvokerFailedException(position)
 
     @overload
     def invoke(self, path: Path, arguments: dict, timeout: Optional[int] = None, schedule: Optional[str] = None): ...
@@ -101,13 +109,19 @@ class Invoker(Checker):
             AssertionError: If the specified path does not exist.
 
         """
+        if path is None or arguments is None or timeout is None or schedule is None:
+            invoker = [i for i in self.step_conf.get("invokers", []) if i.get("position") == "run"]
+            assert len(invoker) == 1, "Only one run invoker is allowed"
+            invoker = invoker[0].get_dict("options")
+
         if path is None:
-            notebook = self.options.invokers.get_dict("notebook")
+            notebook = invoker.get("notebook")
             path = PATH_RUNTIME.join(notebook)
+
         assert path.exists(), f"{path} not found"
 
         if arguments is None:
-            arguments = self.options.invokers.get_dict("arguments") or {}
+            arguments = invoker.get_dict("arguments") or {}
 
         if schedule is not None:
             variables = get_schedule(schedule).select("options.variables").collect()[0][0]
@@ -129,3 +143,54 @@ class Invoker(Checker):
                 "schedule_variables": json.dumps(variables),
             },
         )
+
+    def _job_extender(self, df: DataFrame) -> DataFrame:
+        from fabricks.core.extenders import get_extender
+
+        extenders = self.options.extenders
+
+        for e in extenders:
+            name = e.get("extender")
+            arguments = e.get_dict("arguments")
+
+            extender = get_extender(name)
+            df = extender(df, **arguments)
+
+        return df
+
+    def _step_extender(self, df: DataFrame) -> DataFrame:
+        from fabricks.core.extenders import get_extender
+
+        extenders = self.options.extenders
+
+        for e in extenders:
+            name = e.get("extender")
+            arguments = e.get_dict("arguments")
+
+            extender = get_extender(name)
+            df = extender(df, **arguments)
+
+        return df
+
+    def extender(self, df: DataFrame) -> DataFrame:
+        extenders = self.options.extenders
+
+        for e in extenders:
+            if not name:
+                name = self.step_conf.get("extender_options", {}).get("extender", None)
+
+            if name:
+                from fabricks.core.extenders import get_extender
+
+                Logger.debug(f"extend ({name})", extra={"job": self})
+
+                arguments = self.options.extenders.get("arguments")
+                if arguments is None:
+                    arguments = self.step_conf.get("extender_options", {}).get("arguments", None)
+                if arguments is None:
+                    arguments = {}
+
+                extender = get_extender(name)
+                df = extender(df, **arguments)
+
+            return df

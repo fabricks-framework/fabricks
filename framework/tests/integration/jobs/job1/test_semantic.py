@@ -22,36 +22,36 @@ def test_job1_semantic_fact_table():
 def test_job1_semantic_fact_step_option():
     j = get_job(step="semantic", topic="fact", item="step_option")
     props_df = j.table.show_properties()
-    assert (
-        props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "1"
-    ), "minReaderVersion <> 1"
-    assert (
-        props_df.where("key == 'delta.minWriterVersion'").select("value").collect()[0][0] == "2"
-    ), "minWriterVersion <> 2"
-    assert (
-        props_df.where("key == 'delta.targetFileSize'").select("value").collect()[0][0] == "1073741824"
-    ), "delta.targetFileSize <> 1073741824"
-    assert (
-        props_df.where("key == 'delta.tuneFileSizesForRewrites'").select("value").collect()[0][0] == "False"
-    ), "delta.tuneFileSizesForRewrites <> False"
-    assert (
-        props_df.where("key == 'delta.columnMapping.mode'").select("value").collect()[0][0] == "none"
-    ), "delta.columnMapping.mode <> none"
+    assert props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "1", (
+        "minReaderVersion <> 1"
+    )
+    assert props_df.where("key == 'delta.minWriterVersion'").select("value").collect()[0][0] == "2", (
+        "minWriterVersion <> 2"
+    )
+    assert props_df.where("key == 'delta.targetFileSize'").select("value").collect()[0][0] == "1073741824", (
+        "delta.targetFileSize <> 1073741824"
+    )
+    assert props_df.where("key == 'delta.tuneFileSizesForRewrites'").select("value").collect()[0][0] == "False", (
+        "delta.tuneFileSizesForRewrites <> False"
+    )
+    assert props_df.where("key == 'delta.columnMapping.mode'").select("value").collect()[0][0] == "none", (
+        "delta.columnMapping.mode <> none"
+    )
 
 
 @pytest.mark.order(139)
 def test_job1_semantic_fact_job_option():
     j = get_job(step="semantic", topic="fact", item="job_option")
     props_df = j.table.show_properties()
-    assert (
-        props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "2"
-    ), "minReaderVersion <> 2"
-    assert (
-        props_df.where("key == 'delta.minWriterVersion'").select("value").collect()[0][0] == "5"
-    ), "minWriterVersion <> 5"
-    assert (
-        props_df.where("key == 'delta.columnMapping.mode'").select("value").collect()[0][0] == "none"
-    ), "delta.columnMapping.mode <> none"
+    assert props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "2", (
+        "minReaderVersion <> 2"
+    )
+    assert props_df.where("key == 'delta.minWriterVersion'").select("value").collect()[0][0] == "5", (
+        "minWriterVersion <> 5"
+    )
+    assert props_df.where("key == 'delta.columnMapping.mode'").select("value").collect()[0][0] == "none", (
+        "delta.columnMapping.mode <> none"
+    )
 
 
 @pytest.mark.order(139)
@@ -66,9 +66,9 @@ def test_job1_semantic_fact_zstd():
 def test_job1_semantic_fact_powerbi():
     j = get_job(step="semantic", topic="fact", item="powerbi")
     props_df = j.table.show_properties()
-    assert (
-        props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "2"
-    ), "minReaderVersion <> 2"
-    assert (
-        props_df.where("key == 'delta.minWriterVersion'").select("value").collect()[0][0] == "5"
-    ), "minWriterVersion <> 5"
+    assert props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "2", (
+        "minReaderVersion <> 2"
+    )
+    assert props_df.where("key == 'delta.minWriterVersion'").select("value").collect()[0][0] == "5", (
+        "minWriterVersion <> 5"
+    )

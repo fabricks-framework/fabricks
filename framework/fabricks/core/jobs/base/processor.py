@@ -11,27 +11,6 @@ from fabricks.utils.write import write_stream
 
 
 class Processor(Invoker):
-    def extender(self, df: DataFrame) -> DataFrame:
-        name = self.options.extenders.get("extender")
-        if not name:
-            name = self.step_conf.get("extender_options", {}).get("extender", None)
-
-        if name:
-            from fabricks.core.extenders import get_extender
-
-            Logger.debug(f"extend ({name})", extra={"job": self})
-
-            arguments = self.options.extenders.get("arguments")
-            if arguments is None:
-                arguments = self.step_conf.get("extender_options", {}).get("arguments", None)
-            if arguments is None:
-                arguments = {}
-
-            extender = get_extender(name)
-            df = extender(df, **arguments)
-
-        return df
-
     def filter_where(self, df: DataFrame) -> DataFrame:
         f = self.options.job.get("filter_where")
         if f:
@@ -156,7 +135,7 @@ class Processor(Invoker):
             Logger.info("run starts", extra={"job": self})
 
             if invoke:
-                self.pre_run_invoke(schedule=schedule)
+                self.invoke_pre_run(schedule=schedule)
 
             self.pre_run_check()
 
@@ -166,7 +145,7 @@ class Processor(Invoker):
             self.post_run_extra_check()
 
             if invoke:
-                self.post_run_invoke(schedule=schedule)
+                self.invoke_post_run(schedule=schedule)
 
             Logger.info("run ends", extra={"job": self})
 

@@ -199,7 +199,7 @@ class Configurator(ABC):
                 table=FDict(table),
                 check=FDict(check),
                 spark=FDict(spark),
-                invokers=FDict(invokers),
+                invokers=[FDict(i) for i in invokers],
                 extenders=[FDict(e) for e in extenders],
             )
         return self._options
