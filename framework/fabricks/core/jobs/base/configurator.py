@@ -8,7 +8,7 @@ from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import Logger, flush
 from fabricks.context.spark_session import get_spark_session
-from fabricks.core.jobs.base.types import Modes, Options, Paths, Timeouts, TStep
+from fabricks.core.jobs.base.types import Modes, Options, Paths, TStep
 from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.core.jobs.get_job_id import get_job_id
 from fabricks.metastore.table import Table
@@ -43,7 +43,7 @@ class Configurator(ABC):
 
     _step_conf: Optional[dict[str, str]] = None
     _spark: Optional[SparkSession] = None
-    _timeouts: Optional[Timeouts] = None
+    _timeout: Optional[int] = None
     _options: Optional[Options] = None
     _paths: Optional[Paths] = None
     _table: Optional[Table] = None
@@ -137,28 +137,13 @@ class Configurator(ABC):
         return int(t)
 
     @property
-    def timeouts(self) -> Timeouts:
-        if not self._timeouts:
-            job = self.options.job.get("timeout")
-            if job is None:
-                job = self._get_timeout("job")
-
-            try:
-                pre_run = self.options.invokers.get_dict("pre_run").timeout  # type: ignore
-            except AttributeError:
-                pre_run = self._get_timeout("pre_run")
-
-            try:
-                post_run = self.options.invokers.get_dict("post_run").timeout  # type: ignore
-            except AttributeError:
-                post_run = self._get_timeout("post_run")
-
-            self._timeouts = Timeouts(
-                job=job,
-                pre_run=pre_run,
-                post_run=post_run,
-            )
-        return self._timeouts
+    def timeout(self) -> int:
+        if not self._timeout:
+            t = self.options.job.get("timeout")
+            if t is None:
+                t = self._get_timeout("job")
+            self._timeout = t
+        return self._timeout
 
     def pip(self):
         pass
@@ -199,7 +184,7 @@ class Configurator(ABC):
                 table=FDict(table),
                 check=FDict(check),
                 spark=FDict(spark),
-                invokers=[FDict(i) for i in invokers],
+                invokers=FDict(invokers),
                 extenders=[FDict(e) for e in extenders],
             )
         return self._options

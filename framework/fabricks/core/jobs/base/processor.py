@@ -90,7 +90,7 @@ class Processor(Invoker):
                     df,
                     checkpoints_path=self.paths.checkpoints,
                     func=self._for_each_batch,
-                    timeout=self.timeouts.job,
+                    timeout=self.timeout,
                 )
             else:
                 self._for_each_batch(df)

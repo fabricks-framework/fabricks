@@ -21,27 +21,18 @@ class Invoker(Checker):
         self._invoke_step(position="post_run", schedule=schedule)
 
     def _invoke_job(self, position: str, schedule: Optional[str] = None):
-        invokers = [i for i in self.options.invokers if i.get("position") == position]
+        invokers = self.options.invokers.get_list(position)
 
         if invokers:
             for i in invokers:
                 Logger.info(f"{position}-invoke", extra={"job": self})
                 try:
-                    options = i.get_dict("options")
-                    assert options
-
-                    notebook = options.notebook
+                    notebook = i.notebook
                     assert notebook, "notebook mandatory"
                     path = PATH_RUNTIME.join(notebook)
 
-                    arguments = options.arguments or {}
-
-                    if position == "pre_run":
-                        timeout = self.timeouts.pre_run
-                    elif position == "post_run":
-                        timeout = self.timeouts.post_run
-                    else:
-                        timeout = None
+                    arguments = i.arguments or {}
+                    timeout = i.timeout
 
                     self.invoke(
                         path=path,
@@ -54,25 +45,18 @@ class Invoker(Checker):
                     raise InvokerFailedException(position)
 
     def _invoke_step(self, position: str, schedule: Optional[str] = None):
-        invokers = [i for i in self.step_conf.get("invokers", []) if i.get("position") == position]
+        invokers = self.step_conf.get("invoker_options", {}).get(position, [])
 
         if invokers:
             for i in invokers:
                 Logger.info(f"{self.step} - {position}-invoke")
                 try:
-                    options = i.get_dict("options")
-                    assert options
-
-                    notebook = options.get("notebook")
+                    notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
                     path = PATH_RUNTIME.join(notebook)
 
-                    arguments = options.get("arguments", {})
-
-                    if position == "pre_run":
-                        timeout = self.timeouts.pre_run
-                    elif position == "post_run":
-                        timeout = self.timeouts.post_run
+                    arguments = i.get("arguments", {})
+                    timeout = i.get("timeout")
 
                     self.invoke(
                         path=path,
@@ -110,18 +94,18 @@ class Invoker(Checker):
 
         """
         if path is None or arguments is None or timeout is None or schedule is None:
-            invoker = [i for i in self.step_conf.get("invokers", []) if i.get("position") == "run"]
-            assert len(invoker) == 1, "Only one run invoker is allowed"
-            invoker = invoker[0].get_dict("options")
+            invokers = self.options.invokers.get_list("run")
+            assert len(invokers) == 1, "Only one run invoker is allowed"
+            invoker = invokers[0]
 
         if path is None:
-            notebook = invoker.get("notebook")
+            notebook = invoker.notebook
             path = PATH_RUNTIME.join(notebook)
 
         assert path.exists(), f"{path} not found"
 
         if arguments is None:
-            arguments = invoker.get_dict("arguments") or {}
+            arguments = invoker.arguments or {}
 
         if schedule is not None:
             variables = get_schedule(schedule).select("options.variables").collect()[0][0]
@@ -129,7 +113,7 @@ class Invoker(Checker):
             variables = {}
 
         if timeout is None:
-            timeout = self.timeouts.job
+            invoker.timeout or self.timeout
 
         self.dbutils.notebook.run(
             path.get_notebook_path(),

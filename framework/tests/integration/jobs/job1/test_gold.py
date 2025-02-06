@@ -118,4 +118,4 @@ def test_job1_gold_fact_option():
     assert change_data_feed, "enableChangeDataFeed not found"
     assert change_data_feed == "true", "enableChangeDataFeed not enabled"
 
-    assert j.timeouts.job == 1800, f"timeout {j.timeouts.job} <> 1800"
+    assert j.timeout == 1800, f"timeout {j.timeout} <> 1800"

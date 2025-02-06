@@ -101,7 +101,7 @@ class Gold(BaseJob):
         elif self.options.job.get("notebook"):
             Logger.debug("run notebook", extra={"job": self})
             path = self.paths.runtime.get_notebook_path()
-            global_temp_view = dbutils.notebook.run(path, self.timeouts.job, arguments={})  # type: ignore
+            global_temp_view = dbutils.notebook.run(path, self.timeout, arguments={})  # type: ignore
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
 
         elif self.options.job.get("table"):

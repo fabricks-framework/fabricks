@@ -152,7 +152,7 @@ class JobConfSilver(BaseJobConf):
     table_options: Optional[TableOptions] = None
     check_options: Optional[CheckOptions] = None
     spark_options: Optional[SparkOptions] = None
-    invoker_options: Optional[List[InvokerOptions]] = None
+    invoker_options: Optional[InvokerOptions] = None
     extender_options: Optional[List[ExtenderOptions]] = None
     tags: Optional[List[str]] = None
     comment: Optional[str] = None
@@ -165,7 +165,7 @@ class JobConfGold(BaseJobConf):
     table_options: Optional[TableOptions] = None
     check_options: Optional[CheckOptions] = None
     spark_options: Optional[SparkOptions] = None
-    invoker_options: Optional[List[InvokerOptions]] = None
+    invoker_options: Optional[InvokerOptions] = None
     extender_options: Optional[List[ExtenderOptions]] = None
     tags: Optional[List[str]] = None
     comment: Optional[str] = None
@@ -190,12 +190,5 @@ class Options:
     check: FDict
     table: FDict
     spark: FDict
-    invokers: List[FDict]
+    invokers: FDict
     extenders: List[FDict]
-
-
-@dataclass
-class Timeouts:
-    job: int
-    pre_run: int
-    post_run: int
