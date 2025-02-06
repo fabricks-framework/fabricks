@@ -9,7 +9,7 @@ from databricks.sdk.runtime import dbutils
 
 from fabricks.context.log import Logger
 from fabricks.core.scripts.armageddon import armageddon
-from tests.integration.types import steps
+from tests.integration._types import steps
 
 # COMMAND ----------
 

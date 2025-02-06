@@ -1,6 +1,6 @@
 from typing import Union
 
-from fabricks.core.jobs.base.types import Steps, TStep
+from fabricks.core.jobs.base._types import Steps, TStep
 from fabricks.core.steps.base import BaseStep
 
 

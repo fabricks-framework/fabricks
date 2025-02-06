@@ -6,10 +6,10 @@ from pyspark.sql.functions import expr, md5
 from fabricks.cdc import SCD1
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import Logger
-from fabricks.core.jobs.base.types import Bronzes, Golds, Silvers, TStep
+from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
+from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
-from fabricks.core.steps.types import Timeouts
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 from fabricks.utils.helpers import concat_dfs, run_in_parallel

@@ -9,7 +9,7 @@ from databricks.sdk.runtime import dbutils, spark
 from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core.dags.base import BaseDags
 from fabricks.core.dags.log import DagsLogger
-from fabricks.core.jobs.base.types import TStep
+from fabricks.core.jobs.base._types import TStep
 from fabricks.core.steps.get_step import get_step
 from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable

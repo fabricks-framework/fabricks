@@ -1,7 +1,7 @@
 from typing import Union
 
 from fabricks.core.dags.processor import DagProcessor
-from fabricks.core.jobs.base.types import TStep
+from fabricks.core.jobs.base._types import TStep
 
 
 def process(schedule_id: str, schedule: str, step: Union[TStep, str]):

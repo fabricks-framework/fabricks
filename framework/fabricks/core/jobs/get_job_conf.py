@@ -3,7 +3,7 @@ from typing import Optional, cast, overload
 from pyspark.sql import Row
 
 from fabricks.context import IS_LIVE, SPARK
-from fabricks.core.jobs.base.types import Bronzes, Golds, JobConf, Silvers, TBronze, TGold, TSilver, TStep
+from fabricks.core.jobs.base._types import Bronzes, Golds, JobConf, Silvers, TBronze, TGold, TSilver, TStep
 
 
 @overload
@@ -23,7 +23,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
     extender_options = row["extender_options"] if row["extender_options"] else None
 
     if step in Bronzes:
-        from fabricks.core.jobs.base.types import JobConfBronze
+        from fabricks.core.jobs.base._types import JobConfBronze
 
         assert options is not None, "no option"
         parser_options = row["parser_options"].asDict() if row["parser_options"] else None
@@ -44,7 +44,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
         )
 
     elif step in Silvers:
-        from fabricks.core.jobs.base.types import JobConfSilver
+        from fabricks.core.jobs.base._types import JobConfSilver
 
         assert options is not None, "no option"
         step = cast(TSilver, step)
@@ -63,7 +63,7 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
         )
 
     elif step in Golds:
-        from fabricks.core.jobs.base.types import JobConfGold
+        from fabricks.core.jobs.base._types import JobConfGold
 
         assert options is not None, "no option"
         step = cast(TGold, step)

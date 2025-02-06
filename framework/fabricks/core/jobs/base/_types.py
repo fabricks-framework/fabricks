@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Literal, Optional, TypedDict, Union
 
-from fabricks.cdc.base.types import ChangeDataCaptures
+from fabricks.cdc.base._types import ChangeDataCaptures
 from fabricks.context import BRONZE, GOLD, SILVER
 from fabricks.core.parsers import ParserOptions
 from fabricks.utils.fdict import FDict

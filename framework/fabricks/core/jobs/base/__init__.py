@@ -1,5 +1,5 @@
+from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, Steps
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.jobs.base.types import Bronzes, Golds, Silvers, Steps
 
 __all__ = [
     "BaseJob",

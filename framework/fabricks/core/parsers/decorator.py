@@ -1,7 +1,7 @@
 from typing import Callable, Optional
 
+from fabricks.core.parsers._types import ParserOptions
 from fabricks.core.parsers.base import PARSERS, BaseParser
-from fabricks.core.parsers.types import ParserOptions
 
 
 def parser(name: str):

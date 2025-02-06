@@ -9,7 +9,7 @@ from databricks.sdk.runtime import dbutils
 
 from fabricks.context.log import Logger
 from fabricks.metastore.database import Database
-from tests.integration.types import paths
+from tests.integration._types import paths
 from tests.integration.utils import create_expected_views, git_to_landing, landing_to_raw
 
 # COMMAND ----------

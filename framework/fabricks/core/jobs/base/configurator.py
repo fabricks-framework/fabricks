@@ -8,7 +8,7 @@ from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import Logger, flush
 from fabricks.context.spark_session import get_spark_session
-from fabricks.core.jobs.base.types import Modes, Options, Paths, TStep
+from fabricks.core.jobs.base._types import Modes, Options, Paths, TStep
 from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.core.jobs.get_job_id import get_job_id
 from fabricks.metastore.table import Table

@@ -4,7 +4,7 @@ from pyspark.sql import DataFrame
 
 from fabricks.context import PATH_SCHEDULES, SPARK
 from fabricks.context.log import Logger
-from fabricks.core.jobs.base.types import TStep
+from fabricks.core.jobs.base._types import TStep
 from fabricks.utils.read.read_yaml import read_yaml
 from fabricks.utils.schema import get_schema_for_type
 from fabricks.utils.sqlglot import fix as fix_sql

@@ -5,8 +5,8 @@ from pyspark.sql.functions import expr
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import Logger
+from fabricks.core.jobs.base._types import TBronze, TSilver
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.jobs.base.types import TBronze, TSilver
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.helpers import concat_dfs

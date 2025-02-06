@@ -8,7 +8,7 @@ from pyspark.sql.functions import expr
 from fabricks.context.log import Logger
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
-from tests.integration.types import paths
+from tests.integration._types import paths
 
 
 def create_empty_delta():
