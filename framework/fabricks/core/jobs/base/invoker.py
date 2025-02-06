@@ -81,7 +81,14 @@ class Invoker(Checker):
                         raise e
 
     @overload
-    def invoke(self, path: Path, arguments: dict, timeout: Optional[int] = None, schedule: Optional[str] = None, position: Optional[str] = None): ...
+    def invoke(
+        self,
+        path: Path,
+        arguments: dict,
+        timeout: Optional[int] = None,
+        schedule: Optional[str] = None,
+        position: Optional[str] = None,
+    ): ...
 
     @overload
     def invoke(self, *, schedule: Optional[str] = None): ...
@@ -123,8 +130,16 @@ class Invoker(Checker):
 
         if schedule is not None:
             variables = get_schedule(schedule).select("options.variables").collect()[0][0]
-        else:
+            variables = cast(Dict, variables)
+
+        if variables is None:
             variables = {}
+
+        if arguments is None:
+            arguments = {}
+
+        assert path is not None
+        assert timeout is not None
 
         self.dbutils.notebook.run(
             path.get_notebook_path(),
