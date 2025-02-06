@@ -5,7 +5,13 @@ from pyspark.sql.functions import expr
 
 from fabricks.context import SECRET_SCOPE
 from fabricks.context.log import Logger, flush
-from fabricks.core.jobs.base.error import CheckFailedException, CheckWarningException, InvokerFailedException
+from fabricks.core.jobs.base.error import (
+    PostRunCheckWarningException,
+    PostRunInvokerFailedException,
+    PreRunCheckFailedException,
+    PreRunCheckWarningException,
+    PreRunInvokerFailedException,
+)
 from fabricks.core.jobs.base.invoker import Invoker
 from fabricks.utils.write import write_stream
 
@@ -13,19 +19,24 @@ from fabricks.utils.write import write_stream
 class Processor(Invoker):
     def filter_where(self, df: DataFrame) -> DataFrame:
         f = self.options.job.get("filter_where")
+
         if f:
             Logger.debug(f"filter where {f}", extra={"job": self})
             df = df.where(f"{f}")
+
         return df
 
     def encrypt(self, df: DataFrame) -> DataFrame:
         encrypted_columns = self.options.job.get_list("encrypted_columns")
+
         if encrypted_columns:
             key = self.dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
             assert key, "key not found"
+
             for col in encrypted_columns:
                 Logger.debug(f"encrypt column: {col}", extra={"job": self})
                 df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
+
         return df
 
     def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
@@ -45,6 +56,7 @@ class Processor(Invoker):
             if last_batch is not None:
                 current_batch = int(last_batch) + 1
                 self.rm_commit(current_batch)
+
                 assert last_batch == self.table.get_property("fabricks.last_batch")
                 assert self.paths.commits.join(last_batch).exists()
 
@@ -149,20 +161,24 @@ class Processor(Invoker):
 
             Logger.info("run ends", extra={"job": self})
 
-        except CheckWarningException as e:
+        except (PreRunCheckWarningException, PostRunCheckWarningException) as e:
             Logger.exception("🙈 (no retry)", extra={"job": self})
             raise e
-        except InvokerFailedException as e:
+
+        except (PreRunInvokerFailedException, PostRunInvokerFailedException) as e:
             Logger.exception("🙈 (no retry)", extra={"job": self})
             raise e
-        except CheckFailedException as e:
+
+        except (PreRunCheckFailedException, PostRunCheckWarningException) as e:
             Logger.exception("🙈 (no retry)", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e
+
         except AssertionError as e:
             Logger.exception("🙈", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e
+
         except Exception as e:
             if not self.stream or not retry:
                 Logger.exception("🙈 (no retry)", extra={"job": self})

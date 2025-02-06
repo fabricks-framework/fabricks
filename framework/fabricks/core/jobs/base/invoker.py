@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import Logger
 from fabricks.core.jobs.base.checker import Checker
-from fabricks.core.jobs.base.error import InvokerFailedException
+from fabricks.core.jobs.base.error import PostRunInvokerFailedException, PreRunInvokerFailedException
 from fabricks.core.schedules import get_schedule
 from fabricks.utils.path import Path
 
@@ -41,8 +41,13 @@ class Invoker(Checker):
                         schedule=schedule,
                     )
 
-                except Exception:
-                    raise InvokerFailedException(position)
+                except Exception as e:
+                    if position == "pre_run":
+                        raise PreRunInvokerFailedException(e)
+                    elif position == "post_run":
+                        raise PostRunInvokerFailedException(e)
+                    else:
+                        raise e
 
     def _invoke_step(self, position: str, schedule: Optional[str] = None):
         invokers = self.step_conf.get("invoker_options", {}).get(position, [])
@@ -65,8 +70,13 @@ class Invoker(Checker):
                         schedule=schedule,
                     )
 
-                except Exception:
-                    raise InvokerFailedException(position)
+                except Exception as e:
+                    if position == "pre_run":
+                        raise PreRunInvokerFailedException(e)
+                    elif position == "post_run":
+                        raise PostRunInvokerFailedException(e)
+                    else:
+                        raise e
 
     @overload
     def invoke(self, path: Path, arguments: dict, timeout: Optional[int] = None, schedule: Optional[str] = None): ...

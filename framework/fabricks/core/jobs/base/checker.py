@@ -1,5 +1,9 @@
 from fabricks.context.log import Logger
-from fabricks.core.jobs.base.error import CheckFailedException, CheckWarningException
+from fabricks.core.jobs.base.error import (
+    PostRunCheckWarningException,
+    PreRunCheckFailedException,
+    PreRunCheckWarningException,
+)
 from fabricks.core.jobs.base.generator import Generator
 
 
@@ -26,14 +30,27 @@ class Checker(Generator):
                         f"{position.replace('_', ' ')} check failed due to {row['__message']}",
                         extra={"job": self},
                     )
-                raise CheckFailedException(row["__message"])  # type: ignore
+
+                if position == "pre_run":
+                    raise PreRunCheckFailedException(row["__message"])
+                elif position == "post_run":
+                    raise PostRunCheckWarningException(row["__message"])
+                else:
+                    raise ValueError(row["__message"])
+
             elif not warning_df.isEmpty():
                 for row in warning_df.collect():
                     Logger.warning(
                         f"{position.replace('_', ' ')} check failed due to {row['__message']}",
                         extra={"job": self},
                     )
-                raise CheckWarningException(row["__message"])  # type: ignore
+
+                if position == "pre_run":
+                    raise PreRunCheckWarningException(row["__message"])
+                elif position == "post_run":
+                    raise PostRunCheckWarningException(row["__message"])
+                else:
+                    raise ValueError(row["__message"])
 
     def post_run_extra_check(self):
         min_rows = self.options.check.get("min_rows")
@@ -46,15 +63,15 @@ class Checker(Generator):
             rows = self.spark.sql(f"select count(*) from {self}").collect()[0][0]
             if min_rows:
                 if rows < min_rows:
-                    raise CheckFailedException(f"min rows check failed ({rows} < {min_rows})")
+                    raise PostRunCheckWarningException(f"min rows check failed ({rows} < {min_rows})")
             if max_rows:
                 if rows > max_rows:
-                    raise CheckFailedException(f"max rows check failed ({rows} > {max_rows})")
+                    raise PostRunCheckWarningException(f"max rows check failed ({rows} > {max_rows})")
 
             if count_must_equal:
                 equals_rows = self.spark.read.table(count_must_equal).count()
                 if rows != equals_rows:
-                    raise CheckFailedException(
+                    raise PostRunCheckWarningException(
                         f"count must equal check failed ({count_must_equal} - {rows} != {equals_rows})"
                     )
 
@@ -78,7 +95,7 @@ class Checker(Generator):
 
             if not df.isEmpty():
                 duplicates = ",".join([str(row[column]) for row in df.collect()])
-                raise CheckFailedException(f"duplicate {column} check failed ({duplicates})")
+                raise PostRunCheckWarningException(f"duplicate {column} check failed ({duplicates})")
         else:
             Logger.debug(f"{column} not found", extra={"job": self})
 
