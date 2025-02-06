@@ -69,6 +69,7 @@ class Silver(BaseJob):
 
     def base_transform(self, df: DataFrame) -> DataFrame:
         df = df.transform(self.extender)
+
         if "__metadata" in df.columns:
             df = df.withColumn(
                 "__metadata",
@@ -104,6 +105,7 @@ class Silver(BaseJob):
             for row in dep_df.collect():
                 df = self.spark.sql(f"select * from {row.parent}")
                 dfs.append(df)
+
             df = concat_dfs(dfs)
 
         else:
@@ -139,6 +141,7 @@ class Silver(BaseJob):
         df = self.encrypt(df)
         if transform:
             df = self.base_transform(df)
+
         return df
 
     def get_dependencies(self, df: Optional[DataFrame] = None) -> Optional[DataFrame]:

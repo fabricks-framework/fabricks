@@ -78,7 +78,8 @@
           workers: 2
           order: 304
           schema_drift: true
-          extender: drop__cols
+        extender_options:  
+          exrender: drop__cols
         table_options:
           properties: 
               delta.minReaderVersion: 1

@@ -144,12 +144,12 @@ class Configurator(ABC):
                 job = self._get_timeout("job")
 
             try:
-                pre_run = self.options.invoker.get_dict("pre_run").timeout  # type: ignore
+                pre_run = self.options.invokers.get_dict("pre_run").timeout  # type: ignore
             except AttributeError:
                 pre_run = self._get_timeout("pre_run")
 
             try:
-                post_run = self.options.invoker.get_dict("post_run").timeout  # type: ignore
+                post_run = self.options.invokers.get_dict("post_run").timeout  # type: ignore
             except AttributeError:
                 post_run = self._get_timeout("post_run")
 
@@ -191,14 +191,16 @@ class Configurator(ABC):
             table = self.conf.table_options or {}
             check = self.conf.check_options or {}
             spark = self.conf.spark_options or {}
-            invoker = self.conf.invoker_options or {}
+            invokers = self.conf.invoker_options or {}
+            extenders = self.conf.extender_options or []
 
             self._options = Options(
                 job=FDict(job),
                 table=FDict(table),
                 check=FDict(check),
                 spark=FDict(spark),
-                invoker=FDict(invoker),
+                invokers=FDict(invokers),
+                extenders=[FDict(e) for e in extenders],
             )
         return self._options
 
