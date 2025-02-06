@@ -191,4 +191,4 @@ class Options:
     table: FDict
     spark: FDict
     invokers: FDict
-    extenders: List[FDict]
+    extenders: List

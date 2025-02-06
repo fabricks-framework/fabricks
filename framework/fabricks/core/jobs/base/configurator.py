@@ -134,15 +134,19 @@ class Configurator(ABC):
         if t is None:
             t = CONF_RUNTIME.get("options", {}).get("timeouts", {}).get(what)
         assert t is not None
-        return int(t)
+        return t
 
     @property
     def timeout(self) -> int:
         if not self._timeout:
             t = self.options.job.get("timeout")
+
             if t is None:
                 t = self._get_timeout("job")
-            self._timeout = t
+
+            assert t is not None
+            self._timeout = int(t)
+
         return self._timeout
 
     def pip(self):

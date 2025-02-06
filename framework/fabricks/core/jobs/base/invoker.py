@@ -1,5 +1,5 @@
 import json
-from typing import Optional, overload
+from typing import Dict, Optional, cast, overload
 
 from pyspark.sql import DataFrame
 
@@ -105,7 +105,7 @@ class Invoker(Checker):
         assert path.exists(), f"{path} not found"
 
         if arguments is None:
-            arguments = invoker.arguments or {}
+            arguments = cast(Dict, invoker.arguments) or {}
 
         if schedule is not None:
             variables = get_schedule(schedule).select("options.variables").collect()[0][0]
@@ -113,7 +113,7 @@ class Invoker(Checker):
             variables = {}
 
         if timeout is None:
-            invoker.timeout or self.timeout
+            timeout = invoker.timeout or self.timeout
 
         self.dbutils.notebook.run(
             path.get_notebook_path(),
@@ -160,5 +160,5 @@ class Invoker(Checker):
         if df:
             df = self._job_extender(df)
             df = self._step_extender(df)
-        
+
         return df
