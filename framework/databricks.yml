@@ -5,7 +5,7 @@ bundle:  # Required.
   name: fabricks_test
 artifacts:
   fabricks_tool:
-    build: poetry build
+    build: uv build
     type: whl
 resources:
   jobs:
