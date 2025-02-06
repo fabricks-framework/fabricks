@@ -128,6 +128,7 @@ class Invoker(Checker):
         if timeout is None:
             timeout = self.timeout
 
+        variables = None
         if schedule is not None:
             variables = get_schedule(schedule).select("options.variables").collect()[0][0]
             variables = cast(Dict, variables)
