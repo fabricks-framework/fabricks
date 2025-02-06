@@ -185,7 +185,7 @@ class Configurator(ABC):
                 check=FDict(check),
                 spark=FDict(spark),
                 invokers=FDict(invokers),
-                extenders=[FDict(e) for e in extenders],
+                extenders=extenders,
             )
         return self._options
 

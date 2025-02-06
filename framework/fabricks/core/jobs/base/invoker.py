@@ -132,10 +132,10 @@ class Invoker(Checker):
         from fabricks.core.extenders import get_extender
 
         extenders = self.options.extenders
-
         for e in extenders:
-            name = e.get("extender")
-            arguments = e.get_dict("arguments")
+            name = e.extender
+            Logger.info(f"calling {name}", extra={"job": self})
+            arguments = e.arguments or {}
 
             extender = get_extender(name)
             df = extender(df, **arguments)
@@ -145,10 +145,10 @@ class Invoker(Checker):
     def _step_extender(self, df: DataFrame) -> DataFrame:
         from fabricks.core.extenders import get_extender
 
-        extenders = self.options.extenders
-
+        extenders = self.step_conf.get("extender_options", {})
         for e in extenders:
             name = e.get("extender")
+            Logger.info(f"{self.step} - calling {name}")
             arguments = e.get_dict("arguments")
 
             extender = get_extender(name)
@@ -157,24 +157,8 @@ class Invoker(Checker):
         return df
 
     def extender(self, df: DataFrame) -> DataFrame:
-        extenders = self.options.extenders
-
-        for e in extenders:
-            if not name:
-                name = self.step_conf.get("extender_options", {}).get("extender", None)
-
-            if name:
-                from fabricks.core.extenders import get_extender
-
-                Logger.debug(f"extend ({name})", extra={"job": self})
-
-                arguments = self.options.extenders.get("arguments")
-                if arguments is None:
-                    arguments = self.step_conf.get("extender_options", {}).get("arguments", None)
-                if arguments is None:
-                    arguments = {}
-
-                extender = get_extender(name)
-                df = extender(df, **arguments)
-
-            return df
+        if df:
+            df = self._job_extender(df)
+            df = self._step_extender(df)
+        
+        return df
