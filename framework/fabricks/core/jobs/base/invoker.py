@@ -176,7 +176,7 @@ class Invoker(Checker):
         for e in extenders:
             name = e.get("extender")
             Logger.info(f"{self.step} - calling {name}")
-            arguments = e.get_dict("arguments")
+            arguments = e.get("arguments", {})
 
             extender = get_extender(name)
             df = extender(df, **arguments)
