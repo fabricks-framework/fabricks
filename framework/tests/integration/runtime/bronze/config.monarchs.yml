@@ -33,7 +33,9 @@
       - extender: monarch
         arguments:
           why: not
-      - extender: force_reload
+      - extender: add_country
+        arguments:
+          country: Belgium
 - job:
     step: bronze
     topic: monarch

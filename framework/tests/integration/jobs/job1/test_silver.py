@@ -72,6 +72,8 @@ def test_job1_silver_monarch_delta():
     )
     assert data_type == "double", "decimalField is not double"
 
+    cols = Table("silver", "monarch", "delta").columns
+    assert "country" in cols, "country not found"
 
 @pytest.mark.order(119)
 def test_job1_silver_princess_append():

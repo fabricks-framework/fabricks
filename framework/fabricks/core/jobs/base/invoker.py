@@ -184,8 +184,6 @@ class Invoker(Checker):
         return df
 
     def extender(self, df: DataFrame) -> DataFrame:
-        if df:
-            df = self._job_extender(df)
-            df = self._step_extender(df)
-
+        df = self._job_extender(df)
+        df = self._step_extender(df)
         return df
