@@ -6,17 +6,17 @@ from typing import Tuple
 
 from fabricks.utils.azure_table import AzureTable
 
+
 class LogFormatter(logging.Formatter):
     def __init__(self):
         super().__init__(fmt="%(levelname)s%(prefix)s%(message)s [%(timestamp)s]%(extra)s")
 
-    # ANSI escape codes for colors
     COLORS = {
-        logging.DEBUG: "\033[36m",     # Cyan
-        logging.INFO: "\033[32m",      # Green
-        logging.WARNING: "\033[33m",    # Yellow
-        logging.ERROR: "\033[31m",      # Red
-        logging.CRITICAL: "\033[41;31m" # Red background + red text
+        logging.DEBUG: "\033[36m",
+        logging.INFO: "\033[32m",
+        logging.WARNING: "\033[33m",
+        logging.ERROR: "\033[31m",
+        logging.CRITICAL: "\033[41;31m",
     }
 
     RESET = "\033[0m"
@@ -33,7 +33,7 @@ class LogFormatter(logging.Formatter):
     def formatTime(self, record):
         ct = datetime.fromtimestamp(record.created)
         s = ct.strftime("%d/%m/%y %H:%M:%S")
-        return f"{self.COLORS[record.levelno]}{s}{self.RESET}"
+        return f"{self.COLORS[logging.DEBUG]}{s}{self.RESET}"
 
     def format(self, record):
         levelname = record.levelname
@@ -42,17 +42,18 @@ class LogFormatter(logging.Formatter):
 
         prefix = ""
         if hasattr(record, "job"):
-            prefix = f"{record.job} - "
+            prefix = f"{record.__dict__.get('job')} - "
         elif hasattr(record, "step"):
-            prefix = f"{self.BRIGHT}{record.step}{self.RESET} - "
+            prefix = f"{self.BRIGHT}{record.__dict__.get('step')}{self.RESET} - "
 
         extra = ""
         if hasattr(record, "exc_info") and record.exc_info:
-            extra += f" !{record.exc_info[0].__name__.lower()}!"
+            exc_info = record.__dict__.get("exc_info", None)
+            extra += f" !{exc_info[0].__name__.lower()}!"
         if hasattr(record, "sql"):
-            extra += f"\n---\n%sql\n{record.sql}\n---"
+            extra += f"\n---\n%sql\n{record.__dict__.get('sql')}\n---"
         if hasattr(record, "content"):
-            extra += f"\n---\n{record.content}\n---"
+            extra += f"\n---\n{record.__dict__.get('content')}\n---"
 
         record.levelname = levelname
         record.prefix = prefix
