@@ -3,14 +3,13 @@ import json
 import logging
 from datetime import datetime
 from typing import Tuple
-import platform
-import os
 
 from colorama import Back, Fore, Style, init
+
 from fabricks.utils.azure_table import AzureTable
 
-# Initialize colorama with forced colors
 init(autoreset=True)
+
 
 class LogFormatter(logging.Formatter):
     COLORS = {
@@ -32,45 +31,40 @@ class LogFormatter(logging.Formatter):
     def __init__(self):
         super().__init__(fmt="%(colored_level)s%(prefix)s%(message)s [%(colored_time)s]%(extra_info)s")
 
-    def formatTime(self, record, datefmt=None):
+    def formatTime(self, record):
         ct = datetime.fromtimestamp(record.created)
         s = ct.strftime("%d/%m/%y %H:%M:%S")
         return f"{self.COLORS[record.levelno]}{s}{Style.RESET_ALL}"
 
     def format(self, record):
-        # Add colored level with padding
         padding = self.PADDINGS[record.levelname]
         level_text = f"{record.levelname}:{padding}"
         record.colored_level = f"{self.COLORS[record.levelno]}{level_text}{Style.RESET_ALL}"
-        
-        # Build prefix (job or step) with bold step
+
         prefix = ""
         if hasattr(record, "job"):
-            prefix = f"{record.job} "
+            prefix = f"{record.job} "  # type: ignore
         elif hasattr(record, "step"):
-            prefix = f"{Style.BRIGHT}{record.step}{Style.RESET_ALL} "
+            prefix = f"{Style.BRIGHT}{record.step}{Style.RESET_ALL} "  # type: ignore
         record.prefix = prefix
 
-        # Add colored timestamp
         record.colored_time = self.formatTime(record)
 
-        # Handle extra info (sql, content, exc_info)
         extra = ""
         if hasattr(record, "exc_info") and record.exc_info:
-            extra += f" !{record.exc_info[0].__name__.lower()}!"
-        
+            extra += f" !{record.exc_info[0].__name__.lower()}!"  # type: ignore
+
         if hasattr(record, "sql"):
-            extra += f"\n---\n%sql\n{record.sql}\n---"
-            
+            extra += f"\n---\n%sql\n{record.sql}\n---"  # type: ignore
+
         if hasattr(record, "content"):
-            extra += f"\n---\n{record.content}\n---"
-            
+            extra += f"\n---\n{record.content}\n---"  # type: ignore
+
         record.extra_info = extra
 
         return super().format(record)
-    
 
-# Rest of handlers remain the same...
+
 class AzureTableHandler(logging.Handler):
     def __init__(self, table: AzureTable):
         super().__init__()
@@ -84,7 +78,7 @@ class AzureTableHandler(logging.Handler):
             r = {
                 "Created": str(
                     datetime.fromtimestamp(record.created).strftime("%d/%m/%y %H:%M:%S")
-                ),
+                ),  # timestamp not present when querying Azure Table
                 "Level": record.levelname,
                 "Message": record.message,
             }
@@ -115,7 +109,7 @@ class AzureTableHandler(logging.Handler):
                     d = {
                         "type": str(e[0].__name__)[:1000],
                         "message": str(e[1])[:1000],
-                        "traceback": str(logging.Formatter.formatException(self, e))[:1000],
+                        "traceback": str(logging.Formatter.formatException(self, e))[:1000],  # type: ignore
                     }
                     r["Exception"] = json.dumps(d)
 
@@ -134,28 +128,29 @@ class AzureTableHandler(logging.Handler):
                 self.table.upsert(r)
             else:
                 self.buffer.append(r)
+
         else:
             pass
 
     def flush(self):
-        if self.buffer:
-            self.table.upsert(self.buffer)
-            self.buffer.clear()
+        self.table.upsert(self.buffer)
+        self.buffer.clear()
 
     def clear_buffer(self):
         self.buffer = []
+
 
 def get_logger(name: str, level: int, table: AzureTable) -> Tuple[logging.Logger, AzureTableHandler]:
     # Remove any existing handlers for this logger
     logger = logging.getLogger(name)
     if logger.hasHandlers():
         logger.handlers.clear()
-    
+
     # Remove handlers from the root logger as well
     root = logging.getLogger()
     if root.hasHandlers():
         root.handlers.clear()
-    
+
     logger.setLevel(level)
     logger.propagate = False  # Prevent propagation to avoid duplicate logs
 
