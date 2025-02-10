@@ -75,6 +75,7 @@ def test_job1_silver_monarch_delta():
     cols = Table("silver", "monarch", "delta").columns
     assert "country" in cols, "country not found"
 
+
 @pytest.mark.order(119)
 def test_job1_silver_princess_append():
     df = Table("silver", "princess", "append").dataframe
