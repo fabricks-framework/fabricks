@@ -3,21 +3,22 @@ import json
 import logging
 from datetime import datetime
 from typing import Tuple
+import platform
+import os
 
 from colorama import Back, Fore, Style, init
-
 from fabricks.utils.azure_table import AzureTable
 
-init()
-
+# Initialize colorama with forced colors
+init(autoreset=True)
 
 class LogFormatter(logging.Formatter):
     COLORS = {
-        logging.DEBUG: Fore.CYAN,
-        logging.INFO: Fore.GREEN,
-        logging.WARNING: Fore.YELLOW,
-        logging.ERROR: Fore.RED,
-        logging.CRITICAL: Fore.RED + Back.WHITE,
+        logging.DEBUG: f"{Fore.CYAN}",
+        logging.INFO: f"{Fore.GREEN}",
+        logging.WARNING: f"{Fore.YELLOW}",
+        logging.ERROR: f"{Fore.RED}",
+        logging.CRITICAL: f"{Fore.RED}{Back.WHITE}",
     }
 
     PADDINGS = {
@@ -28,54 +29,48 @@ class LogFormatter(logging.Formatter):
         "CRITICAL": "",
     }
 
+    def __init__(self):
+        super().__init__(fmt="%(colored_level)s%(prefix)s%(message)s [%(colored_time)s]%(extra_info)s")
+
+    def formatTime(self, record, datefmt=None):
+        ct = datetime.fromtimestamp(record.created)
+        s = ct.strftime("%d/%m/%y %H:%M:%S")
+        return f"{self.COLORS[record.levelno]}{s}{Style.RESET_ALL}"
+
     def format(self, record):
-        message = super().format(record)  # noqa: F841
-
-        levelname = record.levelname
-        padding = self.PADDINGS.get(levelname, "")
-        record.levelname = f"{self.COLORS.get(record.levelno)}{levelname}:{padding}{Style.RESET_ALL}"
-
-        out = f"{record.levelname}"
-
+        # Add colored level with padding
+        padding = self.PADDINGS[record.levelname]
+        level_text = f"{record.levelname}:{padding}"
+        record.colored_level = f"{self.COLORS[record.levelno]}{level_text}{Style.RESET_ALL}"
+        
+        # Build prefix (job or step) with bold step
+        prefix = ""
         if hasattr(record, "job"):
-            j = f" - {record.__dict__.get('job')}"
-            out += str(j)
-
+            prefix = f"{record.job} "
         elif hasattr(record, "step"):
-            s = f" - {record.__dict__.get('step')}"
-            out += str(s)
+            prefix = f"{Style.BRIGHT}{record.step}{Style.RESET_ALL} "
+        record.prefix = prefix
 
-        if hasattr(record, "message"):
-            m = record.__dict__.get("message", "")
-            if hasattr(record, "job"):
-                m = f" => {m}"
-            elif hasattr(record, "step"):
-                m = f" => {m}"
-            else:
-                m = " " + m
-            out += m
+        # Add colored timestamp
+        record.colored_time = self.formatTime(record)
 
-        if hasattr(record, "created"):
-            t = datetime.fromtimestamp(record.created).strftime("%d/%m/%y %H:%M:%S")
-            t = f"{Fore.CYAN}{t}{Style.RESET_ALL}"
-            out += f"[{t}]"
-
-        if hasattr(record, "exc_info"):
-            exc_info = record.__dict__.get("exc_info", None)
-            if exc_info is not None:
-                e = f" !{exc_info[0].__name__.lower()}!"
-                out += e
-
+        # Handle extra info (sql, content, exc_info)
+        extra = ""
+        if hasattr(record, "exc_info") and record.exc_info:
+            extra += f" !{record.exc_info[0].__name__.lower()}!"
+        
         if hasattr(record, "sql"):
-            s = f"\n---\n%sql\n{record.__dict__.get('sql')}\n---"
-            out += s
+            extra += f"\n---\n%sql\n{record.sql}\n---"
+            
         if hasattr(record, "content"):
-            s = f"\n---\n{record.__dict__.get('content')}\n---"
-            out += s
+            extra += f"\n---\n{record.content}\n---"
+            
+        record.extra_info = extra
 
-        return out
+        return super().format(record)
+    
 
-
+# Rest of handlers remain the same...
 class AzureTableHandler(logging.Handler):
     def __init__(self, table: AzureTable):
         super().__init__()
@@ -89,7 +84,7 @@ class AzureTableHandler(logging.Handler):
             r = {
                 "Created": str(
                     datetime.fromtimestamp(record.created).strftime("%d/%m/%y %H:%M:%S")
-                ),  # timestamp not present when querying Azure Table
+                ),
                 "Level": record.levelname,
                 "Message": record.message,
             }
@@ -120,7 +115,7 @@ class AzureTableHandler(logging.Handler):
                     d = {
                         "type": str(e[0].__name__)[:1000],
                         "message": str(e[1])[:1000],
-                        "traceback": str(logging.Formatter.formatException(self, e))[:1000],  # type: ignore
+                        "traceback": str(logging.Formatter.formatException(self, e))[:1000],
                     }
                     r["Exception"] = json.dumps(d)
 
@@ -139,21 +134,30 @@ class AzureTableHandler(logging.Handler):
                 self.table.upsert(r)
             else:
                 self.buffer.append(r)
-
         else:
             pass
 
     def flush(self):
-        self.table.upsert(self.buffer)
-        self.buffer.clear()
+        if self.buffer:
+            self.table.upsert(self.buffer)
+            self.buffer.clear()
 
     def clear_buffer(self):
         self.buffer = []
 
-
 def get_logger(name: str, level: int, table: AzureTable) -> Tuple[logging.Logger, AzureTableHandler]:
+    # Remove any existing handlers for this logger
     logger = logging.getLogger(name)
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    
+    # Remove handlers from the root logger as well
+    root = logging.getLogger()
+    if root.hasHandlers():
+        root.handlers.clear()
+    
     logger.setLevel(level)
+    logger.propagate = False  # Prevent propagation to avoid duplicate logs
 
     # Console handler
     console_handler = logging.StreamHandler()
