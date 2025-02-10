@@ -92,11 +92,11 @@ class Configurator(ABC):
             step_conf_options = step_options.get("conf", {})
             if step_sql_options:
                 for key, value in step_sql_options.items():
-                    Logger.debug(f"{self.step} - add {key} = {value}", extra={"job": self})
+                    Logger.debug(f"add {key} = {value}", extra={"step": self.step})
                     spark.sql(f"set {key} = {value}")
             if step_conf_options:
                 for key, value in step_conf_options.items():
-                    Logger.debug(f"{self.step} - add {key} = {value}")
+                    Logger.debug(f"add {key} = {value}", extra={"step": self.step})
                     spark.conf.set(f"{key}", f"{value}")
 
             job_sql_options = self.options.spark.get_dict("sql")

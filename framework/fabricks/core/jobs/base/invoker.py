@@ -55,7 +55,7 @@ class Invoker(Checker):
 
         if invokers:
             for i in invokers:
-                Logger.info(f"{self.step} - {position}-invoke")
+                Logger.info(f"{position}-invoke", extra={"step": self.step})
                 try:
                     notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
@@ -175,7 +175,7 @@ class Invoker(Checker):
         extenders = self.step_conf.get("extender_options", {})
         for e in extenders:
             name = e.get("extender")
-            Logger.info(f"{self.step} - calling {name}")
+            Logger.info(f"calling {name}", extra={"step": self.step})
             arguments = e.get("arguments", {})
 
             extender = get_extender(name)
