@@ -1,6 +1,7 @@
 from fabricks.context.log import Logger
 from fabricks.core.jobs.base.error import (
     PostRunCheckWarningException,
+    PostRunCheckFailedException,
     PreRunCheckFailedException,
     PreRunCheckWarningException,
 )
@@ -34,7 +35,7 @@ class Checker(Generator):
                 if position == "pre_run":
                     raise PreRunCheckFailedException(row["__message"])
                 elif position == "post_run":
-                    raise PostRunCheckWarningException(row["__message"])
+                    raise PostRunCheckFailedException(row["__message"])
                 else:
                     raise ValueError(row["__message"])
 
@@ -63,15 +64,15 @@ class Checker(Generator):
             rows = self.spark.sql(f"select count(*) from {self}").collect()[0][0]
             if min_rows:
                 if rows < min_rows:
-                    raise PostRunCheckWarningException(f"min rows check failed ({rows} < {min_rows})")
+                    raise PostRunCheckFailedException(f"min rows check failed ({rows} < {min_rows})")
             if max_rows:
                 if rows > max_rows:
-                    raise PostRunCheckWarningException(f"max rows check failed ({rows} > {max_rows})")
+                    raise PostRunCheckFailedException(f"max rows check failed ({rows} > {max_rows})")
 
             if count_must_equal:
                 equals_rows = self.spark.read.table(count_must_equal).count()
                 if rows != equals_rows:
-                    raise PostRunCheckWarningException(
+                    raise PostRunCheckFailedException(
                         f"count must equal check failed ({count_must_equal} - {rows} != {equals_rows})"
                     )
 
