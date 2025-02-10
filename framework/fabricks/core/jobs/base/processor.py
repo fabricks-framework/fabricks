@@ -6,9 +6,9 @@ from pyspark.sql.functions import expr
 from fabricks.context import SECRET_SCOPE
 from fabricks.context.log import Logger, flush
 from fabricks.core.jobs.base.error import (
+    PostRunCheckFailedException,
     PostRunCheckWarningException,
     PostRunInvokerFailedException,
-    PostRunCheckFailedException,
     PreRunCheckFailedException,
     PreRunCheckWarningException,
     PreRunInvokerFailedException,
