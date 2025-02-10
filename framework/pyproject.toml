@@ -12,6 +12,7 @@ dependencies = [
     "azure-identity >=1.10.0",
     "azure-storage-blob >=12.14.1",
     "azure-storage-queue >=12.10.0,<13",
+    "colorama>=0.4.6",
     "databricks-sdk >=0.20.0",
     "jinja2 >=2.11.3",
     "python-dotenv >=1.0.1",

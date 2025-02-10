@@ -4,24 +4,38 @@ import logging
 from datetime import datetime
 from typing import Tuple
 
+from colorama import Back, Fore, Style, init
+
 from fabricks.utils.azure_table import AzureTable
 
-GREY = "\33[90m"
-BLACK = "\33[30m"
-YELLOW = "\33[93m"
-RED = "\33[31m"
-RESET = "\33[0m"
-COLORS = {"DEBUG": GREY, "INFO": BLACK, "WARNING": YELLOW, "ERROR": RED, "CRITICAL": RED}
+init()
 
 
-class CustomFormatter(logging.Formatter):
+class LogFormatter(logging.Formatter):
+    COLORS = {
+        logging.DEBUG: Fore.CYAN,
+        logging.INFO: Fore.GREEN,
+        logging.WARNING: Fore.YELLOW,
+        logging.ERROR: Fore.RED,
+        logging.CRITICAL: Fore.RED + Back.WHITE,
+    }
+
+    PADDINGS = {
+        "DEBUG": "   ",
+        "INFO": "    ",
+        "WARNING": " ",
+        "ERROR": "   ",
+        "CRITICAL": "",
+    }
+
     def format(self, record):
         message = super().format(record)  # noqa: F841
-        out = f"{COLORS[record.levelname]}"
 
-        if hasattr(record, "created"):
-            d = datetime.fromtimestamp(record.created).strftime("%d/%m/%y %H:%M:%S")
-            out += f"[{d}]"
+        levelname = record.levelname
+        padding = self.PADDINGS.get(levelname, "")
+        record.levelname = f"{self.COLORS.get(record.levelno)}{levelname}:{padding}{Style.RESET_ALL}"
+
+        out = f"{record.levelname}"
 
         if hasattr(record, "job"):
             j = f" - {record.__dict__.get('job')}"
@@ -41,6 +55,11 @@ class CustomFormatter(logging.Formatter):
                 m = " " + m
             out += m
 
+        if hasattr(record, "created"):
+            t = datetime.fromtimestamp(record.created).strftime("%d/%m/%y %H:%M:%S")
+            t = f"{Fore.CYAN}{t}{Style.RESET_ALL}"
+            out += f"[{t}]"
+
         if hasattr(record, "exc_info"):
             exc_info = record.__dict__.get("exc_info", None)
             if exc_info is not None:
@@ -54,7 +73,6 @@ class CustomFormatter(logging.Formatter):
             s = f"\n---\n{record.__dict__.get('content')}\n---"
             out += s
 
-        out += f"{RESET}"
         return out
 
 
@@ -140,7 +158,7 @@ def get_logger(name: str, level: int, table: AzureTable) -> Tuple[logging.Logger
     # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(level)
-    console_format = CustomFormatter()
+    console_format = LogFormatter()
     console_handler.setFormatter(console_format)
 
     # Azure Table handler
