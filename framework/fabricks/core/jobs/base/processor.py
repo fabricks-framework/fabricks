@@ -8,6 +8,7 @@ from fabricks.context.log import Logger, flush
 from fabricks.core.jobs.base.error import (
     PostRunCheckWarningException,
     PostRunInvokerFailedException,
+    PostRunCheckFailedException,
     PreRunCheckFailedException,
     PreRunCheckWarningException,
     PreRunInvokerFailedException,
@@ -169,7 +170,7 @@ class Processor(Invoker):
             Logger.exception("🙈 (no retry)", extra={"job": self})
             raise e
 
-        except (PreRunCheckFailedException, PostRunCheckWarningException) as e:
+        except (PreRunCheckFailedException, PostRunCheckFailedException) as e:
             Logger.exception("🙈 (no retry)", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e
