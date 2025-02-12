@@ -2,8 +2,8 @@ from typing import Optional, cast, overload
 
 from pyspark.sql import Row
 
+from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, TBronze, TGold, TSilver
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.jobs.base.types import Bronzes, Golds, Silvers, TBronze, TGold, TSilver
 from fabricks.core.jobs.get_job_id import get_job_id
 
 

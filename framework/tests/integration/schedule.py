@@ -12,9 +12,9 @@ import fabricks.core.scripts as s
 from fabricks.context.log import Logger
 from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core import get_step
-from fabricks.core.jobs.base.types import TStep
+from fabricks.core.jobs.base._types import TStep
 from fabricks.utils.helpers import run_in_parallel, run_notebook
-from tests.integration.types import steps
+from tests.integration._types import steps
 
 # COMMAND ----------
 

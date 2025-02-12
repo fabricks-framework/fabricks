@@ -10,7 +10,7 @@ select cast(col1 as timestamp) as __valid_from,
     cast(col9 as string) as __source
 from
 values
-    -- open
+-- open
     (
         '2022-05-01 00:01:00',
         '9999-12-31 00:00:00',

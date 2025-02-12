@@ -64,10 +64,11 @@
             job: 1800
           workers: 2
           order: 303
+        invoker_options:
           post_run:
-              notebook: gold/transf/post_run
-              arguments:
-                arg1: 1
+              - notebook: gold/transf/post_run
+                arguments:
+                  arg1: 1
       - name: semantic
         path_options:
           storage: abfss://semantic@$standard
@@ -79,7 +80,7 @@
           order: 304
           schema_drift: true
         extender_options:  
-          exrender: drop__cols
+          - extender: drop__cols
         table_options:
           properties: 
               delta.minReaderVersion: 1

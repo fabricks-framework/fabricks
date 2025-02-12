@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from fabricks.core.jobs.base.types import JobConf
+from fabricks.core.jobs.base._types import JobConf
 from fabricks.utils.schema import get_json_schema_for_type
 
 

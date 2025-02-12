@@ -1,6 +1,6 @@
 from fabricks.context import SPARK
 from fabricks.context.log import Logger
-from fabricks.core.jobs.base.types import Steps
+from fabricks.core.jobs.base._types import Steps
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
@@ -56,7 +56,7 @@ def create_or_replace_jobs_view():
             """
             )
 
-    sql = f"""create or replace view fabricks.jobs as {' union all '.join(dmls)}"""
+    sql = f"""create or replace view fabricks.jobs as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.jobs", extra={"sql": sql})
     SPARK.sql(sql)
@@ -81,7 +81,7 @@ def create_or_replace_tables_view():
                 """
             )
 
-    sql = f"""create or replace view fabricks.tables as {' union all '.join(dmls)}"""
+    sql = f"""create or replace view fabricks.tables as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.tables", extra={"sql": sql})
     SPARK.sql(sql)
@@ -106,7 +106,7 @@ def create_or_replace_views_view():
                 """
             )
 
-    sql = f"""create or replace view fabricks.views as {' union all '.join(dmls)}"""
+    sql = f"""create or replace view fabricks.views as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.views", extra={"sql": sql})
     SPARK.sql(sql)
@@ -134,16 +134,16 @@ def create_or_replace_dependencies_view():
               """
             )
 
-    sql = f"""create or replace view fabricks.dependencies as {' union all '.join(dmls)}"""
+    sql = f"""create or replace view fabricks.dependencies as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.dependencies", extra={"sql": sql})
     SPARK.sql(sql)
 
 
 def create_or_replace_dependencies_flat_view():
-    parent = ",\n  ".join([f"d{i+1}.parent_id as parent_{i+1}" for i in range(10)])
+    parent = ",\n  ".join([f"d{i + 1}.parent_id as parent_{i + 1}" for i in range(10)])
     join = "\n  ".join(
-        [f"left join fabricks.dependencies d{i+1} on d{i}.parent_id = d{i+1}.job_id" for i in range(10)]
+        [f"left join fabricks.dependencies d{i + 1} on d{i}.parent_id = d{i + 1}.job_id" for i in range(10)]
     )
 
     sql = f"""

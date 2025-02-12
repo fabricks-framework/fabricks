@@ -2,7 +2,7 @@ from pyspark.sql import Row
 
 from fabricks.cdc import NoCDC
 from fabricks.context import SPARK
-from fabricks.core.jobs.base.types import Steps
+from fabricks.core.jobs.base._types import Steps
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 
 

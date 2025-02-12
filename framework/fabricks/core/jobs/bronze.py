@@ -6,8 +6,8 @@ from pyspark.sql.functions import expr, lit, md5
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES
 from fabricks.context.log import Logger
+from fabricks.core.jobs.base._types import TBronze
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.jobs.base.types import TBronze
 from fabricks.core.parsers import BaseParser
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.utils import clean

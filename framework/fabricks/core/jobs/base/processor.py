@@ -5,48 +5,39 @@ from pyspark.sql.functions import expr
 
 from fabricks.context import SECRET_SCOPE
 from fabricks.context.log import Logger, flush
-from fabricks.core.jobs.base.error import CheckFailedException, CheckWarningException, InvokerFailedException
+from fabricks.core.jobs.base.error import (
+    PostRunCheckFailedException,
+    PostRunCheckWarningException,
+    PostRunInvokerFailedException,
+    PreRunCheckFailedException,
+    PreRunCheckWarningException,
+    PreRunInvokerFailedException,
+)
 from fabricks.core.jobs.base.invoker import Invoker
 from fabricks.utils.write import write_stream
 
 
 class Processor(Invoker):
-    def extender(self, df: DataFrame) -> DataFrame:
-        name = self.options.extenders.get("extender")
-        if not name:
-            name = self.step_conf.get("extender_options", {}).get("extender", None)
-
-        if name:
-            from fabricks.core.extenders import get_extender
-
-            Logger.debug(f"extend ({name})", extra={"job": self})
-
-            arguments = self.options.extenders.get("arguments")
-            if arguments is None:
-                arguments = self.step_conf.get("extender_options", {}).get("arguments", None)
-            if arguments is None:
-                arguments = {}
-
-            extender = get_extender(name)
-            df = extender(df, **arguments)
-
-        return df
-
     def filter_where(self, df: DataFrame) -> DataFrame:
         f = self.options.job.get("filter_where")
+
         if f:
             Logger.debug(f"filter where {f}", extra={"job": self})
             df = df.where(f"{f}")
+
         return df
 
     def encrypt(self, df: DataFrame) -> DataFrame:
         encrypted_columns = self.options.job.get_list("encrypted_columns")
+
         if encrypted_columns:
             key = self.dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
             assert key, "key not found"
+
             for col in encrypted_columns:
                 Logger.debug(f"encrypt column: {col}", extra={"job": self})
                 df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
+
         return df
 
     def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
@@ -66,6 +57,7 @@ class Processor(Invoker):
             if last_batch is not None:
                 current_batch = int(last_batch) + 1
                 self.rm_commit(current_batch)
+
                 assert last_batch == self.table.get_property("fabricks.last_batch")
                 assert self.paths.commits.join(last_batch).exists()
 
@@ -111,7 +103,7 @@ class Processor(Invoker):
                     df,
                     checkpoints_path=self.paths.checkpoints,
                     func=self._for_each_batch,
-                    timeout=self.timeouts.job,
+                    timeout=self.timeout,
                 )
             else:
                 self._for_each_batch(df)
@@ -156,7 +148,7 @@ class Processor(Invoker):
             Logger.info("run starts", extra={"job": self})
 
             if invoke:
-                self.pre_run_invoke(schedule=schedule)
+                self.invoke_pre_run(schedule=schedule)
 
             self.pre_run_check()
 
@@ -166,24 +158,28 @@ class Processor(Invoker):
             self.post_run_extra_check()
 
             if invoke:
-                self.post_run_invoke(schedule=schedule)
+                self.invoke_post_run(schedule=schedule)
 
             Logger.info("run ends", extra={"job": self})
 
-        except CheckWarningException as e:
+        except (PreRunCheckWarningException, PostRunCheckWarningException) as e:
             Logger.exception("🙈 (no retry)", extra={"job": self})
             raise e
-        except InvokerFailedException as e:
+
+        except (PreRunInvokerFailedException, PostRunInvokerFailedException) as e:
             Logger.exception("🙈 (no retry)", extra={"job": self})
             raise e
-        except CheckFailedException as e:
+
+        except (PreRunCheckFailedException, PostRunCheckFailedException) as e:
             Logger.exception("🙈 (no retry)", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e
+
         except AssertionError as e:
             Logger.exception("🙈", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e
+
         except Exception as e:
             if not self.stream or not retry:
                 Logger.exception("🙈 (no retry)", extra={"job": self})

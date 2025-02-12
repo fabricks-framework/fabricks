@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Literal, Optional, TypedDict, Union
 
-from fabricks.cdc.base.types import ChangeDataCaptures
+from fabricks.cdc.base._types import ChangeDataCaptures
 from fabricks.context import BRONZE, GOLD, SILVER
 from fabricks.core.parsers import ParserOptions
 from fabricks.utils.fdict import FDict
@@ -152,8 +152,8 @@ class JobConfSilver(BaseJobConf):
     table_options: Optional[TableOptions] = None
     check_options: Optional[CheckOptions] = None
     spark_options: Optional[SparkOptions] = None
-    invoker_options: List[Optional[InvokerOptions]] = None
-    extender_options: Optional[ExtenderOptions] = None
+    invoker_options: Optional[InvokerOptions] = None
+    extender_options: Optional[List[ExtenderOptions]] = None
     tags: Optional[List[str]] = None
     comment: Optional[str] = None
 
@@ -165,8 +165,8 @@ class JobConfGold(BaseJobConf):
     table_options: Optional[TableOptions] = None
     check_options: Optional[CheckOptions] = None
     spark_options: Optional[SparkOptions] = None
-    invoker_options: List[Optional[InvokerOptions]] = None
-    extender_options: Optional[ExtenderOptions] = None
+    invoker_options: Optional[InvokerOptions] = None
+    extender_options: Optional[List[ExtenderOptions]] = None
     tags: Optional[List[str]] = None
     comment: Optional[str] = None
 
@@ -191,11 +191,4 @@ class Options:
     table: FDict
     spark: FDict
     invokers: FDict
-    extenders: List[FDict]
-
-
-@dataclass
-class Timeouts:
-    job: int
-    pre_run: int
-    post_run: int
+    extenders: List

@@ -8,7 +8,7 @@ from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import Logger, flush
 from fabricks.context.spark_session import get_spark_session
-from fabricks.core.jobs.base.types import Modes, Options, Paths, Timeouts, TStep
+from fabricks.core.jobs.base._types import Modes, Options, Paths, TStep
 from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.core.jobs.get_job_id import get_job_id
 from fabricks.metastore.table import Table
@@ -43,7 +43,7 @@ class Configurator(ABC):
 
     _step_conf: Optional[dict[str, str]] = None
     _spark: Optional[SparkSession] = None
-    _timeouts: Optional[Timeouts] = None
+    _timeout: Optional[int] = None
     _options: Optional[Options] = None
     _paths: Optional[Paths] = None
     _table: Optional[Table] = None
@@ -92,11 +92,11 @@ class Configurator(ABC):
             step_conf_options = step_options.get("conf", {})
             if step_sql_options:
                 for key, value in step_sql_options.items():
-                    Logger.debug(f"{self.step} - add {key} = {value}", extra={"job": self})
+                    Logger.debug(f"add {key} = {value}", extra={"step": self.step})
                     spark.sql(f"set {key} = {value}")
             if step_conf_options:
                 for key, value in step_conf_options.items():
-                    Logger.debug(f"{self.step} - add {key} = {value}")
+                    Logger.debug(f"add {key} = {value}", extra={"step": self.step})
                     spark.conf.set(f"{key}", f"{value}")
 
             job_sql_options = self.options.spark.get_dict("sql")
@@ -134,31 +134,20 @@ class Configurator(ABC):
         if t is None:
             t = CONF_RUNTIME.get("options", {}).get("timeouts", {}).get(what)
         assert t is not None
-        return int(t)
+        return t
 
     @property
-    def timeouts(self) -> Timeouts:
-        if not self._timeouts:
-            job = self.options.job.get("timeout")
-            if job is None:
-                job = self._get_timeout("job")
+    def timeout(self) -> int:
+        if not self._timeout:
+            t = self.options.job.get("timeout")
 
-            try:
-                pre_run = self.options.invokers.get_dict("pre_run").timeout  # type: ignore
-            except AttributeError:
-                pre_run = self._get_timeout("pre_run")
+            if t is None:
+                t = self._get_timeout("job")
 
-            try:
-                post_run = self.options.invokers.get_dict("post_run").timeout  # type: ignore
-            except AttributeError:
-                post_run = self._get_timeout("post_run")
+            assert t is not None
+            self._timeout = int(t)
 
-            self._timeouts = Timeouts(
-                job=job,
-                pre_run=pre_run,
-                post_run=post_run,
-            )
-        return self._timeouts
+        return self._timeout
 
     def pip(self):
         pass
@@ -200,7 +189,7 @@ class Configurator(ABC):
                 check=FDict(check),
                 spark=FDict(spark),
                 invokers=FDict(invokers),
-                extenders=[FDict(e) for e in extenders],
+                extenders=extenders,
             )
         return self._options
 

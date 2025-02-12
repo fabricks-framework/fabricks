@@ -72,6 +72,9 @@ def test_job1_silver_monarch_delta():
     )
     assert data_type == "double", "decimalField is not double"
 
+    cols = Table("silver", "monarch", "delta").columns
+    assert "country" in cols, "country not found"
+
 
 @pytest.mark.order(119)
 def test_job1_silver_princess_append():
@@ -114,4 +117,4 @@ def test_job1_silver_princess_calculated_column():
 @pytest.mark.order(119)
 def test_job1_silver_timeout():
     job = get_job(step="silver", topic="princess", item="calculated_column")
-    assert job.timeouts.job == 3600, f"timeout {job.timeouts.job} <> 3600"
+    assert job.timeout == 3600, f"timeout {job.timeout} <> 3600"
