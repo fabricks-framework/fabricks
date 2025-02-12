@@ -175,14 +175,20 @@ class Gold(BaseJob):
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
         sql = f"select * from {global_temp_view}"
 
+        if self.options.job.get_boolean("persist_last_timestamp"):
+            self.persist_last_timestamp()
+
         if self.mode == "update":
             assert not isinstance(self.cdc, NoCDC), "nocdc update not allowed"
             self.cdc.update(sql, **context)
+
         elif self.mode == "append":
             assert isinstance(self.cdc, NoCDC), f"{self.change_data_capture} append not allowed"
             self.cdc.append(sql, **context)
+
         elif self.mode == "complete":
             self.cdc.complete(sql, **context)
+
         else:
             raise ValueError(f"{self.mode} - not allowed")
 
@@ -217,3 +223,9 @@ class Gold(BaseJob):
             Logger.debug("memory (no optimize)", extra={"job": self})
         else:
             super().optimize()
+
+    def persist_last_timestamp(self):
+        assert self.mode == "update", "persist_last_timestamp only allowed in update"
+        assert self.change_data_capture in ["scd1", "scd2"], "persist_last_timestamp only allowed in scd1 or scd2"
+
+        self.table.delta_path.append("__last_timestamp")

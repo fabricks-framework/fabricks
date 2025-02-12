@@ -312,9 +312,11 @@ class Silver(BaseJob):
         if self.mode == "update":
             assert not isinstance(self.cdc, NoCDC)
             self.cdc.update(sql, **context)
+
         elif self.mode == "append":
             assert isinstance(self.cdc, NoCDC)
             self.cdc.append(sql, **context)
+
         elif self.mode == "latest":
             assert isinstance(self.cdc, NoCDC)
             check_df = self.spark.sql(
@@ -331,6 +333,7 @@ class Silver(BaseJob):
             )
             assert check_df.isEmpty(), f"{check_df.collect()[0][0]} not allowed"
             self.cdc.complete(sql, **context)
+
         else:
             raise ValueError(f"{self.mode} - not allowed")
 
