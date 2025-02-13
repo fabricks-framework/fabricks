@@ -12,11 +12,11 @@ from fabricks.utils.path import Path
 
 
 class Invoker(Checker):
-    def invoke_pre_run(self, schedule: Optional[str] = None):
+    def pre_run_invoke(self, schedule: Optional[str] = None):
         self._invoke_job(position="pre_run", schedule=schedule)
         self._invoke_step(position="pre_run", schedule=schedule)
 
-    def invoke_post_run(self, schedule: Optional[str] = None):
+    def post_run_invoke(self, schedule: Optional[str] = None):
         self._invoke_job(position="post_run", schedule=schedule)
         self._invoke_step(position="post_run", schedule=schedule)
 

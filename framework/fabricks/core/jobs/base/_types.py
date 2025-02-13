@@ -114,6 +114,7 @@ class GoldOptions(TypedDict):
     # extra
     deduplicate: Optional[bool]
     correct_valid_from: Optional[bool]
+    persist_last_timestamp: Optional[bool]
     # else
     table: Optional[str]
     notebook: Optional[bool]

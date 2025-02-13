@@ -298,9 +298,11 @@ class Processor(Generator):
             raise e
 
         row = self.spark.sql(sql).collect()[0]
+        assert row.slices, "no slices found"
 
         context["slices"] = row.slices
         if context.get("has_source"):
+            assert row.sources, "no sources found"
             context["sources"] = row.sources
 
         return context
