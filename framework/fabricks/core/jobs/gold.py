@@ -220,13 +220,13 @@ class Gold(BaseJob):
             super().create()
             if self.options.job.get_boolean("persist_last_timestamp"):
                 self._last_timestamp(create=True)
-                
+
     def register(self):
         if self.mode == "invoke":
             Logger.info("invoke (no table nor view)", extra={"job": self})
         else:
             super().register()
-    
+
     def drop(self):
         if self.options.job.get_boolean("persist_last_timestamp"):
             self._last_timestamp(drop=True)
@@ -244,7 +244,13 @@ class Gold(BaseJob):
         else:
             super().optimize()
 
-    def _last_timestamp(self, last_version: int = None, create: bool = False, drop: bool = False, get: bool = False):
+    def _last_timestamp(
+        self,
+        last_version: Optional[int] = None,
+        create: bool = False,
+        drop: bool = False,
+        get: bool = False,
+    ):
         assert self.mode == "update", "persist_last_timestamp only allowed in update"
         assert self.change_data_capture in ["scd1", "scd2"], "persist_last_timestamp only allowed in scd1 or scd2"
 
@@ -263,15 +269,15 @@ class Gold(BaseJob):
         elif self.change_data_capture == "scd2":
             fields.append("max(__valid_from) :: timestamp as __timestamp")
         if "__source" in df.columns:
-            fields.append["__source"]
-        
+            fields.append("__source")
+
         asof = None
         if last_version is not None:
             asof = f"version as of {last_version}"
 
         sql = f"select {', '.join(fields)} from {self} {asof} group by all"
         df = self.spark.sql(sql)
-        
+
         if create:
             cdc.table.create(df)
         else:
