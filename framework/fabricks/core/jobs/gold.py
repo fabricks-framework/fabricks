@@ -163,6 +163,14 @@ class Gold(BaseJob):
         if self.mode == "memory":
             context["mode"] = "complete"
 
+        if self.options.job.get_boolean("persist_last_timestamp"):
+            if self.change_data_capture == "scd1":
+                if "__timestamp" not in df.columns:
+                    context["add_timestamp"] = True
+            if self.change_data_capture == "scd2":
+                if "__valid_from" not in df.columns:
+                    context["add_timestamp"] = True
+
         return context
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None):
@@ -174,9 +182,6 @@ class Gold(BaseJob):
         name = f"{self.step}_{self.topic}_{self.item}"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
         sql = f"select * from {global_temp_view}"
-
-        if self.options.job.get_boolean("persist_last_timestamp"):
-            self.persist_last_timestamp()
 
         if self.mode == "update":
             assert not isinstance(self.cdc, NoCDC), "nocdc update not allowed"
@@ -196,22 +201,37 @@ class Gold(BaseJob):
         self.check_duplicate_hash()
 
     def for_each_run(self, schedule: Optional[str] = None):
+        last_version = None
+        if self.options.job.get_boolean("persist_last_timestamp"):
+            last_version = self._last_timestamp(get=True)
+
         if self.mode == "invoke":
             self.invoke(schedule=schedule)
         else:
             super().for_each_run(schedule=schedule)
+
+        if self.options.job.get_boolean("persist_last_timestamp"):
+            self._last_timestamp(last_version=last_version)
 
     def create(self):
         if self.mode == "invoke":
             Logger.info("invoke (no table nor view)", extra={"job": self})
         else:
             super().create()
-
+            if self.options.job.get_boolean("persist_last_timestamp"):
+                self._last_timestamp(create=True)
+                
     def register(self):
         if self.mode == "invoke":
             Logger.info("invoke (no table nor view)", extra={"job": self})
         else:
             super().register()
+    
+    def drop(self):
+        if self.options.job.get_boolean("persist_last_timestamp"):
+            self._last_timestamp(drop=True)
+
+        super().drop()
 
     def optimize(
         self,
@@ -224,8 +244,35 @@ class Gold(BaseJob):
         else:
             super().optimize()
 
-    def persist_last_timestamp(self):
+    def _last_timestamp(self, last_version: int = None, create: bool = False, drop: bool = False, get: bool = False):
         assert self.mode == "update", "persist_last_timestamp only allowed in update"
         assert self.change_data_capture in ["scd1", "scd2"], "persist_last_timestamp only allowed in scd1 or scd2"
 
-        self.table.delta_path.append("__last_timestamp")
+        cdc = NoCDC(self.step, self.topic, f"{self.item}__last_timestamp")
+        if drop:
+            cdc.drop()
+            return
+        if get:
+            return cdc.table.get_last_version()
+
+        df = self.spark.sql(f"select * from {self} limit 1")
+
+        fields = []
+        if self.change_data_capture == "scd1":
+            fields.append("max(__timestamp) :: timestamp as __timestamp")
+        elif self.change_data_capture == "scd2":
+            fields.append("max(__valid_from) :: timestamp as __timestamp")
+        if "__source" in df.columns:
+            fields.append["__source"]
+        
+        asof = None
+        if last_version is not None:
+            asof = f"version as of {last_version}"
+
+        sql = f"select {', '.join(fields)} from {self} {asof} group by all"
+        df = self.spark.sql(sql)
+        
+        if create:
+            cdc.table.create(df)
+        else:
+            cdc.overwrite(df)
