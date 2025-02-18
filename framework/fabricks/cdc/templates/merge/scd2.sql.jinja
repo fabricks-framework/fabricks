@@ -26,7 +26,7 @@
     __is_deleted = False,
 {% endif %}
 {% if has_metadata %}
-    __metadata.updated = cast(current_date() as timestamp),
+    __metadata.updated = cast(current_timestamp() as timestamp),
 {% endif %}
   when matched
   and __merge_condition == 'delete' then
@@ -38,7 +38,7 @@
     __is_deleted = True,
 {% endif %}
 {% if has_metadata %}
-    __metadata.updated = cast(current_date() as timestamp),
+    __metadata.updated = cast(current_timestamp() as timestamp),
 {% endif %}
   when not matched
   and __merge_condition == 'insert' then
