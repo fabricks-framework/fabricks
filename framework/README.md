@@ -33,13 +33,19 @@ import fabricks
 
 ### 🔧 Runtime Configuration
 
-Define your **Fabricks** runtime in a YAML file. Here's a basic structure:
+Define your **Fabricks** runtime in a YAML file. It's used to define your steps, timeouts, spark options and mostly every basic thing.
+
+Here's a basic version:
 
 ```yaml
 name: MyFabricksProject
 options:
   secret_scope: my_secret_scope
-  timeout: 3600
+  timeouts:
+    step: 3600
+    job: 3600
+    pre_run: 3600
+    post_run: 3600
   workers: 4
 path_options:
   storage: /mnt/data
@@ -47,33 +53,54 @@ spark_options:
   sql:
     option1: value1
     option2: value2
+    spark.sql.parquet.compression.codec: zstd # ZSTD is just the best one
 
 # Pipeline Stages
 bronze:
-  name: Bronze Stage
-  path_options:
-    storage: /mnt/bronze
-  options:
-    option1: value1
+  - name: bronze
+    path_options:
+      runtime: src/steps/bronze
+      storage: abfss://bronze@youraccount.blob.core.windows.net
+    options:
+      option1: value1
 
 silver:
-  name: Silver Stage
-  path_options:
-    storage: /mnt/silver
-  options:
-    option1: value1
+  - name: silver
+    path_options:
+      runtime: src/steps/silver
+      storage: abfss://silver@youraccount.blob.core.windows.net
+    options:
+      option1: value1
 
 gold:
-  name: Gold Stage
-  path_options:
-    storage: /mnt/gold
-  options:
-    option1: value1
+  - name: transf # we want some additional step between silver and gold to do some fancy stuff
+    path_options:
+      runtime: src/steps/transf
+      storage: abfss://transf@youraccount.blob.core.windows.net
+    options:
+      option1: value1
+  - name: gold
+    path_options:
+      runtime: src/steps/gold
+      storage: abfss://gold@youraccount.blob.core.windows.net
+    options:
+      option1: value1
+  - name: powerbi # We want to rename some stuff here, maybe.
+    path_options:
+      runtime: src/steps/powerbi
+      storage: abfss://powerbi@youraccount.blob.core.windows.net
+    options:
+      option1: value1
 ```
+
+A more advanced config can be found in the [tests](tests/integration/runtime/fabricks/conf.5589296195699698.yml)
 
 ## 🥉 Bronze Step
 
-The initial stage for raw data ingestion:
+The initial stage for raw data ingestion.
+
+You usually either want to gather data from existing parquet/json files, 
+or directly create a delta file using a pre-run, which we'll show below:
 
 ```yaml
 - job:
@@ -83,15 +110,35 @@ The initial stage for raw data ingestion:
     tags: [raw, sales]
     options:
       mode: append
-      uri: abfss://fabricks@$datahub/raw/sales
-      parser: parquet
+      uri: abfss://fabricks@$datahub/raw/sales # files are saved from some other system here, as parquet
+      parser: parquet # we use AutoLoader in Background in such a case
       keys: [transaction_id]
       source: pos_system
+- job:
+    step: bronze
+    topic: apidata
+    item: http_api
+    tags: [raw]
+    options:
+      mode: register
+      uri: abfss://fabricks@$datahub/raw/http_api # It's a delta file located here
+      keys: [transaction_id]
+    
+    invoker_options: # we could directly write to this delta file using an invoker
+      pre_run:
+        - notebook: bronze/invokers/http_call
+          arguments:
+            url: https://shouldideploy.today # just some arbitrary args
 ```
 
 ## 🥈 Silver Step
 
-The intermediate stage for data processing:
+The intermediate stage for data processing. It will handle scd1/scd2
+
+The resulting table will contain fields according to your scd config.
+
+For scd1, there will be `__is_current` and `__is_deleted`, for scd2 you'll also get `__valid_from` and `__valid_to`.
+In addition, a view named `TABLENAME__current` will be created for convenience.
 
 ```yaml
 - job:
@@ -108,9 +155,10 @@ The intermediate stage for data processing:
         max_rows: 1000000
 ```
 
-## 🥇 Gold Step
+## 🥇 Gold Step Type
 
-The final stage for data consumption:
+The final stage for data consumption. Usually just sql. There can also be multiple gold steps,
+so you could create a transf step, a gold step, a power bi step, all of which are of type "gold".
 
 ```yaml
 - job:
@@ -125,7 +173,61 @@ The final stage for data consumption:
 
 ## 📚 Usage
 
-// Detailed usage instructions to be added here
+### SCD2 in gold Steps
+
+Fabricks provides an easy way to create an scd2 table containing `__valid_from` and `__valid_to` out of 
+a base select that requires three important fields:
+
+- `__key`: A Unique Key, can be of any data type
+- `__timestamp`: The date where your record was either changed or deleted
+- `__operation`: Must be either `'upsert'` or `'delete'` 
+
+A common pattern is to aggregate a (silver) scd2 table like this:
+
+```sql
+with
+    -- ask yourself, what you want to aggregate on and which columns should now be part of your new key
+    newkey as (select only_offer_id as __key, * except(__key) from offer_and_lines_table d),
+    deletes as (
+        select only_offer_id as __key, max(__valid_to) + interval 1 second as deleted_date -- we simply delete on last deleted thing. that's a simplification that usually is good enough. 
+        -- alternatively, you could delete if you cannot join on a new __valid_from (meaning there is no record afterwards anymore)
+        from offer_and_lines_table
+        group by only_offer_id
+        having max(`__valid_to`) < '9999-12-31'
+    ),
+    dates as (
+        
+        select __key, __valid_from as __timestamp, 'upsert' as __operation -- each source valid from is an update
+        from newkey
+        union
+        select __key, deleted_date as __timestamp, 'delete' as __operation 
+        from deletes
+    )
+    select
+        d.__key,      
+        d.__timestamp,
+        d.__operation,
+        sum(
+            if(
+                d.__operation = 'delete' and d.__timestamp = r.__valid_to,
+                0,
+                sales
+            )
+        ) as sales,
+        sum(
+            if(
+                d.__operation = 'delete' and d.__timestamp = r.__valid_to,
+                0,
+                sales_gross
+            )
+        ) as sales_gross
+    from dates d
+    left join newkey r on d.__timestamp between r.__valid_from and r.__valid_to and d.only_offer_id = r.only_offer_id
+    group by d.only_offer_id, __timestamp, __operation
+    
+```
+
+
 
 ## 📄 License
 
