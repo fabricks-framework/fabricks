@@ -171,7 +171,31 @@ so you could create a transf step, a gold step, a power bi step, all of which ar
       change_data_capture: scd2
 ```
 
-## 📚 Usage
+## 📚 Use Cases / Features
+
+### Checks
+
+There are a number of check_options you can use:
+
+```yaml
+  
+    check_options: 
+      min_rows: 10 # Table must have at least 10 rows
+      max_rows: 10000 # Table must not have more than 10000 rows
+      count_must_equal: fabricks.dummy # Must have exactly the same number of rows as another table, makes sense if you just have joins to add columns and want to avoid duplicates 
+      post_run: true # A custom script to be run after the load
+      pre_run: true # A custom script to be run before the load
+```
+
+For Pre and Post Run, you have to provide a `table_name.pre_run.sql` / `table_name.post_run.sql` script which returns at least these two columns:
+
+- `__message`, an error message that will show up in the logs
+- `__action`, which can be either `'fail'` or `'warning'` 
+
+All other columns are ignored. If a table is of type `memory` (meaning it's a view only), then
+the logs will contain the error, but nothing else happens. Otherwise the data is restored to the previous version
+on failure.
+
 
 ### SCD2 in gold Steps
 
