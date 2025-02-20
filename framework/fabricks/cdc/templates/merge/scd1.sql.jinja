@@ -27,7 +27,7 @@
     __timestamp = s.__timestamp,
 {% endif %}
 {% if has_metadata %}
-    __metadata.updated = cast(current_date() as timestamp),    
+    __metadata.updated = cast(current_timestamp() as timestamp),    
 {% endif %}
 {% if has_hash %}
     __hash = s.__hash,
@@ -48,7 +48,7 @@
     __is_current = False,
     __is_deleted = True,
     {% if has_metadata %}
-    __metadata.updated = cast(current_date() as timestamp),
+    __metadata.updated = cast(current_timestamp() as timestamp),
     {% endif %}
 {% else %}
     -- delete

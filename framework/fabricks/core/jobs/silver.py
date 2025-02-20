@@ -81,7 +81,7 @@ class Silver(BaseJob):
                         __metadata.file_size as file_size,            
                         __metadata.file_modification_time as file_modification_time,
                         __metadata.inserted as inserted,
-                    cast(current_date() as timestamp) as updated
+                    cast(current_timestamp() as timestamp) as updated
                     )
                     """
                 ),
