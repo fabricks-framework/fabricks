@@ -2,6 +2,7 @@ from logging import ERROR
 
 import pytest
 
+from fabricks.context import SPARK
 from fabricks.context.log import Logger
 from fabricks.core import get_job
 from tests.integration.compare import compare_gold_to_expected
@@ -31,3 +32,11 @@ def test_job2_gold_scd2_complete():
 def test_job2_gold_scd2_update():
     j = get_job(step="gold", topic="scd2", item="update")
     compare_gold_to_expected(j, "scd2", 2)
+
+
+@pytest.mark.order(225)
+def test_job2_gold_scd1_last_timestamp():
+    max_timestamp = SPARK.sql("select max(__timestamp) from gold.scd1_last_timestamp").collect()[0][0]
+    last_timestamp = SPARK.sql("select * from gold.scd1_last_timestamp__last_timestamp").collect()[0][0]
+
+    assert max_timestamp == last_timestamp, "persisted last timestamp is not max timestamp"

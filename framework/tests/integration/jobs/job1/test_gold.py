@@ -119,3 +119,11 @@ def test_job1_gold_fact_option():
     assert change_data_feed == "true", "enableChangeDataFeed not enabled"
 
     assert j.timeout == 1800, f"timeout {j.timeout} <> 1800"
+
+
+@pytest.mark.order(129)
+def test_job1_gold_scd1_last_timestamp():
+    max_timestamp = SPARK.sql("select max(__timestamp) from gold.scd1_last_timestamp").collect()[0][0]
+    last_timestamp = SPARK.sql("select * from gold.scd1_last_timestamp__last_timestamp").collect()[0][0]
+
+    assert max_timestamp == last_timestamp, "persisted last timestamp is not max timestamp"
