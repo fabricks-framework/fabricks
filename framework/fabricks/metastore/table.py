@@ -23,19 +23,19 @@ class Table(Relational):
     @property
     @deprecated("use delta_path instead")
     def deltapath(self) -> Path:
-        return self.database.deltapath.join("/".join(self.levels))
+        return self.database.delta_path.join("/".join(self.levels))
 
     @property
     def delta_path(self) -> Path:
-        return self.database.deltapath.join("/".join(self.levels))
+        return self.database.delta_path.join("/".join(self.levels))
 
     @property
     def deltatable(self) -> DeltaTable:
-        return DeltaTable.forPath(self.spark, self.deltapath.string)
+        return DeltaTable.forPath(self.spark, self.delta_path.string)
 
     @property
     def delta_table(self) -> DeltaTable:
-        return DeltaTable.forPath(self.spark, self.deltapath.string)
+        return DeltaTable.forPath(self.spark, self.delta_path.string)
 
     @property
     def dataframe(self) -> DataFrame:
@@ -57,9 +57,9 @@ class Table(Relational):
 
     def drop(self):
         super().drop()
-        if self.deltapath.exists():
+        if self.delta_path.exists():
             Logger.debug("delete delta folder", extra={"job": self})
-            self.deltapath.rm()
+            self.delta_path.rm()
 
     @overload
     def create(
@@ -183,7 +183,7 @@ class Table(Relational):
         {ddl_tblproperties}
         {ddl_partition_by}
         {ddl_cluster_by}
-        location '{self.deltapath}'
+        location '{self.delta_path}'
         """
         try:
             sql = fix(sql)
@@ -193,7 +193,7 @@ class Table(Relational):
         self.spark.sql(sql)
 
     def is_deltatable(self) -> bool:
-        return DeltaTable.isDeltaTable(self.spark, str(self.deltapath))
+        return DeltaTable.isDeltaTable(self.spark, str(self.delta_path))
 
     def column_mapping_enabled(self) -> bool:
         return self.get_property("delta.columnMapping.mode") == "name"
@@ -203,7 +203,7 @@ class Table(Relational):
 
     def register(self):
         Logger.debug("register table", extra={"job": self})
-        self.spark.sql(f"create table if not exists {self.qualified_name} using delta location '{self.deltapath}'")
+        self.spark.sql(f"create table if not exists {self.qualified_name} using delta location '{self.delta_path}'")
 
     def restore_to_version(self, version: int):
         Logger.info(f"restore table to version {version}", extra={"job": self})
@@ -348,11 +348,11 @@ class Table(Relational):
             if not dtype.startswith("struct") and not dtype.startswith("array") and name not in ["__metadata"]
         ]
         cols = ", ".join(sorted(cols))
-        self.spark.sql(f"analyze table delta.`{self.deltapath}` compute statistics for columns {cols}")
+        self.spark.sql(f"analyze table delta.`{self.delta_path}` compute statistics for columns {cols}")
 
     def compute_delta_statistics(self):
         Logger.debug("compute delta statistics", extra={"job": self})
-        self.spark.sql(f"analyze table delta.`{self.deltapath}` compute delta statistics")
+        self.spark.sql(f"analyze table delta.`{self.delta_path}` compute delta statistics")
 
     def drop_column(self, name: str):
         assert self.column_mapping_enabled(), "column mapping not enabled"

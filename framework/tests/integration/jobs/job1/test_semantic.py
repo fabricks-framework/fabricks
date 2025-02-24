@@ -57,7 +57,7 @@ def test_job1_semantic_fact_job_option():
 @pytest.mark.order(139)
 def test_job1_semantic_fact_zstd():
     j = get_job(step="semantic", topic="fact", item="zstd")
-    parquet = [f for f in dbutils.fs.ls(j.table.deltapath.string) if f.size > 0][0]
+    parquet = [f for f in dbutils.fs.ls(j.table.delta_path.string) if f.size > 0][0]
     file_name = parquet.name
     assert "zstd" in file_name, "codec <> zstd"
 
