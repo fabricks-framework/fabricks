@@ -255,11 +255,13 @@ class Gold(BaseJob):
         assert self.change_data_capture in ["scd1", "scd2"], "persist_last_timestamp only allowed in scd1 or scd2"
 
         cdc = NoCDC(self.step, self.topic, f"{self.item}__last_timestamp")
+
         if drop:
             cdc.drop()
             return
+
         if get:
-            return cdc.table.get_last_version()
+            return self.table.get_last_version()
 
         df = self.spark.sql(f"select * from {self} limit 1")
 
