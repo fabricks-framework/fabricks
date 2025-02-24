@@ -71,6 +71,8 @@ if i == 2:
 
     gold = gold + [
         {"step": "semantic", "topic": "fact", "item": "schema_drift"},
+        {"step": "gold", "topic": "scd1", "item": "identity"},
+        {"step": "gold", "topic": "scd1", "item": "last_timestamp"},
     ]
 
 # COMMAND ----------
