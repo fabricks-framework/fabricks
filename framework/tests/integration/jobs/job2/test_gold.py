@@ -36,7 +36,7 @@ def test_job2_gold_scd2_update():
 
 @pytest.mark.order(225)
 def test_job2_gold_scd1_last_timestamp():
-    max_timestamp = SPARK.sql("select max(__timestamp) from gold.scd1_last_timestamp").collect()[0][0]
+    max_timestamp = SPARK.sql("select max(`__valid_from`) as __timestamp from expected.gold_scd2_job1").collect()[0][0]
     last_timestamp = SPARK.sql("select * from gold.scd1_last_timestamp__last_timestamp").collect()[0][0]
 
     assert max_timestamp == last_timestamp, "persisted last timestamp is not max timestamp"

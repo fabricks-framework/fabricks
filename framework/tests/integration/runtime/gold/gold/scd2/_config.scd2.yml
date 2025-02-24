@@ -14,7 +14,7 @@
     item: last_timestamp
     tags: [test]
     options:
-      change_data_capture: scd1
+      change_data_capture: scd2
       mode: update
       persist_last_timestamp: True
 - job:
