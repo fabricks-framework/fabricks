@@ -12,55 +12,55 @@ Logger.setLevel(ERROR)
 
 
 @pytest.mark.order(111)
-def test_job1_silver_monarch_scd2():
+def test_silver_monarch_scd2():
     job = get_job(step="silver", topic="monarch", item="scd2")
     compare_silver_to_expected(job=job, cdc="scd2", iter=1)
 
 
 @pytest.mark.order(112)
-def test_job1_silver_monarch_scd1():
+def test_silver_monarch_scd1():
     job = get_job(step="silver", topic="monarch", item="scd1")
     compare_silver_to_expected(job=job, cdc="scd1", iter=1)
 
 
 @pytest.mark.order(111)
-def test_job1_silver_regent_scd2():
+def test_silver_regent_scd2():
     job = get_job(step="silver", topic="regent", item="scd2")
     compare_silver_to_expected(job=job, cdc="scd2", iter=1)
 
 
 @pytest.mark.order(112)
-def test_job1_silver_regent_scd1():
+def test_silver_regent_scd1():
     job = get_job(step="silver", topic="regent", item="scd1")
     compare_silver_to_expected(job=job, cdc="scd1", iter=1)
 
 
 @pytest.mark.order(113)
-def test_job1_silver_memory_scd2():
+def test_silver_memory_scd2():
     job = get_job(step="silver", topic="memory", item="scd2")
     compare_silver_to_expected(job=job, cdc="scd2", iter=1)
 
 
 @pytest.mark.order(114)
-def test_job1_silver_memory_scd1():
+def test_silver_memory_scd1():
     job = get_job(step="silver", topic="memory", item="scd1")
     compare_silver_to_expected(job=job, cdc="scd1", iter=1)
 
 
 @pytest.mark.order(115)
-def test_job1_silver_king_and_queen_scd2():
+def test_silver_king_and_queen_scd2():
     job = get_job(step="silver", topic="king_and_queen", item="scd2")
     compare_silver_to_expected(job=job, cdc="scd2", iter=1)
 
 
 @pytest.mark.order(116)
-def test_job1_silver_king_and_queen_scd1():
+def test_silver_king_and_queen_scd1():
     job = get_job(step="silver", topic="king_and_queen", item="scd1")
     compare_silver_to_expected(job=job, cdc="scd1", iter=1)
 
 
 @pytest.mark.order(119)
-def test_job1_silver_monarch_delta():
+def test_silver_monarch_delta():
     job = get_job(step="silver", topic="monarch", item="delta")
     compare_silver_to_expected(job=job, cdc="scd2", iter=1)
 
@@ -77,19 +77,19 @@ def test_job1_silver_monarch_delta():
 
 
 @pytest.mark.order(119)
-def test_job1_silver_princess_append():
+def test_silver_princess_append():
     df = Table("silver", "princess", "append").dataframe
     assert df.count() == 2
 
 
 @pytest.mark.order(119)
-def test_job1_silver_princess_latest():
+def test_silver_princess_latest():
     df = Table("silver", "princess", "latest").dataframe
     assert df.count() == 1
 
 
 @pytest.mark.order(119)
-def test_job1_silver_prince_special_char():
+def test_silver_prince_special_char():
     cols = Table("silver", "prince", "special_char").columns
     assert "@Id" in cols, "@Id not found"
     assert "Näàme" in cols, "Näàme not found"
@@ -97,24 +97,24 @@ def test_job1_silver_prince_special_char():
 
 
 @pytest.mark.order(119)
-def test_job1_silver_princess_extend():
+def test_silver_princess_extend():
     cols = Table("silver", "princess", "extend").columns
     assert "country" in cols, "country not found"
 
 
 @pytest.mark.order(119)
-def test_job1_silver_princess_order_duplicate():
+def test_silver_princess_order_duplicate():
     order_by = Table("silver", "princess", "order_duplicate").dataframe.select("order_by").collect()[0][0]
     assert order_by == 2, f"order by {order_by} <> 2"
 
 
 @pytest.mark.order(119)
-def test_job1_silver_princess_calculated_column():
+def test_silver_princess_calculated_column():
     order_by = Table("silver", "princess", "calculated_column").dataframe.select("order_by").collect()[0][0]
     assert order_by == 2, f"order by {order_by} <> 2"
 
 
 @pytest.mark.order(119)
-def test_job1_silver_timeout():
+def test_silver_timeout():
     job = get_job(step="silver", topic="princess", item="calculated_column")
     assert job.timeout == 3600, f"timeout {job.timeout} <> 3600"

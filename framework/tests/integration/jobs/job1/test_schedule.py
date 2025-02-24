@@ -11,7 +11,7 @@ Logger.setLevel(ERROR)
 
 
 @pytest.mark.order(102)
-def test_job1_schedule():
+def test_schedule():
     table = Table("silver", "princess", "drop")
     table.drop()
 
@@ -23,7 +23,7 @@ def test_job1_schedule():
 
 
 @pytest.mark.order(103)
-def test_job1_no_unexpected_failure():
+def test_no_unexpected_failure():
     df = SPARK.sql(
         """
         select

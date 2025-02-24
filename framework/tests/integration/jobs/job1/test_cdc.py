@@ -11,7 +11,7 @@ Logger.setLevel(ERROR)
 
 # TODO: add check for columns
 @pytest.mark.order(171)
-def test_job1_gold_nocdc_overwrite():
+def test_gold_nocdc_overwrite():
     df = SPARK.sql("select 1 as dummy")
     nocdc = NoCDC("gold", "nocdc", "overwrite")
 
@@ -22,7 +22,7 @@ def test_job1_gold_nocdc_overwrite():
 
 
 @pytest.mark.order(172)
-def test_job1_gold_nocdc_append():
+def test_gold_nocdc_append():
     df = SPARK.sql("select 1 as dummy")
     nocdc = NoCDC("gold", "nocdc", "append")
 
