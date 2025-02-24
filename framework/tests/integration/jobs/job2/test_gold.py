@@ -22,6 +22,12 @@ def test_job2_gold_scd1_update():
     compare_gold_to_expected(j, "scd1", 2)
 
 
+@pytest.mark.order(222)
+def test_job2_gold_scd1_identity():
+    j = get_job(step="gold", topic="scd1", item="identity")
+    compare_gold_to_expected(j, "scd1", 2)
+
+
 @pytest.mark.order(223)
 def test_job2_gold_scd2_complete():
     j = get_job(step="gold", topic="scd2", item="complete")

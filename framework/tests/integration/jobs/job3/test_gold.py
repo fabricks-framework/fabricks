@@ -21,6 +21,12 @@ def test_job3_gold_scd1_update():
     compare_gold_to_expected(j, "scd1", 11)
 
 
+@pytest.mark.order(322)
+def test_job3_gold_scd1_identity():
+    j = get_job(step="gold", topic="scd1", item="identity")
+    compare_gold_to_expected(j, "scd1", 11)
+
+
 @pytest.mark.order(323)
 def test_job3_gold_scd1_memory():
     j = get_job(step="gold", topic="scd1", item="memory")
