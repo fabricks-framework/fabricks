@@ -8,6 +8,14 @@
     options:
       change_data_capture: scd1
       mode: update
+- job:
+    step: gold
+    topic: scd1
+    item: last_timestamp
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
       persist_last_timestamp: True
 - job:
     step: gold
@@ -25,3 +33,11 @@
     options:
       change_data_capture: scd1
       mode: memory
+- job:
+    step: gold
+    topic: scd1
+    item: identity
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update

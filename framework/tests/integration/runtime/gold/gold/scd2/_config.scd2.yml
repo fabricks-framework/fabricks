@@ -11,6 +11,15 @@
 - job:
     step: gold
     topic: scd2
+    item: last_timestamp
+    tags: [test]
+    options:
+      change_data_capture: scd2
+      mode: update
+      persist_last_timestamp: True
+- job:
+    step: gold
+    topic: scd2
     item: complete
     tags: [test]
     options:
