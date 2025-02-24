@@ -4,20 +4,31 @@
     __rectified_base as (
         select
             {% for field in fields %} {{ field }}, {% endfor %}
-            s.__operation,
-            s.__operation as __original_operation,
-            s.__timestamp,
-            s.__timestamp as __original_timestamp,
-            s.__hash,
-            s.__key,
-            {% if has_identity %} s.__identity, {% endif %}
-            {% if has_source %} s.__source, {% endif %}
-            {% if has_metadata %} s.__metadata, {% endif %}
-            {% if has_rescued_data %} s.__rescued_data, {% endif %}
-        from {{ parent_rectify }} s
+            __operation,
+            __operation as __original_operation,
+            __timestamp,
+            __timestamp as __original_timestamp,
+            __hash,
+            __key,
+            {% if has_identity %} __identity, {% endif %}
+            {% if has_source %} __source, {% endif %}
+            {% if has_metadata %} __metadata, {% endif %}
+            {% if has_rescued_data %} __rescued_data, {% endif %}
+        from {{ parent_rectify }}
         {% if has_rows %}
             union all
-            select *
+            select
+                {% for field in fields %} {{ field }}, {% endfor %}
+                __operation,
+                __operation as __original_operation,
+                __timestamp,
+                __timestamp as __original_timestamp,
+                __hash,
+                __key,
+                {% if has_identity %} __identity, {% endif %}
+                {% if has_source %} __source, {% endif %}
+                {% if has_metadata %} __metadata, {% endif %}
+                {% if has_rescued_data %} __rescued_data, {% endif %}
             from __current
         {% endif %}
     ),

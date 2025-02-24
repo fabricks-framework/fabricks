@@ -13,7 +13,7 @@ def identity(spark: SparkSession):
             case 
                 when bk is null then -1
                 when sk is null then -2
-                else sk
+                else xxhash64(sk)
             end
         as bigint)
     """
