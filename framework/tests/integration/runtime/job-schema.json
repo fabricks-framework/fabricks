@@ -4,30 +4,13 @@
         "$ref": "#/$defs/JobWrapper"
     },
     "$defs": {
-        "CalculatedColumn": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "expr": {
-                    "type": "string"
-                }
-            }
-        },
         "BronzeOptions": {
             "type": "object",
             "properties": {
-                "parents": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "filter_where": {
-                    "type": [
-                        "string",
-                        "null"
+                "type": {
+                    "enum": [
+                        "manual",
+                        "default"
                     ]
                 },
                 "mode": {
@@ -37,13 +20,7 @@
                         "register"
                     ]
                 },
-                "storage_account": {
-                    "type": "string"
-                },
-                "container": {
-                    "type": "string"
-                },
-                "root": {
+                "uri": {
                     "type": "string"
                 },
                 "parser": {
@@ -58,80 +35,155 @@
                         "type": "string"
                     }
                 },
-                "calculated_columns": {
+                "parents": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/CalculatedColumn"
+                        "type": "string"
                     }
                 },
-                "type": {
+                "filter_where": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "encrypted_columns": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "calculated_columns": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "operation": {
                     "enum": [
-                        "update",
-                        "delete",
-                        "complete"
+                        "upsert",
+                        "reload",
+                        "delete"
+                    ]
+                },
+                "timeout": {
+                    "type": [
+                        "integer",
+                        "null"
                     ]
                 }
             }
         },
-        "Constraint": {
+        "TableOptions": {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string"
+                "identity": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
                 },
-                "expr": {
-                    "type": "string"
-                }
-            }
-        },
-        "BaseTableOptions": {
-            "type": "object",
-            "properties": {
+                "liquid_clustering": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
                 "partition_by": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "indexes": {
+                "zorder_by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "cluster_by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "powerbi": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "bloomfilter_by": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "constraints": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/Constraint"
-                    }
-                }
-            }
-        },
-        "UnpivotOptions": {
-            "type": "object",
-            "properties": {
-                "untouched_columns": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
                 },
-                "touched_name": {
-                    "type": "string"
+                "properties": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
                 },
-                "touched_value": {
-                    "type": "string"
-                }
-            }
-        },
-        "ReadOption": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
+                "comment": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
                 },
-                "value": {
-                    "type": "string"
+                "calculated_columns": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "retention_days": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
                 }
             }
         },
@@ -144,27 +196,20 @@
                         "null"
                     ]
                 },
-                "unpivot": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "unpivot_options": {
+                "read_options": {
                     "oneOf": [
                         {
                             "type": "null"
                         },
                         {
-                            "$ref": "#/$defs/UnpivotOptions"
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
                         }
                     ]
-                },
-                "read_options": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/ReadOption"
-                    }
                 }
             }
         },
@@ -182,29 +227,158 @@
                         "boolean",
                         "null"
                     ]
+                },
+                "min_rows": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "max_rows": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "count_must_equal": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
                 }
             }
         },
-        "JobBronze": {
+        "SparkOptions": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "conf": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "_InvokeOptions": {
+            "type": "object",
+            "properties": {
+                "notebook": {
+                    "type": "string"
+                },
+                "timeout": {
+                    "type": "integer"
+                },
+                "arguments": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "InvokerOptions": {
+            "type": "object",
+            "properties": {
+                "pre_run": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/_InvokeOptions"
+                    }
+                },
+                "run": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/_InvokeOptions"
+                        }
+                    ]
+                },
+                "post_run": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/_InvokeOptions"
+                    }
+                }
+            }
+        },
+        "ExtenderOptions": {
+            "type": "object",
+            "properties": {
+                "extender": {
+                    "type": "string"
+                },
+                "arguments": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "JobConfBronze": {
             "type": "object",
             "required": [
-                "step",
                 "topic",
                 "item",
+                "step",
                 "options"
             ],
             "additionalProperties": false,
             "properties": {
-                "step": {
-                    "enum": [
-                        "bronze"
-                    ]
-                },
                 "topic": {
                     "type": "string"
                 },
                 "item": {
                     "type": "string"
+                },
+                "step": {
+                    "enum": [
+                        "bronze"
+                    ]
                 },
                 "options": {
                     "$ref": "#/$defs/BronzeOptions"
@@ -215,7 +389,7 @@
                             "type": "null"
                         },
                         {
-                            "$ref": "#/$defs/BaseTableOptions"
+                            "$ref": "#/$defs/TableOptions"
                         }
                     ]
                 },
@@ -239,17 +413,42 @@
                         }
                     ]
                 },
+                "spark_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/SparkOptions"
+                        }
+                    ]
+                },
+                "invoker_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/InvokerOptions"
+                        }
+                    ]
+                },
+                "extender_options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/ExtenderOptions"
+                    }
+                },
                 "tags": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "schedule": {
-                    "enum": [
-                        "daily",
-                        "weekly",
-                        "on-demand"
+                "comment": {
+                    "type": [
+                        "string",
+                        "null"
                     ]
                 }
             }
@@ -257,6 +456,28 @@
         "SilverOptions": {
             "type": "object",
             "properties": {
+                "type": {
+                    "enum": [
+                        "manual",
+                        "default"
+                    ]
+                },
+                "mode": {
+                    "enum": [
+                        "memory",
+                        "append",
+                        "latest",
+                        "update",
+                        "combine"
+                    ]
+                },
+                "change_data_capture": {
+                    "enum": [
+                        "nocdc",
+                        "scd1",
+                        "scd2"
+                    ]
+                },
                 "parents": {
                     "type": "array",
                     "items": {
@@ -269,56 +490,61 @@
                         "null"
                     ]
                 },
-                "mode": {
-                    "enum": [
-                        "memory",
-                        "append",
-                        "register",
-                        "update",
-                        "complete"
-                    ]
-                },
-                "change_data_capture": {
-                    "enum": [
-                        "nocdc",
-                        "scd1",
-                        "scd2"
-                    ]
-                },
-                "order_by": {
+                "deduplicate": {
                     "type": [
-                        "string",
+                        "boolean",
                         "null"
                     ]
                 },
-                "transform": {
+                "stream": {
                     "type": [
-                        "string",
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "order_duplicate_by": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "timeout": {
+                    "type": [
+                        "integer",
                         "null"
                     ]
                 }
             }
         },
-        "JobSilver": {
+        "JobConfSilver": {
             "type": "object",
             "required": [
-                "step",
                 "topic",
                 "item",
+                "step",
                 "options"
             ],
             "additionalProperties": false,
             "properties": {
-                "step": {
-                    "enum": [
-                        "silver"
-                    ]
-                },
                 "topic": {
                     "type": "string"
                 },
                 "item": {
                     "type": "string"
+                },
+                "step": {
+                    "enum": [
+                        "silver"
+                    ]
                 },
                 "options": {
                     "$ref": "#/$defs/SilverOptions"
@@ -329,7 +555,7 @@
                             "type": "null"
                         },
                         {
-                            "$ref": "#/$defs/BaseTableOptions"
+                            "$ref": "#/$defs/TableOptions"
                         }
                     ]
                 },
@@ -343,17 +569,42 @@
                         }
                     ]
                 },
+                "spark_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/SparkOptions"
+                        }
+                    ]
+                },
+                "invoker_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/InvokerOptions"
+                        }
+                    ]
+                },
+                "extender_options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/ExtenderOptions"
+                    }
+                },
                 "tags": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "schedule": {
-                    "enum": [
-                        "daily",
-                        "weekly",
-                        "on-demand"
+                "comment": {
+                    "type": [
+                        "string",
+                        "null"
                     ]
                 }
             }
@@ -361,25 +612,19 @@
         "GoldOptions": {
             "type": "object",
             "properties": {
-                "parents": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "filter_where": {
-                    "type": [
-                        "string",
-                        "null"
+                "type": {
+                    "enum": [
+                        "manual",
+                        "default"
                     ]
                 },
                 "mode": {
                     "enum": [
                         "memory",
                         "append",
-                        "register",
+                        "complete",
                         "update",
-                        "complete"
+                        "invoke"
                     ]
                 },
                 "change_data_capture": {
@@ -395,21 +640,33 @@
                         "null"
                     ]
                 },
-                "sink": {
+                "parents": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "deduplicate": {
                     "type": [
                         "boolean",
                         "null"
                     ]
                 },
-                "hard_delete": {
+                "correct_valid_from": {
                     "type": [
                         "boolean",
                         "null"
                     ]
                 },
-                "delete_missing": {
+                "persist_last_timestamp": {
                     "type": [
                         "boolean",
+                        "null"
+                    ]
+                },
+                "table": {
+                    "type": [
+                        "string",
                         "null"
                     ]
                 },
@@ -418,121 +675,41 @@
                         "boolean",
                         "null"
                     ]
-                }
-            }
-        },
-        "AdvancedTableOptions": {
-            "type": "object",
-            "properties": {
-                "partition_by": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
-                "indexes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "constraints": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/Constraint"
-                    }
-                },
-                "identity": {
+                "requirements": {
                     "type": [
                         "boolean",
                         "null"
                     ]
-                }
-            }
-        },
-        "WriteOption": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
                 },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "SinkOptions": {
-            "type": "object",
-            "properties": {
-                "storage_account": {
-                    "type": "string"
-                },
-                "container": {
-                    "type": "string"
-                },
-                "root": {
-                    "type": "string"
-                },
-                "mode": {
-                    "enum": [
-                        "complete",
-                        "update"
-                    ]
-                },
-                "file_name": {
+                "timeout": {
                     "type": [
-                        "string",
+                        "integer",
                         "null"
                     ]
-                },
-                "file_format": {
-                    "enum": [
-                        "json_array",
-                        "json",
-                        "csv",
-                        "parquet"
-                    ]
-                },
-                "partition_by": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "write_options": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/WriteOption"
-                    }
-                },
-                "calculated_columns": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/CalculatedColumn"
-                    }
                 }
             }
         },
-        "JobGold": {
+        "JobConfGold": {
             "type": "object",
             "required": [
-                "step",
                 "topic",
                 "item",
+                "step",
                 "options"
             ],
             "additionalProperties": false,
             "properties": {
-                "step": {
-                    "enum": [
-                        "gold"
-                    ]
-                },
                 "topic": {
                     "type": "string"
                 },
                 "item": {
                     "type": "string"
+                },
+                "step": {
+                    "enum": [
+                        "gold"
+                    ]
                 },
                 "options": {
                     "oneOf": [
@@ -550,17 +727,7 @@
                             "type": "null"
                         },
                         {
-                            "$ref": "#/$defs/AdvancedTableOptions"
-                        }
-                    ]
-                },
-                "sink_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/SinkOptions"
+                            "$ref": "#/$defs/TableOptions"
                         }
                     ]
                 },
@@ -574,98 +741,31 @@
                         }
                     ]
                 },
-                "tags": {
+                "spark_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/SparkOptions"
+                        }
+                    ]
+                },
+                "invoker_options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/InvokerOptions"
+                        }
+                    ]
+                },
+                "extender_options": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/$defs/ExtenderOptions"
                     }
-                },
-                "schedule": {
-                    "enum": [
-                        "daily",
-                        "weekly",
-                        "on-demand"
-                    ]
-                }
-            }
-        },
-        "SemanticOptions": {
-            "type": "object",
-            "properties": {
-                "parents": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "filter_where": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "mode": {
-                    "enum": [
-                        "complete"
-                    ]
-                },
-                "update_where": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                }
-            }
-        },
-        "JobSemantic": {
-            "type": "object",
-            "required": [
-                "step",
-                "topic",
-                "item"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "step": {
-                    "enum": [
-                        "semantic"
-                    ]
-                },
-                "topic": {
-                    "type": "string"
-                },
-                "item": {
-                    "type": "string"
-                },
-                "options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/SemanticOptions"
-                        }
-                    ]
-                },
-                "table_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/AdvancedTableOptions"
-                        }
-                    ]
-                },
-                "check_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/CheckOptions"
-                        }
-                    ]
                 },
                 "tags": {
                     "type": "array",
@@ -673,11 +773,10 @@
                         "type": "string"
                     }
                 },
-                "schedule": {
-                    "enum": [
-                        "daily",
-                        "weekly",
-                        "on-demand"
+                "comment": {
+                    "type": [
+                        "string",
+                        "null"
                     ]
                 }
             }
@@ -692,16 +791,13 @@
                 "job": {
                     "oneOf": [
                         {
-                            "$ref": "#/$defs/JobBronze"
+                            "$ref": "#/$defs/JobConfBronze"
                         },
                         {
-                            "$ref": "#/$defs/JobSilver"
+                            "$ref": "#/$defs/JobConfSilver"
                         },
                         {
-                            "$ref": "#/$defs/JobGold"
-                        },
-                        {
-                            "$ref": "#/$defs/JobSemantic"
+                            "$ref": "#/$defs/JobConfGold"
                         }
                     ]
                 }

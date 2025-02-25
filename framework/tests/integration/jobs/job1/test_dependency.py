@@ -10,7 +10,7 @@ Logger.setLevel(ERROR)
 
 
 @pytest.mark.order(151)
-def test_job1_gold_fact_dependency():
+def test_gold_fact_dependency():
     def check():
         dep_df = SPARK.sql(
             """

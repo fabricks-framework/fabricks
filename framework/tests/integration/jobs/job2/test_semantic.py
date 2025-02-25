@@ -9,6 +9,6 @@ Logger.setLevel(ERROR)
 
 
 @pytest.mark.order(231)
-def test_job2_semantic_fact_schema_drift():
+def test_semantic_fact_schema_drift():
     df = Table("semantic", "fact", "schema_drift").dataframe
     assert "newField" in df.columns, "newField not found"

@@ -4,14 +4,12 @@ __current as (
     select
         {% for field in fields %} {{ field }}, {% endfor %}
         'current' as __operation,
-        'current' as __original_operation,
         {% if has_timestamp %}
             {% if cdc == "nocdc" %} __timestamp as __timestamp, {% endif %}
             {% if cdc == "scd1" %} __timestamp as __timestamp, {% endif %}
             {% if cdc == "scd2" %} __valid_from as __timestamp, {% endif %}
         {% else %} cast('0001-01-01' as timestamp) as __timestamp,
         {% endif %}
-        __timestamp as __original_timestamp,
         {% if has_hash %} __hash,
         {% else %} {{ h.hash(fields=hashes) }} as __hash,
         {% endif %}

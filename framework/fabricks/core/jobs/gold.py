@@ -203,7 +203,7 @@ class Gold(BaseJob):
     def for_each_run(self, schedule: Optional[str] = None):
         last_version = None
         if self.options.job.get_boolean("persist_last_timestamp"):
-            last_version = self._last_timestamp(get=True)
+            last_version = self.cdc_last_timestamp.table.get_last_version()
 
         if self.mode == "invoke":
             self.invoke(schedule=schedule)
@@ -211,7 +211,7 @@ class Gold(BaseJob):
             super().for_each_run(schedule=schedule)
 
         if self.options.job.get_boolean("persist_last_timestamp"):
-            self._last_timestamp(last_version=last_version)
+            self._update_last_timestamp(last_version=last_version)
 
     def create(self):
         if self.mode == "invoke":
@@ -219,7 +219,7 @@ class Gold(BaseJob):
         else:
             super().create()
             if self.options.job.get_boolean("persist_last_timestamp"):
-                self._last_timestamp(create=True)
+                self._update_last_timestamp(create=True)
 
     def register(self):
         if self.mode == "invoke":
@@ -229,7 +229,7 @@ class Gold(BaseJob):
 
     def drop(self):
         if self.options.job.get_boolean("persist_last_timestamp"):
-            self._last_timestamp(drop=True)
+            self.cdc_last_timestamp.drop()
 
         super().drop()
 
@@ -244,23 +244,15 @@ class Gold(BaseJob):
         else:
             super().optimize()
 
-    def _last_timestamp(
-        self,
-        last_version: Optional[int] = None,
-        create: bool = False,
-        drop: bool = False,
-        get: bool = False,
-    ):
+    @property
+    def cdc_last_timestamp(self) -> NoCDC:
         assert self.mode == "update", "persist_last_timestamp only allowed in update"
         assert self.change_data_capture in ["scd1", "scd2"], "persist_last_timestamp only allowed in scd1 or scd2"
 
         cdc = NoCDC(self.step, self.topic, f"{self.item}__last_timestamp")
-        if drop:
-            cdc.drop()
-            return
-        if get:
-            return cdc.table.get_last_version()
+        return cdc
 
+    def _update_last_timestamp(self, last_version: Optional[int] = None, create: bool = False):
         df = self.spark.sql(f"select * from {self} limit 1")
 
         fields = []
@@ -279,6 +271,6 @@ class Gold(BaseJob):
         df = self.spark.sql(sql)
 
         if create:
-            cdc.table.create(df)
+            self.cdc_last_timestamp.table.create(df)
         else:
-            cdc.overwrite(df)
+            self.cdc_last_timestamp.overwrite(df)

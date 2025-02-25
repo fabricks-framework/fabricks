@@ -339,7 +339,7 @@ class Processor(Generator):
             create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
 
             Logger.debug("append", extra={"job": self})
-            df.write.format("delta").mode("append").save(self.table.deltapath.string)
+            df.write.format("delta").mode("append").save(self.table.delta_path.string)
 
     def overwrite(
         self,
@@ -367,8 +367,8 @@ class Processor(Generator):
                     df.write.format("delta")
                     .mode("overwrite")
                     .option("partitionOverwriteMode", "dynamic")
-                    .save(self.table.deltapath.string)
+                    .save(self.table.delta_path.string)
                 )
             else:
                 Logger.debug("overwrite", extra={"job": self})
-                df.write.format("delta").mode("overwrite").save(self.table.deltapath.string)
+                df.write.format("delta").mode("overwrite").save(self.table.delta_path.string)

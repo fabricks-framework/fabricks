@@ -10,7 +10,7 @@ Logger.setLevel(ERROR)
 
 
 @pytest.mark.order(139)
-def test_job1_semantic_fact_table():
+def test_semantic_fact_table():
     j = get_job(step="semantic", topic="fact", item="table")
     assert j.table.exists(), f"{j} not found"
     cols = [c for c in j.table.columns if c.startswith("__")]
@@ -19,7 +19,7 @@ def test_job1_semantic_fact_table():
 
 
 @pytest.mark.order(139)
-def test_job1_semantic_fact_step_option():
+def test_semantic_fact_step_option():
     j = get_job(step="semantic", topic="fact", item="step_option")
     props_df = j.table.show_properties()
     assert props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "1", (
@@ -40,7 +40,7 @@ def test_job1_semantic_fact_step_option():
 
 
 @pytest.mark.order(139)
-def test_job1_semantic_fact_job_option():
+def test_semantic_fact_job_option():
     j = get_job(step="semantic", topic="fact", item="job_option")
     props_df = j.table.show_properties()
     assert props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "2", (
@@ -55,15 +55,15 @@ def test_job1_semantic_fact_job_option():
 
 
 @pytest.mark.order(139)
-def test_job1_semantic_fact_zstd():
+def test_semantic_fact_zstd():
     j = get_job(step="semantic", topic="fact", item="zstd")
-    parquet = [f for f in dbutils.fs.ls(j.table.deltapath.string) if f.size > 0][0]
+    parquet = [f for f in dbutils.fs.ls(j.table.delta_path.string) if f.size > 0][0]
     file_name = parquet.name
     assert "zstd" in file_name, "codec <> zstd"
 
 
 @pytest.mark.order(139)
-def test_job1_semantic_fact_powerbi():
+def test_semantic_fact_powerbi():
     j = get_job(step="semantic", topic="fact", item="powerbi")
     props_df = j.table.show_properties()
     assert props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "2", (

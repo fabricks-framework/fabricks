@@ -10,6 +10,6 @@ Logger.setLevel(ERROR)
 
 
 @pytest.mark.order(201)
-def test_job2_run():
+def test_run():
     run_notebook(PATH_RUNTIME.parent().join("run"), i=2)
     assert True

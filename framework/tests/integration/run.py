@@ -56,6 +56,7 @@ gold = [
     {"step": "gold", "topic": "scd2", "item": "complete"},
     {"step": "gold", "topic": "scd1", "item": "update"},
     {"step": "gold", "topic": "scd2", "item": "update"},
+    {"step": "gold", "topic": "scd1", "item": "identity"},
 ]
 
 # COMMAND ----------
@@ -71,15 +72,14 @@ if i == 2:
 
     gold = gold + [
         {"step": "semantic", "topic": "fact", "item": "schema_drift"},
+        {"step": "gold", "topic": "scd1", "item": "last_timestamp"},
     ]
 
 # COMMAND ----------
 
-
 def _run(job: dict):
     j = get_job(step=job.get("step"), topic=job.get("topic"), item=job.get("item"))  # type: ignore
     j.run()
-
 
 # COMMAND ----------
 
