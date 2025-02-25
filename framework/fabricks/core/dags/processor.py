@@ -9,6 +9,7 @@ from databricks.sdk.runtime import dbutils, spark
 from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core.dags.base import BaseDags
 from fabricks.core.dags.log import DagsLogger
+from fabricks.core.dags.run import run
 from fabricks.core.jobs.base._types import TStep
 from fabricks.core.steps.get_step import get_step
 from fabricks.utils.azure_queue import AzureQueue
@@ -16,11 +17,15 @@ from fabricks.utils.azure_table import AzureTable
 
 
 class DagProcessor(BaseDags):
-    def __init__(self, schedule_id: str, schedule: str, step: Union[TStep, str]):
+    def __init__(self, schedule_id: str, schedule: str, step: Union[TStep, str], in_notebook: bool = False):
         self.step = get_step(step=step)
         self.schedule = schedule
+
+        self.in_notebook = in_notebook
+
         self._azure_queue = None
         self._azure_table = None
+
         super().__init__(schedule_id=schedule_id)
 
     @property
@@ -84,17 +89,26 @@ class DagProcessor(BaseDags):
                 DagsLogger.info("starting", extra=self.extra(j))
 
                 try:
-                    dbutils.notebook.run(  # type: ignore
-                        PATH_NOTEBOOKS.join("run").get_notebook_path(),  # type: ignore
-                        self.step.timeouts.job,  # type: ignore
-                        {
-                            "schedule_id": self.schedule_id,
-                            "schedule": self.schedule,  # needed to pass schedule variables to the job
-                            "step": str(self.step),
-                            "job_id": j.get("JobId"),
-                            "job": j.get("Job"),
-                        },  # type: ignore
-                    )  # type: ignore
+                    if self.in_notebook:
+                        dbutils.notebook.run(  # type: ignore
+                            PATH_NOTEBOOKS.join("run").get_notebook_path(),  # type: ignore
+                            self.step.timeouts.job,  # type: ignore
+                            {
+                                "schedule_id": self.schedule_id,
+                                "schedule": self.schedule,  # needed to pass schedule variables to the job
+                                "step": str(self.step),
+                                "job_id": j.get("JobId"),
+                                "job": j.get("Job"),
+                            },  # type: ignore
+                        )
+
+                    else:
+                        run(
+                            step=str(self.step),
+                            job_id=j.get("JobId"),
+                            schedule_id=self.schedule_id,
+                            schedule=self.schedule,
+                        )
 
                 except Exception:
                     DagsLogger.warning("🤯 (failed)", extra={"step": str(self.step), "job": j.get("Job")})
