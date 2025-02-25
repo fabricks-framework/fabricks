@@ -17,11 +17,11 @@ from fabricks.utils.azure_table import AzureTable
 
 
 class DagProcessor(BaseDags):
-    def __init__(self, schedule_id: str, schedule: str, step: Union[TStep, str], in_notebook: bool = False):
+    def __init__(self, schedule_id: str, schedule: str, step: Union[TStep, str], notebook: bool = False):
         self.step = get_step(step=step)
         self.schedule = schedule
 
-        self.in_notebook = in_notebook
+        self.notebook = notebook
 
         self._azure_queue = None
         self._azure_table = None
@@ -89,7 +89,7 @@ class DagProcessor(BaseDags):
                 DagsLogger.info("starting", extra=self.extra(j))
 
                 try:
-                    if self.in_notebook:
+                    if self.notebook:
                         dbutils.notebook.run(  # type: ignore
                             PATH_NOTEBOOKS.join("run").get_notebook_path(),  # type: ignore
                             self.step.timeouts.job,  # type: ignore
