@@ -47,6 +47,9 @@
   set
     __is_current = False,
     __is_deleted = True,
+    {% if has_timestamp %}
+    __timestamp = s.__timestamp,
+    {% endif %}
     {% if has_metadata %}
     __metadata.updated = cast(current_timestamp() as timestamp),
     {% endif %}

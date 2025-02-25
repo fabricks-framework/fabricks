@@ -77,9 +77,11 @@ if i == 2:
 
 # COMMAND ----------
 
+
 def _run(job: dict):
     j = get_job(step=job.get("step"), topic=job.get("topic"), item=job.get("item"))  # type: ignore
     j.run()
+
 
 # COMMAND ----------
 
