@@ -10,7 +10,7 @@ Logger.setLevel(ERROR)
 
 
 @pytest.mark.order(301)
-def test_job3_run():
+def test_run():
     for i in range(3, 12):
         run_notebook(PATH_RUNTIME.parent().join("run"), i=i)
     assert True

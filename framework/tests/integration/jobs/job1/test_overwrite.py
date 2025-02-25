@@ -9,7 +9,7 @@ Logger.setLevel(ERROR)
 
 
 @pytest.mark.order(185)
-def test_job1_gold_dim_overwrite():
+def test_gold_dim_overwrite():
     j = get_job(step="gold", topic="dim", item="overwrite")
     j.overwrite()
 
@@ -21,7 +21,7 @@ def test_job1_gold_dim_overwrite():
 
 
 @pytest.mark.order(185)
-def test_job1_gold_fact_overwrite():
+def test_gold_fact_overwrite():
     j = get_job(step="gold", topic="fact", item="overwrite")
     j.overwrite()
 
