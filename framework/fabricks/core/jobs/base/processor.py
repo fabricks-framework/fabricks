@@ -88,8 +88,7 @@ class Processor(Invoker):
         Logger.debug("for each run starts", extra={"job": self})
 
         if self.virtual:
-            if self.schema_drift:
-                self.create_or_replace_view()
+            self.create_or_replace_view()
 
         elif self.persist:
             assert self.table.exists(), "delta table not found"
