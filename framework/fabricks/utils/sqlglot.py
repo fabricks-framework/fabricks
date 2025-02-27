@@ -13,24 +13,13 @@ class Fabricks(Databricks):
 
 
 def fix(sql: str):
-    """
-    Fixes the given SQL query by parsing it using the 'fabricks' dialect,
-    transpiling it, and returning the fixed SQL query.
-
-    Args:
-        sql (str): The SQL query to be fixed.
-
-    Returns:
-        str: The fixed SQL query.
-    """
-    sql = parse_one(sql, dialect="fabricks").sql()
     sql = transpile(
         sql,
+        "fabricks",
         identify=True,
         pretty=True,
         normalize=False,
         normalize_functions="lower",
-        write="fabricks",
     )[0]
     return sql
 
