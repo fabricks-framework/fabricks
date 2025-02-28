@@ -203,7 +203,7 @@ class Gold(BaseJob):
     def for_each_run(self, schedule: Optional[str] = None):
         last_version = None
         if self.options.job.get_boolean("persist_last_timestamp"):
-            last_version = self.cdc_last_timestamp.table.get_last_version()
+            last_version = self.table.get_last_version()
 
         if self.mode == "invoke":
             self.invoke(schedule=schedule)
