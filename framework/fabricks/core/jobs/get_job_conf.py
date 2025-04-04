@@ -18,12 +18,14 @@ def get_job_conf(step: TStep, *, topic: str, item: str, row: Optional[Union[Row,
 def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
     if isinstance(row, Row):
         row = row.asDict(recursive=True)
-    options = row["options"] if row["options"] else None
-    table_options = row["table_options"] if row["table_options"] else None
-    check_options = row["check_options"] if row["check_options"] else None
-    spark_options = row["spark_options"] if row["spark_options"] else None
-    invoker_options = row["invoker_options"] if row["invoker_options"] else None
-    extender_options = row["extender_options"] if row["extender_options"] else None
+    options = row.get("options")
+    table_options = row.get("table_options")
+    check_options = row.get("check_options")
+    spark_options = row.get("spark_options")
+    invoker_options = row.get("invoker_options")
+    extender_options = row.get("extender_options")
+
+    job_id = row.get("job_id", _get_job_id(step, row["topic"], row["item"]))
 
     if step in Bronzes:
         from fabricks.core.jobs.base._types import JobConfBronze
@@ -32,7 +34,7 @@ def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
         parser_options = row["parser_options"] if row["parser_options"] else None
         step = cast(TBronze, step)
         return JobConfBronze(
-            job_id=row["job_id"],
+            job_id=job_id,
             topic=row["topic"],
             item=row["item"],
             step=step,
@@ -52,7 +54,7 @@ def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
         assert options is not None, "no option"
         step = cast(TSilver, step)
         return JobConfSilver(
-            job_id=row["job_id"],
+            job_id=job_id,
             topic=row["topic"],
             item=row["item"],
             step=step,
@@ -71,7 +73,7 @@ def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
         assert options is not None, "no option"
         step = cast(TGold, step)
         return JobConfGold(
-            job_id=row["job_id"],
+            job_id=job_id,
             topic=row["topic"],
             item=row["item"],
             step=step,
