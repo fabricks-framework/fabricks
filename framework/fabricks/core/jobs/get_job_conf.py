@@ -31,7 +31,6 @@ def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
         from fabricks.core.jobs.base._types import JobConfBronze
 
         assert options is not None, "no option"
-        parser_options = row["parser_options"] if row["parser_options"] else None
         step = cast(TBronze, step)
         return JobConfBronze(
             job_id=job_id,
@@ -39,7 +38,7 @@ def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
             item=row["item"],
             step=step,
             options=options,
-            parser_options=parser_options,
+            parser_options=row.get("parser_options"),
             table_options=table_options,
             check_options=check_options,
             invoker_options=invoker_options,
