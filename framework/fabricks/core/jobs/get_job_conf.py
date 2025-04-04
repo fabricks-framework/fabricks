@@ -1,5 +1,6 @@
-from typing import Optional, Union, cast, overload
 import hashlib
+from typing import Optional, Union, cast, overload
+
 from pyspark.sql import Row
 
 from fabricks.context import IS_LIVE, SPARK
@@ -14,7 +15,7 @@ def get_job_conf(step: TStep, *, job_id: str, row: Optional[Union[Row, dict]] = 
 def get_job_conf(step: TStep, *, topic: str, item: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
 
 
-def _get_job_conf(step: TStep, row: Union[Row,dict]) -> JobConf:
+def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
     if isinstance(row, dict):
         row = Row(**row)
     options = row["options"].asDict() if row["options"] else None
@@ -86,8 +87,10 @@ def _get_job_conf(step: TStep, row: Union[Row,dict]) -> JobConf:
     else:
         raise ValueError(f"{step} not found")
 
+
 def _get_job_id(step: str, topic: str, item: str):
     return hashlib.md5(f"{step}.{topic}_{item}".encode()).hexdigest()
+
 
 def get_job_conf(
     step: TStep,
@@ -96,7 +99,7 @@ def get_job_conf(
     item: Optional[str] = None,
     row: Optional[Union[Row, dict]] = None,
 ) -> JobConf:
-    if row: 
+    if row:
         return _get_job_conf(step=step, row=row)
     if IS_LIVE:
         from fabricks.core.steps import get_step
@@ -106,9 +109,11 @@ def get_job_conf(
             ls_iter = s.get_jobs_iter(topic=topic)
         else:
             ls_iter = s.get_jobs_iter()
-        
+
         if job_id:
-            job_conf = next((x for x in ls_iter if x.get("job_id", _get_job_id(x["step"], x["topic"], x["item"])) == job_id), None)
+            job_conf = next(
+                (x for x in ls_iter if x.get("job_id", _get_job_id(x["step"], x["topic"], x["item"])) == job_id), None
+            )
             if not job_conf:
                 raise ValueError(f"job not found ({step}, {job_id})")
             return _get_job_conf(step=step, row=job_conf)
@@ -118,7 +123,6 @@ def get_job_conf(
             if not job_conf:
                 raise ValueError(f"job not found ({step}, {topic}, {item})")
             return _get_job_conf(step=step, row=job_conf)
-        
 
     else:
         df = SPARK.sql(f"select * from fabricks.{step}_jobs")

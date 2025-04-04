@@ -87,7 +87,7 @@ def get_job_internal(
     item: Optional[str] = None,
     job_id: Optional[str] = None,
     *,
-    job_conf_row: Optional[Union[dict, Row]] = None
+    job_conf_row: Optional[Union[dict, Row]] = None,
 ):
     if step in Bronzes:
         from fabricks.core.jobs.bronze import Bronze

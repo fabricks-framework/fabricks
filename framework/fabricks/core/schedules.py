@@ -1,6 +1,7 @@
 from typing import List, Optional, TypedDict
 
 from pyspark.sql import DataFrame
+from pyspark.sql.types import Row
 
 from fabricks.context import PATH_SCHEDULES, SPARK
 from fabricks.context.log import Logger
@@ -8,7 +9,6 @@ from fabricks.core.jobs.base._types import TStep
 from fabricks.utils.read.read_yaml import read_yaml
 from fabricks.utils.schema import get_schema_for_type
 from fabricks.utils.sqlglot import fix as fix_sql
-from pyspark.sql.types import Row
 
 
 class Options(TypedDict):
@@ -22,20 +22,21 @@ class Schedule(TypedDict):
     name: str
     options: Options
 
+
 def get_schedules():
     return read_yaml(PATH_SCHEDULES, root="schedule")
 
 
 def get_schedules_df() -> DataFrame:
     schema = get_schema_for_type(Schedule)
-    df = SPARK.createDataFrame(list(get_schedules()), schema=schema) # type: ignore
+    df = SPARK.createDataFrame(list(get_schedules()), schema=schema)  # type: ignore
     assert df, "no schedules found"
     return df
 
 
 def get_schedule(name: str) -> Row:
     scheds = [s for s in get_schedules() if s["name"] == name]
-    
+
     assert scheds, "schedule not found"
     assert len(scheds) == 1, "schedule duplicated"
     return Row(**scheds[0])

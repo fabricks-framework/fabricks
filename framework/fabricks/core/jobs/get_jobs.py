@@ -30,6 +30,7 @@ class JobConfGeneric:
 def _get_job(row: Row):
     return get_job(row=row)
 
+
 def _get_jobs():
     for p in PATHS_RUNTIME.values():
         yield from read_yaml(p, root="job")
@@ -40,7 +41,7 @@ def _get_jobs_df() -> DataFrame:
         schema = get_schema_for_type(JobConfGeneric)
 
         def _read_yaml(path: Path):
-            df = SPARK.createDataFrame(read_yaml(path, root="job"), schema=schema) # type: ignore
+            df = SPARK.createDataFrame(read_yaml(path, root="job"), schema=schema)  # type: ignore
             if df:
                 df = df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))
                 return df
@@ -53,8 +54,10 @@ def _get_jobs_df() -> DataFrame:
 
     return df
 
+
 @overload
 def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[True]) -> List[BaseJob]: ...
+
 
 @overload
 def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[False]) -> DataFrame: ...
@@ -81,7 +84,10 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
 
     else:
         if df is None:
-            return list(get_job_internal(j["step"], j["topic"], j["item"], j.get("job_id"), job_conf_row=j) for j in _get_jobs())
+            return list(
+                get_job_internal(j["step"], j["topic"], j["item"], j.get("job_id"), job_conf_row=j)
+                for j in _get_jobs()
+            )
         else:
             if "step" in df.columns and "topic" in df.columns and "item" in df.columns:
                 df = df.select("step", "topic", "item")

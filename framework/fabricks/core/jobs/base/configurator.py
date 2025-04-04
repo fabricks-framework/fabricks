@@ -3,6 +3,7 @@ from typing import Optional, Union, cast
 
 from pyspark.dbutils import DBUtils
 from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
@@ -14,7 +15,7 @@ from fabricks.core.jobs.get_job_id import get_job_id
 from fabricks.metastore.table import Table
 from fabricks.utils.fdict import FDict
 from fabricks.utils.path import Path
-from pyspark.sql.types import Row
+
 
 class Configurator(ABC):
     def __init__(

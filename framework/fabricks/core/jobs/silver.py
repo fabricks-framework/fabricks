@@ -16,7 +16,12 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 class Silver(BaseJob):
     def __init__(
-        self, step: TSilver, topic: Optional[str] = None, item: Optional[str] = None, job_id: Optional[str] = None, job_conf_row: Optional[Union[dict, Row]] = None
+        self,
+        step: TSilver,
+        topic: Optional[str] = None,
+        item: Optional[str] = None,
+        job_id: Optional[str] = None,
+        job_conf_row: Optional[Union[dict, Row]] = None,
     ):  # type: ignore
         super().__init__(
             "silver",
@@ -35,7 +40,9 @@ class Silver(BaseJob):
         return cls(step=cast(TSilver, step), job_id=job_id, job_conf_row=job_conf_row)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, job_conf_row: Optional[Union[dict, Row]] = None):
+    def from_step_topic_item(
+        cls, step: str, topic: str, item: str, *, job_conf_row: Optional[Union[dict, Row]] = None
+    ):
         return cls(step=cast(TSilver, step), topic=topic, item=item, job_conf_row=job_conf_row)
 
     @property

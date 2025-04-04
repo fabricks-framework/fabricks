@@ -58,7 +58,9 @@ class Bronze(BaseJob):
         return cls(step=cast(TBronze, step), job_id=job_id, job_conf_row=job_conf_row)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, job_conf_row: Optional[Union[dict, Row]] = None):
+    def from_step_topic_item(
+        cls, step: str, topic: str, item: str, *, job_conf_row: Optional[Union[dict, Row]] = None
+    ):
         return cls(step=cast(TBronze, step), topic=topic, item=item, job_conf_row=job_conf_row)
 
     @property

@@ -163,8 +163,8 @@ class BaseStep:
             conf = get_step_conf(self.name)
             schema = get_schema_for_type(conf)
 
-            df = SPARK.createDataFrame(read_yaml(self.runtime, root="job", prio_file_name=topic), schema=schema) # type: ignore
-          
+            df = SPARK.createDataFrame(read_yaml(self.runtime, root="job", prio_file_name=topic), schema=schema)  # type: ignore
+
             df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
 
             duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")

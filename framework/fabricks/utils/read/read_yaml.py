@@ -1,4 +1,5 @@
 from typing import Iterable, Optional, cast
+
 import yaml
 
 from fabricks.utils.path import Path
@@ -24,8 +25,4 @@ def read_yaml(
                 else:
                     yield cast(dict, job_config)
     if prio_file_name is not None and not found_something:
-        yield from read_yaml(
-            path=path,
-            root=root,
-            prio_file_name=None
-        )
+        yield from read_yaml(path=path, root=root, prio_file_name=None)
