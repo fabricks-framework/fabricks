@@ -16,20 +16,20 @@ def get_job_conf(step: TStep, *, topic: str, item: str, row: Optional[Union[Row,
 
 
 def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
-    if isinstance(row, dict):
-        row = Row(**row)
-    options = row["options"].asDict() if row["options"] else None
-    table_options = row["table_options"].asDict() if row["table_options"] else None
-    check_options = row["check_options"].asDict() if row["check_options"] else None
-    spark_options = row["spark_options"].asDict() if row["spark_options"] else None
-    invoker_options = row["invoker_options"].asDict() if row["invoker_options"] else None
+    if isinstance(row, Row):
+        row = row.asDict(recursive=True)
+    options = row["options"] if row["options"] else None
+    table_options = row["table_options"] if row["table_options"] else None
+    check_options = row["check_options"] if row["check_options"] else None
+    spark_options = row["spark_options"] if row["spark_options"] else None
+    invoker_options = row["invoker_options"] if row["invoker_options"] else None
     extender_options = row["extender_options"] if row["extender_options"] else None
 
     if step in Bronzes:
         from fabricks.core.jobs.base._types import JobConfBronze
 
         assert options is not None, "no option"
-        parser_options = row["parser_options"].asDict() if row["parser_options"] else None
+        parser_options = row["parser_options"] if row["parser_options"] else None
         step = cast(TBronze, step)
         return JobConfBronze(
             job_id=row["job_id"],
