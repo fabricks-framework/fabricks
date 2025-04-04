@@ -45,7 +45,7 @@ def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
             invoker_options=invoker_options,
             extender_options=extender_options,
             spark_options=spark_options,
-            tags=row["tags"],
+            tags=row.get("tags"),
         )
 
     elif step in Silvers:
@@ -64,7 +64,7 @@ def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
             invoker_options=invoker_options,
             extender_options=extender_options,
             spark_options=spark_options,
-            tags=row["tags"],
+            tags=row.get("tags"),
         )
 
     elif step in Golds:
@@ -83,7 +83,7 @@ def _get_job_conf(step: TStep, row: Union[Row, dict]) -> JobConf:
             invoker_options=invoker_options,
             extender_options=extender_options,
             spark_options=spark_options,
-            tags=row["tags"],
+            tags=row.get("tags"),
         )
 
     else:
