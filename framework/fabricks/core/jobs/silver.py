@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import Optional, Union, cast
 
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr
@@ -16,7 +16,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 class Silver(BaseJob):
     def __init__(
-        self, step: TSilver, topic: Optional[str] = None, item: Optional[str] = None, job_id: Optional[str] = None
+        self, step: TSilver, topic: Optional[str] = None, item: Optional[str] = None, job_id: Optional[str] = None, job_conf_row: Optional[Union[dict, Row]] = None
     ):  # type: ignore
         super().__init__(
             "silver",
@@ -24,18 +24,19 @@ class Silver(BaseJob):
             topic=topic,
             item=item,
             job_id=job_id,
+            job_conf_row=job_conf_row,
         )
 
     _parent_step: Optional[TBronze] = None
     _stream: Optional[bool] = None
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str):
-        return cls(step=cast(TSilver, step), job_id=job_id)
+    def from_job_id(cls, step: str, job_id: str, *, job_conf_row: Optional[Union[dict, Row]] = None):
+        return cls(step=cast(TSilver, step), job_id=job_id, job_conf_row=job_conf_row)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str):
-        return cls(step=cast(TSilver, step), topic=topic, item=item)
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, job_conf_row: Optional[Union[dict, Row]] = None):
+        return cls(step=cast(TSilver, step), topic=topic, item=item, job_conf_row=job_conf_row)
 
     @property
     def stream(self) -> bool:

@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import Optional, Union, cast
 
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr, lit, md5
@@ -19,7 +19,12 @@ from fabricks.utils.read import read
 
 class Bronze(BaseJob):
     def __init__(
-        self, step: TBronze, topic: Optional[str] = None, item: Optional[str] = None, job_id: Optional[str] = None
+        self,
+        step: TBronze,
+        topic: Optional[str] = None,
+        item: Optional[str] = None,
+        job_id: Optional[str] = None,
+        job_conf_row: Optional[Union[dict, Row]] = None,
     ):  # type: ignore
         super().__init__(
             "bronze",
@@ -27,6 +32,7 @@ class Bronze(BaseJob):
             topic=topic,
             item=item,
             job_id=job_id,
+            job_conf_row=job_conf_row,
         )
 
     _parser: Optional[BaseParser] = None
@@ -48,12 +54,12 @@ class Bronze(BaseJob):
         return False
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str):
-        return cls(step=cast(TBronze, step), job_id=job_id)
+    def from_job_id(cls, step: str, job_id: str, *, job_conf_row: Optional[Union[dict, Row]] = None):
+        return cls(step=cast(TBronze, step), job_id=job_id, job_conf_row=job_conf_row)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str):
-        return cls(step=cast(TBronze, step), topic=topic, item=item)
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, job_conf_row: Optional[Union[dict, Row]] = None):
+        return cls(step=cast(TBronze, step), topic=topic, item=item, job_conf_row=job_conf_row)
 
     @property
     def data_path(self) -> Path:

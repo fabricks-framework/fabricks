@@ -14,7 +14,7 @@ from fabricks.core.jobs.get_job_id import get_job_id
 from fabricks.metastore.table import Table
 from fabricks.utils.fdict import FDict
 from fabricks.utils.path import Path
-
+from pyspark.sql.types import Row
 
 class Configurator(ABC):
     def __init__(
@@ -24,13 +24,14 @@ class Configurator(ABC):
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
+        job_conf_row: Optional[Union[dict, Row]] = None,
     ):
         self.extend = extend
         self.step: TStep = step
 
         if job_id is not None:
             self.job_id = job_id
-            self.conf = get_job_conf(step=self.step, job_id=self.job_id)
+            self.conf = get_job_conf(step=self.step, job_id=self.job_id, row=job_conf_row)
             self.topic = self.conf.topic
             self.item = self.conf.item
         else:
@@ -38,7 +39,7 @@ class Configurator(ABC):
             assert item
             self.topic = topic
             self.item = item
-            self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item)
+            self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item, row=job_conf_row)
             self.job_id = get_job_id(step=self.step, topic=self.topic, item=self.item)
 
     _step_conf: Optional[dict[str, str]] = None

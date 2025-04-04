@@ -1,5 +1,5 @@
-from typing import Optional, cast, overload
-
+from typing import Optional, Union, cast, overload
+import hashlib
 from pyspark.sql import Row
 
 from fabricks.context import IS_LIVE, SPARK
@@ -7,14 +7,16 @@ from fabricks.core.jobs.base._types import Bronzes, Golds, JobConf, Silvers, TBr
 
 
 @overload
-def get_job_conf(step: TStep, *, job_id: str) -> JobConf: ...
+def get_job_conf(step: TStep, *, job_id: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
 
 
 @overload
-def get_job_conf(step: TStep, *, topic: str, item: str) -> JobConf: ...
+def get_job_conf(step: TStep, *, topic: str, item: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
 
 
-def _get_job_conf(step: TStep, row: Row) -> JobConf:
+def _get_job_conf(step: TStep, row: Union[Row,dict]) -> JobConf:
+    if isinstance(row, dict):
+        row = Row(**row)
     options = row["options"].asDict() if row["options"] else None
     table_options = row["table_options"].asDict() if row["table_options"] else None
     check_options = row["check_options"].asDict() if row["check_options"] else None
@@ -84,21 +86,40 @@ def _get_job_conf(step: TStep, row: Row) -> JobConf:
     else:
         raise ValueError(f"{step} not found")
 
+def _get_job_id(step: str, topic: str, item: str):
+    return hashlib.md5(f"{step}.{topic}_{item}".encode()).hexdigest()
 
 def get_job_conf(
     step: TStep,
     job_id: Optional[str] = None,
     topic: Optional[str] = None,
     item: Optional[str] = None,
+    row: Optional[Union[Row, dict]] = None,
 ) -> JobConf:
+    if row: 
+        return _get_job_conf(step=step, row=row)
     if IS_LIVE:
         from fabricks.core.steps import get_step
 
         s = get_step(step=step)
         if topic:
-            df = s.get_jobs(topic=topic)
+            ls_iter = s.get_jobs_iter(topic=topic)
         else:
-            df = s.get_jobs()
+            ls_iter = s.get_jobs_iter()
+        
+        if job_id:
+            job_conf = next((x for x in ls_iter if x.get("job_id", _get_job_id(x["step"], x["topic"], x["item"])) == job_id), None)
+            if not job_conf:
+                raise ValueError(f"job not found ({step}, {job_id})")
+            return _get_job_conf(step=step, row=job_conf)
+
+        elif topic and item:
+            job_conf = next((x for x in ls_iter if x.get("topic") == topic and x.get("item") == item), None)
+            if not job_conf:
+                raise ValueError(f"job not found ({step}, {topic}, {item})")
+            return _get_job_conf(step=step, row=job_conf)
+        
+
     else:
         df = SPARK.sql(f"select * from fabricks.{step}_jobs")
 

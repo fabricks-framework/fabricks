@@ -8,6 +8,7 @@ from fabricks.core.jobs.base._types import TStep
 from fabricks.utils.read.read_yaml import read_yaml
 from fabricks.utils.schema import get_schema_for_type
 from fabricks.utils.sqlglot import fix as fix_sql
+from pyspark.sql.types import Row
 
 
 class Options(TypedDict):
@@ -21,20 +22,23 @@ class Schedule(TypedDict):
     name: str
     options: Options
 
+def get_schedules():
+    return read_yaml(PATH_SCHEDULES, root="schedule")
 
-def get_schedules() -> DataFrame:
+
+def get_schedules_df() -> DataFrame:
     schema = get_schema_for_type(Schedule)
-    df = read_yaml(PATH_SCHEDULES, root="schedule", schema=schema)
+    df = SPARK.createDataFrame(list(get_schedules()), schema=schema) # type: ignore
     assert df, "no schedules found"
     return df
 
 
-def get_schedule(name: str) -> DataFrame:
-    df = get_schedules()
-    df = df.where(f"name == '{name}'")
-    assert not df.isEmpty(), "schedule not found"
-    assert df.count() == 1, "schedule duplicated"
-    return df
+def get_schedule(name: str) -> Row:
+    scheds = [s for s in get_schedules() if s["name"] == name]
+    
+    assert scheds, "schedule not found"
+    assert len(scheds) == 1, "schedule duplicated"
+    return Row(**scheds[0])
 
 
 def _create_or_replace_view(name: str, options: DataFrame):
@@ -71,16 +75,15 @@ def _create_or_replace_view(name: str, options: DataFrame):
 
 
 def create_or_replace_view(name: str):
-    df = get_schedule(name=name)
-    for row in df.collect():
-        try:
-            _create_or_replace_view(row.name, row.options)
-        except Exception:
-            Logger.exception(f"schedule - {row.name} not created nor replaced")
+    row = get_schedule(name=name)
+    try:
+        _create_or_replace_view(row.name, row.options)
+    except Exception:
+        Logger.exception(f"schedule - {row.name} not created nor replaced")
 
 
 def create_or_replace_views():
-    df = get_schedules()
+    df = get_schedules_df()
     for row in df.collect():
         try:
             _create_or_replace_view(row.name, row.options)
