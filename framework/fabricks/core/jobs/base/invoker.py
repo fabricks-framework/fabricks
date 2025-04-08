@@ -27,12 +27,12 @@ class Invoker(Checker):
             for i in invokers:
                 Logger.info(f"{position}-invoke", extra={"job": self})
                 try:
-                    notebook = i.notebook
+                    notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
                     path = PATH_RUNTIME.join(notebook)
 
-                    arguments = i.arguments or {}
-                    timeout = i.timeout
+                    arguments = i.get("arguments") or {}
+                    timeout = i.get("timeout")
 
                     self.invoke(
                         path=path,
@@ -160,9 +160,9 @@ class Invoker(Checker):
 
         extenders = self.options.extenders
         for e in extenders:
-            name = e.extender
+            name = e.get("extender")
             Logger.info(f"calling {name}", extra={"job": self})
-            arguments = e.arguments or {}
+            arguments = e.get("arguments") or {}
 
             extender = get_extender(name)
             df = extender(df, **arguments)
