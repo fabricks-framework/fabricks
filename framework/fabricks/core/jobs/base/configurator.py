@@ -20,14 +20,14 @@ from fabricks.utils.path import Path
 class Configurator(ABC):
     def __init__(
         self,
-        extend: str,
+        expand: str,
         step: TStep,
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
         conf: Optional[Union[dict, Row]] = None,
     ):
-        self.extend = extend
+        self.expand = expand
         self.step: TStep = step
 
         if job_id is not None:

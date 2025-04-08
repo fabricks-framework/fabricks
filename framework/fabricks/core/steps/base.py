@@ -22,13 +22,14 @@ class BaseStep:
         self.name = cast(str, step)
 
         if self.name in Bronzes:
-            self.extend = "bronze"
+            self.expand = "bronze"
         elif self.name in Silvers:
-            self.extend = "silver"
+            self.expand = "silver"
         elif self.name in Golds:
-            self.extend = "gold"
+            self.expand = "gold"
+
         else:
-            raise ValueError(self.name, "does not extend a default job")
+            raise ValueError(self.name, "does not expand a default step")
 
         _storage = PATHS_STORAGE.get(self.name)
         assert _storage

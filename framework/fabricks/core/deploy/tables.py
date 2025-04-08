@@ -18,21 +18,23 @@ def create_table_step(drop: bool = False):
     table = Table("fabricks", "steps")
     if drop:
         table.drop()
+
     if not table.exists():
         schema = StructType(
             [
                 StructField("step", StringType(), True),
-                StructField("extend", StringType(), True),
+                StructField("expand", StringType(), True),
                 StructField("order", LongType(), True),
             ]
         )
-        table.create(schema=schema, partitioning=True, partition_by=["extend"])
+        table.create(schema=schema, partitioning=True, partition_by=["expand"])
 
 
 def create_table_log(drop: bool = False):
     table = Table("fabricks", "logs")
     if drop:
         table.drop()
+
     if not table.exists():
         schema = StructType(
             [
