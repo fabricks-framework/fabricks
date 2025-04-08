@@ -7,7 +7,7 @@ from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import Logger
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.error import PostRunInvokerFailedException, PreRunInvokerFailedException
-from fabricks.core.schedules import get_schedule
+from fabricks.core.schedules import get_schedules
 from fabricks.utils.path import Path
 
 
@@ -118,26 +118,22 @@ class Invoker(Checker):
             assert len(invokers) == 1, "Only one run invoker is allowed"
             invoker = invokers[0]
 
-            notebook = invoker.notebook
+            notebook = invoker.get("notebook")
             path = PATH_RUNTIME.join(notebook)
             assert path.exists(), f"{path} not found"
 
-            arguments = cast(Dict, invoker.arguments) or {}
-            timeout = invoker.timeout
+            arguments = invoker.get("arguments", {})
+            timeout = invoker.get("timeout")
 
         if timeout is None:
             timeout = self.timeout
 
         variables = None
         if schedule is not None:
-            variables = get_schedule(schedule).select("options.variables").collect()[0][0]
-            variables = cast(Dict, variables)
+            variables = next(s for s in get_schedules() if s.get("name") == "test").get("options", {}).get("variables", {})
 
         if variables is None:
             variables = {}
-
-        if arguments is None:
-            arguments = {}
 
         assert path is not None
         assert timeout is not None
