@@ -16,10 +16,11 @@ def get_step_conf(step: Union[TStep, str]):
     else:
         raise ValueError(f"{step} - not found")
 
-    job_conf = {
+    conf = {
         "bronze": JobConfBronze,
         "silver": JobConfSilver,
         "gold": JobConfGold,
     }.get(extend, None)
-    assert job_conf
-    return job_conf
+
+    assert conf
+    return conf

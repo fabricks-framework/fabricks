@@ -31,12 +31,12 @@ def _get_job(row: Row):
     return get_job(row=row)
 
 
-def _get_jobs():
+def get_jobs_internal():
     for p in PATHS_RUNTIME.values():
         yield from read_yaml(p, root="job")
 
 
-def _get_jobs_df() -> DataFrame:
+def get_jobs_internal_df() -> DataFrame:
     if IS_LIVE:
         schema = get_schema_for_type(JobConfGeneric)
 
@@ -80,14 +80,15 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
 
     """
     if not convert:
-        return _get_jobs_df()
+        return get_jobs_internal_df()
 
     else:
         if df is None:
             return list(
-                get_job_internal(j["step"], j["topic"], j["item"], j.get("job_id"), job_conf_row=j)
-                for j in _get_jobs()
+                get_job_internal(j["step"], j["topic"], j["item"], j.get("job_id"), conf=j)
+                for j in get_jobs_internal()
             )
+
         else:
             if "step" in df.columns and "topic" in df.columns and "item" in df.columns:
                 df = df.select("step", "topic", "item")

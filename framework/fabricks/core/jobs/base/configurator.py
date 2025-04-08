@@ -25,14 +25,14 @@ class Configurator(ABC):
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
-        job_conf_row: Optional[Union[dict, Row]] = None,
+        conf: Optional[Union[dict, Row]] = None,
     ):
         self.extend = extend
         self.step: TStep = step
 
         if job_id is not None:
             self.job_id = job_id
-            self.conf = get_job_conf(step=self.step, job_id=self.job_id, row=job_conf_row)
+            self.conf = get_job_conf(step=self.step, job_id=self.job_id, row=conf)
             self.topic = self.conf.topic
             self.item = self.conf.item
         else:
@@ -40,7 +40,7 @@ class Configurator(ABC):
             assert item
             self.topic = topic
             self.item = item
-            self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item, row=job_conf_row)
+            self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item, row=conf)
             self.job_id = get_job_id(step=self.step, topic=self.topic, item=self.item)
 
     _step_conf: Optional[dict[str, str]] = None

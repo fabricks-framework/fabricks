@@ -42,7 +42,7 @@ def get_schedule(name: str) -> Row:
     return Row(**scheds[0])
 
 
-def _create_or_replace_view(name: str, options: DataFrame):
+def create_or_replace_view_internal(name: str, options: DataFrame):
     step = "-- no step provided"
     tag = "-- no tag provided"
     view = "-- no view provided"
@@ -78,7 +78,7 @@ def _create_or_replace_view(name: str, options: DataFrame):
 def create_or_replace_view(name: str):
     row = get_schedule(name=name)
     try:
-        _create_or_replace_view(row.name, row.options)
+        create_or_replace_view_internal(row.name, row.options)
     except Exception:
         Logger.exception(f"schedule - {row.name} not created nor replaced")
 
@@ -87,7 +87,7 @@ def create_or_replace_views():
     df = get_schedules_df()
     for row in df.collect():
         try:
-            _create_or_replace_view(row.name, row.options)
+            create_or_replace_view_internal(row.name, row.options)
         except Exception:
             Logger.exception(f"schedule - {row.name} not created nor replaced")
 

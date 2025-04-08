@@ -21,7 +21,7 @@ class Silver(BaseJob):
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
-        job_conf_row: Optional[Union[dict, Row]] = None,
+        conf: Optional[Union[dict, Row]] = None,
     ):  # type: ignore
         super().__init__(
             "silver",
@@ -29,21 +29,19 @@ class Silver(BaseJob):
             topic=topic,
             item=item,
             job_id=job_id,
-            job_conf_row=job_conf_row,
+            conf=conf,
         )
 
     _parent_step: Optional[TBronze] = None
     _stream: Optional[bool] = None
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, job_conf_row: Optional[Union[dict, Row]] = None):
-        return cls(step=cast(TSilver, step), job_id=job_id, job_conf_row=job_conf_row)
+    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
+        return cls(step=cast(TSilver, step), job_id=job_id, conf=conf)
 
     @classmethod
-    def from_step_topic_item(
-        cls, step: str, topic: str, item: str, *, job_conf_row: Optional[Union[dict, Row]] = None
-    ):
-        return cls(step=cast(TSilver, step), topic=topic, item=item, job_conf_row=job_conf_row)
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
+        return cls(step=cast(TSilver, step), topic=topic, item=item, conf=conf)
 
     @property
     def stream(self) -> bool:

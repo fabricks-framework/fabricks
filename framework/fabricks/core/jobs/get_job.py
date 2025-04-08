@@ -86,41 +86,40 @@ def get_job_internal(
     topic: Optional[str] = None,
     item: Optional[str] = None,
     job_id: Optional[str] = None,
-    *,
-    job_conf_row: Optional[Union[dict, Row]] = None,
+    conf: Optional[Union[dict, Row]] = None,
 ):
     if step in Bronzes:
         from fabricks.core.jobs.bronze import Bronze
 
         step = cast(TBronze, step)
         if job_id is not None:
-            job = Bronze.from_job_id(step=step, job_id=job_id, job_conf_row=job_conf_row)
+            job = Bronze.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
             assert topic
             assert item
-            job = Bronze.from_step_topic_item(step=step, topic=topic, item=item, job_conf_row=job_conf_row)
+            job = Bronze.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
 
     elif step in Silvers:
         from fabricks.core.jobs.silver import Silver
 
         step = cast(TSilver, step)
         if job_id is not None:
-            job = Silver.from_job_id(step=step, job_id=job_id, job_conf_row=job_conf_row)
+            job = Silver.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
             assert topic
             assert item
-            job = Silver.from_step_topic_item(step=step, topic=topic, item=item, job_conf_row=job_conf_row)
+            job = Silver.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
 
     elif step in Golds:
         from fabricks.core.jobs.gold import Gold
 
         step = cast(TGold, step)
         if job_id is not None:
-            job = Gold.from_job_id(step=step, job_id=job_id, job_conf_row=job_conf_row)
+            job = Gold.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
             assert topic
             assert item
-            job = Gold.from_step_topic_item(step=step, topic=topic, item=item, job_conf_row=job_conf_row)
+            job = Gold.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
 
     else:
         raise ValueError(f"{step} not found")

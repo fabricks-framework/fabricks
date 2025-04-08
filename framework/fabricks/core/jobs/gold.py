@@ -21,7 +21,7 @@ class Gold(BaseJob):
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
-        job_conf_row: Optional[Union[dict, Row]] = None,
+        conf: Optional[Union[dict, Row]] = None,
     ):  # type: ignore
         super().__init__(
             "gold",
@@ -29,7 +29,7 @@ class Gold(BaseJob):
             topic=topic,
             item=item,
             job_id=job_id,
-            job_conf_row=job_conf_row,
+            conf=conf,
         )
 
     _sql: Optional[str] = None
@@ -37,13 +37,11 @@ class Gold(BaseJob):
     _schema_drift: Optional[bool] = None
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, job_conf_row: Optional[Union[dict, Row]] = None):
+    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
         return cls(step=cast(TGold, step), job_id=job_id)
 
     @classmethod
-    def from_step_topic_item(
-        cls, step: str, topic: str, item: str, *, job_conf_row: Optional[Union[dict, Row]] = None
-    ):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
         return cls(step=cast(TGold, step), topic=topic, item=item)
 
     @property
