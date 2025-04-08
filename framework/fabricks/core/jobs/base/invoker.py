@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Optional, cast, overload
+from typing import Optional, overload
 
 from pyspark.sql import DataFrame
 
@@ -130,10 +130,15 @@ class Invoker(Checker):
 
         variables = None
         if schedule is not None:
-            variables = next(s for s in get_schedules() if s.get("name") == "test").get("options", {}).get("variables", {})
+            variables = (
+                next(s for s in get_schedules() if s.get("name") == "test").get("options", {}).get("variables", {})
+            )
 
         if variables is None:
             variables = {}
+
+        if arguments is None:
+            arguments = {}
 
         assert path is not None
         assert timeout is not None
