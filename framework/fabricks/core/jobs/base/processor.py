@@ -147,7 +147,7 @@ class Processor(Invoker):
             Logger.info("run starts", extra={"job": self})
 
             if invoke:
-                self.pre_run_invoke(schedule=schedule)
+                self.invoke_pre_run(schedule=schedule)
 
             self.pre_run_check()
 
@@ -157,7 +157,7 @@ class Processor(Invoker):
             self.post_run_extra_check()
 
             if invoke:
-                self.post_run_invoke(schedule=schedule)
+                self.invoke_post_run(schedule=schedule)
 
             Logger.info("run ends", extra={"job": self})
 

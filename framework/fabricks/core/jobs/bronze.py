@@ -245,7 +245,7 @@ class Bronze(BaseJob):
         return df
 
     def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extender)
+        df = df.transform(self.extend)
         df = df.transform(self.add_calculated_columns)
         df = df.transform(self.add_hash)
         df = df.transform(self.add_operation)

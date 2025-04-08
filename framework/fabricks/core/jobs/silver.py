@@ -74,7 +74,7 @@ class Silver(BaseJob):
         return self._parent_step
 
     def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extender)
+        df = df.transform(self.extend)
 
         if "__metadata" in df.columns:
             df = df.withColumn(

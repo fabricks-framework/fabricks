@@ -12,15 +12,15 @@ from fabricks.utils.path import Path
 
 
 class Invoker(Checker):
-    def pre_run_invoke(self, schedule: Optional[str] = None):
-        self._invoke_job(position="pre_run", schedule=schedule)
-        self._invoke_step(position="pre_run", schedule=schedule)
+    def invoke_pre_run(self, schedule: Optional[str] = None):
+        self.invoke_job(position="pre_run", schedule=schedule)
+        self.invoke_step(position="pre_run", schedule=schedule)
 
-    def post_run_invoke(self, schedule: Optional[str] = None):
-        self._invoke_job(position="post_run", schedule=schedule)
-        self._invoke_step(position="post_run", schedule=schedule)
+    def invoke_post_run(self, schedule: Optional[str] = None):
+        self.invoke_job(position="post_run", schedule=schedule)
+        self.invoke_step(position="post_run", schedule=schedule)
 
-    def _invoke_job(self, position: str, schedule: Optional[str] = None):
+    def invoke_job(self, position: str, schedule: Optional[str] = None):
         invokers = self.options.invokers.get_list(position)
 
         if invokers:
@@ -50,7 +50,7 @@ class Invoker(Checker):
                     else:
                         raise e
 
-    def _invoke_step(self, position: str, schedule: Optional[str] = None):
+    def invoke_step(self, position: str, schedule: Optional[str] = None):
         invokers = self.step_conf.get("invoker_options", {}).get(position, [])
 
         if invokers:
@@ -156,7 +156,7 @@ class Invoker(Checker):
             },
         )
 
-    def _job_extender(self, df: DataFrame) -> DataFrame:
+    def extend_job(self, df: DataFrame) -> DataFrame:
         from fabricks.core.extenders import get_extender
 
         extenders = self.options.extenders
@@ -170,7 +170,7 @@ class Invoker(Checker):
 
         return df
 
-    def _step_extender(self, df: DataFrame) -> DataFrame:
+    def extend_step(self, df: DataFrame) -> DataFrame:
         from fabricks.core.extenders import get_extender
 
         extenders = self.step_conf.get("extender_options", {})
@@ -184,7 +184,7 @@ class Invoker(Checker):
 
         return df
 
-    def extender(self, df: DataFrame) -> DataFrame:
-        df = self._job_extender(df)
-        df = self._step_extender(df)
+    def extend(self, df: DataFrame) -> DataFrame:
+        df = self.extend_job(df)
+        df = self.extend_step(df)
         return df

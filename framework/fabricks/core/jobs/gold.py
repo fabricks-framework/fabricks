@@ -93,7 +93,7 @@ class Gold(BaseJob):
                 register_udf(udf=u, spark=self.spark)
 
     def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extender)
+        df = df.transform(self.extend)
         return df
 
     def get_data(self, stream=False, transform: Optional[bool] = False) -> DataFrame:
