@@ -39,7 +39,7 @@ schedule_variables = json.loads(schedule_variables)
 
 assert arg1 == "1", f"arg1 {arg1} <> 1"
 assert job_options.get("mode") == "memory", f"mode {job_options.get('mode')} <> memory"
-assert schedule_variables.get("var1") == "1", f"var1 {schedule_variables.get('var1')} <> 1"
+assert str(schedule_variables.get("var1")) == "1", f"var1 {schedule_variables.get('var1')} <> 1"
 
 
 # COMMAND ----------

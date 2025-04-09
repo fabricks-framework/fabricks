@@ -131,7 +131,7 @@ class Invoker(Checker):
         variables = None
         if schedule is not None:
             variables = (
-                next(s for s in get_schedules() if s.get("name") == "test").get("options", {}).get("variables", {})
+                next(s for s in get_schedules() if s.get("name") == schedule).get("options", {}).get("variables", {})
             )
 
         if variables is None:
