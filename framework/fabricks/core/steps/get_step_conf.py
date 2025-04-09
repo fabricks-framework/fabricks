@@ -8,18 +8,19 @@ def get_step_conf(step: Union[TStep, str]):
         step = cast(TStep, step)
 
     if step in Bronzes:
-        extend = "bronze"
+        expand = "bronze"
     elif step in Silvers:
-        extend = "silver"
+        expand = "silver"
     elif step in Golds:
-        extend = "gold"
+        expand = "gold"
     else:
         raise ValueError(f"{step} - not found")
 
-    job_conf = {
+    conf = {
         "bronze": JobConfBronze,
         "silver": JobConfSilver,
         "gold": JobConfGold,
-    }.get(extend, None)
-    assert job_conf
-    return job_conf
+    }.get(expand, None)
+
+    assert conf
+    return conf

@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Optional, cast, overload
+from typing import Optional, overload
 
 from pyspark.sql import DataFrame
 
@@ -7,32 +7,32 @@ from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import Logger
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.error import PostRunInvokerFailedException, PreRunInvokerFailedException
-from fabricks.core.schedules import get_schedule
+from fabricks.core.schedules import get_schedules
 from fabricks.utils.path import Path
 
 
 class Invoker(Checker):
-    def pre_run_invoke(self, schedule: Optional[str] = None):
-        self._invoke_job(position="pre_run", schedule=schedule)
-        self._invoke_step(position="pre_run", schedule=schedule)
+    def invoke_pre_run(self, schedule: Optional[str] = None):
+        self.invoke_job(position="pre_run", schedule=schedule)
+        self.invoke_step(position="pre_run", schedule=schedule)
 
-    def post_run_invoke(self, schedule: Optional[str] = None):
-        self._invoke_job(position="post_run", schedule=schedule)
-        self._invoke_step(position="post_run", schedule=schedule)
+    def invoke_post_run(self, schedule: Optional[str] = None):
+        self.invoke_job(position="post_run", schedule=schedule)
+        self.invoke_step(position="post_run", schedule=schedule)
 
-    def _invoke_job(self, position: str, schedule: Optional[str] = None):
+    def invoke_job(self, position: str, schedule: Optional[str] = None):
         invokers = self.options.invokers.get_list(position)
 
         if invokers:
             for i in invokers:
                 Logger.info(f"{position}-invoke", extra={"job": self})
                 try:
-                    notebook = i.notebook
+                    notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
                     path = PATH_RUNTIME.join(notebook)
 
-                    arguments = i.arguments or {}
-                    timeout = i.timeout
+                    arguments = i.get("arguments") or {}
+                    timeout = i.get("timeout")
 
                     self.invoke(
                         path=path,
@@ -50,7 +50,7 @@ class Invoker(Checker):
                     else:
                         raise e
 
-    def _invoke_step(self, position: str, schedule: Optional[str] = None):
+    def invoke_step(self, position: str, schedule: Optional[str] = None):
         invokers = self.step_conf.get("invoker_options", {}).get(position, [])
 
         if invokers:
@@ -118,20 +118,21 @@ class Invoker(Checker):
             assert len(invokers) == 1, "Only one run invoker is allowed"
             invoker = invokers[0]
 
-            notebook = invoker.notebook
+            notebook = invoker.get("notebook")
             path = PATH_RUNTIME.join(notebook)
             assert path.exists(), f"{path} not found"
 
-            arguments = cast(Dict, invoker.arguments) or {}
-            timeout = invoker.timeout
+            arguments = invoker.get("arguments", {})
+            timeout = invoker.get("timeout")
 
         if timeout is None:
             timeout = self.timeout
 
         variables = None
         if schedule is not None:
-            variables = get_schedule(schedule).select("options.variables").collect()[0][0]
-            variables = cast(Dict, variables)
+            variables = (
+                next(s for s in get_schedules() if s.get("name") == schedule).get("options", {}).get("variables", {})
+            )
 
         if variables is None:
             variables = {}
@@ -155,21 +156,21 @@ class Invoker(Checker):
             },
         )
 
-    def _job_extender(self, df: DataFrame) -> DataFrame:
+    def extend_job(self, df: DataFrame) -> DataFrame:
         from fabricks.core.extenders import get_extender
 
         extenders = self.options.extenders
         for e in extenders:
-            name = e.extender
+            name = e.get("extender")
             Logger.info(f"calling {name}", extra={"job": self})
-            arguments = e.arguments or {}
+            arguments = e.get("arguments") or {}
 
             extender = get_extender(name)
             df = extender(df, **arguments)
 
         return df
 
-    def _step_extender(self, df: DataFrame) -> DataFrame:
+    def extend_step(self, df: DataFrame) -> DataFrame:
         from fabricks.core.extenders import get_extender
 
         extenders = self.step_conf.get("extender_options", {})
@@ -183,7 +184,7 @@ class Invoker(Checker):
 
         return df
 
-    def extender(self, df: DataFrame) -> DataFrame:
-        df = self._job_extender(df)
-        df = self._step_extender(df)
+    def extend(self, df: DataFrame) -> DataFrame:
+        df = self.extend_job(df)
+        df = self.extend_step(df)
         return df

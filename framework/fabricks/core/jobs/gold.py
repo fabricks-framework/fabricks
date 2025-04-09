@@ -1,8 +1,9 @@
 import re
-from typing import List, Optional, cast
+from typing import List, Optional, Union, cast
 
 from databricks.sdk.runtime import dbutils
 from pyspark.sql import DataFrame
+from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import Logger
@@ -15,7 +16,12 @@ from fabricks.utils.path import Path
 
 class Gold(BaseJob):
     def __init__(
-        self, step: TGold, topic: Optional[str] = None, item: Optional[str] = None, job_id: Optional[str] = None
+        self,
+        step: TGold,
+        topic: Optional[str] = None,
+        item: Optional[str] = None,
+        job_id: Optional[str] = None,
+        conf: Optional[Union[dict, Row]] = None,
     ):  # type: ignore
         super().__init__(
             "gold",
@@ -23,6 +29,7 @@ class Gold(BaseJob):
             topic=topic,
             item=item,
             job_id=job_id,
+            conf=conf,
         )
 
     _sql: Optional[str] = None
@@ -30,11 +37,11 @@ class Gold(BaseJob):
     _schema_drift: Optional[bool] = None
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str):
+    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
         return cls(step=cast(TGold, step), job_id=job_id)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
         return cls(step=cast(TGold, step), topic=topic, item=item)
 
     @property
@@ -86,7 +93,7 @@ class Gold(BaseJob):
                 register_udf(udf=u, spark=self.spark)
 
     def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extender)
+        df = df.transform(self.extend)
         return df
 
     def get_data(self, stream=False, transform: Optional[bool] = False) -> DataFrame:

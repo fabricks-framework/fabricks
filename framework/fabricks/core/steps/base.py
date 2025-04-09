@@ -22,13 +22,14 @@ class BaseStep:
         self.name = cast(str, step)
 
         if self.name in Bronzes:
-            self.extend = "bronze"
+            self.expand = "bronze"
         elif self.name in Silvers:
-            self.extend = "silver"
+            self.expand = "silver"
         elif self.name in Golds:
-            self.extend = "gold"
+            self.expand = "gold"
+
         else:
-            raise ValueError(self.name, "does not extend a default job")
+            raise ValueError(self.name, "does not expand a default step")
 
         _storage = PATHS_STORAGE.get(self.name)
         assert _storage
@@ -155,28 +156,23 @@ class BaseStep:
                 df = concat_dfs(dfs)
                 return df if not df.isEmpty() else None
 
+    def get_jobs_iter(self, topic: Optional[str] = None):
+        return read_yaml(self.runtime, root="job", prio_file_name=topic)
+
     def get_jobs(self, topic: Optional[str] = None) -> Optional[DataFrame]:
         try:
             conf = get_step_conf(self.name)
             schema = get_schema_for_type(conf)
 
-            df = None
-            if topic:
-                df = read_yaml(self.runtime, root="job", schema=schema, file_name=topic)  # type: ignore
+            df = SPARK.createDataFrame(read_yaml(self.runtime, root="job", prio_file_name=topic), schema=schema)  # type: ignore
 
-            if not df:
-                df = read_yaml(self.runtime, root="job", schema=schema)  # type: ignore
-            elif df.isEmpty():
-                df = read_yaml(self.runtime, root="job", schema=schema)  # type: ignore
+            df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
 
-            if df:
-                df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
+            duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")
+            duplicates = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in duplicated_df.collect())
+            assert duplicated_df.isEmpty(), f"duplicated job(s) ({duplicates})"
 
-                duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")
-                duplicates = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in duplicated_df.collect())
-                assert duplicated_df.isEmpty(), f"duplicated job(s) ({duplicates})"
-
-                return df if not df.isEmpty() else None
+            return df if not df.isEmpty() else None
 
         except AssertionError as e:
             Logger.exception("🙈", extra={"step": self})

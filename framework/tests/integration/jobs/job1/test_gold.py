@@ -118,11 +118,11 @@ def test_gold_fact_option():
     # spark options
     optimize_write = j.table.get_property("delta.autoOptimize.optimizeWrite")
     assert optimize_write, "optimizeWrite not found"
-    assert optimize_write == "false", "optimizeWrite enabled"
+    assert optimize_write.lower() == "false", "optimizeWrite enabled"
 
     change_data_feed = j.table.get_property("delta.enableChangeDataFeed")
     assert change_data_feed, "enableChangeDataFeed not found"
-    assert change_data_feed == "true", "enableChangeDataFeed not enabled"
+    assert change_data_feed.lower() == "true", "enableChangeDataFeed not enabled"
 
     assert j.timeout == 1800, f"timeout {j.timeout} <> 1800"
 

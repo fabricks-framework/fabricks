@@ -35,6 +35,7 @@ def create_or_replace_global_temp_view(name: str, df: DataFrame, uuid: Optional[
         name = f"{name}__{str(uuid4().hex)}"
 
     job = name.split("__")[0]
-    Logger.debug("create global temp view", extra={"job": job})
+    Logger.debug(f"create global temp view {name}", extra={"job": job})
     df.createOrReplaceGlobalTempView(name)
+
     return f"global_temp.{name}"

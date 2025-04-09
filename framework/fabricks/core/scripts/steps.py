@@ -8,11 +8,11 @@ from fabricks.context.runtime import BRONZE, GOLD, SILVER
 def collect_steps():
     steps = []
 
-    def _collect(extend: str, iterable: Iterable):
+    def _collect(expand: str, iterable: Iterable):
         for i in iterable:
             steps.append(
                 {
-                    "extend": extend,
+                    "expand": expand,
                     "step": i.get("name"),
                     "order": i.get("options", {}).get("order", 0),
                 },

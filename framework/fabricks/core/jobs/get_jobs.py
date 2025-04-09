@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, TypedDict, Union
+from typing import List, Literal, Optional, TypedDict, Union, overload
 
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr
@@ -7,7 +7,7 @@ from pyspark.sql.functions import expr
 from fabricks.context import IS_LIVE, PATHS_RUNTIME, SPARK
 from fabricks.core.jobs.base._types import Modes, TStep
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.jobs.get_job import get_job
+from fabricks.core.jobs.get_job import get_job, get_job_internal
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import Path
 from fabricks.utils.read import read_yaml
@@ -31,12 +31,17 @@ def _get_job(row: Row):
     return get_job(row=row)
 
 
-def _get_jobs() -> DataFrame:
+def get_jobs_internal():
+    for p in PATHS_RUNTIME.values():
+        yield from read_yaml(p, root="job")
+
+
+def get_jobs_internal_df() -> DataFrame:
     if IS_LIVE:
         schema = get_schema_for_type(JobConfGeneric)
 
         def _read_yaml(path: Path):
-            df = read_yaml(path, root="job", schema=schema)
+            df = SPARK.createDataFrame(read_yaml(path, root="job"), schema=schema)  # type: ignore
             if df:
                 df = df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))
                 return df
@@ -48,6 +53,14 @@ def _get_jobs() -> DataFrame:
         df = SPARK.sql("select * from fabricks.jobs")
 
     return df
+
+
+@overload
+def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[True]) -> List[BaseJob]: ...
+
+
+@overload
+def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[False]) -> DataFrame: ...
 
 
 def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) -> Union[List[BaseJob], DataFrame]:
@@ -67,11 +80,15 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
 
     """
     if not convert:
-        return _get_jobs()
+        return get_jobs_internal_df()
 
     else:
         if df is None:
-            df = _get_jobs()
+            return list(
+                get_job_internal(j["step"], j["topic"], j["item"], j.get("job_id"), conf=j)
+                for j in get_jobs_internal()
+            )
+
         else:
             if "step" in df.columns and "topic" in df.columns and "item" in df.columns:
                 df = df.select("step", "topic", "item")

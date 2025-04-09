@@ -3,6 +3,7 @@ from typing import Optional, Union, cast
 
 from pyspark.dbutils import DBUtils
 from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
@@ -19,18 +20,19 @@ from fabricks.utils.path import Path
 class Configurator(ABC):
     def __init__(
         self,
-        extend: str,
+        expand: str,
         step: TStep,
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
+        conf: Optional[Union[dict, Row]] = None,
     ):
-        self.extend = extend
+        self.expand = expand
         self.step: TStep = step
 
         if job_id is not None:
             self.job_id = job_id
-            self.conf = get_job_conf(step=self.step, job_id=self.job_id)
+            self.conf = get_job_conf(step=self.step, job_id=self.job_id, row=conf)
             self.topic = self.conf.topic
             self.item = self.conf.item
         else:
@@ -38,7 +40,7 @@ class Configurator(ABC):
             assert item
             self.topic = topic
             self.item = item
-            self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item)
+            self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item, row=conf)
             self.job_id = get_job_id(step=self.step, topic=self.topic, item=self.item)
 
     _step_conf: Optional[dict[str, str]] = None
