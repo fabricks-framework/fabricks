@@ -17,6 +17,7 @@ dependencies = [
     "python-dotenv >=1.0.1",
     "pyyaml >=6.0.0",
     "sqlglot >=22.1.1",
+    "tomli>=2.2.1;python_version<\"3.11\"",
 ]
 requires-python = ">=3.9,<4"
 
@@ -85,3 +86,7 @@ dev = [
     "shandy-sqlfmt >=0.23.2",
     "yamlfix >=1.14.0",
 ]
+
+[tool.fabricks]
+runtime = "tests/integration/runtime"
+notebooks = "api/notebooks"
