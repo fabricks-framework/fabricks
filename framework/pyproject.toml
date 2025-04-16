@@ -90,3 +90,4 @@ dev = [
 [tool.fabricks]
 runtime = "tests/integration/runtime"
 notebooks = "api/notebooks"
+config_file = "test/integration/runtime/fabricks/conf.fabricks.yml"

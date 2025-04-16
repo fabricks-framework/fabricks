@@ -58,11 +58,13 @@ try:
     
     IS_LIVE: Final[bool] =  os.environ.get("FABRICKS_IS_LIVE") in ("TRUE", "true", "True", "1")
 
-    conf_path = PATH_RUNTIME.join(
-        "fabricks",
-        f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
-    )
-    with open(conf_path.string) as f:
+    conf_path = fabricks_cfg.get("config_file")
+    if not conf_path:
+        conf_path = PATH_RUNTIME.join(
+            "fabricks",
+            f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
+        ).string
+    with open(conf_path) as f:
         data = yaml.safe_load(f)
 
     conf: dict = [d["conf"] for d in data][0]
