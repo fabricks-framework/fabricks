@@ -7,6 +7,9 @@ artifacts:
   fabricks_tool:
     build: uv build
     type: whl
+variables:
+  spark_version:
+    default: 15.4.x-scala2.12
 resources:
   jobs:
     fabricks_test_job:
@@ -32,7 +35,7 @@ resources:
         - job_cluster_key: fabricks_test_cluster
           new_cluster:
             cluster_name: ''
-            spark_version: 14.3.x-scala2.12
+            spark_version: ${var.spark_version}
             azure_attributes:
               first_on_demand: 1
               availability: SPOT_WITH_FALLBACK_AZURE
@@ -132,7 +135,7 @@ resources:
         - job_cluster_key: fabricks_test_cluster
           new_cluster:
             cluster_name: ''
-            spark_version: 14.3.x-scala2.12
+            spark_version: ${var.spark_version}
             azure_attributes:
               first_on_demand: 1
               availability: SPOT_WITH_FALLBACK_AZURE
@@ -177,10 +180,6 @@ targets:
     mode: production
     workspace:
       host: https://adb-5589296195699698.18.azuredatabricks.net
-      # We always use /Users/adrian.ehrsam@bmsuisse.ch for all resources to make sure we only have a single copy.
-      # If this path results in an error, please make sure you have a recent version of the CLI installed.
       root_path: /Workspace/fabricks_test/.bundle/${bundle.name}/${bundle.target}
     run_as:
-      # This runs as adrian.ehrsam@bmsuisse.ch in production. We could also use a service principal here,
-      # see https://docs.databricks.com/dev-tools/bundles/permissions.html.
       service_principal_name: c626f9c3-6337-480d-bf2f-48266569df06
