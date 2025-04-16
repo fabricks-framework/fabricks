@@ -68,6 +68,9 @@ try:
             "fabricks",
             f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
         ).string
+    else:
+        assert pyproject_path is not None  # Cannot be null since we got the config from it
+        conf_path = pyproject_path.joinpath(conf_path)
     with open(conf_path) as f:
         data = yaml.safe_load(f)
 
