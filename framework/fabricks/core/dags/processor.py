@@ -131,7 +131,7 @@ class DagProcessor(BaseDags):
     def _process(self):
         scheduled = self.get_scheduled()
         assert isinstance(scheduled, List)
-        
+
         if len(scheduled) > 0:
             sender = threading.Thread(
                 target=self.send,
