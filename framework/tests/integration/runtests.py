@@ -23,7 +23,7 @@ Logger.setLevel(INFO)
 
 proj_dir, _ = get_config_from_toml()
 assert proj_dir is not None
-os.chdir(proj_dir / "framework")
+os.chdir(proj_dir)
 
 # COMMAND ----------
 
