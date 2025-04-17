@@ -77,7 +77,7 @@ class BaseDags:
             .mode("overwrite")
             .option("mergeSchema", "true")
             .option("partitionOverwriteMode", "dynamic")
-            .save(Table("fabricks", "logs").deltapath.string)
+            .save(Table("fabricks", "logs").delta_path.string)
         )
 
     def remove_invalid_characters(self, s: str) -> str:
