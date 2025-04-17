@@ -48,6 +48,8 @@ class BaseDags:
         df = SPARK.createDataFrame(d)
         if "Exception" not in df.columns:
             df = df.withColumn("Exception", expr("null"))
+        if "NotebookId" not in df.columns:
+            df = df.withColumn("NotebookId", expr("null"))
 
         df = SPARK.sql(
             """
