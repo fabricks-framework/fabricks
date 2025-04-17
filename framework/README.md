@@ -34,6 +34,14 @@ import fabricks
 ### 🔧 Runtime Configuration
 
 Define your **Fabricks** runtime in a YAML file. It's used to define your steps, timeouts, spark options and mostly every basic thing.
+The yaml file's location should be configured in your pyproject.toml:
+
+```toml
+[tool.fabricks]
+runtime = "."
+notebooks = "notebooks" # Copy those from fabricks/api/notebooks in this repo
+config_file = "fabricks/conf.fabricks.yml"
+```
 
 Here's a basic version:
 

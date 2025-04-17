@@ -7,36 +7,71 @@ from databricks.sdk.runtime import spark
 
 from fabricks.utils.path import Path
 
+
+def get_config_from_toml():
+    import os
+    import pathlib
+    import sys
+
+    if sys.version_info >= (3, 11):
+        import tomllib
+    else:
+        import tomli as tomllib  # type: ignore
+
+    path = pathlib.Path(os.getcwd())
+    while path is not None and not (path / "pyproject.toml").exists():
+        path = path.parent
+
+    if (path / "pyproject.toml").exists():
+        with open((path / "pyproject.toml"), "rb") as f:
+            config = tomllib.load(f)
+            return path, config.get("tool", {}).get("fabricks", {})
+    return None, {}
+
+
 try:
-    runtime = Path(os.environ["FABRICKS_RUNTIME"], assume_git=True)
+    pyproject_path, fabricks_cfg = get_config_from_toml()
+    if _runtime_path_str := fabricks_cfg.get("runtime"):
+        assert pyproject_path is not None  # Cannot be null since we got the config from it
+        _runtime_path_str = pyproject_path.joinpath(_runtime_path_str)  # Must resolve relative to pyproject.toml
+    else:
+        _runtime_path_str = os.environ.get("FABRICKS_RUNTIME")
+    if _runtime_path_str is None and pyproject_path is not None:
+        _runtime_path_str = pyproject_path
+    elif _runtime_path_str is None:
+        raise ValueError("Must have at least a pyproject.toml or set FABRICKS_RUNTIME")
+    runtime = Path(_runtime_path_str, assume_git=True)
     assert runtime, "runtime mandatory in cluster config"
     PATH_RUNTIME: Final[Path] = runtime
 
-    notebooks = Path(os.environ["FABRICKS_NOTEBOOKS"], assume_git=True)
-    assert notebooks, "notebooks mandatory in cluster config"
-    PATH_NOTEBOOKS: Final[Path] = notebooks
+    if _notebook_path_str := fabricks_cfg.get("notebooks"):
+        assert pyproject_path is not None  # Cannot be null since we got the config from it
+        _notebook_path_str = pyproject_path.joinpath(_notebook_path_str)  # Must resolve relative to pyproject.toml
+    else:
+        _notebook_path_str = os.environ.get("FABRICKS_NOTEBOOKS")
+
+    PATH_NOTEBOOKS: Final[Path] = (
+        Path(_notebook_path_str, assume_git=True) if _notebook_path_str else runtime.join("notebooks")
+    )
 
     PATH_LIBRARIES = "/dbfs/mnt/fabricks/site-packages"
     spark._sc._python_includes.append(PATH_LIBRARIES)  # type: ignore
     sys.path.append(PATH_LIBRARIES)
 
-    try:
-        is_test = os.environ["FABRICKS_IS_TEST"] == "TRUE"
-    except Exception:
-        is_test = False
-    IS_TEST: Final[bool] = is_test
+    IS_TEST: Final[bool] = os.environ.get("FABRICKS_IS_TEST") in ("TRUE", "true", "True", "1")
 
-    try:
-        is_live = os.environ["FABRICKS_IS_LIVE"] == "TRUE"
-    except Exception:
-        is_live = False
-    IS_LIVE: Final[bool] = is_live
+    IS_LIVE: Final[bool] = os.environ.get("FABRICKS_IS_LIVE") in ("TRUE", "true", "True", "1")
 
-    conf_path = PATH_RUNTIME.join(
-        "fabricks",
-        f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
-    )
-    with open(conf_path.string) as f:
+    conf_path = fabricks_cfg.get("config_file")
+    if not conf_path:
+        conf_path = PATH_RUNTIME.join(
+            "fabricks",
+            f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
+        ).string
+    else:
+        assert pyproject_path is not None  # Cannot be null since we got the config from it
+        conf_path = pyproject_path.joinpath(conf_path)
+    with open(conf_path) as f:
         data = yaml.safe_load(f)
 
     conf: dict = [d["conf"] for d in data][0]

@@ -1,11 +1,3 @@
-PARENT=$(dirname "$0")
-GRANDPARENT=$(cd "$(dirname "$0")"; cd ../..; pwd)
-
-echo $GRANDPARENT
-
-sudo echo FABRICKS_RUNTIME=$PARENT/runtime >> /etc/environment
-sudo echo FABRICKS_NOTEBOOKS=$GRANDPARENT/fabricks/api/notebooks >> /etc/environment
-
 sudo echo FABRICKS_IS_TEST=TRUE >> /etc/environment
 sudo echo FABRICKS_IS_LIVE=TRUE >> /etc/environment
 

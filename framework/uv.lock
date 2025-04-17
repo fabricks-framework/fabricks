@@ -612,7 +612,7 @@ wheels = [
 
 [[package]]
 name = "fabricks"
-version = "1.0.4"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "azure-data-tables" },
@@ -624,6 +624,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "sqlglot" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
 
 [package.dev-dependencies]
@@ -657,6 +658,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "sqlglot", specifier = ">=22.1.1" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.2.1" },
 ]
 
 [package.metadata.requires-dev]
