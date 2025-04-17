@@ -1,11 +1,16 @@
 # Databricks notebook source
 import os
 import sys
+import os
+from pathlib import Path
+p = Path(os.getcwd())
+while not (p / "pyproject.toml").exists():
+    p = p.parent 
+
+root = p.absolute()
+root
 
 # COMMAND ----------
 
-root = os.path.abspath("../..")
-
-# COMMAND ----------
-
-sys.path.append(root)
+if str(root) not in sys.path:
+    sys.path.append(str(root))
