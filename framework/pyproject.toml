@@ -89,5 +89,5 @@ dev = [
 
 [tool.fabricks]
 runtime = "tests/integration/runtime"
-notebooks = "api/notebooks"
+notebooks = "fabricks/api/notebooks"
 config_file = "tests/integration/runtime/fabricks/conf.fabricks.yml"
