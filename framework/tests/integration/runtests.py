@@ -3,16 +3,16 @@
 
 # COMMAND ----------
 
-import sys
 import os
+import sys
 from logging import ERROR, INFO
 
 import pytest
 from databricks.sdk.runtime import dbutils
 
 from fabricks.context import IS_TEST, PATH_RUNTIME
-from fabricks.context.runtime import get_config_from_toml
 from fabricks.context.log import Logger
+from fabricks.context.runtime import get_config_from_toml
 from fabricks.utils.helpers import run_notebook
 
 # COMMAND ----------

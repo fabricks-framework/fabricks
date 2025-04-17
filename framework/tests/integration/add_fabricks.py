@@ -1,11 +1,11 @@
 # Databricks notebook source
 import os
 import sys
-import os
 from pathlib import Path
+
 p = Path(os.getcwd())
 while not (p / "pyproject.toml").exists():
-    p = p.parent 
+    p = p.parent
 
 root = p.absolute()
 root
