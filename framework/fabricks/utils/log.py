@@ -78,7 +78,7 @@ class AzureTableHandler(logging.Handler):
                 "Created": str(
                     datetime.fromtimestamp(record.created).strftime("%d/%m/%y %H:%M:%S")
                 ),  # timestamp not present when querying Azure Table
-                "Level": record.levelname,
+                "Level": str(record.levelname),
                 "Message": record.message,
             }
             if hasattr(record, "job"):

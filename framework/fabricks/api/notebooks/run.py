@@ -7,8 +7,7 @@ import json
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.core.dags.log import DagsLogger, DagsTableLogger
-from fabricks.core.jobs import get_job
+from fabricks.core.dags.run import run
 
 # COMMAND ----------
 
@@ -47,44 +46,11 @@ assert schedule != "---"
 
 context = json.loads(dbutils.notebook.entry_point.getDbutils().notebook().getContext().toJson())  # type: ignore
 notebook_id = context.get("tags").get("jobId")
+assert notebook_id is not None
 
 # COMMAND ----------
 
-job = get_job(step=step, job_id=job_id)
-
-# COMMAND ----------
-
-print(job.qualified_name)
-
-# COMMAND ----------
-
-extra = {
-    "partition_key": schedule_id,
-    "schedule_id": schedule_id,
-    "schedule": schedule,
-    "step": step,
-    "job": job,
-    "notebook_id": notebook_id,
-    "target": "buffer",
-}
-
-# COMMAND ----------
-
-DagsLogger.info("running", extra=extra)
-
-
-# COMMAND ----------
-
-try:
-    job.run(schedule_id=schedule_id, schedule=schedule)
-    DagsLogger.info("done", extra=extra)
-
-except Exception as e:
-    DagsLogger.exception("failed", extra=extra)
-    raise e
-
-finally:
-    DagsTableLogger.flush()
+run(step=step, job_id=job_id, schedule_id=schedule_id, schedule=schedule, notebook_id=notebook_id)
 
 # COMMAND ----------
 
