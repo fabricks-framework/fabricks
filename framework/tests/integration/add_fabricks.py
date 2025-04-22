@@ -7,6 +7,8 @@ p = Path(os.getcwd())
 while not (p / "pyproject.toml").exists():
     p = p.parent
 
+# COMMAND ----------
+
 root = p.absolute()
 
 # COMMAND ----------
