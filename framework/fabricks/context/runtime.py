@@ -26,52 +26,59 @@ def get_config_from_toml():
         with open((path / "pyproject.toml"), "rb") as f:
             config = tomllib.load(f)
             return path, config.get("tool", {}).get("fabricks", {})
+        
     return None, {}
 
 
 try:
     pyproject_path, fabricks_cfg = get_config_from_toml()
-    if _runtime_path_str := fabricks_cfg.get("runtime"):
-        assert pyproject_path is not None  # Cannot be null since we got the config from it
-        _runtime_path_str = pyproject_path.joinpath(_runtime_path_str)  # Must resolve relative to pyproject.toml
-    else:
-        _runtime_path_str = os.environ.get("FABRICKS_RUNTIME")
-    if _runtime_path_str is None and pyproject_path is not None:
-        _runtime_path_str = pyproject_path
-    elif _runtime_path_str is None:
-        raise ValueError("Must have at least a pyproject.toml or set FABRICKS_RUNTIME")
-    runtime = Path(_runtime_path_str, assume_git=True)
-    assert runtime, "runtime mandatory in cluster config"
-    PATH_RUNTIME: Final[Path] = runtime
 
-    if _notebook_path_str := fabricks_cfg.get("notebooks"):
+    if runtime := fabricks_cfg.get("runtime"):
         assert pyproject_path is not None  # Cannot be null since we got the config from it
-        _notebook_path_str = pyproject_path.joinpath(_notebook_path_str)  # Must resolve relative to pyproject.toml
+        runtime = pyproject_path.joinpath(runtime)  # Must resolve relative to pyproject.toml
     else:
-        _notebook_path_str = os.environ.get("FABRICKS_NOTEBOOKS")
+        runtime = os.environ.get("FABRICKS_RUNTIME")
+
+    if runtime is None and pyproject_path is not None:
+        runtime = pyproject_path
+    elif runtime is None:
+        raise ValueError("Must have at least a pyproject.toml or set FABRICKS_RUNTIME")
+
+    path_runtime = Path(runtime, assume_git=True)
+    assert runtime, "runtime mandatory in cluster config"
+    PATH_RUNTIME: Final[Path] = path_runtime
+
+    if notebooks := fabricks_cfg.get("notebooks"):
+        assert pyproject_path is not None  # Cannot be null since we got the config from it
+        notebooks = pyproject_path.joinpath(notebooks)  # Must resolve relative to pyproject.toml
+    else:
+        notebooks = os.environ.get("FABRICKS_NOTEBOOKS")
 
     PATH_NOTEBOOKS: Final[Path] = (
-        Path(_notebook_path_str, assume_git=True) if _notebook_path_str else runtime.join("notebooks")
+        Path(notebooks, assume_git=True) if notebooks else runtime.join("notebooks")
     )
 
     PATH_LIBRARIES = "/dbfs/mnt/fabricks/site-packages"
+
     spark._sc._python_includes.append(PATH_LIBRARIES)  # type: ignore
     sys.path.append(PATH_LIBRARIES)
 
     IS_TEST: Final[bool] = os.environ.get("FABRICKS_IS_TEST") in ("TRUE", "true", "True", "1")
-
     IS_LIVE: Final[bool] = os.environ.get("FABRICKS_IS_LIVE") in ("TRUE", "true", "True", "1")
 
-    conf_path = fabricks_cfg.get("config_file")
-    if not conf_path:
-        conf_path = PATH_RUNTIME.join(
+    config_path = fabricks_cfg.get("config")
+    if not config_path:
+        config_path = PATH_RUNTIME.join(
             "fabricks",
             f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
         ).string
     else:
         assert pyproject_path is not None  # Cannot be null since we got the config from it
-        conf_path = pyproject_path.joinpath(conf_path)
-    with open(conf_path) as f:
+        config_path = pyproject_path.joinpath(config_path)
+
+    PATH_CONFIG: Final[Path] = Path(config_path, assume_git=True)
+
+    with open(config_path) as f:
         data = yaml.safe_load(f)
 
     conf: dict = [d["conf"] for d in data][0]
