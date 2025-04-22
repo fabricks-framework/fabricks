@@ -15,7 +15,7 @@ def run(step: str, job_id: str, schedule_id: str, schedule: str, notebook_id: Op
         "job": job,
         "target": "buffer",
     }
-    if notebook_id:
+    if notebook_id is not None:
         extra["notebook_id"] = notebook_id
 
     DagsLogger.info("running", extra=extra)
