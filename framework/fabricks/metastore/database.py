@@ -13,9 +13,11 @@ from fabricks.utils.path import Path
 class Database:
     def __init__(self, name: str, spark: Optional[SparkSession] = None):
         self.name = name
+
         storage = PATHS_STORAGE.get(self.name)
         assert storage is not None
         self.storage = storage
+
         if spark is None:
             spark = SPARK
         assert spark is not None
@@ -50,6 +52,7 @@ class Database:
         # database not found
         except AnalysisException:
             return False
+
         return True
 
     def __str__(self):
@@ -59,6 +62,7 @@ class Database:
         try:
             df = get_tables(self.name)
             return df if not df.isEmpty() else None
+
         except AnalysisException:
             return None
 
@@ -66,5 +70,6 @@ class Database:
         try:
             df = get_views(self.name)
             return df if not df.isEmpty() else None
+
         except AnalysisException:
             return None

@@ -57,7 +57,7 @@ class Generator(Configurator):
             properties=properties,
         )
 
-    def create_or_replace_view(self, src: Union[Table, str], **kwargs):
+    def create_or_replace_view(self, src: Union[Table, str], schema_evolution: bool = True, **kwargs):
         assert not isinstance(src, DataFrame), "dataframe not allowed"
 
         assert kwargs["mode"] == "complete", f"{kwargs['mode']} not allowed"
@@ -69,6 +69,7 @@ class Generator(Configurator):
 
         sql = f"""
         create or replace view {self}
+        {"with schema evolution" if schema_evolution else "-- no schema evolution"}
         as
         with __view as (
           {sql}
@@ -105,6 +106,7 @@ class Generator(Configurator):
         if self.is_view():
             assert not isinstance(src, DataFrame), "dataframe not allowed"
             self.create_or_replace_view(src=src, **kwargs)
+
         else:
             kwargs["mode"] = "complete"
             df = self.get_data(src, **kwargs)

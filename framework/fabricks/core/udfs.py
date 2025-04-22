@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 
 from pyspark.sql import SparkSession
 
-from fabricks.context import PATH_UDFS, SPARK, PATH_RUNTIME
+from fabricks.context import PATH_RUNTIME, PATH_UDFS, SPARK
 from fabricks.context.log import Logger
 from fabricks.core.site_packages import add_site_packages_to_path
 

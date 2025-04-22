@@ -6,6 +6,7 @@ from fabricks.context import SPARK
 def get_tables(schema: str) -> DataFrame:
     table_df = SPARK.sql(f"show tables in {schema}")
     view_df = SPARK.sql(f"show views in {schema}")
+
     df = SPARK.sql(
         """
         select 
@@ -18,11 +19,16 @@ def get_tables(schema: str) -> DataFrame:
         tables=table_df,
         views=view_df,
     )
+
+    if df.isEmpty():
+        return SPARK.sql("select null::string as database, null::string as table")
+
     return df
 
 
 def get_views(schema: str) -> DataFrame:
     view_df = SPARK.sql(f"show views in {schema}")
+
     df = SPARK.sql(
         """
         select 
@@ -33,4 +39,8 @@ def get_views(schema: str) -> DataFrame:
         """,
         views=view_df,
     )
+
+    if df.isEmpty():
+        return SPARK.sql("select null::string as database, null::string as view")
+
     return df

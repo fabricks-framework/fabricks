@@ -55,6 +55,7 @@ class BaseStep:
                 w = CONF_RUNTIME.get("options", {}).get("workers")
             assert w is not None
             self._workers = cast(int, w)
+
         return self._workers
 
     def _get_timeout(self, what: str) -> int:
@@ -62,6 +63,7 @@ class BaseStep:
         if t is None:
             t = CONF_RUNTIME.get("options", {}).get("timeouts", {}).get(what)
         assert t is not None
+
         return int(t)
 
     @property
@@ -71,6 +73,7 @@ class BaseStep:
                 job=self._get_timeout("job"),
                 step=self._get_timeout("step"),
             )
+
         return self._timeouts
 
     @property
@@ -79,6 +82,7 @@ class BaseStep:
             _conf = [s for s in STEPS if s.get("name") == self.name][0]
             assert _conf is not None
             self._conf = cast(dict[str, str], _conf)
+
         return self._conf
 
     @property
@@ -87,6 +91,7 @@ class BaseStep:
             o = self.conf.get("options")
             assert o is not None
             self._options = cast(dict[str, str], o)
+
         return self._options
 
     def drop(self):
@@ -98,9 +103,11 @@ class BaseStep:
         tmp = fs.join("tmp")
         if tmp.exists():
             tmp.rm()
+
         checkpoint = fs.join("checkpoints")
         if checkpoint.exists():
             checkpoint.rm()
+
         schema = fs.join("schemas")
         if schema.exists():
             schema.rm()
@@ -212,8 +219,10 @@ class BaseStep:
                     self.update_tables()
                     self.update_views()
                     self.create_jobs(retry=False)
+
                 else:
                     Logger.warning("retry failed", extra={"step": self})
+
         else:
             Logger.debug("no new job", extra={"step": self})
 
@@ -223,7 +232,9 @@ class BaseStep:
             Logger.info("update jobs", extra={"step": self})
             if drop:
                 SCD1("fabricks", self.name, "jobs").table.drop()
+
             SCD1("fabricks", self.name, "jobs").delete_missing(df, keys=["job_id"])
+
         else:
             Logger.debug("no job", extra={"step": self})
 
@@ -233,6 +244,7 @@ class BaseStep:
             Logger.debug("update tables", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(table)"))
             SCD1("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
+
         else:
             Logger.debug("no table", extra={"step": self})
 
@@ -242,6 +254,7 @@ class BaseStep:
             Logger.debug("update views", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(view)"))
             SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
+
         else:
             Logger.debug("no view", extra={"step": self})
 
@@ -251,6 +264,7 @@ class BaseStep:
             Logger.debug("update dependencies", extra={"step": self})
             df.cache()
             SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"])
+
         else:
             Logger.debug("no dependency", extra={"step": self})
 
@@ -262,6 +276,7 @@ class BaseStep:
         if drop:
             SPARK.sql(f"drop database if exists {self.name} cascade ")
             SPARK.sql(f"create database {self.name}")
+
         if update:
             self.update_jobs()
 
