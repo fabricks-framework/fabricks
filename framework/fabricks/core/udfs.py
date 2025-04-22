@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 
 from pyspark.sql import SparkSession
 
-from fabricks.context import PATH_RUNTIME, PATH_UDFS, SPARK
+from fabricks.context import PATH_UDFS, SPARK
 from fabricks.context.log import Logger
 from fabricks.core.site_packages import add_site_packages_to_path
 
@@ -78,15 +78,19 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
             extension = get_extension(udf)
 
         assert extension
-        path = PATH_RUNTIME.join(PATH_UDFS.join(f"{udf}.{extension}"))
+
+        path = PATH_UDFS.join(f"{udf}.{extension}")
+
         if extension == "sql":
             spark.sql(path.get_sql())
 
         elif extension == "py":
             assert path.exists(), f"udf not found ({path.string})"
+
             spec = importlib.util.spec_from_file_location(udf, path.string)
             assert spec, f"no valid udf found ({path.string})"
             assert spec.loader is not None
+
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
 

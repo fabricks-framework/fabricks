@@ -24,6 +24,8 @@ def deploy_views():
     create_or_replace_tables_view()
     create_or_replace_views_view()
 
+    create_or_replace_jobs_to_be_updated_view()
+
 
 def create_or_replace_jobs_view():
     dmls = []
@@ -156,6 +158,7 @@ def create_or_replace_dependencies_flat_view():
       fabricks.dependencies d0 
       {join}
     """
+
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.dependencies_flat", extra={"sql": sql})
     SPARK.sql(sql)
@@ -196,6 +199,7 @@ def create_or_replace_dependencies_unpivot_view():
         depth asc
     ) = 1
     """
+
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.dependencies_unpivot", extra={"sql": sql})
     SPARK.sql(sql)
@@ -236,6 +240,7 @@ def create_or_replace_dependencies_circular_view():
           d1.job_id = d.parent_id
       )
     """
+
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.dependencies_circular", extra={"sql": sql})
     SPARK.sql(sql)
@@ -296,6 +301,7 @@ def create_or_replace_logs_pivot_view():
       groupby g
       left join fabricks.jobs j on g.job_id = j.job_id
     """
+
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.logs_pivot", extra={"sql": sql})
     SPARK.sql(sql)
@@ -322,6 +328,7 @@ def create_or_replace_last_schedule_view():
       fabricks.logs_pivot l
       inner join lst on schedule_id = last_schedule_id
     """
+
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.last_schedule", extra={"sql": sql})
     SPARK.sql(sql)
@@ -348,6 +355,7 @@ def create_or_replace_last_status_view():
           start_time desc
       ) = 1
     """
+
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.last_status", extra={"sql": sql})
     SPARK.sql(sql)
@@ -386,6 +394,7 @@ def create_or_replace_previous_schedule_view():
       fabricks.logs_pivot l
       inner join lst on schedule_id = last_schedule_id
     """
+
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.previous_schedule", extra={"sql": sql})
     SPARK.sql(sql)
@@ -411,6 +420,73 @@ def create_or_replace_schedules_view():
       all
     order by date desc, start_time desc
     """
+
     sql = fix_sql(sql)
     Logger.debug("create or replace fabricks.schedules", extra={"sql": sql})
+    SPARK.sql(sql)
+
+
+def create_or_replace_jobs_to_be_updated_view():
+    sql = """
+    create or replace view fabricks.jobs_to_be_updated as
+    with base as (
+      select
+        j.job_id,
+        j.step,
+        j.topic,
+        j.item,
+        s.expand,
+        j.mode as mode,
+        case
+          when s.expand == "bronze" then if(mode in ("append", "register"), "table", null)
+          when
+            s.expand == "silver"
+          then
+            if(
+              mode in ("update", "append", "latest"),
+              "table",
+              if(mode in ("combine", "memory"), "view", null)
+            )
+          when
+            s.expand == "gold"
+          then
+            if(mode in ("update", "append", "complete"), "table", if(mode in ("memory"), "view", null))
+        end as object_type
+      from
+        fabricks.jobs j
+          inner join fabricks.steps s
+            on j.step = s.step
+    ),
+    objects as (
+      select
+        `table` as job,
+        job_id,
+        'table' as object_type
+      from
+        fabricks.tables
+      union
+      select
+        `view` as job,
+        job_id,
+        'view' as object_type
+      from
+        fabricks.views
+    )
+    select
+      b.job_id,
+      b.step,
+      b.topic,
+      b.item,
+      b.expand,
+      b.mode,
+      b.object_type <> o.object_type as is_to_be_updated,
+      array(b.object_type, o.object_type) as object_types
+    from
+      base b
+        left join objects o
+          on b.job_id = o.job_id    
+    """
+
+    sql = fix_sql(sql)
+    Logger.debug("create or replace fabricks.jobs_to_be_updated", extra={"sql": sql})
     SPARK.sql(sql)

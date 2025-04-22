@@ -48,6 +48,8 @@ class BaseDags:
         df = SPARK.createDataFrame(d)
         if "Exception" not in df.columns:
             df = df.withColumn("Exception", expr("null"))
+        if "NotebookId" not in df.columns:
+            df = df.withColumn("NotebookId", expr("null"))
 
         df = SPARK.sql(
             """
@@ -75,7 +77,7 @@ class BaseDags:
             .mode("overwrite")
             .option("mergeSchema", "true")
             .option("partitionOverwriteMode", "dynamic")
-            .save(Table("fabricks", "logs").deltapath.string)
+            .save(Table("fabricks", "logs").delta_path.string)
         )
 
     def remove_invalid_characters(self, s: str) -> str:
