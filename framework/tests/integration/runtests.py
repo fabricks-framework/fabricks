@@ -1,8 +1,4 @@
 # Databricks notebook source
-# MAGIC %run ./add_fabricks
-
-# COMMAND ----------
-
 import os
 import sys
 from logging import ERROR, INFO
@@ -12,18 +8,11 @@ from databricks.sdk.runtime import dbutils
 
 from fabricks.context import IS_TEST, PATH_RUNTIME
 from fabricks.context.log import Logger
-from fabricks.context.runtime import get_config_from_toml
 from fabricks.utils.helpers import run_notebook
 
 # COMMAND ----------
 
 Logger.setLevel(INFO)
-
-# COMMAND ----------
-
-proj_dir, _ = get_config_from_toml()
-assert proj_dir is not None
-os.chdir(proj_dir)
 
 # COMMAND ----------
 
