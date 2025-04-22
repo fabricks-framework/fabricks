@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run ./add_fabricks
+
+# COMMAND ----------
+
 import os
 import sys
 from logging import ERROR, INFO
