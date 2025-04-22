@@ -8,7 +8,6 @@ while not (p / "pyproject.toml").exists():
     p = p.parent
 
 root = p.absolute()
-root
 
 # COMMAND ----------
 
