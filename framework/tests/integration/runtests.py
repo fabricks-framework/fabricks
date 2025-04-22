@@ -3,7 +3,6 @@
 
 # COMMAND ----------
 
-import os
 import sys
 from logging import ERROR, INFO
 

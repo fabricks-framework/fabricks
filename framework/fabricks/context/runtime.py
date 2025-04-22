@@ -26,7 +26,7 @@ def get_config_from_toml():
         with open((path / "pyproject.toml"), "rb") as f:
             config = tomllib.load(f)
             return path, config.get("tool", {}).get("fabricks", {})
-        
+
     return None, {}
 
 
@@ -45,7 +45,7 @@ try:
         raise ValueError("Must have at least a pyproject.toml or set FABRICKS_RUNTIME")
 
     path_runtime = Path(runtime, assume_git=True)
-    assert runtime, "runtime mandatory in cluster config"
+    assert path_runtime, "runtime mandatory in cluster config"
     PATH_RUNTIME: Final[Path] = path_runtime
 
     if notebooks := fabricks_cfg.get("notebooks"):
@@ -54,9 +54,9 @@ try:
     else:
         notebooks = os.environ.get("FABRICKS_NOTEBOOKS")
 
-    PATH_NOTEBOOKS: Final[Path] = (
-        Path(notebooks, assume_git=True) if notebooks else runtime.join("notebooks")
-    )
+    notebooks = notebooks if notebooks else path_runtime.join("notebooks")
+    assert notebooks, "notebooks mandatory"
+    PATH_NOTEBOOKS: Final[Path] = Path(str(notebooks), assume_git=True)
 
     PATH_LIBRARIES = "/dbfs/mnt/fabricks/site-packages"
 
