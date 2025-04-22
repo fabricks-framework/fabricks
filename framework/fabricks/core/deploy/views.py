@@ -479,6 +479,7 @@ def create_or_replace_jobs_to_be_updated_view():
       b.item,
       b.expand,
       b.mode,
+      o.object_type,
       b.object_type <> o.object_type as is_to_be_updated,
       array(b.object_type, o.object_type) as object_types
     from
