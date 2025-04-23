@@ -51,5 +51,8 @@ def collect_site_packages(nofail: bool = False):
 
 def add_site_packages_to_path():
     if PATH_LIBRARIES not in sys.path:
-        spark._sc._python_includes.append(PATH_LIBRARIES)  # type: ignore
-        sys.path.append(PATH_LIBRARIES)
+        try:
+            spark._sc._python_includes.append(PATH_LIBRARIES)  # type: ignore
+            sys.path.append(PATH_LIBRARIES)
+        except Exception:
+            pass
