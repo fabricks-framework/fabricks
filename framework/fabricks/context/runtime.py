@@ -59,8 +59,8 @@ try:
     PATH_NOTEBOOKS: Final[Path] = Path(str(notebooks), assume_git=True)
 
     PATH_LIBRARIES = "/dbfs/mnt/fabricks/site-packages"
-
-    spark._sc._python_includes.append(PATH_LIBRARIES)  # type: ignore
+    if hasattr(spark, '_sc'):
+        spark._sc._python_includes.append(PATH_LIBRARIES)  # type: ignore
     sys.path.append(PATH_LIBRARIES)
 
     IS_TEST: Final[bool] = os.environ.get("FABRICKS_IS_TEST") in ("TRUE", "true", "True", "1")
