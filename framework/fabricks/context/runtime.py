@@ -20,6 +20,8 @@ def get_config_from_toml():
 
     path = pathlib.Path(os.getcwd())
     while path is not None and not (path / "pyproject.toml").exists():
+        if path == path.parent:
+            break
         path = path.parent
 
     if (path / "pyproject.toml").exists():
