@@ -1,0 +1,105 @@
+---
+- conf:
+    name: test
+    options:
+      secret_scope: bmskv
+      timeouts:
+        step: 3600
+        job: 3600
+        pre_run: 3600
+        post_run: 3600
+        catalog: bms_dna_test
+      workers: 16
+    path_options:
+      storage: abfss://test@$standard/fabricks
+      udfs: fabricks/udfs
+      extenders: fabricks/extenders
+      parsers: fabricks/parsers
+      schedules: fabricks/schedules
+      views: fabricks/views
+      requirements: fabricks/requirements.txt
+    spark_options:
+      sql:
+        spark.sql.files.ignoreMissingFiles: true
+        spark.sql.parquet.compression.codec: zstd
+    bronze:
+      - name: bronze
+        path_options:
+          storage: abfss://test@$standard/bronze
+          runtime: bronze
+        options:
+          order: 101
+    silver:
+      - name: silver
+        path_options:
+          storage: abfss://test@$standard/silver
+          runtime: silver
+        options:
+          order: 201
+          parent: bronze
+          local_checkpoint: true
+    gold:
+      - name: gold
+        path_options:
+          storage: abfss://test@$standard/gold
+          runtime: gold/gold
+        options:
+          timeouts: 
+            job: 1800
+          order: 301
+      - name: core
+        path_options:
+          storage: abfss://test@$standard/core
+          runtime: gold/core
+        options:
+          timeouts: 
+            job: 1800
+          workers: 2
+          order: 302
+      - name: transf
+        path_options:
+          storage: abfss://test@$standard/transf
+          runtime: gold/transf
+        options:
+          timeouts: 
+            job: 1800
+          workers: 2
+          order: 303
+        invoker_options:
+          post_run:
+              - notebook: gold/transf/post_run
+                arguments:
+                  arg1: 1
+      - name: semantic
+        path_options:
+          storage: abfss://semantic@$standard
+          runtime: semantic
+        options:
+          timeouts: 
+            job: 1800
+          workers: 2
+          order: 304
+          schema_drift: true
+        extender_options:  
+          - extender: drop__cols
+        table_options:
+          properties: 
+              delta.minReaderVersion: 1
+              delta.minWriterVersion: 2
+              delta.columnMapping.mode: none
+        spark_options:
+          sql:
+            spark.databricks.delta.properties.defaults.targetFileSize: 1073741824
+            spark.databricks.delta.properties.defaults.tuneFileSizesForRewrites: false
+    powerbi:
+      - name: powerbi
+    databases:
+      - name: expected
+        path_options:
+          storage: abfss://test@$standard/dummy
+    variables:
+      \$datahub: bmestprdeuwdatahubbronze
+      \$datastore: bmsstaprdeuwdatastoresnd
+      \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
+      \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net
+      \$onelake: onelake.dfs.fabric.microsoft.com/Fabricks.Lakehouse/Tables

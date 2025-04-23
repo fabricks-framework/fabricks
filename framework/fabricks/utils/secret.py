@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional
 
-from databricks.sdk.runtime import dbutils
+from databricks.sdk.runtime import dbutils, spark as _spark
 from pyspark.sql import SparkSession
 
 
@@ -32,14 +32,18 @@ _scopes = None
 @lru_cache(maxsize=None)
 def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
     global _scopes
+    
     if not _scopes or secret_scope not in _scopes:  # we get the scopes only once, unless you search for something new
         _scopes = [s.name for s in dbutils.secrets.listScopes()]
+
     assert secret_scope in _scopes, "scope {secret_scope} not found"
+    
     return dbutils.secrets.get(scope=secret_scope, key=name)
 
 
 def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
     secret = _get_secret_from_secret_scope(secret_scope=secret_scope, name=name)
+
     if name.endswith("application-registration"):
         s = json.loads(secret)
         assert s.get("secret"), f"no secret found in {name}"
@@ -58,21 +62,19 @@ def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
 
 def _add_secret_to_spark(key: str, value: str, spark: Optional[SparkSession] = None):
     if spark is None:
-        from databricks.sdk.runtime import spark
-
-        spark = spark
-    assert spark is not None
+        spark = _spark
 
     spark.conf.set(key, value)  # needed for check (invalid configuration value detected for fs.azure.account.key)
-    spark._jsc.hadoopConfiguration().set(key, value)  # type: ignore
+
+    try:
+        spark._jsc.hadoopConfiguration().set(key, value)  # type: ignore
+    except Exception:
+        pass
 
 
 def add_secret_to_spark(secret: Secret, uri: str, spark: Optional[SparkSession] = None):
     if spark is None:
-        from databricks.sdk.runtime import spark
-
-        spark = spark
-    assert spark is not None
+        spark = _spark
 
     if isinstance(secret, ApplicationRegistration):
         _add_secret_to_spark(f"fs.azure.account.auth.type.{uri}", "OAuth", spark=spark)
@@ -88,7 +90,9 @@ def add_secret_to_spark(secret: Secret, uri: str, spark: Optional[SparkSession] 
             f"https://login.microsoftonline.com/{secret.directory_id}/oauth2/token",
             spark=spark,
         )
+
     elif isinstance(secret, AccessKey):
         _add_secret_to_spark(f"fs.azure.account.key.{uri}", secret.key, spark=spark)
+
     else:
         raise ValueError("secret is not valid")

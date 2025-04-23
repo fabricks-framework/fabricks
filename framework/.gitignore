@@ -181,3 +181,14 @@ _buildtest
 # Debug
 🔧.*
 🔎.*
+
+# Random
+(Clone)*
+Untitled Notebook*
+.random
+cache
+2
+dev.*
+debug.*
+test.*
+
