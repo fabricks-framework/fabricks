@@ -65,16 +65,18 @@ try:
         is_job_config_from_yaml = os.environ.get("FABRICKS_IS_JOB_CONFIG_FROM_YAML", "0")
     IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1")
 
-    config_path = pyproject_config.get("config")
+    if config_path := pyproject_config.get("config"):
+        assert pyproject_path is not None  # Cannot be null since we got the config from it
+        config_path = pyproject_path.joinpath(config_path)
+    else:
+        config_path = os.environ.get("FABRICKS_CONFIG")
+        config_path = PATH_RUNTIME.join(config_path).string if config_path else None
+
     if not config_path:
         config_path = PATH_RUNTIME.join(
             "fabricks",
             f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
         ).string
-
-    else:
-        assert pyproject_path is not None  # Cannot be null since we got the config from it
-        config_path = pyproject_path.joinpath(config_path)
 
     PATH_CONFIG: Final[Path] = Path(config_path, assume_git=True)
 
