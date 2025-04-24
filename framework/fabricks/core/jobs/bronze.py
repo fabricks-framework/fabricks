@@ -3,6 +3,7 @@ from typing import Optional, Union, cast
 from fabricks.context import IS_UNITY_CATALOG
 
 if IS_UNITY_CATALOG:
+    from pyspark.sql import Row
     from pyspark.sql.connect.dataframe import DataFrame
 else:
     from pyspark.sql import DataFrame, Row
