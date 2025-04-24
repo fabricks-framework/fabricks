@@ -3,7 +3,14 @@ from typing import List, Optional, Union, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
-from pyspark.sql import DataFrame, SparkSession
+
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame, SparkSession
+
 from pyspark.sql.functions import expr, max
 from pyspark.sql.types import StructType
 from typing_extensions import deprecated

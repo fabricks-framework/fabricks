@@ -3,7 +3,13 @@ from __future__ import annotations
 from typing import Optional, Union
 
 from jinja2 import Environment, PackageLoader
-from pyspark.sql import DataFrame
+
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame
 
 from fabricks.cdc.base.processor import Processor
 from fabricks.context.log import Logger

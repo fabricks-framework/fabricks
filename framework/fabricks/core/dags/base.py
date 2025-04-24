@@ -1,7 +1,13 @@
 import re
 from typing import Optional, cast
 
-from pyspark.sql import DataFrame
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame
+
 from pyspark.sql.functions import expr
 
 from fabricks.context import FABRICKS_STORAGE, SECRET_SCOPE, SPARK

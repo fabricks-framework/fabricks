@@ -3,7 +3,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional, Union
 
-from pyspark.sql import DataFrame, SparkSession
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame, SparkSession
 
 from fabricks.context import DBUTILS, SPARK
 from fabricks.metastore.database import Database

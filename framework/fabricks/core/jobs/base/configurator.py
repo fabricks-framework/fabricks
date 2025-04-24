@@ -2,7 +2,14 @@ from abc import ABC, abstractmethod
 from typing import Optional, Union, cast
 
 from pyspark.dbutils import DBUtils
-from pyspark.sql import DataFrame, SparkSession
+
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame, SparkSession
+
 from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC

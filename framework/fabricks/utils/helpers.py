@@ -3,7 +3,14 @@ from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
 
 from databricks.sdk.runtime import dbutils, spark
-from pyspark.sql import DataFrame
+
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame
+
 from typing_extensions import deprecated
 
 from fabricks.utils.path import Path

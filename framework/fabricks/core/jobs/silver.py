@@ -1,6 +1,12 @@
 from typing import Optional, Union, cast
 
-from pyspark.sql import DataFrame, Row
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame, Row
+
 from pyspark.sql.functions import expr
 
 from fabricks.cdc.nocdc import NoCDC

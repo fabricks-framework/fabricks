@@ -1,6 +1,12 @@
 from typing import Optional
 
-from pyspark.sql import DataFrame
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame
+
 from pyspark.sql.functions import expr
 
 from fabricks.context import SECRET_SCOPE

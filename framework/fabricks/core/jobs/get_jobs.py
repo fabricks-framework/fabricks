@@ -1,7 +1,13 @@
 from dataclasses import dataclass
 from typing import List, Literal, Optional, TypedDict, Union, overload
 
-from pyspark.sql import DataFrame, Row
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame, Row
+
 from pyspark.sql.functions import expr
 
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, PATHS_RUNTIME, SPARK

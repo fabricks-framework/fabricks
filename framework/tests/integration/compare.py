@@ -1,7 +1,14 @@
 from typing import Optional
 
 from pandas.testing import assert_frame_equal
-from pyspark.sql import DataFrame
+
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame
+
 from pyspark.sql.functions import expr, length, lower, when
 from pyspark.sql.types import DoubleType, StringType
 

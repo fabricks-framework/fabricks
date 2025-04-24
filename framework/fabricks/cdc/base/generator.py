@@ -3,7 +3,13 @@ from __future__ import annotations
 from typing import List, Optional, Union
 
 from py4j.protocol import Py4JJavaError
-from pyspark.sql import DataFrame
+
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame
 
 from fabricks.cdc.base.configurator import Configurator
 from fabricks.context.log import Logger

@@ -1,6 +1,11 @@
 from typing import List, Optional, Union, get_args
 
-from pyspark.sql import DataFrame
+from fabricks.context import IS_UNITY_CATALOG
+
+if IS_UNITY_CATALOG:
+    from pyspark.sql.connect.dataframe import DataFrame
+else:
+    from pyspark.sql import DataFrame
 
 from fabricks.utils.path import Path
 from fabricks.utils.read._types import IOModes
