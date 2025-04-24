@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 from typing import Final, List, Optional
 
 import yaml
@@ -62,9 +63,7 @@ try:
     is_job_config_from_yaml = pyproject_config.get("job_config_from_yaml")
     if is_job_config_from_yaml is None:
         is_job_config_from_yaml = os.environ.get("FABRICKS_IS_JOB_CONFIG_FROM_YAML", "0")
-    IS_JOB_CONFIG_FROM_YAML: Final[bool] = is_job_config_from_yaml.lower() in ("true", "1")
-
-    IS_TEST: Final[bool] = os.environ.get("FABRICKS_IS_TEST", "0").lower() in ("true", "1")
+    IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1")
 
     config_path = pyproject_config.get("config")
     if not config_path:
@@ -99,7 +98,7 @@ try:
     conf_options = CONF_RUNTIME.get("options", {})
     assert conf_options, "options mandatory"
 
-    IS_UNITY_CATALOG: Final[bool] = conf_options.get("unity_catalog", False)
+    IS_UNITY_CATALOG: Final[bool] = str(conf_options.get("unity_catalog", "False")).lower() in ("true", "1")
     CATALOG: Optional[str] = conf_options.get("catalog")
 
     if IS_UNITY_CATALOG and not CATALOG:
@@ -139,6 +138,8 @@ try:
     path_requirements = path_options.get("requirements")
     assert path_requirements, "requirements mandatory in path options"
     PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.join(path_requirements)
+
+    DEFAULT_SPARK_CONF = deepcopy(spark.conf.getAll)
 
     def _get_storage_paths(objects: List[dict]) -> dict:
         d = {}
