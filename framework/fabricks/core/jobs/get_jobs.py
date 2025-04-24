@@ -4,7 +4,7 @@ from typing import List, Literal, Optional, TypedDict, Union, overload
 from pyspark.sql import DataFrame, Row
 from pyspark.sql.functions import expr
 
-from fabricks.context import IS_LIVE, PATHS_RUNTIME, SPARK
+from fabricks.context import IS_JOB_CONFIG_FROM_YAML, PATHS_RUNTIME, SPARK
 from fabricks.core.jobs.base._types import Modes, TStep
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.get_job import get_job, get_job_internal
@@ -37,7 +37,7 @@ def get_jobs_internal():
 
 
 def get_jobs_internal_df() -> DataFrame:
-    if IS_LIVE:
+    if IS_JOB_CONFIG_FROM_YAML:
         schema = get_schema_for_type(JobConfGeneric)
 
         def _read_yaml(path: Path):

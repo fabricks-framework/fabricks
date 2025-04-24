@@ -2,7 +2,7 @@ from typing import Optional, Union, cast, overload
 
 from pyspark.sql import Row
 
-from fabricks.context import IS_LIVE, SPARK
+from fabricks.context import IS_JOB_CONFIG_FROM_YAML, SPARK
 from fabricks.core.jobs.base._types import Bronzes, Golds, JobConf, Silvers, TBronze, TGold, TSilver, TStep
 from fabricks.core.jobs.get_job_id import get_job_id
 
@@ -100,7 +100,7 @@ def get_job_conf(
     if row:
         return get_job_conf_internal(step=step, row=row)
 
-    if IS_LIVE:
+    if IS_JOB_CONFIG_FROM_YAML:
         from fabricks.core.steps import get_step
 
         s = get_step(step=step)

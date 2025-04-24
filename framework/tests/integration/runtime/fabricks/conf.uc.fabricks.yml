@@ -9,6 +9,7 @@
         pre_run: 3600
         post_run: 3600
         catalog: bms_dna_test
+        unity_catalog: true
       workers: 16
     path_options:
       storage: abfss://test@$standard/fabricks
@@ -97,9 +98,10 @@
       - name: expected
         path_options:
           storage: abfss://test@$standard/dummy
+    credentials:
+      bmsstatsteuwfabrickssnd.dfs.core.windows.net: bmsstatsteuwfabrickssnd-access-key
     variables:
       \$datahub: bmestprdeuwdatahubbronze
       \$datastore: bmsstaprdeuwdatastoresnd
-      \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$onelake: onelake.dfs.fabric.microsoft.com/Fabricks.Lakehouse/Tables

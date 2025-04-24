@@ -7,7 +7,6 @@ from pyspark.sql import SparkSession
 
 from fabricks.context import PATH_UDFS, SPARK
 from fabricks.context.log import Logger
-from fabricks.core.site_packages import add_site_packages_to_path
 
 UDFS: dict[str, Callable] = {}
 
@@ -102,8 +101,6 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
 
 
 def udf(name: str):
-    add_site_packages_to_path()
-
     def decorator(fn: Callable):
         UDFS[name] = fn
         return fn

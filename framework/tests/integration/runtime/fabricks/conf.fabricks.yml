@@ -105,6 +105,5 @@
     variables:
       \$datahub: bmestprdeuwdatahubbronze
       \$datastore: bmsstaprdeuwdatastoresnd
-      \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$onelake: onelake.dfs.fabric.microsoft.com/Fabricks.Lakehouse/Tables

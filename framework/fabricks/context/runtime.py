@@ -1,5 +1,4 @@
 import os
-import sys
 from typing import Final, List, Optional
 
 import yaml
@@ -33,9 +32,9 @@ def get_config_from_toml():
 
 
 try:
-    pyproject_path, fabricks_cfg = get_config_from_toml()
+    pyproject_path, pyproject_config = get_config_from_toml()
 
-    if runtime := fabricks_cfg.get("runtime"):
+    if runtime := pyproject_config.get("runtime"):
         assert pyproject_path is not None  # Cannot be null since we got the config from it
         runtime = pyproject_path.joinpath(runtime)  # Must resolve relative to pyproject.toml
     else:
@@ -50,9 +49,9 @@ try:
     assert path_runtime, "runtime mandatory in cluster config"
     PATH_RUNTIME: Final[Path] = path_runtime
 
-    if notebooks := fabricks_cfg.get("notebooks"):
-        assert pyproject_path is not None  # Cannot be null since we got the config from it
-        notebooks = pyproject_path.joinpath(notebooks)  # Must resolve relative to pyproject.toml
+    if notebooks := pyproject_config.get("notebooks"):
+        assert pyproject_path is not None
+        notebooks = pyproject_path.joinpath(notebooks)
     else:
         notebooks = os.environ.get("FABRICKS_NOTEBOOKS")
 
@@ -60,17 +59,14 @@ try:
     assert notebooks, "notebooks mandatory"
     PATH_NOTEBOOKS: Final[Path] = Path(str(notebooks), assume_git=True)
 
-    PATH_LIBRARIES = "/dbfs/mnt/fabricks/site-packages"
-    try:
-        spark._sc._python_includes.append(PATH_LIBRARIES)  # type: ignore
-        sys.path.append(PATH_LIBRARIES)
-    except Exception:
-        pass
+    is_job_config_from_yaml = pyproject_config.get("job_config_from_yaml")
+    if is_job_config_from_yaml is None:
+        is_job_config_from_yaml = os.environ.get("FABRICKS_IS_JOB_CONFIG_FROM_YAML", "0")
+    IS_JOB_CONFIG_FROM_YAML: Final[bool] = is_job_config_from_yaml.lower() in ("true", "1")
 
-    IS_TEST: Final[bool] = os.environ.get("FABRICKS_IS_TEST") in ("TRUE", "true", "True", "1")
-    IS_LIVE: Final[bool] = os.environ.get("FABRICKS_IS_LIVE") in ("TRUE", "true", "True", "1")
+    IS_TEST: Final[bool] = os.environ.get("FABRICKS_IS_TEST", "0").lower() in ("true", "1")
 
-    config_path = fabricks_cfg.get("config")
+    config_path = pyproject_config.get("config")
     if not config_path:
         config_path = PATH_RUNTIME.join(
             "fabricks",
@@ -102,6 +98,12 @@ try:
 
     conf_options = CONF_RUNTIME.get("options", {})
     assert conf_options, "options mandatory"
+
+    IS_UNITY_CATALOG: Final[bool] = conf_options.get("unity_catalog", False)
+    CATALOG: Optional[str] = conf_options.get("catalog")
+
+    if IS_UNITY_CATALOG and not CATALOG:
+        raise ValueError("catalog mandatory in options when unity_catalog is enabled")
 
     secret_scope = conf_options.get("secret_scope")
     assert secret_scope, "secret_scope mandatory in options"
@@ -137,8 +139,6 @@ try:
     path_requirements = path_options.get("requirements")
     assert path_requirements, "requirements mandatory in path options"
     PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.join(path_requirements)
-
-    CATALOG: Optional[str] = CONF_RUNTIME.get("options", {}).get("catalog")
 
     def _get_storage_paths(objects: List[dict]) -> dict:
         d = {}

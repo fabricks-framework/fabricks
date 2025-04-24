@@ -5,8 +5,11 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional
 
-from databricks.sdk.runtime import dbutils, spark as _spark
+from databricks.sdk.runtime import dbutils
+from databricks.sdk.runtime import spark as _spark
 from pyspark.sql import SparkSession
+
+from fabricks.context.runtime import IS_UNITY_CATALOG
 
 
 @dataclass
@@ -32,12 +35,12 @@ _scopes = None
 @lru_cache(maxsize=None)
 def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
     global _scopes
-    
+
     if not _scopes or secret_scope not in _scopes:  # we get the scopes only once, unless you search for something new
         _scopes = [s.name for s in dbutils.secrets.listScopes()]
 
     assert secret_scope in _scopes, "scope {secret_scope} not found"
-    
+
     return dbutils.secrets.get(scope=secret_scope, key=name)
 
 
@@ -49,13 +52,16 @@ def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
         assert s.get("secret"), f"no secret found in {name}"
         assert s.get("application_id"), f"no application_id found in {name}"
         assert s.get("directory_id"), f"no directory_id found in {name}"
+
         return ApplicationRegistration(
             secret=s.get("secret"),
             application_id=s.get("application_id"),
             directory_id=s.get("directory_id"),
         )
+
     elif name.endswith("access-key"):
         return AccessKey(key=secret)
+
     else:
         raise ValueError(f"{name} is not valid")
 
@@ -66,10 +72,8 @@ def _add_secret_to_spark(key: str, value: str, spark: Optional[SparkSession] = N
 
     spark.conf.set(key, value)  # needed for check (invalid configuration value detected for fs.azure.account.key)
 
-    try:
+    if not IS_UNITY_CATALOG:
         spark._jsc.hadoopConfiguration().set(key, value)  # type: ignore
-    except Exception:
-        pass
 
 
 def add_secret_to_spark(secret: Secret, uri: str, spark: Optional[SparkSession] = None):

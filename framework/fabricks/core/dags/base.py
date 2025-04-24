@@ -5,10 +5,10 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 
 from fabricks.context import FABRICKS_STORAGE, SECRET_SCOPE, SPARK
+from fabricks.context.secret import AccessKey, get_secret_from_secret_scope
 from fabricks.core.dags.log import DagsTableLogger
 from fabricks.metastore.table import Table
 from fabricks.utils.azure_table import AzureTable
-from fabricks.utils.secret import AccessKey, get_secret_from_secret_scope
 
 
 class BaseDags:

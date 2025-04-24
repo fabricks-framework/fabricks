@@ -17,7 +17,7 @@ from fabricks.utils.azure_table import AzureTable
 
 
 class DagProcessor(BaseDags):
-    def __init__(self, schedule_id: str, schedule: str, step: Union[TStep, str], notebook: bool = False):
+    def __init__(self, schedule_id: str, schedule: str, step: Union[TStep, str], notebook: bool = True):
         self.step = get_step(step=step)
         self.schedule = schedule
 
