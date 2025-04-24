@@ -139,7 +139,7 @@ try:
     assert path_requirements, "requirements mandatory in path options"
     PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.join(path_requirements)
 
-    DEFAULT_SPARK_CONF = deepcopy(spark.conf.getAll)
+    DEFAULT_SPARK_CONF = deepcopy(spark.conf.getAll)  # type: ignore
 
     def _get_storage_paths(objects: List[dict]) -> dict:
         d = {}
