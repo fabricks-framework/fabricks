@@ -5,6 +5,7 @@ import pandas as pd
 from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql.functions import expr
 
+from fabricks.context import CATALOG
 from fabricks.context.log import Logger
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
@@ -13,6 +14,8 @@ from tests.integration._types import paths
 
 def create_empty_delta():
     uri = f"{paths.raw}/delta/empty"
+    if CATALOG:
+        spark.sql(f"use catalog {CATALOG}")
     spark.sql(f"create table if not exists bronze_princess_no_column using delta location '{uri}'")
 
 

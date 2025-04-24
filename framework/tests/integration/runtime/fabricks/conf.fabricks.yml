@@ -103,7 +103,7 @@
       bmesttsteuwdatahubexport.dfs.core.windows.net: datahub-application-registration
       bmestprdeuwdatahubbronze.dfs.core.windows.net: datahub-application-registration
     variables:
-      \$datahub: bmestprdeuwdatahubbronze
-      \$datastore: bmsstaprdeuwdatastoresnd
+      \$datahub: bmestprdeuwdatahubbronze.dfs.core.windows.net
+      \$datastore: bmsstaprdeuwdatastoresnd.dfs.core.windows.net
       \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$onelake: onelake.dfs.fabric.microsoft.com/Fabricks.Lakehouse/Tables

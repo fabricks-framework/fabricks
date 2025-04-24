@@ -12,7 +12,7 @@
         post_run: 3600
       workers: 16
     path_options:
-      storage: abfss://test@$standard/fabricks
+      storage: abfss://test@$standard
       udfs: fabricks/udfs
       extenders: fabricks/extenders
       parsers: fabricks/parsers
@@ -98,10 +98,7 @@
       - name: expected
         path_options:
           storage: abfss://test@$standard/dummy
-    credentials:
-      bmsstatsteuwfabrickssnd.dfs.core.windows.net: bmsstatsteuwfabrickssnd-access-key
     variables:
-      \$datahub: bmestprdeuwdatahubbronze
-      \$datastore: bmsstaprdeuwdatastoresnd
+      \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
+      \$datastore: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net
-      \$onelake: onelake.dfs.fabric.microsoft.com/Fabricks.Lakehouse/Tables

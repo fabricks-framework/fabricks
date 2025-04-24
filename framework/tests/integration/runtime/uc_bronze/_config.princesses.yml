@@ -1,0 +1,114 @@
+---
+# yaml-language-server: $schema=../../job-schema.json
+- job:
+    step: bronze
+    topic: princess
+    item: extend
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: manual
+    tags: [test]
+    options:
+      type: manual
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: drop
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: encrypt
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+      encrypted_columns: [name]
+- job:
+    step: bronze
+    topic: princess
+    item: latest
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+    extender_options:
+      - extender: force_reload
+- job:
+    step: bronze
+    topic: princess
+    item: append
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: schema_drift
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: order_duplicate
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: calculated_column
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+      calculated_columns:
+        order_by: order_by * 2
+- job:
+    step: bronze
+    topic: princess
+    item: check
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: empty
+    options:
+      mode: register
+      uri: abfss://test@$datahub/raw/delta/empty

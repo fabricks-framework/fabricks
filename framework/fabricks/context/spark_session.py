@@ -63,7 +63,7 @@ def build_spark_session(
         keys_to_unset = [key for key in spark_conf if key not in DEFAULT_SPARK_CONF]
         for key in keys_to_unset:
             spark.conf.unset(key)
-            spark.sql(f"reset {key}")
+            spark.sql(f"reset `{key}`")
 
         keys_to_reset = [
             key for key in spark_conf if key in DEFAULT_SPARK_CONF and spark_conf[key] != DEFAULT_SPARK_CONF[key]
