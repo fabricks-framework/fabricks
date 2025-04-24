@@ -91,3 +91,4 @@ dev = [
 runtime = "tests/integration/runtime"
 notebooks = "fabricks/api/notebooks"
 job_config_from_yaml = true
+config = "tests/integration/runtime/fabricks/conf.uc.fabricks.yml"
