@@ -7,7 +7,8 @@ from pyspark.errors.exceptions.base import AnalysisException
 from fabricks.context import IS_UNITY_CATALOG
 
 if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame, SparkSession
+    from pyspark.sql import SparkSession
+    from pyspark.sql.connect.dataframe import DataFrame
 else:
     from pyspark.sql import DataFrame, SparkSession
 
