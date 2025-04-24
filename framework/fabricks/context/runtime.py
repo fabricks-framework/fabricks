@@ -35,11 +35,11 @@ def get_config_from_toml():
 try:
     pyproject_path, pyproject_config = get_config_from_toml()
 
-    if runtime := pyproject_config.get("runtime"):
-        assert pyproject_path is not None  # Cannot be null since we got the config from it
-        runtime = pyproject_path.joinpath(runtime)  # Must resolve relative to pyproject.toml
-    else:
-        runtime = os.environ.get("FABRICKS_RUNTIME")
+    runtime = os.environ.get("FABRICKS_RUNTIME")
+    if runtime is None:
+        if runtime := pyproject_config.get("runtime"):
+            assert pyproject_path is not None  # Cannot be null since we got the config from it
+            runtime = pyproject_path.joinpath(runtime)  # Must resolve relative to pyproject.toml
 
     if runtime is None and pyproject_path is not None:
         runtime = pyproject_path
@@ -50,26 +50,28 @@ try:
     assert path_runtime, "runtime mandatory in cluster config"
     PATH_RUNTIME: Final[Path] = path_runtime
 
-    if notebooks := pyproject_config.get("notebooks"):
-        assert pyproject_path is not None
-        notebooks = pyproject_path.joinpath(notebooks)
-    else:
-        notebooks = os.environ.get("FABRICKS_NOTEBOOKS")
+    notebooks = os.environ.get("FABRICKS_NOTEBOOKS")
+    if notebooks is None:
+        if notebooks := pyproject_config.get("notebooks"):
+            assert pyproject_path is not None
+            notebooks = pyproject_path.joinpath(notebooks)
 
     notebooks = notebooks if notebooks else path_runtime.join("notebooks")
     assert notebooks, "notebooks mandatory"
     PATH_NOTEBOOKS: Final[Path] = Path(str(notebooks), assume_git=True)
 
-    is_job_config_from_yaml = pyproject_config.get("job_config_from_yaml")
+    is_job_config_from_yaml = os.environ.get("FABRICKS_IS_JOB_CONFIG_FROM_YAML", None)
     if is_job_config_from_yaml is None:
-        is_job_config_from_yaml = os.environ.get("FABRICKS_IS_JOB_CONFIG_FROM_YAML", "0")
+        is_job_config_from_yaml = pyproject_config.get("job_config_from_yaml")
+
     IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1")
 
-    if config_path := pyproject_config.get("config"):
-        assert pyproject_path is not None  # Cannot be null since we got the config from it
-        config_path = pyproject_path.joinpath(config_path)
+    config_path = os.environ.get("FABRICKS_CONFIG")
+    if config_path is None:
+        if config_path := pyproject_config.get("config"):
+            assert pyproject_path is not None  # Cannot be null since we got the config from it
+            config_path = pyproject_path.joinpath(config_path)
     else:
-        config_path = os.environ.get("FABRICKS_CONFIG")
         config_path = PATH_RUNTIME.join(config_path).string if config_path else None
 
     if not config_path:
