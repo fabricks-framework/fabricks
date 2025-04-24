@@ -6,7 +6,7 @@
 from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils, spark
-from pyspark.sql import Row
+from pyspark.sql.types import Row
 
 from fabricks.context.log import Logger
 from fabricks.core import get_job

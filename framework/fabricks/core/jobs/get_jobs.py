@@ -6,9 +6,10 @@ from fabricks.context import IS_UNITY_CATALOG
 if IS_UNITY_CATALOG:
     from pyspark.sql.connect.dataframe import DataFrame
 else:
-    from pyspark.sql import DataFrame, Row
+    from pyspark.sql import DataFrame
 
 from pyspark.sql.functions import expr
+from pyspark.sql.types import Row
 
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, PATHS_RUNTIME, SPARK
 from fabricks.core.jobs.base._types import Modes, TStep

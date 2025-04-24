@@ -1,6 +1,6 @@
 from typing import Optional, Union, cast, overload
 
-from pyspark.sql import Row
+from pyspark.sql.types import Row
 
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, SPARK
 from fabricks.core.jobs.base._types import Bronzes, Golds, JobConf, Silvers, TBronze, TGold, TSilver, TStep

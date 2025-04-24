@@ -3,12 +3,12 @@ from typing import Optional, Union, cast
 from fabricks.context import IS_UNITY_CATALOG
 
 if IS_UNITY_CATALOG:
-    from pyspark.sql import Row
     from pyspark.sql.connect.dataframe import DataFrame
 else:
-    from pyspark.sql import DataFrame, Row
+    from pyspark.sql import DataFrame
 
 from pyspark.sql.functions import expr, lit, md5
+from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES

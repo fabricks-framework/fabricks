@@ -5,9 +5,10 @@ from fabricks.context import IS_UNITY_CATALOG
 if IS_UNITY_CATALOG:
     from pyspark.sql.connect.dataframe import DataFrame
 else:
-    from pyspark.sql import DataFrame, Row
+    from pyspark.sql import DataFrame
 
 from pyspark.sql.functions import expr, md5
+from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS

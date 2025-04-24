@@ -1,4 +1,4 @@
-from pyspark.sql import Row
+from pyspark.sql.types import Row
 
 from fabricks.cdc import NoCDC
 from fabricks.context import SPARK
