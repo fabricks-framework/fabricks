@@ -8,7 +8,6 @@ from typing import Optional
 from pyspark.sql import SparkSession
 
 from fabricks.context.runtime import IS_UNITY_CATALOG
-from fabricks.utils.dbutils import dbutils
 from fabricks.utils.spark import spark as _spark
 
 
@@ -34,6 +33,8 @@ _scopes = None
 
 @lru_cache(maxsize=None)
 def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
+    from fabricks.utils.dbutils import dbutils
+
     global _scopes
 
     if not _scopes or secret_scope not in _scopes:  # we get the scopes only once, unless you search for something new
