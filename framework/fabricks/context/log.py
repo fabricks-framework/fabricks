@@ -2,7 +2,7 @@ import logging
 from functools import wraps
 from typing import Callable, cast
 
-from fabricks.context.runtime import FABRICKS_STORAGE, SECRET_SCOPE, IS_UNITY_CATALOG
+from fabricks.context.runtime import FABRICKS_STORAGE, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.utils.azure_table import AzureTable
 from fabricks.utils.log import get_logger
 

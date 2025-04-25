@@ -3,7 +3,7 @@ from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
 
 from fabricks.context import IS_UNITY_CATALOG
-from fabricks.utils.dbutils import dbutils, spark
+from fabricks.utils.spark import spark
 
 if IS_UNITY_CATALOG:
     from pyspark.sql.connect.dataframe import DataFrame
@@ -77,6 +77,8 @@ def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
     Returns:
         None
     """
+    from fabricks.utils.dbutils import dbutils
+
     if timeout is None:
         timeout = 3600
 

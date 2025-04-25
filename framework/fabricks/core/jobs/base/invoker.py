@@ -118,6 +118,8 @@ class Invoker(Checker):
             AssertionError: If the specified path does not exist.
 
         """
+        from fabricks.utils.dbutils import dbutils
+
         if position is None:
             invokers = self.options.invokers.get_list("run")
             assert len(invokers) == 1, "Only one run invoker is allowed"
@@ -148,7 +150,7 @@ class Invoker(Checker):
         assert path is not None
         assert timeout is not None
 
-        self.dbutils.notebook.run(
+        dbutils.notebook.run(
             path.get_notebook_path(),
             timeout,
             {

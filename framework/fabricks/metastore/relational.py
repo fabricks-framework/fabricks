@@ -3,7 +3,6 @@ from typing import Optional
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import SparkSession
 
-from fabricks.context import DBUTILS, SPARK
 from fabricks.context.log import Logger
 from fabricks.metastore.database import Database
 
@@ -14,11 +13,12 @@ class Relational:
         self.levels = levels
 
         if spark is None:
-            spark = SPARK
-        assert spark is not None
-        self.spark: SparkSession = spark
+            from fabricks.utils.spark import spark
 
-        self.dbutils = DBUTILS
+            spark = spark
+
+        assert spark is not None
+        self.spark = spark
 
     @property
     def name(self) -> str:

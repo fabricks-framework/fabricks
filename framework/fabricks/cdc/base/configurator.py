@@ -11,7 +11,7 @@ if IS_UNITY_CATALOG:
 else:
     from pyspark.sql import DataFrame, SparkSession
 
-from fabricks.context import DBUTILS, SPARK
+from fabricks.context import SPARK
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 
@@ -28,8 +28,6 @@ class Configurator(ABC):
             spark = SPARK
         assert spark is not None
         self.spark: SparkSession = spark
-
-        self.dbutils = DBUTILS
 
         self.database = Database(database)
         self.levels = levels
