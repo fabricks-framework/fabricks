@@ -3,7 +3,6 @@ from copy import deepcopy
 from typing import Final, List, Optional
 
 import yaml
-from pyspark.sql import SparkSession
 
 from fabricks.utils.path import Path
 from fabricks.utils.spark import spark

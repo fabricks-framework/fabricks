@@ -72,7 +72,12 @@ def build_spark_session(
             spark.conf.set(key, DEFAULT_SPARK_CONF[key])
             spark.sql(f"set {key} = {DEFAULT_SPARK_CONF[key]}")
 
-    return spark, DBUtils(spark)
+    try:
+        dbutils = DBUtils(spark)
+    except Exception:
+        dbutils = None
+
+    return spark, dbutils
 
 
 def init_spark_session(spark: Optional[SparkSession] = None):
