@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Union, cast
 
-from pyspark.dbutils import DBUtils
 
 from fabricks.context import IS_UNITY_CATALOG
 
@@ -130,10 +129,6 @@ class Configurator(ABC):
             assert _conf is not None
             self._step_conf = cast(dict[str, str], _conf)
         return self._step_conf
-
-    @property
-    def dbutils(self) -> DBUtils:
-        return DBUtils(self.spark)
 
     @property
     def qualified_name(self) -> str:
