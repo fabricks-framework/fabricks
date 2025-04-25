@@ -6,7 +6,7 @@
 from pyspark.errors.exceptions.base import IllegalArgumentException
 
 from fabricks.core.scripts import optimize
-from fabricks.utils.spark import dbutils
+from fabricks.utils.dbutils import dbutils
 
 # COMMAND ----------
 

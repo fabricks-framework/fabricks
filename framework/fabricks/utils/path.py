@@ -2,14 +2,9 @@ import os
 from pathlib import Path as PathlibPath
 from typing import List, Optional, Union
 
-from pyspark.dbutils import DBUtils
-from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.dataframe import DataFrame
 
 from fabricks.utils.spark import spark
-
-spark = SparkSession.builder.getOrCreate()
-dbutils = DBUtils(spark)
 
 
 class Path:
@@ -95,6 +90,8 @@ class Path:
         return self.string.endswith(".sql")
 
     def exists(self) -> bool:
+        from fabricks.utils.dbutils import dbutils
+
         try:
             if self.assume_git:
                 return self.pathlib.exists()
@@ -148,6 +145,8 @@ class Path:
         return out
 
     def _list_fs(self, depth: int) -> List:
+        from fabricks.utils.dbutils import dbutils
+
         paths = dbutils.fs.ls(self.string)
 
         if depth == 1:
@@ -170,6 +169,8 @@ class Path:
         return [c.path for c in children]
 
     def _yield_file_info(self, path: str):
+        from fabricks.utils.dbutils import dbutils
+
         for child in dbutils.fs.ls(path):
             if child.isDir():  # type: ignore
                 yield from self._yield_file_info(child.path)
@@ -177,6 +178,8 @@ class Path:
                 yield dbutils.fs.ls(child.path)[0]
 
     def _yield_fs(self, path: str):
+        from fabricks.utils.dbutils import dbutils
+
         for child in dbutils.fs.ls(path):
             if child.isDir():  # type: ignore
                 yield from self._yield_fs(child.path)
@@ -194,11 +197,15 @@ class Path:
                 yield str(child)
 
     def rm(self):
+        from fabricks.utils.dbutils import dbutils
+
         if self.exists():
             list(self._rm(self.string))
             dbutils.fs.rm(self.string, recurse=True)
 
     def _rm(self, path: str):
+        from fabricks.utils.dbutils import dbutils
+
         try:
             for child in dbutils.fs.ls(path):
                 if child.isDir():  # type: ignore

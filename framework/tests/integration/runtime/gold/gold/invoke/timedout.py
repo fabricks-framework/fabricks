@@ -1,7 +1,7 @@
 # Databricks notebook source
 import time
 
-from fabricks.utils.spark import dbutils
+from fabricks.utils.dbutils import dbutils
 
 # COMMAND ----------
 

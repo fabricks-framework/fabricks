@@ -5,9 +5,9 @@ import pandas as pd
 from pyspark.sql.functions import expr
 
 from fabricks.context.log import Logger
+from fabricks.utils.dbutils import dbutils, spark
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
-from fabricks.utils.spark import dbutils, spark
 from tests.integration._types import paths
 
 

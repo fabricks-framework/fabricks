@@ -4,7 +4,7 @@
 # COMMAND ----------
 
 from fabricks.core.scripts import generate
-from fabricks.utils.spark import dbutils, display
+from fabricks.utils.dbutils import dbutils, display
 
 # COMMAND ----------
 

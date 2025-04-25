@@ -4,7 +4,7 @@ import pytest
 
 from fabricks.context.log import Logger
 from fabricks.core import get_job
-from fabricks.utils.spark import dbutils
+from fabricks.utils.dbutils import dbutils
 
 Logger.setLevel(ERROR)
 

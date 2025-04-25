@@ -10,8 +10,8 @@ import pytest
 
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import Logger
+from fabricks.utils.dbutils import dbutils
 from fabricks.utils.helpers import run_notebook
-from fabricks.utils.spark import dbutils
 
 # COMMAND ----------
 

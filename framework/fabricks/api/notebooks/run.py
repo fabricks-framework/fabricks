@@ -6,7 +6,7 @@
 import json
 
 from fabricks.core.dags.run import run
-from fabricks.utils.spark import dbutils
+from fabricks.utils.dbutils import dbutils
 
 # COMMAND ----------
 

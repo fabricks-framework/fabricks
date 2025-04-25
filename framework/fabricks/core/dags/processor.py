@@ -12,7 +12,7 @@ from fabricks.core.jobs.base._types import TStep
 from fabricks.core.steps.get_step import get_step
 from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable
-from fabricks.utils.spark import dbutils, spark
+from fabricks.utils.dbutils import dbutils, spark
 
 
 class DagProcessor(BaseDags):

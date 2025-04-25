@@ -2,7 +2,7 @@ import re
 from typing import List, Optional, Union, cast
 
 from fabricks.context import IS_UNITY_CATALOG
-from fabricks.utils.spark import dbutils
+from fabricks.utils.dbutils import dbutils
 
 if IS_UNITY_CATALOG:
     from pyspark.sql.connect.dataframe import DataFrame

@@ -3,7 +3,7 @@ from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
 
 from fabricks.context import IS_UNITY_CATALOG
-from fabricks.utils.spark import dbutils, spark
+from fabricks.utils.dbutils import dbutils, spark
 
 if IS_UNITY_CATALOG:
     from pyspark.sql.connect.dataframe import DataFrame

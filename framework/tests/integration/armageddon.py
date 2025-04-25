@@ -7,7 +7,7 @@ from logging import DEBUG
 
 from fabricks.context.log import Logger
 from fabricks.core.scripts.armageddon import armageddon
-from fabricks.utils.spark import dbutils
+from fabricks.utils.dbutils import dbutils
 from tests.integration._types import steps
 
 # COMMAND ----------
