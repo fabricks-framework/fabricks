@@ -73,10 +73,10 @@ class DeleteLogBaseParser(BaseParser):
                 options=self.options.get("read_options"),
                 spark=spark,
             )
-            cols = df.columns
+            df.columns
             return df.withColumn("__operation", lit("delete"))
 
-        except (AnalysisException, Py4JError, SparkConnectGrpcException) as e:
+        except (AnalysisException, Py4JError, SparkConnectGrpcException):
             if stream:
                 df = spark.readStream.table("fabricks.dummy")
                 df = df.selectExpr("'delete' as __operation").where("1 == 2")

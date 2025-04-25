@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 
 from pyspark.sql import SparkSession
 
-from fabricks.context import PATH_UDFS, SPARK
+from fabricks.context import IS_UNITY_CATALOG, PATH_UDFS, SPARK
 from fabricks.context.log import Logger
 
 UDFS: dict[str, Callable] = {}
@@ -84,7 +84,10 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
             spark.sql(path.get_sql())
 
         elif extension == "py":
-            assert path.exists(), f"udf not found ({path.string})"
+            if not IS_UNITY_CATALOG:
+                assert path.exists(), f"udf not found ({path.string})"
+            else:
+                Logger.warning(f"could not check if udf exists ({path.string})")
 
             spec = importlib.util.spec_from_file_location(udf, path.string)
             assert spec, f"no valid udf found ({path.string})"
