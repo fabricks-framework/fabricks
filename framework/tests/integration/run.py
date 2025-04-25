@@ -5,11 +5,10 @@
 
 from logging import DEBUG
 
-from databricks.sdk.runtime import dbutils
-
 from fabricks.context.log import Logger
 from fabricks.core import get_job
 from fabricks.utils.helpers import run_in_parallel
+from fabricks.utils.spark import dbutils
 from tests.integration.utils import landing_to_raw
 
 # COMMAND ----------

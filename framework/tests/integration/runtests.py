@@ -7,11 +7,11 @@ import sys
 from logging import ERROR, INFO
 
 import pytest
-from databricks.sdk.runtime import dbutils
 
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import Logger
 from fabricks.utils.helpers import run_notebook
+from fabricks.utils.spark import dbutils
 
 # COMMAND ----------
 

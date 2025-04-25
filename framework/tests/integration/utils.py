@@ -2,15 +2,13 @@ import os
 from typing import Any, List, Union, cast
 
 import pandas as pd
-from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql.functions import expr
 
-from fabricks.context import CATALOG
 from fabricks.context.log import Logger
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
+from fabricks.utils.spark import dbutils, spark
 from tests.integration._types import paths
-
 
 
 def convert_parquet_to_delta(topic: str):

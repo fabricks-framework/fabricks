@@ -3,18 +3,13 @@ from copy import deepcopy
 from typing import Final, List, Optional
 
 import yaml
+from pyspark.dbutils import DBUtils
+from pyspark.sql import SparkSession
 
 from fabricks.utils.path import Path
 
-
-from pyspark.dbutils import DBUtils
-from databricks.sdk.runtime import *
-from pyspark.sql import SparkSession, DataFrame
-
-
 spark = SparkSession.builder.getOrCreate()
 dbutils = DBUtils(spark)
-
 
 
 def get_config_from_toml():

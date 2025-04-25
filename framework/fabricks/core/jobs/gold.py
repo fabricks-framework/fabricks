@@ -1,9 +1,8 @@
 import re
 from typing import List, Optional, Union, cast
 
-from databricks.sdk.runtime import dbutils
-
 from fabricks.context import IS_UNITY_CATALOG
+from fabricks.utils.spark import dbutils
 
 if IS_UNITY_CATALOG:
     from pyspark.sql.connect.dataframe import DataFrame

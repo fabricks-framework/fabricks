@@ -2,9 +2,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
 
-from databricks.sdk.runtime import dbutils, spark
-
 from fabricks.context import IS_UNITY_CATALOG
+from fabricks.utils.spark import dbutils, spark
 
 if IS_UNITY_CATALOG:
     from pyspark.sql.connect.dataframe import DataFrame

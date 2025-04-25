@@ -1,5 +1,5 @@
 # Databricks notebook source
-from databricks.sdk.runtime import dbutils
+from fabricks.utils.spark import dbutils
 
 # COMMAND ----------
 

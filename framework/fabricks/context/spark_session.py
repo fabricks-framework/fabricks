@@ -1,11 +1,11 @@
 from typing import Optional, Tuple
 
-from databricks.sdk.runtime import spark as _spark
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
 
 from fabricks.context.runtime import CATALOG, CONF_RUNTIME, DEFAULT_SPARK_CONF, SECRET_SCOPE
 from fabricks.context.secret import add_secret_to_spark, get_secret_from_secret_scope
+from fabricks.utils.spark import spark as _spark
 
 
 def add_catalog_to_spark(spark: Optional[SparkSession] = None):

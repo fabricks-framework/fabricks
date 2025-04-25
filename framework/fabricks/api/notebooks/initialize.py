@@ -3,9 +3,8 @@
 
 # COMMAND ----------
 
-from databricks.sdk.runtime import dbutils, display
-
 from fabricks.core.scripts import generate
+from fabricks.utils.spark import dbutils, display
 
 # COMMAND ----------
 

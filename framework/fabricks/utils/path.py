@@ -2,14 +2,15 @@ import os
 from pathlib import Path as PathlibPath
 from typing import List, Optional, Union
 
-from databricks.sdk.runtime import spark
-from pyspark.sql.dataframe import DataFrame
 from pyspark.dbutils import DBUtils
-from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.dataframe import DataFrame
 
+from fabricks.utils.spark import spark
 
 spark = SparkSession.builder.getOrCreate()
 dbutils = DBUtils(spark)
+
 
 class Path:
     def __init__(self, path: Union[str, PathlibPath], assume_git: bool = False):
