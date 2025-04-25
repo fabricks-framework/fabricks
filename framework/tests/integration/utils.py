@@ -12,44 +12,43 @@ from fabricks.utils.path import Path
 from tests.integration._types import paths
 
 
-def create_empty_delta():
-    uri = f"{paths.raw}/delta/empty"
-    if CATALOG:
-        spark.sql(f"use catalog {CATALOG}")
-    spark.sql(f"create table if not exists bronze_princess_no_column using delta location '{uri}'")
-
 
 def convert_parquet_to_delta(topic: str):
-    dfs = []
+    for i in range(1, 4):
+        dfs = []
 
-    for p in [f"{topic}__deletelog", topic]:
-        df = (
-            spark.read.option("pathGlobFilter", "*.parquet")
-            .option("recursiveFileLookup", "True")
-            .option("mergeSchema", "True")
-            .parquet(f"{paths.raw}/{p}")
-        )
-        df = df.selectExpr(
-            "*",
-            "cast(10.52 as decimal (10,1)) as decimalField",
-            "_metadata.file_path as __file_path",
-            "_metadata.file_name as __file_name",
-        )
-        dfs.append(df)
+        root = paths.raw
+        if i > 1:
+            root = root.join(str(i))
 
-    df = concat_dfs(dfs)
-    df = df.withColumn(
-        "__split",
-        expr("split(replace(__file_path, __file_name), '/')"),
-    )
-    df = df.withColumn("__split_size", expr("size(__split)"))
-    df = df.withColumn(
-        "__timestamp",
-        expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"),
-    )
-    df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
-    df = df.drop("__split", "__split_size", "__file_path", "__file_name")
-    df.write.mode("append").option("mergeSchema", "True").format("delta").save(f"{paths.raw}/delta/{topic}")
+        for p in [f"{topic}__deletelog", topic]:
+            df = (
+                spark.read.option("pathGlobFilter", "*.parquet")
+                .option("recursiveFileLookup", "True")
+                .option("mergeSchema", "True")
+                .parquet(f"{root}/{p}")
+            )
+            df = df.selectExpr(
+                "*",
+                "cast(10.52 as decimal (10,1)) as decimalField",
+                "_metadata.file_path as __file_path",
+                "_metadata.file_name as __file_name",
+            )
+            dfs.append(df)
+
+        df = concat_dfs(dfs)
+        df = df.withColumn(
+            "__split",
+            expr("split(replace(__file_path, __file_name), '/')"),
+        )
+        df = df.withColumn("__split_size", expr("size(__split)"))
+        df = df.withColumn(
+            "__timestamp",
+            expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"),
+        )
+        df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
+        df = df.drop("__split", "__split_size", "__file_path", "__file_name")
+        df.write.mode("append").option("mergeSchema", "True").format("delta").save(f"{root}/delta/{topic}")
 
 
 def convert_json_to_parquet(from_dir: Path, to_dir: Path):
@@ -107,15 +106,17 @@ def landing_to_raw(iter: Union[int, List[int]]):
             if str(f).endswith("parquet"):
                 path = Path(f)
 
-                for i in range(1, 3):
-                    to_path = Path(f.replace("landing", "raw").replace(job, ""))
+                for i in range(1, 4):
+                    to_path = f.replace("landing", "raw").replace(job, "")
                     if i > 1:  # needed for unity catalog (cannot use same delta table more than once)
-                        to_path = to_path.join(i)
+                        to_path = to_path.replace("raw", f"raw/{i}")
+                        print(to_path)
+                    to_path = Path(to_path)
+
                     dbutils.fs.cp(path.string, to_path.string)
 
     convert_parquet_to_delta("regent")
     convert_parquet_to_delta("monarch")
-    create_empty_delta()
 
 
 def create_expected_views():

@@ -24,7 +24,11 @@ class View(Relational):
         spark: Optional[SparkSession] = None,
     ) -> str:
         if spark is None:
-            spark = SPARK
+            if isinstance(df, DataFrame):
+                spark = df.sparkSession
+            else:
+                spark = SPARK
+
         assert spark is not None
 
         uuid = str(uuid4().hex)

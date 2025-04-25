@@ -18,7 +18,7 @@
     tags: [test]
     options:
       mode: register
-      uri: abfss://test@$datahub/raw/delta/regent
+      uri: abfss://test@$datahub/raw/2/delta/regent
       keys: [id]
     extender_options:
       - extender:  monarch

@@ -18,7 +18,7 @@
     tags: [test]
     options:
       mode: append
-      uri: abfss://test@$datahub/raw/queen
+      uri: abfss://test@$datahub/raw/2/queen
       parser: monarch
       keys: [id]
       source: queen

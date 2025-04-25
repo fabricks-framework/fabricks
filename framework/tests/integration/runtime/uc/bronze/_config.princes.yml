@@ -15,6 +15,6 @@
     item: deletelog
     options:
       mode: memory
-      uri: abfss://test@$datahub/raw/prince
+      uri: abfss://test@$datahub/raw/2/prince
       parser: monarch
       keys: ['@Id']

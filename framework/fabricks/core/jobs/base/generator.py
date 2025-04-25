@@ -283,7 +283,7 @@ class Generator(Configurator):
 
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
-            global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 ==2 "))
+            global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 == 2"))
             sql = f"select * from {global_temp_view}"
 
             self.cdc.create_table(
@@ -302,7 +302,9 @@ class Generator(Configurator):
             if df:
                 if self.stream:
                     # add dummy stream to be sure that the writeStream will start
-                    dummy_df = self.spark.readStream.table("fabricks.dummy")
+                    spark = df.sparkSession
+
+                    dummy_df = spark.readStream.table("fabricks.dummy")
                     # __metadata is always present
                     dummy_df = dummy_df.withColumn("__metadata", lit(None))
                     dummy_df = dummy_df.select("__metadata")
