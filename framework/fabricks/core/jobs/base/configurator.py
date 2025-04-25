@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Union, cast
 
-
 from fabricks.context import IS_UNITY_CATALOG
 
 if IS_UNITY_CATALOG:

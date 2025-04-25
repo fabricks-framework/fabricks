@@ -34,12 +34,17 @@ class Processor(Invoker):
         return df
 
     def encrypt(self, df: DataFrame) -> DataFrame:
-        from fabricks.utils.dbutils import dbutils
-
         encrypted_columns = self.options.job.get_list("encrypted_columns")
-
         if encrypted_columns:
-            key = dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
+            if not IS_UNITY_CATALOG:
+                from fabricks.utils.dbutils import dbutils
+
+                key = dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
+            else:
+                import os
+
+                key = os.environ.get("FABRICKS_ENCRYPTION_KEY")
+
             assert key, "key not found"
 
             for col in encrypted_columns:
