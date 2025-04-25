@@ -2,6 +2,7 @@ from typing import Optional
 
 from py4j.protocol import Py4JError
 from pyspark.errors.exceptions.base import AnalysisException
+from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 
 from fabricks.context import IS_UNITY_CATALOG
 
@@ -72,20 +73,22 @@ class DeleteLogBaseParser(BaseParser):
                 options=self.options.get("read_options"),
                 spark=spark,
             )
+            cols = df.columns
             return df.withColumn("__operation", lit("delete"))
 
-        except (AnalysisException, Py4JError):
+        except (AnalysisException, Py4JError, SparkConnectGrpcException) as e:
             if stream:
                 df = spark.readStream.table("fabricks.dummy")
                 df = df.selectExpr("'delete' as __operation").where("1 == 2")
                 return df.withColumn("__operation", lit("delete"))
 
     def nullify(self, df: DataFrame) -> DataFrame:
-        for c in [c for c in df.columns if not c.startswith("__")]:
-            df = df.withColumn(
-                c,
-                when(df[f"`{c}`"].cast("string") == "1753-01-01 00:00:00.000", None).otherwise(df[f"`{c}`"]),
-            )
+        if df:
+            for c in [c for c in df.columns if not c.startswith("__")]:
+                df = df.withColumn(
+                    c,
+                    when(df[f"`{c}`"].cast("string") == "1753-01-01 00:00:00.000", None).otherwise(df[f"`{c}`"]),
+                )
         return df
 
     def parse(
