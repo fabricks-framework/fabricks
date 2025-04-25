@@ -106,8 +106,12 @@ def landing_to_raw(iter: Union[int, List[int]]):
         for f in landing.walk():
             if str(f).endswith("parquet"):
                 path = Path(f)
-                to_path = Path(f.replace("landing", "raw").replace(job, ""))
-                dbutils.fs.cp(path.string, to_path.string)
+
+                for i in range(1, 3):
+                    to_path = Path(f.replace("landing", "raw").replace(job, ""))
+                    if i > 1:  # needed for unity catalog (cannot use same delta table more than once)
+                        to_path = to_path.join(i)
+                    dbutils.fs.cp(path.string, to_path.string)
 
     convert_parquet_to_delta("regent")
     convert_parquet_to_delta("monarch")

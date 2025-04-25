@@ -27,7 +27,7 @@
       - name: bronze
         path_options:
           storage: abfss://test@$standard/bronze
-          runtime: bronze
+          runtime: uc/bronze
         options:
           order: 101
     silver:
