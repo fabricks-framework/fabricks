@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
 
-from fabricks.context.runtime import CATALOG, CONF_RUNTIME, DEFAULT_SPARK_CONF, SECRET_SCOPE
+from fabricks.context.runtime import CATALOG, CONF_RUNTIME, DEFAULT_SPARK_CONF, SECRET_SCOPE, IS_UNITY_CATALOG
 from fabricks.context.secret import add_secret_to_spark, get_secret_from_secret_scope
 from fabricks.utils.spark import spark as _spark
 
@@ -54,7 +54,8 @@ def build_spark_session(
         spark = _spark  # type: ignore
 
     add_catalog_to_spark(spark=spark)
-    add_credentials_to_spark(spark=spark)
+    if not IS_UNITY_CATALOG:
+        add_credentials_to_spark(spark=spark)
     add_spark_options_to_spark(spark=spark)
 
     if reset:
