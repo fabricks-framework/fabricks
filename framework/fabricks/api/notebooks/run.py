@@ -44,9 +44,11 @@ assert schedule != "---"
 
 # COMMAND ----------
 
-context = json.loads(dbutils.notebook.entry_point.getDbutils().notebook().getContext().toJson())  # type: ignore
-notebook_id = context.get("tags").get("jobId")
-assert notebook_id is not None
+try:
+    context = json.loads(dbutils.notebook.entry_point.getDbutils().notebook().getContext().toJson())  # type: ignore
+    notebook_id = context.get("tags").get("jobId")
+except:
+    notebook_id = None
 
 # COMMAND ----------
 
