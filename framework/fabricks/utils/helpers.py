@@ -1,17 +1,11 @@
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
 from functools import reduce
 from io import StringIO
-from typing import Any, Callable, Iterable, List, Optional, Union
-
-
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Callable, List, Any, Union
 from threading import local
-import sys
-from io import StringIO
-from contextlib import contextmanager
+from typing import Any, Callable, Iterable, List, Optional, Union
 
 from pyspark.sql import DataFrame
 from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
@@ -45,23 +39,25 @@ def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], worker
 # Thread-local storage for context isolation
 thread_local = local()
 
+
 @contextmanager
 def isolated_context():
     """Context manager that provides isolated stdout and other context variables."""
     # Save original stdout
     original_stdout = sys.stdout
-    
+
     # Create thread-local stdout
     thread_local.stdout = StringIO()
-    
+
     # Redirect stdout to our thread-local version
     sys.stdout = thread_local.stdout
-    
+
     try:
         yield
     finally:
         # Always restore original stdout
         sys.stdout = original_stdout
+
 
 def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set], workers: int = 8) -> List[Any]:
     """
@@ -87,10 +83,10 @@ def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set]
         # Handle DataFrame conversion if needed
         if isinstance(iterable, (DataFrame, CDataFrame)):
             iterable = iterable.collect()
-            
+
         # Submit all tasks to the executor
         futures = {executor.submit(run_with_isolation, item): item for item in iterable}
-        
+
         # Collect results as they complete
         for future in as_completed(futures):
             result = future.result()  # This will raise exceptions naturally
@@ -136,10 +132,10 @@ def explain(df: DataFrame, extended: bool = True):
     # Thread-local storage to avoid global stdout conflicts
     local_stdout = StringIO()
     original_stdout = sys.stdout
-    
+
     # Use a lock to ensure atomic stdout replacement
     stdout_lock = threading.Lock()
-    
+
     with stdout_lock:
         try:
             sys.stdout = local_stdout

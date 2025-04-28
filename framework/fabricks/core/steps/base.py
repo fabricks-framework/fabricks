@@ -130,6 +130,7 @@ class BaseStep:
     def update(self, update_dependencies: Optional[bool] = True):
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
+
         else:
             if not self.database.exists():
                 self.database.create()
