@@ -11,7 +11,7 @@ from fabricks.context import CATALOG
 from fabricks.context.log import Logger
 from fabricks.metastore.database import Database
 from tests.integration._types import paths
-from tests.integration.utils import create_expected_views, git_to_landing, landing_to_raw, create_empty_delta
+from tests.integration.utils import create_empty_delta, create_expected_views, git_to_landing, landing_to_raw
 
 # COMMAND ----------
 
