@@ -49,7 +49,7 @@ def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set]
     out = []
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        iterable = iterable.collect() if (iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
+        iterable = iterable.collect() if isinstance(iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
         futures = {executor.submit(func, i): i for i in iterable}
         for future in as_completed(futures):
             try:
