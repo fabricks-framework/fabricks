@@ -1,4 +1,5 @@
 import re
+import time
 from typing import Optional, cast
 
 from pyspark.sql import DataFrame
@@ -29,7 +30,20 @@ class BaseDags:
     def get_table(self) -> AzureTable:
         if not self._table:
             cs = self.get_connection_string()
-            self._table = AzureTable(f"t{self.schedule_id}", connection_string=cs)
+
+            retries = 3
+            for attempt in range(retries):
+                try:
+                    self._table = AzureTable(f"t{self.schedule_id}", connection_string=cs)
+                except Exception as e:
+                    if attempt < retries - 1:
+                        time.sleep(attempt**attempt)
+                    else:
+                        raise ValueError(f"Failed to create azure table for logs after {retries} attempts: {e}")
+
+        if self._table is None:
+            raise ValueError("Azure table for logs not found")
+
         return self._table
 
     def __enter__(self):
