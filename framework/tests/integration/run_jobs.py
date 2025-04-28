@@ -5,9 +5,10 @@
 
 from logging import DEBUG
 
+from databricks.sdk.runtime import dbutils
+
 from fabricks.context.log import Logger
 from fabricks.core import get_job
-from fabricks.utils.dbutils import dbutils
 from tests.integration._types import paths
 from tests.integration.utils import git_to_landing, landing_to_raw
 

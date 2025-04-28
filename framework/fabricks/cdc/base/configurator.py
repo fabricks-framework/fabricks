@@ -3,13 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional, Union
 
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql import SparkSession
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.context import SPARK
 from fabricks.metastore.database import Database
@@ -108,7 +103,7 @@ class Configurator(ABC):
         return self.change_data_capture in ["scd1", "scd2"]
 
     def get_src(self, src: Union[DataFrame, Table, str]) -> DataFrame:
-        if isinstance(src, DataFrame):
+        if isinstance(src, (DataFrame, CDataFrame)):
             df = src
         elif isinstance(src, Table):
             df = self.table.dataframe

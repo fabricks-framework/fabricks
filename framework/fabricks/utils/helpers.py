@@ -2,14 +2,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
 
-from fabricks.context import IS_UNITY_CATALOG
-from fabricks.utils.spark import spark
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
-
+from databricks.sdk.runtime import spark
+from pyspark.sql import DataFrame
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 from typing_extensions import deprecated
 
 from fabricks.utils.path import Path
@@ -52,7 +47,7 @@ def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set]
     out = []
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        iterable = iterable.collect() if isinstance(iterable, DataFrame) else iterable
+        iterable = iterable.collect() if (iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
         futures = {executor.submit(func, i): i for i in iterable}
         for future in as_completed(futures):
             try:
@@ -77,7 +72,7 @@ def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
     Returns:
         None
     """
-    from fabricks.utils.dbutils import dbutils
+    from databricks.sdk.runtime import dbutils
 
     if timeout is None:
         timeout = 3600

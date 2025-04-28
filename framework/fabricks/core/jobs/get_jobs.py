@@ -1,13 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Literal, Optional, TypedDict, Union, overload
 
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
-
+from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
 

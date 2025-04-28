@@ -3,14 +3,7 @@ from typing import List, Literal, Type, TypeVar, Union, get_args, get_origin
 import yaml
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import parse_obj_as
-
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
-
+from pyspark.sql import DataFrame
 from pyspark.sql.types import (
     ArrayType,
     BooleanType,

@@ -1,14 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Union, cast
 
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql import SparkSession
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame, SparkSession
-
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
@@ -93,7 +86,7 @@ class Configurator(ABC):
     @property
     def spark(self) -> SparkSession:
         if not self._spark:
-            spark, _ = build_spark_session(reset=True)
+            spark = build_spark_session(reset=True)
 
             step_options = self.step_conf.get("spark_options", {})
             step_sql_options = step_options.get("sql", {})

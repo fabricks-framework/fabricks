@@ -1,14 +1,7 @@
 from abc import ABC
 from typing import Callable, Optional, final
 
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql import SparkSession
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame, SparkSession
-
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, expr, from_json, lit
 from pyspark.sql.types import MapType, StringType
 

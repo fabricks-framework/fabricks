@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional
 
+from databricks.sdk.runtime import spark as _spark
 from pyspark.sql import SparkSession
 
 from fabricks.context.runtime import IS_UNITY_CATALOG
-from fabricks.utils.spark import spark as _spark
 
 
 @dataclass
@@ -33,7 +33,7 @@ _scopes = None
 
 @lru_cache(maxsize=None)
 def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
-    from fabricks.utils.dbutils import dbutils
+    from databricks.sdk.runtime import dbutils
 
     global _scopes
 

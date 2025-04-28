@@ -2,10 +2,10 @@ import os
 from typing import Any, List, Union, cast
 
 import pandas as pd
+from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql.functions import expr
 
 from fabricks.context.log import Logger
-from fabricks.utils.dbutils import dbutils, spark
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
 from tests.integration._types import paths

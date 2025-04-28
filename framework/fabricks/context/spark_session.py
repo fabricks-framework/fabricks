@@ -1,11 +1,11 @@
-from typing import Optional, Tuple
+from typing import Optional
 
+from databricks.sdk.runtime import spark as _spark
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
 
 from fabricks.context.runtime import CATALOG, CONF_RUNTIME, DEFAULT_SPARK_CONF, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.secret import add_secret_to_spark, get_secret_from_secret_scope
-from fabricks.utils.spark import spark as _spark
 
 
 def add_catalog_to_spark(spark: Optional[SparkSession] = None):
@@ -49,7 +49,7 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
 def build_spark_session(
     spark: Optional[SparkSession] = None,
     reset: Optional[bool] = False,
-) -> Tuple[SparkSession, DBUtils]:
+) -> SparkSession:
     if spark is None:
         spark = _spark  # type: ignore
 
@@ -73,12 +73,7 @@ def build_spark_session(
             spark.conf.set(key, DEFAULT_SPARK_CONF[key])
             spark.sql(f"set {key} = {DEFAULT_SPARK_CONF[key]}")
 
-    try:
-        dbutils = DBUtils(spark)
-    except Exception:
-        dbutils = None
-
-    return spark, dbutils
+    return spark
 
 
 def init_spark_session(spark: Optional[SparkSession] = None):
@@ -88,4 +83,8 @@ def init_spark_session(spark: Optional[SparkSession] = None):
     build_spark_session(spark=spark)
 
 
-SPARK, DBUTILS = build_spark_session()
+SPARK = build_spark_session()
+try:
+    DBUTILS = DBUtils(SPARK)
+except Exception:
+    DBUTILS = None

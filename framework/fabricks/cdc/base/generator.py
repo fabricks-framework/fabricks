@@ -3,13 +3,8 @@ from __future__ import annotations
 from typing import List, Optional, Union
 
 from py4j.protocol import Py4JJavaError
-
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.cdc.base.configurator import Configurator
 from fabricks.context.log import Logger
@@ -64,7 +59,7 @@ class Generator(Configurator):
         )
 
     def create_or_replace_view(self, src: Union[Table, str], schema_evolution: bool = True, **kwargs):
-        assert not isinstance(src, DataFrame), "dataframe not allowed"
+        assert not isinstance(src, (DataFrame, CDataFrame)), "dataframe not allowed"
 
         assert kwargs["mode"] == "complete", f"{kwargs['mode']} not allowed"
         sql = self.get_query(src, **kwargs)
@@ -110,7 +105,7 @@ class Generator(Configurator):
         overwrite = kwargs.get("overwrite", False)
 
         if self.is_view():
-            assert not isinstance(src, DataFrame), "dataframe not allowed"
+            assert not isinstance(src, (DataFrame, CDataFrame)), "dataframe not allowed"
             self.create_or_replace_view(src=src, **kwargs)
 
         else:

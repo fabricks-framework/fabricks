@@ -3,10 +3,10 @@
 
 # COMMAND ----------
 
+from databricks.sdk.runtime import dbutils
 from pyspark.errors.exceptions.base import IllegalArgumentException
 
 from fabricks.core.scripts import vacuum
-from fabricks.utils.dbutils import dbutils
 
 # COMMAND ----------
 

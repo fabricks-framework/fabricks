@@ -1,10 +1,4 @@
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql import SparkSession
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import DataFrame, SparkSession
 
 from fabricks.core.parsers import parser
 from fabricks.utils.path import Path

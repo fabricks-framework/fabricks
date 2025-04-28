@@ -1,7 +1,7 @@
 # Databricks notebook source
 import json
 
-from fabricks.utils.dbutils import dbutils
+from databricks.sdk.runtime import dbutils
 
 # COMMAND ----------
 

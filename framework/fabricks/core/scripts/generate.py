@@ -1,11 +1,6 @@
 from typing import Tuple
 
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame
 
 from fabricks.core.dags.generator import DagGenerator
 

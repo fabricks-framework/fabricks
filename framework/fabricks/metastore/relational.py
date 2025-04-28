@@ -13,7 +13,7 @@ class Relational:
         self.levels = levels
 
         if spark is None:
-            from fabricks.utils.spark import spark
+            from databricks.sdk.runtime import spark
 
             spark = spark
 

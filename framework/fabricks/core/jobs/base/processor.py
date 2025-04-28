@@ -1,15 +1,9 @@
 from typing import Optional
 
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
-
+from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 
-from fabricks.context import SECRET_SCOPE
+from fabricks.context import IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.log import Logger, flush
 from fabricks.core.jobs.base.error import (
     PostRunCheckFailedException,
@@ -37,7 +31,7 @@ class Processor(Invoker):
         encrypted_columns = self.options.job.get_list("encrypted_columns")
         if encrypted_columns:
             if not IS_UNITY_CATALOG:
-                from fabricks.utils.dbutils import dbutils
+                from databricks.sdk.runtime import dbutils
 
                 key = dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
             else:

@@ -3,13 +3,8 @@ from __future__ import annotations
 from typing import Optional, Union
 
 from jinja2 import Environment, PackageLoader
-
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.cdc.base.generator import Generator
 from fabricks.context.log import Logger
@@ -20,7 +15,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 class Processor(Generator):
     def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
-        if isinstance(src, DataFrame):
+        if isinstance(src, (DataFrame, CDataFrame)):
             name = f"{self.database}_{'_'.join(self.levels)}__data"
             global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False))
             src = f"select * from {global_temp_view}"
@@ -29,7 +24,7 @@ class Processor(Generator):
         return self.spark.sql(sql)
 
     def get_query_context(self, src: Union[DataFrame, Table, str], **kwargs) -> dict:
-        if isinstance(src, DataFrame):
+        if isinstance(src, (DataFrame, CDataFrame)):
             format = "dataframe"
         elif isinstance(src, Table):
             format = "table"

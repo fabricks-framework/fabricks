@@ -1,13 +1,7 @@
 import re
 from typing import List, Optional, Union, cast
 
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
-
+from pyspark.sql import DataFrame
 from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
@@ -111,7 +105,7 @@ class Gold(BaseJob):
             df = self.spark.createDataFrame([{}])  # type: ignore
 
         elif self.options.job.get("notebook"):
-            from fabricks.utils.dbutils import dbutils
+            from databricks.sdk.runtime import dbutils
 
             Logger.debug("run notebook", extra={"job": self})
             path = self.paths.runtime.get_notebook_path()

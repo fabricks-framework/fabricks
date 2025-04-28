@@ -1,12 +1,7 @@
 import json
 from typing import Optional, overload
 
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame
 
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import Logger
@@ -118,7 +113,7 @@ class Invoker(Checker):
             AssertionError: If the specified path does not exist.
 
         """
-        from fabricks.utils.dbutils import dbutils
+        from databricks.sdk.runtime import dbutils
 
         if position is None:
             invokers = self.options.invokers.get_list("run")
@@ -151,9 +146,9 @@ class Invoker(Checker):
         assert timeout is not None
 
         dbutils.notebook.run(
-            path.get_notebook_path(),
-            timeout,
-            {
+            path=path.get_notebook_path(),  # type: ignore
+            timeout_seconds=timeout,  # type: ignore
+            arguments={  # type: ignore
                 "step": self.step,
                 "topic": self.topic,
                 "item": self.item,

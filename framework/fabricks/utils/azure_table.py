@@ -2,13 +2,8 @@ import time
 from typing import List, Optional, Union
 
 from azure.data.tables import TableClient, TableServiceClient
-
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 
 class AzureTable:
@@ -84,7 +79,7 @@ class AzureTable:
                 raise e
 
     def delete(self, data: Union[List, DataFrame, dict]):
-        if isinstance(data, DataFrame):
+        if isinstance(data, (DataFrame, CDataFrame)):
             data = [row.asDict() for row in data.collect()]
         elif not isinstance(data, List):
             data = [data]
@@ -93,7 +88,7 @@ class AzureTable:
         self.submit(operations)
 
     def upsert(self, data: Union[List, DataFrame, dict]):
-        if isinstance(data, DataFrame):
+        if isinstance(data, (DataFrame, CDataFrame)):
             data = [row.asDict() for row in data.collect()]
         elif not isinstance(data, List):
             data = [data]

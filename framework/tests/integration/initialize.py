@@ -5,10 +5,11 @@
 
 from logging import DEBUG
 
+from databricks.sdk.runtime import dbutils, spark
+
 from fabricks.context import CATALOG
 from fabricks.context.log import Logger
 from fabricks.metastore.database import Database
-from fabricks.utils.dbutils import dbutils, spark
 from tests.integration._types import paths
 from tests.integration.utils import create_expected_views, git_to_landing, landing_to_raw
 

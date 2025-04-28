@@ -3,15 +3,7 @@ from typing import Optional
 from py4j.protocol import Py4JError
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.errors.exceptions.connect import SparkConnectGrpcException
-
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql import SparkSession
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame, SparkSession
-
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, lit, when
 
 from fabricks.core.parsers import BaseParser, ParserOptions

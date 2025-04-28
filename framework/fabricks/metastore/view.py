@@ -2,14 +2,8 @@ from typing import Optional, Union
 from uuid import uuid4
 
 import pandas as pd
-
-from fabricks.context import IS_UNITY_CATALOG
-
-if IS_UNITY_CATALOG:
-    from pyspark.sql import SparkSession
-    from pyspark.sql.connect.dataframe import DataFrame
-else:
-    from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.context import SPARK
 from fabricks.context.log import Logger
@@ -24,7 +18,7 @@ class View(Relational):
         spark: Optional[SparkSession] = None,
     ) -> str:
         if spark is None:
-            if isinstance(df, DataFrame):
+            if isinstance(df, (DataFrame, CDataFrame)):
                 spark = df.sparkSession
             else:
                 spark = SPARK
