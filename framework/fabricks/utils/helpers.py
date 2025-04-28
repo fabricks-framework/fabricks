@@ -1,8 +1,17 @@
 import sys
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
 from io import StringIO
 from typing import Any, Callable, Iterable, List, Optional, Union
+
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Callable, List, Any, Union
+from threading import local
+import sys
+from io import StringIO
+from contextlib import contextmanager
 
 from pyspark.sql import DataFrame
 from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
@@ -33,33 +42,62 @@ def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], worker
     return run_in_parallel(func, iter, workers)
 
 
+# Thread-local storage for context isolation
+thread_local = local()
+
+@contextmanager
+def isolated_context():
+    """Context manager that provides isolated stdout and other context variables."""
+    # Save original stdout
+    original_stdout = sys.stdout
+    
+    # Create thread-local stdout
+    thread_local.stdout = StringIO()
+    
+    # Redirect stdout to our thread-local version
+    sys.stdout = thread_local.stdout
+    
+    try:
+        yield
+    finally:
+        # Always restore original stdout
+        sys.stdout = original_stdout
+
 def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set], workers: int = 8) -> List[Any]:
     """
-    Runs the given function in parallel on the elements of the iterable using multiple threads.
+    Runs the given function in parallel on the elements of the iterable using multiple threads
+    with isolated contexts.
 
     Args:
         func (Callable): The function to be executed in parallel.
-        iterable (Union[List, DataFrame, range, set]): The iterable containing the elements on which the function will be executed.
+        iterable (Union[List, DataFrame, range, set]): The iterable containing the elements.
         workers (int, optional): The number of worker threads to use. Defaults to 8.
 
     Returns:
         List[Any]: A list containing the results of the function calls.
-
     """
-    out = []
+    results = []
+
+    # Wrapper to run the function in an isolated context
+    def run_with_isolation(item):
+        with isolated_context():
+            return func(item)
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        iterable = iterable.collect() if isinstance(iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
-        futures = {executor.submit(func, i): i for i in iterable}
+        # Handle DataFrame conversion if needed
+        if isinstance(iterable, (DataFrame, CDataFrame)):
+            iterable = iterable.collect()
+            
+        # Submit all tasks to the executor
+        futures = {executor.submit(run_with_isolation, item): item for item in iterable}
+        
+        # Collect results as they complete
         for future in as_completed(futures):
-            try:
-                r = future.result()
-                if r:
-                    out.append(r)
-            except Exception:
-                pass
+            result = future.result()  # This will raise exceptions naturally
+            if result is not None:
+                results.append(result)
 
-    return out
+    return results
 
 
 def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
@@ -95,13 +133,18 @@ def md5(s: Any):
 
 
 def explain(df: DataFrame, extended: bool = True):
-    old_stdout = sys.stdout
-    new_stdout = StringIO()
-    sys.stdout = new_stdout
-
-    try:
-        df.explain(extended)
-        explain_output = new_stdout.getvalue()
-        return explain_output
-    finally:
-        sys.stdout = old_stdout
+    # Thread-local storage to avoid global stdout conflicts
+    local_stdout = StringIO()
+    original_stdout = sys.stdout
+    
+    # Use a lock to ensure atomic stdout replacement
+    stdout_lock = threading.Lock()
+    
+    with stdout_lock:
+        try:
+            sys.stdout = local_stdout
+            df.explain(extended)
+            explain_output = local_stdout.getvalue()
+            return explain_output
+        finally:
+            sys.stdout = original_stdout
