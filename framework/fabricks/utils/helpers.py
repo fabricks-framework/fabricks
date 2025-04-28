@@ -2,12 +2,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
 
-from databricks.sdk.runtime import spark
 from pyspark.sql import DataFrame
 from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 from typing_extensions import deprecated
 
 from fabricks.utils.path import Path
+from fabricks.utils.spark import spark
 
 
 def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str:

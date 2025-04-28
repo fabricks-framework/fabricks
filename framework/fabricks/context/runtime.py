@@ -3,9 +3,9 @@ from copy import deepcopy
 from typing import Final, List, Optional
 
 import yaml
-from databricks.sdk.runtime import spark
 
 from fabricks.utils.path import Path
+from fabricks.utils.spark import spark
 
 
 def get_config_from_toml():

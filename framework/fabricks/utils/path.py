@@ -2,8 +2,9 @@ import os
 from pathlib import Path as PathlibPath
 from typing import List, Optional, Union
 
-from databricks.sdk.runtime import spark
 from pyspark.sql.dataframe import DataFrame
+
+from fabricks.utils.spark import spark
 
 
 class Path:
