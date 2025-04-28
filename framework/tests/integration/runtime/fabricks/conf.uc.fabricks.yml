@@ -73,7 +73,7 @@
                   arg1: 1
       - name: semantic
         path_options:
-          storage: abfss://semantic@$standard
+          storage: abfss://test@$standard/semantic
           runtime: semantic
         options:
           timeouts: 

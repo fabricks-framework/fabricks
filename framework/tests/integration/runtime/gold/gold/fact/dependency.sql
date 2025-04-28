@@ -1,5 +1,5 @@
 select
-    udf.key(array(f.id, d.time)) as __key,
+    udf_key(array(f.id, d.time)) as __key,
     f.id as id,
     f.monarch as monarch,
     s.__source as role,
