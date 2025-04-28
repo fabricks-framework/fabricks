@@ -2,10 +2,10 @@ from logging import ERROR
 
 import pytest
 
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 
-Logger.setLevel(ERROR)
+DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(231)

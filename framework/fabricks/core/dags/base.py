@@ -7,7 +7,7 @@ from pyspark.sql.functions import expr
 
 from fabricks.context import FABRICKS_STORAGE, SECRET_SCOPE, SPARK
 from fabricks.context.secret import AccessKey, get_secret_from_secret_scope
-from fabricks.core.dags.log import DagsTableLogger
+from fabricks.core.dags.log import TABLE_LOG_HANDLER
 from fabricks.metastore.table import Table
 from fabricks.utils.azure_table import AzureTable
 
@@ -58,8 +58,9 @@ class BaseDags:
         if step:
             q += f" and Step eq '{step}'"
 
-        d = DagsTableLogger.table.query(q)
+        d = TABLE_LOG_HANDLER.table.query(q)
         df = SPARK.createDataFrame(d)
+
         if "Exception" not in df.columns:
             df = df.withColumn("Exception", expr("null"))
         if "NotebookId" not in df.columns:

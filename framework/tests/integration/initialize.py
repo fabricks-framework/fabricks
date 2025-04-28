@@ -8,14 +8,14 @@ from logging import DEBUG
 from databricks.sdk.runtime import dbutils, spark
 
 from fabricks.context import CATALOG
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 from tests.integration._types import paths
 from tests.integration.utils import create_empty_delta, create_expected_views, git_to_landing, landing_to_raw
 
 # COMMAND ----------
 
-Logger.setLevel(DEBUG)
+DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 

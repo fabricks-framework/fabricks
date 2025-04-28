@@ -4,7 +4,7 @@ from typing import Optional, overload
 from pyspark.sql import DataFrame
 
 from fabricks.context import PATH_RUNTIME
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.error import PostRunInvokerFailedException, PreRunInvokerFailedException
 from fabricks.core.schedules import get_schedules
@@ -25,7 +25,7 @@ class Invoker(Checker):
 
         if invokers:
             for i in invokers:
-                Logger.info(f"{position}-invoke", extra={"job": self})
+                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"job": self})
                 try:
                     notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
@@ -55,7 +55,7 @@ class Invoker(Checker):
 
         if invokers:
             for i in invokers:
-                Logger.info(f"{position}-invoke", extra={"step": self.step})
+                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"step": self.step})
                 try:
                     notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
@@ -164,7 +164,7 @@ class Invoker(Checker):
         extenders = self.options.extenders
         for e in extenders:
             name = e.get("extender")
-            Logger.info(f"calling {name}", extra={"job": self})
+            DEFAULT_LOGGER.info(f"calling {name}", extra={"job": self})
             arguments = e.get("arguments") or {}
 
             extender = get_extender(name)
@@ -178,7 +178,7 @@ class Invoker(Checker):
         extenders = self.step_conf.get("extender_options", {})
         for e in extenders:
             name = e.get("extender")
-            Logger.info(f"calling {name}", extra={"step": self.step})
+            DEFAULT_LOGGER.info(f"calling {name}", extra={"step": self.step})
             arguments = e.get("arguments", {})
 
             extender = get_extender(name)

@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.context import SPARK
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.relational import Relational
 
 
@@ -40,7 +40,7 @@ def create_or_replace_global_temp_view(name: str, df: DataFrame, uuid: Optional[
         name = f"{name}__{str(uuid4().hex)}"
 
     job = name.split("__")[0]
-    Logger.debug(f"create global temp view {name}", extra={"job": job})
+    DEFAULT_LOGGER.debug(f"create global temp view {name}", extra={"job": job})
     df.createOrReplaceGlobalTempView(name)
 
     return f"global_temp.{name}"

@@ -4,7 +4,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.types import Row
 
 from fabricks.context import PATH_SCHEDULES, SPARK
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import TStep
 from fabricks.utils.read.read_yaml import read_yaml
 from fabricks.utils.schema import get_schema_for_type
@@ -70,7 +70,7 @@ def create_or_replace_view_internal(name: str, options: DataFrame):
         and j.type not in ('manual')
     """
     sql = fix_sql(sql)
-    Logger.debug(f"schedule - %sql\n---\n{sql}\n---")
+    DEFAULT_LOGGER.debug(f"schedule - %sql\n---\n{sql}\n---")
 
     SPARK.sql(sql)
 
@@ -80,7 +80,7 @@ def create_or_replace_view(name: str):
     try:
         create_or_replace_view_internal(row.name, row.options)
     except Exception:
-        Logger.exception(f"schedule - {row.name} not created nor replaced")
+        DEFAULT_LOGGER.exception(f"schedule - {row.name} not created nor replaced")
 
 
 def create_or_replace_views():
@@ -89,7 +89,7 @@ def create_or_replace_views():
         try:
             create_or_replace_view_internal(row.name, row.options)
         except Exception:
-            Logger.exception(f"schedule - {row.name} not created nor replaced")
+            DEFAULT_LOGGER.exception(f"schedule - {row.name} not created nor replaced")
 
 
 def get_dependencies(name: str) -> DataFrame:

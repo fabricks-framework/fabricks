@@ -3,10 +3,10 @@ from logging import ERROR
 import pytest
 
 from fabricks.context import SPARK
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 
-Logger.setLevel(ERROR)
+DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(151)

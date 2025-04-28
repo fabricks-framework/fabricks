@@ -1,6 +1,6 @@
 from fabricks.context import SPARK
 from fabricks.core.dags.base import BaseDags
-from fabricks.core.dags.log import DagsLogger, DagsTableLogger
+from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 
 
 class DagTerminator(BaseDags):
@@ -14,9 +14,9 @@ class DagTerminator(BaseDags):
 
         error_df = SPARK.sql("select * from {df} where status = 'failed'", df=df)
         for row in error_df.collect():
-            DagsLogger.error(f"{row['job']} failed (🔥)")
+            LOGGER.error(f"{row['job']} failed (🔥)")
 
-        DagsTableLogger.table.truncate_partition(self.schedule_id)
+        TABLE_LOG_HANDLER.table.truncate_partition(self.schedule_id)
 
         table = self.get_table()
         table.drop()

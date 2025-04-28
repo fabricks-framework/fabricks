@@ -2,7 +2,7 @@ import hashlib
 import json
 import logging
 from datetime import datetime
-from typing import Tuple
+from typing import Optional, Tuple
 
 from fabricks.utils.azure_table import AzureTable
 
@@ -64,7 +64,7 @@ class LogFormatter(logging.Formatter):
         return super().format(record)
 
 
-class AzureTableHandler(logging.Handler):
+class AzureTableLogHandler(logging.Handler):
     def __init__(self, table: AzureTable):
         super().__init__()
         self.buffer = []
@@ -139,7 +139,11 @@ class AzureTableHandler(logging.Handler):
         self.buffer = []
 
 
-def get_logger(name: str, level: int, table: AzureTable) -> Tuple[logging.Logger, AzureTableHandler]:
+def get_logger(
+    name: str,
+    level: int,
+    table: Optional[AzureTable] = None,
+) -> Tuple[logging.Logger, Optional[AzureTableLogHandler]]:
     logger = logging.getLogger(name)
     if logger.hasHandlers():
         logger.handlers.clear()
@@ -157,11 +161,15 @@ def get_logger(name: str, level: int, table: AzureTable) -> Tuple[logging.Logger
     console_format = LogFormatter()
     console_handler.setFormatter(console_format)
 
-    # Azure Table handler
-    azure_table_handler = AzureTableHandler(table=table)
-    azure_table_handler.setLevel(level)
+    if table is not None:
+        # Azure Table handler
+        azure_table_handler = AzureTableLogHandler(table=table)
+        azure_table_handler.setLevel(level)
+    else:
+        azure_table_handler = None
 
     logger.addHandler(console_handler)
-    logger.addHandler(azure_table_handler)
+    if azure_table_handler is not None:
+        logger.addHandler(azure_table_handler)
 
     return logger, azure_table_handler

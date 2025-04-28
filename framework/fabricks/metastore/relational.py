@@ -3,7 +3,7 @@ from typing import Optional
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import SparkSession
 
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 
 
@@ -52,10 +52,10 @@ class Relational:
 
     def drop(self):
         if self.is_view():
-            Logger.warning("drop view from metastore", extra={"job": self})
+            DEFAULT_LOGGER.warning("drop view from metastore", extra={"job": self})
             self.spark.sql(f"drop view if exists {self}")
         elif self.is_table():
-            Logger.warning("drop table from metastore", extra={"job": self})
+            DEFAULT_LOGGER.warning("drop table from metastore", extra={"job": self})
             self.spark.sql(f"drop table if exists {self}")
 
     def __str__(self):

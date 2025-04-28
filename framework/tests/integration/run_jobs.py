@@ -7,14 +7,14 @@ from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 from tests.integration._types import paths
 from tests.integration.utils import git_to_landing, landing_to_raw
 
 # COMMAND ----------
 
-Logger.setLevel(DEBUG)
+DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 

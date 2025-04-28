@@ -1,3 +1,3 @@
-from fabricks.context.log import Logger, TableLogger, flush
+from fabricks.context.log import DEFAULT_LOGGER
 
-__all__ = ["Logger", "TableLogger", "flush"]
+__all__ = ["DEFAULT_LOGGER"]

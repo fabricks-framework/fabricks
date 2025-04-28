@@ -7,7 +7,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.cdc.base.configurator import Configurator
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 from fabricks.utils.sqlglot import fix as fix_sql
 
@@ -80,12 +80,12 @@ class Generator(Configurator):
         from __view
         """
         sql = fix_sql(sql)
-        Logger.debug("create or replace view", extra={"job": self, "sql": sql})
+        DEFAULT_LOGGER.debug("create or replace view", extra={"job": self, "sql": sql})
 
         try:
             self.spark.sql(sql)
         except Py4JJavaError:
-            Logger.exception("🙈", extra={"job": self})
+            DEFAULT_LOGGER.exception("🙈", extra={"job": self})
 
     def optimize_table(self):
         liquid_clustering = self.table.get_property("delta.feature.liquid") == "supported"

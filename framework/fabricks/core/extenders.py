@@ -2,7 +2,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from typing import Callable
 
 from fabricks.context import IS_UNITY_CATALOG, PATH_EXTENDERS
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 
 EXTENDERS: dict[str, Callable] = {}
 
@@ -12,7 +12,7 @@ def get_extender(name: str) -> Callable:
     if not IS_UNITY_CATALOG:
         assert path.exists(), "no valid extender found in {path.string}"
     else:
-        Logger.warning(f"could not check if extender exists ({path.string})")
+        DEFAULT_LOGGER.warning(f"could not check if extender exists ({path.string})")
 
     spec = spec_from_file_location(name, path.string)
     assert spec, "no valid extender found in {path.string}"

@@ -4,9 +4,9 @@ import pytest
 
 from fabricks.cdc import NoCDC
 from fabricks.context import SPARK
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 
-Logger.setLevel(ERROR)
+DEFAULT_LOGGER.setLevel(ERROR)
 
 
 # TODO: add check for columns

@@ -6,7 +6,7 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
 from fabricks.core.steps._types import Timeouts
@@ -96,7 +96,7 @@ class BaseStep:
         return self._options
 
     def drop(self):
-        Logger.warning("💣 (drop)", extra={"step": self})
+        DEFAULT_LOGGER.warning("💣 (drop)", extra={"step": self})
 
         fs = self.database.storage
         assert fs
@@ -120,16 +120,16 @@ class BaseStep:
         self.database.drop()
 
     def create(self):
-        Logger.info("🌟 (create)", extra={"step": self})
+        DEFAULT_LOGGER.info("🌟 (create)", extra={"step": self})
 
         if not self.runtime.exists():
-            Logger.warning(f"{self.name} not found in runtime ({self.runtime})")
+            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
         else:
             self.update()
 
     def update(self, update_dependencies: Optional[bool] = True):
         if not self.runtime.exists():
-            Logger.warning(f"{self.name} not found in runtime ({self.runtime})")
+            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
         else:
             if not self.database.exists():
                 self.database.create()
@@ -160,7 +160,7 @@ class BaseStep:
             dfs = run_in_parallel(_get_dependencies, job_df, workers=32)
 
             for e in errors:
-                Logger.error("failed to get dependencies", extra={"step": e})
+                DEFAULT_LOGGER.error("failed to get dependencies", extra={"step": e})
 
             if dfs:
                 df = concat_dfs(dfs)
@@ -185,11 +185,11 @@ class BaseStep:
             return df if not df.isEmpty() else None
 
         except AssertionError as e:
-            Logger.exception("🙈", extra={"step": self})
+            DEFAULT_LOGGER.exception("🙈", extra={"step": self})
             raise e
 
     def create_jobs(self, retry: Optional[bool] = True):
-        Logger.info("create jobs", extra={"step": self})
+        DEFAULT_LOGGER.info("create jobs", extra={"step": self})
 
         errors = []
 
@@ -215,61 +215,61 @@ class BaseStep:
             run_in_parallel(_create_job, df)
             if errors:
                 for e in errors:
-                    Logger.error("not created", extra={"job": e})
+                    DEFAULT_LOGGER.error("not created", extra={"job": e})
 
                 if retry:
-                    Logger.warning("retry create jobs", extra={"step": self})
+                    DEFAULT_LOGGER.warning("retry create jobs", extra={"step": self})
                     self.update_tables()
                     self.update_views()
                     self.create_jobs(retry=False)
 
                 else:
-                    Logger.warning("retry failed", extra={"step": self})
+                    DEFAULT_LOGGER.warning("retry failed", extra={"step": self})
 
         else:
-            Logger.debug("no new job", extra={"step": self})
+            DEFAULT_LOGGER.debug("no new job", extra={"step": self})
 
     def update_jobs(self, drop: Optional[bool] = False):
         df = self.get_jobs()
         if df:
-            Logger.info("update jobs", extra={"step": self})
+            DEFAULT_LOGGER.info("update jobs", extra={"step": self})
             if drop:
                 SCD1("fabricks", self.name, "jobs").table.drop()
 
             SCD1("fabricks", self.name, "jobs").delete_missing(df, keys=["job_id"])
 
         else:
-            Logger.debug("no job", extra={"step": self})
+            DEFAULT_LOGGER.debug("no job", extra={"step": self})
 
     def update_tables(self):
         df = self.database.get_tables()
         if df:
-            Logger.debug("update tables", extra={"step": self})
+            DEFAULT_LOGGER.debug("update tables", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(table)"))
             SCD1("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
 
         else:
-            Logger.debug("no table", extra={"step": self})
+            DEFAULT_LOGGER.debug("no table", extra={"step": self})
 
     def update_views(self):
         df = self.database.get_views()
         if df:
-            Logger.debug("update views", extra={"step": self})
+            DEFAULT_LOGGER.debug("update views", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(view)"))
             SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
 
         else:
-            Logger.debug("no view", extra={"step": self})
+            DEFAULT_LOGGER.debug("no view", extra={"step": self})
 
     def update_dependencies(self):
         df = self.get_dependencies()
         if df:
-            Logger.debug("update dependencies", extra={"step": self})
+            DEFAULT_LOGGER.debug("update dependencies", extra={"step": self})
             df.cache()
             SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"])
 
         else:
-            Logger.debug("no dependency", extra={"step": self})
+            DEFAULT_LOGGER.debug("no dependency", extra={"step": self})
 
     def register(self, update: Optional[bool] = False, drop: Optional[bool] = False):
         def _register(row: Row):

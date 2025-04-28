@@ -5,7 +5,7 @@ from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import TBronze, TSilver
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
@@ -138,7 +138,7 @@ class Silver(BaseJob):
                             assert "__source" in df.columns, "__source not found"
                         dfs.append(df)
                 except Exception as e:
-                    Logger.exception("🙈", extra={"job": self})
+                    DEFAULT_LOGGER.exception("🙈", extra={"job": self})
                     raise e
 
             df = concat_dfs(dfs)
@@ -162,7 +162,7 @@ class Silver(BaseJob):
             dependencies.append(Row(self.job_id, p, "parser"))
 
         if dependencies:
-            Logger.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
             df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
             df = df.transform(self.add_dependency_details)
             return df
@@ -186,7 +186,7 @@ class Silver(BaseJob):
 
             sql = f"create or replace view {self.qualified_name} as {' union all '.join(queries)}"
             sql = fix_sql(sql)
-            Logger.debug("view", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("view", extra={"job": self, "sql": sql})
             self.spark.sql(sql)
 
         else:
@@ -195,7 +195,7 @@ class Silver(BaseJob):
             parent = dep_df.collect()[0].parent
             sql = f"select * from {parent}"
             sql = fix_sql(sql)
-            Logger.debug("view", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("view", extra={"job": self, "sql": sql})
 
             df = self.spark.sql(sql)
             cdc_options = self.get_cdc_context(df)
@@ -205,7 +205,7 @@ class Silver(BaseJob):
         from py4j.protocol import Py4JJavaError
 
         try:
-            Logger.debug("create or replace current view", extra={"job": self})
+            DEFAULT_LOGGER.debug("create or replace current view", extra={"job": self})
 
             df = self.spark.sql(f"select * from {self.qualified_name}")
 
@@ -222,18 +222,18 @@ class Silver(BaseJob):
               {where_clause}
             """
             # sql = fix_sql(sql)
-            # Logger.debug("current view", extra={"job": self, "sql": sql})
+            # DEFAULT_LOGGER.debug("current view", extra={"job": self, "sql": sql})
             self.spark.sql(sql)
 
         except Py4JJavaError:
-            Logger.exception("🙈", extra={"job": self})
+            DEFAULT_LOGGER.exception("🙈", extra={"job": self})
 
     def overwrite(self):
         self.truncate()
         self.run()
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
-        Logger.warning("overwrite schema not allowed", extra={"job": self})
+        DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"job": self})
 
     def get_cdc_context(self, df: DataFrame) -> dict:
         # if dataframe, reference is passed (BUG)
@@ -265,12 +265,12 @@ class Silver(BaseJob):
                   1
                 """
             sql = fix_sql(sql)
-            Logger.debug("check", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("check", extra={"job": self, "sql": sql})
 
             check_df = self.spark.sql(sql)
             if not check_df.isEmpty():
                 rectify = True
-                Logger.debug("rectify enabled", extra={"job": self})
+                DEFAULT_LOGGER.debug("rectify enabled", extra={"job": self})
 
         context = {
             "soft_delete": self.slowly_changing_dimension,
@@ -354,7 +354,7 @@ class Silver(BaseJob):
 
     def drop(self):
         super().drop()
-        Logger.debug("drop current view", extra={"job": self})
+        DEFAULT_LOGGER.debug("drop current view", extra={"job": self})
         self.spark.sql(f"drop view if exists {self.qualified_name}__current")
 
     def optimize(
@@ -364,6 +364,6 @@ class Silver(BaseJob):
         analyze: Optional[bool] = True,
     ):
         if self.mode == "memory":
-            Logger.debug("memory (no optimize)", extra={"job": self})
+            DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
         else:
             super().optimize()

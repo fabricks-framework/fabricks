@@ -6,7 +6,7 @@ from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql.functions import expr
 
 from fabricks.context import CATALOG
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
 from tests.integration._types import paths
@@ -60,7 +60,7 @@ def convert_parquet_to_delta(topic: str):
 
 
 def convert_json_to_parquet(from_dir: Path, to_dir: Path):
-    Logger.debug(f"convert json to parquet - {to_dir}")
+    DEFAULT_LOGGER.debug(f"convert json to parquet - {to_dir}")
 
     dates = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
     files = from_dir.walk()
@@ -71,7 +71,7 @@ def convert_json_to_parquet(from_dir: Path, to_dir: Path):
         folder = os.path.dirname(f)
         to_folder = folder.replace("\\", "/").replace(from_dir.string, to_dir.string)
 
-        Logger.debug(f"{folder} -> {to_folder}")
+        DEFAULT_LOGGER.debug(f"{folder} -> {to_folder}")
         df.coalesce(2).write.format("parquet").mode("overwrite").save(to_folder)
 
         # monarch and regent load
@@ -85,29 +85,29 @@ def convert_json_to_parquet(from_dir: Path, to_dir: Path):
                     elif "queen" in to_folder:
                         to_folder_ = to_folder_.replace("queen", t)
 
-                    Logger.debug(f"{folder} -> {to_folder_}")
+                    DEFAULT_LOGGER.debug(f"{folder} -> {to_folder_}")
                     df.coalesce(1).write.format("parquet").mode("append").save(to_folder_)
 
 
 def git_to_landing():
-    Logger.info("git to landing")
+    DEFAULT_LOGGER.info("git to landing")
     for i in range(1, 12):
         job = f"job{i}"
-        Logger.debug(f"copy json from git to landing ({job})")
+        DEFAULT_LOGGER.debug(f"copy json from git to landing ({job})")
         from_dir = paths.tests.join("data", job)
         to_dir = paths.landing.join(job)
         convert_json_to_parquet(from_dir, to_dir)
 
 
 def landing_to_raw(iter: Union[int, List[int]]):
-    Logger.info("landing to raw")
+    DEFAULT_LOGGER.info("landing to raw")
 
     if isinstance(iter, int):
         iter = [iter]
 
     for i in iter:
         job = f"job{i}"
-        Logger.debug(f"copy parquet from landing to raw ({job})")
+        DEFAULT_LOGGER.debug(f"copy parquet from landing to raw ({job})")
 
         landing = paths.landing.join(job)
         for f in landing.walk():
@@ -128,12 +128,12 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
 
 def create_expected_views():
-    Logger.info("expected - create views")
+    DEFAULT_LOGGER.info("expected - create views")
 
     def _create_views(step: str, cdc: str):
         views = paths.tests.join("expected", step, cdc)
         for v in sorted(views.walk()):
-            Logger.debug(f"create view {v}")
+            DEFAULT_LOGGER.debug(f"create view {v}")
             spark.sql(Path(v).get_sql())
 
     _create_views("silver", "scd2")

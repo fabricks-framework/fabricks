@@ -9,7 +9,7 @@ from typing import Any, cast
 from databricks.sdk.runtime import dbutils, display
 
 import fabricks.core.scripts as s
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core import get_step
 from fabricks.core.jobs.base._types import TStep
@@ -18,7 +18,7 @@ from tests.integration._types import steps
 
 # COMMAND ----------
 
-Logger.setLevel(DEBUG)
+DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 

@@ -2,11 +2,11 @@ from logging import ERROR
 
 import pytest
 
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 from tests.integration.compare import get_last_status
 
-Logger.setLevel(ERROR)
+DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(191)

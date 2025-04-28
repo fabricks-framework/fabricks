@@ -15,11 +15,13 @@ class AzureTable:
         connection_string: Optional[str] = None,
     ):
         self.name = name
+
         if connection_string is None:
             assert storage_account
             assert access_key
             self.storage_account = storage_account
             self.access_key = access_key
+
             connection_string = f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net"
 
         assert connection_string
