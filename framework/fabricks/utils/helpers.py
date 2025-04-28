@@ -1,3 +1,6 @@
+import sys
+from io import StringIO
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
@@ -90,3 +93,17 @@ def md5(s: Any):
 
     md5 = md5(str(s).encode())
     return md5.hexdigest()
+
+
+
+def explain(df: DataFrame, extended:bool=True):
+    old_stdout = sys.stdout
+    new_stdout = StringIO()
+    sys.stdout = new_stdout
+    
+    try:
+        df.explain(extended)
+        explain_output = new_stdout.getvalue()
+        return explain_output
+    finally:
+        sys.stdout = old_stdout
