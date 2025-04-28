@@ -1,8 +1,7 @@
 import sys
-from io import StringIO
-
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
+from io import StringIO
 from typing import Any, Callable, Iterable, List, Optional, Union
 
 from pyspark.sql import DataFrame
@@ -95,12 +94,11 @@ def md5(s: Any):
     return md5.hexdigest()
 
 
-
-def explain(df: DataFrame, extended:bool=True):
+def explain(df: DataFrame, extended: bool = True):
     old_stdout = sys.stdout
     new_stdout = StringIO()
     sys.stdout = new_stdout
-    
+
     try:
         df.explain(extended)
         explain_output = new_stdout.getvalue()

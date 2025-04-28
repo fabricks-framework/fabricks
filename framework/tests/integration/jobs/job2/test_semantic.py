@@ -1,9 +1,22 @@
+import os
+import sys
 from logging import ERROR
+from pathlib import Path
 
 import pytest
 
-from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.metastore.table import Table
+p = Path(os.getcwd())
+while not (p / "pyproject.toml").exists():
+    p = p.parent
+
+root = p.absolute()
+
+if str(root) not in sys.path:
+    sys.path.append(str(root))
+
+
+from fabricks.context.log import DEFAULT_LOGGER  # noqa: E402
+from fabricks.metastore.table import Table  # noqa: E402
 
 DEFAULT_LOGGER.setLevel(ERROR)
 

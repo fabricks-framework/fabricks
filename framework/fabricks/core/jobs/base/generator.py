@@ -3,11 +3,10 @@ from typing import Any, Optional, Union, cast
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
 from pyspark.sql.types import Row
-from pyspark.errors.exceptions.base import PySparkAttributeError
 
 from fabricks.cdc import SCD1
-from fabricks.context.runtime import IS_UNITY_CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.context.runtime import IS_UNITY_CATALOG
 from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.helpers import explain
@@ -35,6 +34,7 @@ class Generator(Configurator):
         from fabricks.context import CATALOG
 
         df = self.get_data(self.stream)
+        assert df is not None
         if not IS_UNITY_CATALOG:
             jvm = df._sc._jvm  # type: ignore
             explain_plan = cast(Any, jvm.PythonSQLUtils).explainString(cast(Any, df._jdf).queryExecution(), "extended")  # type: ignore
