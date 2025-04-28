@@ -156,7 +156,7 @@ class BaseStep:
 
         job_df = self.get_jobs()
         if job_df:
-            job_df = job_df.where("options.type != 'manual'")
+            job_df = job_df.where("not options.type <=> 'manual'")
             dfs = run_in_parallel(_get_dependencies, job_df, workers=32)
 
             for e in errors:
