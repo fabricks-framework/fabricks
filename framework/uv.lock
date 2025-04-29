@@ -625,7 +625,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "sqlglot" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
-    { name = "tqdm" },
 ]
 
 [package.dev-dependencies]
@@ -660,7 +659,6 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "sqlglot", specifier = ">=22.1.1" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.2.1" },
-    { name = "tqdm", specifier = ">=4.67.1" },
 ]
 
 [package.metadata.requires-dev]

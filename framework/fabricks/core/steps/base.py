@@ -153,7 +153,7 @@ class BaseStep:
                 df = job.get_dependencies()
                 if df is not None:
                     return df
-                
+
             except:  # noqa E722
                 DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": job})
                 errors.append(job)

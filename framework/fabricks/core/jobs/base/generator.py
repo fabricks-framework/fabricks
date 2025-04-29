@@ -1,9 +1,9 @@
 from typing import Any, Optional, Union, cast
 
+from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
 from pyspark.sql.types import Row
-from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 
 from fabricks.cdc import SCD1
 from fabricks.context.log import DEFAULT_LOGGER
@@ -35,16 +35,19 @@ class Generator(Configurator):
         from fabricks.context import CATALOG
 
         df = self.get_data(self.stream)
-        try:
-            df.columns
-        except SparkConnectGrpcException:
-            DEFAULT_LOGGER.warning("no dependency found", extra={"job": self})
-            df = None
-        
         if df is not None:
+            try:
+                df.columns
+            except SparkConnectGrpcException:
+                DEFAULT_LOGGER.warning("no dependency found", extra={"job": self})
+                return None
+
             if not IS_UNITY_CATALOG:
                 jvm = df._sc._jvm  # type: ignore
-                explain_plan = cast(Any, jvm.PythonSQLUtils).explainString(cast(Any, df._jdf).queryExecution(), "extended")  # type: ignore
+                explain_plan = cast(Any, jvm.PythonSQLUtils).explainString(  # type: ignore
+                    cast(Any, df._jdf).queryExecution(),
+                    "extended",
+                )
             else:
                 explain_plan = explain(df, extended=True)
 
@@ -66,8 +69,10 @@ class Generator(Configurator):
                 dependencies.append(Row(self.job_id, p, "job"))
 
             if dependencies:
-                DEFAULT_LOGGER.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
-                
+                DEFAULT_LOGGER.debug(
+                    f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self}
+                )
+
                 df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
                 df = df.transform(self.add_dependency_details)
 
