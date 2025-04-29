@@ -6,7 +6,7 @@ from pyspark.sql.functions import expr, md5
 from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
-from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS, LOGLEVEL
+from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job

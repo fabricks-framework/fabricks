@@ -1,13 +1,11 @@
-from typing import Any, Optional, Union, cast
+from typing import Optional, Union, cast
 
-from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
 from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.context.runtime import IS_UNITY_CATALOG
 from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.view import create_or_replace_global_temp_view
 
@@ -57,7 +55,8 @@ class Generator(Configurator):
 
             if dependencies:
                 DEFAULT_LOGGER.debug(
-                    f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self},
+                    f"dependencies ({', '.join([row[1] for row in dependencies])})",
+                    extra={"job": self},
                 )
 
                 df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
@@ -150,7 +149,7 @@ class Generator(Configurator):
 
         except Exception:
             pass
-        
+
         self.cdc.drop()
         self.rm()
 
