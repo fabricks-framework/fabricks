@@ -86,7 +86,7 @@ class Configurator(ABC):
     @property
     def spark(self) -> SparkSession:
         if not self._spark:
-            spark = build_spark_session(reset=True)
+            spark = build_spark_session(app_name=str(self))
 
             step_options = self.step_conf.get("spark_options", {})
             step_sql_options = step_options.get("sql", {})

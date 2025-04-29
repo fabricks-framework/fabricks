@@ -29,7 +29,7 @@ def add_credentials_to_spark(spark: Optional[SparkSession] = None):
 def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = _spark  # type: ignore
-
+    
     # delta default options
     spark.sql("set spark.databricks.delta.schema.autoMerge.enabled = True;")
     spark.sql("set spark.databricks.delta.resolveMergeUpdateStructsByName.enabled = True;")
@@ -46,34 +46,15 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
             spark.conf.set(key, value)
 
 
-def build_spark_session(
-    spark: Optional[SparkSession] = None,
-    reset: Optional[bool] = False,
-) -> SparkSession:
-    if spark is None:
-        spark = _spark  # type: ignore
+def build_spark_session(app_name: Optional[str] = "default") -> SparkSession:
+    _spark = SparkSession.builder.appName(app_name).config("spark.driver.allowMultipleContexts", "true").enableHiveSupport().getOrCreate()
 
-    add_catalog_to_spark(spark=spark)
+    add_catalog_to_spark(spark=_spark)
     if not IS_UNITY_CATALOG:
-        add_credentials_to_spark(spark=spark)
-    add_spark_options_to_spark(spark=spark)
+        add_credentials_to_spark(spark=_spark)
+    add_spark_options_to_spark(spark=_spark)
 
-    if reset:
-        spark_conf = spark.conf.getAll  # type: ignore
-
-        keys_to_unset = [key for key in spark_conf if key not in DEFAULT_SPARK_CONF]
-        for key in keys_to_unset:
-            spark.conf.unset(key)
-            spark.sql(f"reset `{key}`")
-
-        keys_to_reset = [
-            key for key in spark_conf if key in DEFAULT_SPARK_CONF and spark_conf[key] != DEFAULT_SPARK_CONF[key]
-        ]
-        for key in keys_to_reset:
-            spark.conf.set(key, DEFAULT_SPARK_CONF[key])
-            spark.sql(f"set {key} = {DEFAULT_SPARK_CONF[key]}")
-
-    return spark
+    return _spark
 
 
 def init_spark_session(spark: Optional[SparkSession] = None):
@@ -83,7 +64,7 @@ def init_spark_session(spark: Optional[SparkSession] = None):
     build_spark_session(spark=spark)
 
 
-SPARK = build_spark_session()
+SPARK = build_spark_session(app_name="default")
 try:
     DBUTILS = DBUtils(SPARK)
 except Exception:

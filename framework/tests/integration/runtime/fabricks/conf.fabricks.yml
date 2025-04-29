@@ -21,6 +21,7 @@
       sql:
         spark.sql.files.ignoreMissingFiles: true
         spark.sql.parquet.compression.codec: zstd
+        spark.scheduler.mode: FAIR
     bronze:
       - name: bronze
         path_options:
