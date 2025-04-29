@@ -42,6 +42,7 @@ def get_extension(udf: str) -> str:
         r = re.compile(rf"{udf}(\.py|\.sql)")
         if re.match(r, u):
             return u.split(".")[1]
+        
     raise ValueError(f"{udf} not found")
 
 
@@ -52,6 +53,7 @@ def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
 
     df = spark.sql("show functions in default")
     df = df.where(f"function == 'spark_catalog.default.udf_{udf}'")
+    
     return not df.isEmpty()
 
 
