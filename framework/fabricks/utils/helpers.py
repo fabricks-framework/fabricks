@@ -1,13 +1,7 @@
-
 import contextlib
-from io import StringIO
-import sys
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import contextmanager
 from functools import reduce
 from io import StringIO
-from threading import local
 from typing import Any, Callable, Iterable, List, Optional, Union
 
 from pyspark.sql import DataFrame
@@ -34,69 +28,38 @@ def concat_dfs(dfs: Iterable[DataFrame]) -> DataFrame:
     return reduce(lambda x, y: x.unionByName(y, allowMissingColumns=True), dfs)
 
 
-@deprecated("use run_threads instead")
+@deprecated("use run_in_parallel instead")
 def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], workers: int = 8) -> List[Any]:
     return run_in_parallel(func, iter, workers)
 
 
-# Thread-local storage for context isolation
-thread_local = local()
-
-
-@contextmanager
-def isolated_context():
-    """Context manager that provides isolated stdout and other context variables."""
-    # Save original stdout
-    original_stdout = sys.stdout
-
-    # Create thread-local stdout
-    thread_local.stdout = StringIO()
-
-    # Redirect stdout to our thread-local version
-    sys.stdout = thread_local.stdout
-
-    try:
-        yield
-    finally:
-        # Always restore original stdout
-        sys.stdout = original_stdout
-
-
 def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set], workers: int = 8) -> List[Any]:
     """
-    Runs the given function in parallel on the elements of the iterable using multiple threads
-    with isolated contexts.
+    Runs the given function in parallel on the elements of the iterable using multiple threads.
 
     Args:
         func (Callable): The function to be executed in parallel.
-        iterable (Union[List, DataFrame, range, set]): The iterable containing the elements.
+        iterable (Union[List, DataFrame, range, set]): The iterable containing the elements on which the function will be executed.
         workers (int, optional): The number of worker threads to use. Defaults to 8.
 
     Returns:
         List[Any]: A list containing the results of the function calls.
-    """
-    results = []
 
-    # Wrapper to run the function in an isolated context
-    def run_with_isolation(item):
-        with isolated_context():
-            return func(item)
+    """
+    out = []
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        # Handle DataFrame conversion if needed
-        if isinstance(iterable, (DataFrame, CDataFrame)):
-            iterable = iterable.collect()
-
-        # Submit all tasks to the executor
-        futures = {executor.submit(run_with_isolation, item): item for item in iterable}
-
-        # Collect results as they complete
+        iterable = iterable.collect() if (iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
+        futures = {executor.submit(func, i): i for i in iterable}
         for future in as_completed(futures):
-            result = future.result()  # This will raise exceptions naturally
-            if result is not None:
-                results.append(result)
+            try:
+                r = future.result()
+                if r:
+                    out.append(r)
+            except Exception:
+                pass
 
-    return results
+    return out
 
 
 def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
@@ -133,8 +96,8 @@ def md5(s: Any):
 
 def explain(df: DataFrame, extended: bool = True):
     buffer = StringIO()
-    
+
     with contextlib.redirect_stdout(buffer):
         df.explain(extended)
-    
+
     return buffer.getvalue()

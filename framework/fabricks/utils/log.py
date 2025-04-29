@@ -50,7 +50,7 @@ class LogFormatter(logging.Formatter):
         if hasattr(record, "exc_info") and record.exc_info:
             exc_info = record.__dict__.get("exc_info", None)
             extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
-        
+
         if hasattr(record, "sql"):
             extra += f"\n---\n%sql\n{record.__dict__.get('sql')}\n---"
         if hasattr(record, "content"):
