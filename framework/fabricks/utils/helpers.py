@@ -61,7 +61,7 @@ def run_in_parallel(
         else:
             results = list(executor.map(func, iterable))
 
-    return [r for r in results if r is not None]
+    return results
 
 
 def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
@@ -94,12 +94,3 @@ def md5(s: Any):
 
     md5 = md5(str(s).encode())
     return md5.hexdigest()
-
-
-def explain(df: DataFrame, extended: bool = True):
-    buffer = StringIO()
-
-    with contextlib.redirect_stdout(buffer):
-        df.explain(extended)
-
-    return buffer.getvalue()

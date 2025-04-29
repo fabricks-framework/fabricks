@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 
 from pyspark.sql import SparkSession
 
-from fabricks.context import IS_UNITY_CATALOG, PATH_UDFS, SPARK
+from fabricks.context import IS_UNITY_CATALOG, PATH_UDFS, SPARK, CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 
 UDFS: dict[str, Callable] = {}
@@ -51,8 +51,12 @@ def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
         spark = SPARK
     assert spark is not None
 
-    df = spark.sql("show functions in default")
-    df = df.where(f"function == 'spark_catalog.default.udf_{udf}'")
+    df = spark.sql("show user functions in default")
+
+    if CATALOG:
+        df = df.where(f"function == '{CATALOG}.default.udf_{udf}'")
+    else:
+        df = df.where(f"function == 'spark_catalog.default.udf_{udf}'")
 
     return not df.isEmpty()
 

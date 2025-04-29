@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Union, cast
 
 from pyspark.sql import DataFrame
@@ -5,7 +6,7 @@ from pyspark.sql.functions import expr, md5
 from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
-from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
+from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS, LOGLEVEL
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
@@ -151,22 +152,25 @@ class BaseStep:
             job = get_job(step=self.name, job_id=row["job_id"])
             try:
                 df = job.get_dependencies()
-                if df is not None:
-                    return df
+                return df
 
-            except:  # noqa E722
+            except Exception as e:  # noqa E722
                 DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": job})
                 errors.append(job)
 
         job_df = self.get_jobs()
         if job_df:
             job_df = job_df.where("not options.type <=> 'manual'")
-            dfs = run_in_parallel(_get_dependencies, job_df, workers=32, progress_bar=True)
+
+            DEFAULT_LOGGER.setLevel(logging.CRITICAL)
+            dfs = run_in_parallel(_get_dependencies, job_df, workers=16, progress_bar=True)
+            DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
             for e in errors:
                 DEFAULT_LOGGER.error("failed to get dependencies", extra={"step": e})
 
             if dfs:
+                dfs = [d for d in dfs if d is not None]
                 df = concat_dfs(dfs)
                 return df if not df.isEmpty() else None
 
@@ -217,7 +221,10 @@ class BaseStep:
                 view_df = view_df.withColumn("job_id", expr("md5(view)"))
                 df = df.join(view_df, "job_id", how="left_anti")
 
-            run_in_parallel(_create_job, df)
+            DEFAULT_LOGGER.setLevel(logging.CRITICAL)
+            run_in_parallel(_create_job, df, workers=16, progress_bar=True)
+            DEFAULT_LOGGER.setLevel(LOGLEVEL)
+
             if errors:
                 for e in errors:
                     DEFAULT_LOGGER.error("not created", extra={"job": e})
@@ -226,6 +233,7 @@ class BaseStep:
                     DEFAULT_LOGGER.warning("retry create jobs", extra={"step": self})
                     self.update_tables()
                     self.update_views()
+
                     self.create_jobs(retry=False)
 
                 else:
@@ -293,8 +301,11 @@ class BaseStep:
             table_df = self.database.get_tables()
             if table_df:
                 df = df.join(table_df, "job_id", how="left_anti")
+
         if df:
-            run_in_parallel(_register, df, workers=16)
+            DEFAULT_LOGGER.setLevel(logging.CRITICAL)
+            run_in_parallel(_register, df, workers=16, progress_bar=True)
+            DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
     def __str__(self):
         return self.name

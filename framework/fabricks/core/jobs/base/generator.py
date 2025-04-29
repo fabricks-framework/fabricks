@@ -10,7 +10,6 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.runtime import IS_UNITY_CATALOG
 from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.utils.helpers import explain
 
 
 class Generator(Configurator):
@@ -36,20 +35,7 @@ class Generator(Configurator):
 
         df = self.get_data(self.stream)
         if df is not None:
-            try:
-                df.columns
-            except SparkConnectGrpcException:
-                DEFAULT_LOGGER.warning("no dependency found", extra={"job": self})
-                return None
-
-            if not IS_UNITY_CATALOG:
-                jvm = df._sc._jvm  # type: ignore
-                explain_plan = cast(Any, jvm.PythonSQLUtils).explainString(  # type: ignore
-                    cast(Any, df._jdf).queryExecution(),
-                    "extended",
-                )
-            else:
-                explain_plan = explain(df, extended=True)
+            explain_plan = self.spark.sql("explain extended select * from {df}", df=df).collect()[0][0]
 
             if CATALOG is None:
                 r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
@@ -61,6 +47,7 @@ class Generator(Configurator):
             matches = re.findall(r, explain_plan)
             matches = [m.replace("__current", "") for m in matches]
             matches = list(set(matches))
+
             for m in matches:
                 dependencies.append(Row(self.job_id, m, "parser"))
 
@@ -70,7 +57,7 @@ class Generator(Configurator):
 
             if dependencies:
                 DEFAULT_LOGGER.debug(
-                    f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self}
+                    f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self},
                 )
 
                 df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
@@ -160,8 +147,10 @@ class Generator(Configurator):
             ).collect()[0]
             if cast(int, row.count) > 0:
                 DEFAULT_LOGGER.warning(f"{row.count} children found", extra={"job": self, "content": row.children})
+
         except Exception:
             pass
+        
         self.cdc.drop()
         self.rm()
 
