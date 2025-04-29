@@ -34,7 +34,7 @@ def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], worker
 
 
 def run_in_parallel(
-    func: Callable, iterable: Union[List, DataFrame, range, set], workers: int = 8, progress_bar: bool = False
+    func: Callable, iterable: Union[List, DataFrame, range, set], workers: int = 8, progress_bar: bool = False,
 ) -> List[Any]:
     """
     Runs the given function in parallel on the elements of the iterable using multiple threads.
@@ -58,7 +58,7 @@ def run_in_parallel(
         else:
             results = list(executor.map(func, iterable))
 
-    return results
+    return [r for r in results if r is not None]
 
 
 def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):

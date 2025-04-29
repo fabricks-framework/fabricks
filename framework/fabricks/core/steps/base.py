@@ -151,15 +151,17 @@ class BaseStep:
             job = get_job(step=self.name, job_id=row["job_id"])
             try:
                 df = job.get_dependencies()
-                return df
+                if df is not None:
+                    return df
+                
             except:  # noqa E722
-                DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": self})
+                DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": job})
                 errors.append(job)
 
         job_df = self.get_jobs()
         if job_df:
             job_df = job_df.where("not options.type <=> 'manual'")
-            dfs = run_in_parallel(_get_dependencies, job_df, workers=32)
+            dfs = run_in_parallel(_get_dependencies, job_df, workers=32, progress_bar=True)
 
             for e in errors:
                 DEFAULT_LOGGER.error("failed to get dependencies", extra={"step": e})

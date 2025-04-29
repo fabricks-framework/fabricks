@@ -3,6 +3,7 @@ from typing import Any, Optional, Union, cast
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
 from pyspark.sql.types import Row
+from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 
 from fabricks.cdc import SCD1
 from fabricks.context.log import DEFAULT_LOGGER
@@ -34,35 +35,44 @@ class Generator(Configurator):
         from fabricks.context import CATALOG
 
         df = self.get_data(self.stream)
-        assert df is not None
-        if not IS_UNITY_CATALOG:
-            jvm = df._sc._jvm  # type: ignore
-            explain_plan = cast(Any, jvm.PythonSQLUtils).explainString(cast(Any, df._jdf).queryExecution(), "extended")  # type: ignore
-        else:
-            explain_plan = explain(df, extended=True)
+        try:
+            df.columns
+        except SparkConnectGrpcException:
+            DEFAULT_LOGGER.warning("no dependency found", extra={"job": self})
+            df = None
+        
+        if df is not None:
+            if not IS_UNITY_CATALOG:
+                jvm = df._sc._jvm  # type: ignore
+                explain_plan = cast(Any, jvm.PythonSQLUtils).explainString(cast(Any, df._jdf).queryExecution(), "extended")  # type: ignore
+            else:
+                explain_plan = explain(df, extended=True)
 
-        if CATALOG is None:
-            r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
-        else:
-            r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
+            if CATALOG is None:
+                r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
+            else:
+                r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
 
-        dependencies = []
+            dependencies = []
 
-        matches = re.findall(r, explain_plan)
-        matches = list(set(matches))
-        for m in matches:
-            dependencies.append(Row(self.job_id, m, "parser"))
+            matches = re.findall(r, explain_plan)
+            matches = [m.replace("__current", "") for m in matches]
+            matches = list(set(matches))
+            for m in matches:
+                dependencies.append(Row(self.job_id, m, "parser"))
 
-        parents = self.options.job.get_list("parents") or []
-        for p in parents:
-            dependencies.append(Row(self.job_id, p, "job"))
+            parents = self.options.job.get_list("parents") or []
+            for p in parents:
+                dependencies.append(Row(self.job_id, p, "job"))
 
-        if dependencies:
-            DEFAULT_LOGGER.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
-            df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
-            df = df.transform(self.add_dependency_details)
-            assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
-            return df
+            if dependencies:
+                DEFAULT_LOGGER.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
+                
+                df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
+                df = df.transform(self.add_dependency_details)
+
+                assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
+                return df
 
     def rm(self):
         """
