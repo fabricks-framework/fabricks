@@ -153,6 +153,7 @@ class BaseStep:
                 df = job.get_dependencies()
                 return df
             except:  # noqa E722
+                DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": self})
                 errors.append(job)
 
         job_df = self.get_jobs()
@@ -199,6 +200,7 @@ class BaseStep:
             try:
                 job.create()
             except:  # noqa E722
+                DEFAULT_LOGGER.exception("not created", extra={"job": self})
                 errors.append(job)
 
         df = self.get_jobs()

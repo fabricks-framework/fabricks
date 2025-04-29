@@ -1,3 +1,6 @@
+
+import contextlib
+from io import StringIO
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -129,18 +132,9 @@ def md5(s: Any):
 
 
 def explain(df: DataFrame, extended: bool = True):
-    # Thread-local storage to avoid global stdout conflicts
-    local_stdout = StringIO()
-    original_stdout = sys.stdout
-
-    # Use a lock to ensure atomic stdout replacement
-    stdout_lock = threading.Lock()
-
-    with stdout_lock:
-        try:
-            sys.stdout = local_stdout
-            df.explain(extended)
-            explain_output = local_stdout.getvalue()
-            return explain_output
-        finally:
-            sys.stdout = original_stdout
+    buffer = StringIO()
+    
+    with contextlib.redirect_stdout(buffer):
+        df.explain(extended)
+    
+    return buffer.getvalue()
