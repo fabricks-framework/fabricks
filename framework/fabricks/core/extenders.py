@@ -12,7 +12,7 @@ def get_extender(name: str) -> Callable:
     if not IS_UNITY_CATALOG:
         assert path.exists(), "no valid extender found in {path.string}"
     else:
-        DEFAULT_LOGGER.warning(f"could not check if extender exists ({path.string})")
+        DEFAULT_LOGGER.debug(f"could not check if extender exists ({path.string})")
 
     spec = spec_from_file_location(name, path.string)
     assert spec, "no valid extender found in {path.string}"

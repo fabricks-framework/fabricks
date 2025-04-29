@@ -87,7 +87,7 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
             if not IS_UNITY_CATALOG:
                 assert path.exists(), f"udf not found ({path.string})"
             else:
-                DEFAULT_LOGGER.warning(f"could not check if udf exists ({path.string})")
+                DEFAULT_LOGGER.debug(f"could not check if udf exists ({path.string})")
 
             spec = importlib.util.spec_from_file_location(udf, path.string)
             assert spec, f"no valid udf found ({path.string})"
