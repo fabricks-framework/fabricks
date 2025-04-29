@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Final, List, Optional
 
@@ -70,6 +71,26 @@ try:
         is_debugmode = pyproject_config.get("debugmode")
 
     IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1")
+
+    loglevel = os.environ.get("FABRICKS_LOGLEVEL", None)
+    if loglevel is None:
+        loglevel = pyproject_config.get("loglevel")
+
+    loglevel = loglevel.upper() if loglevel else "INFO"
+    if loglevel == "DEBUG":
+        _loglevel = logging.DEBUG
+    elif loglevel == "INFO":
+        _loglevel = logging.INFO
+    elif loglevel == "WARNING":
+        _loglevel = logging.WARNING
+    elif loglevel == "ERROR":
+        _loglevel = logging.ERROR
+    elif loglevel == "CRITICAL":
+        _loglevel = logging.CRITICAL
+    else:
+        raise ValueError(f"{loglevel} not allowed. Use DEBUG, INFO, WARNING, ERROR or CRITICAL")
+
+    LOGLEVEL = _loglevel
 
     config_path = os.environ.get("FABRICKS_CONFIG")
     if config_path is None:

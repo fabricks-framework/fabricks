@@ -20,7 +20,7 @@ else:
 
 
 table = AzureTable("dags", storage_account=storage_account, access_key=access_key)
-Logger, TableLogHandler = get_logger("dags", logging.DEBUG, table=table, debugmode=False)
+Logger, TableLogHandler = get_logger("dags", logging.INFO, table=table, debugmode=False)
 
 LOGGER: Final[logging.Logger] = Logger
 assert TableLogHandler is not None

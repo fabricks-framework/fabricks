@@ -1,5 +1,5 @@
 import contextlib
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from io import StringIO
 from typing import Any, Callable, Iterable, List, Optional, Union
@@ -33,7 +33,9 @@ def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], worker
     return run_in_parallel(func, iter, workers)
 
 
-def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set], workers: int = 8) -> List[Any]:
+def run_in_parallel(
+    func: Callable, iterable: Union[List, DataFrame, range, set], workers: int = 8, progress_bar: bool = False
+) -> List[Any]:
     """
     Runs the given function in parallel on the elements of the iterable using multiple threads.
 
@@ -46,20 +48,17 @@ def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set]
         List[Any]: A list containing the results of the function calls.
 
     """
-    out = []
+    iterable = iterable.collect() if isinstance(iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        iterable = iterable.collect() if (iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
-        futures = {executor.submit(func, i): i for i in iterable}
-        for future in as_completed(futures):
-            try:
-                r = future.result()
-                if r:
-                    out.append(r)
-            except Exception:
-                pass
+        if progress_bar:
+            from tqdm import tqdm
 
-    return out
+            results = list(tqdm(executor.map(func, iterable), total=len(iterable)))
+        else:
+            results = list(executor.map(func, iterable))
+
+    return results
 
 
 def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
