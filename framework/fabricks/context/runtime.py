@@ -1,5 +1,4 @@
 import os
-from copy import deepcopy
 from typing import Final, List, Optional
 
 import yaml
@@ -142,8 +141,6 @@ try:
     path_requirements = path_options.get("requirements")
     assert path_requirements, "requirements mandatory in path options"
     PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.join(path_requirements)
-
-    DEFAULT_SPARK_CONF = deepcopy(spark.conf.getAll)  # type: ignore
 
     def _get_storage_paths(objects: List[dict]) -> dict:
         d = {}
