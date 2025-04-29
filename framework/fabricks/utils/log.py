@@ -8,8 +8,12 @@ from fabricks.utils.azure_table import AzureTable
 
 
 class LogFormatter(logging.Formatter):
-    def __init__(self):
+    def __init__(self, debugmode: Optional[bool] = False):
         super().__init__(fmt="%(levelname)s%(prefix)s%(message)s [%(timestamp)s]%(extra)s")
+
+        if debugmode is None:
+            debugmode = False
+        self.debugmode = debugmode
 
     COLORS = {
         logging.DEBUG: "\033[36m",
@@ -51,10 +55,11 @@ class LogFormatter(logging.Formatter):
             exc_info = record.__dict__.get("exc_info", None)
             extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
 
-        if hasattr(record, "sql"):
-            extra += f"\n---\n%sql\n{record.__dict__.get('sql')}\n---"
-        if hasattr(record, "content"):
-            extra += f"\n---\n{record.__dict__.get('content')}\n---"
+        if self.debugmode:
+            if hasattr(record, "sql"):
+                extra += f"\n---\n%sql\n{record.__dict__.get('sql')}\n---"
+            if hasattr(record, "content"):
+                extra += f"\n---\n{record.__dict__.get('content')}\n---"
 
         record.levelname = levelname
         record.prefix = prefix
@@ -65,10 +70,15 @@ class LogFormatter(logging.Formatter):
 
 
 class AzureTableLogHandler(logging.Handler):
-    def __init__(self, table: AzureTable):
+    def __init__(self, table: AzureTable, debugmode: Optional[bool] = False):
         super().__init__()
+
         self.buffer = []
         self.table = table
+
+        if debugmode is None:
+            debugmode = False
+        self.debugmode = debugmode
 
     def emit(self, record):
         if hasattr(record, "target"):
@@ -112,10 +122,11 @@ class AzureTableLogHandler(logging.Handler):
                     }
                     r["Exception"] = json.dumps(d)
 
-            if hasattr(record, "content"):
-                r["Content"] = json.dumps(record.__dict__.get("content", ""))[:1000]
-            if hasattr(record, "sql"):
-                r["Sql"] = record.__dict__.get("sql", "")[:1000]
+            if self.debugmode:
+                if hasattr(record, "content"):
+                    r["Content"] = json.dumps(record.__dict__.get("content", ""))[:1000]
+                if hasattr(record, "sql"):
+                    r["Sql"] = record.__dict__.get("sql", "")[:1000]
 
             r["PartitionKey"] = record.__dict__.get("partition_key", "default")
             if hasattr(record, "row_key"):
@@ -143,6 +154,7 @@ def get_logger(
     name: str,
     level: int,
     table: Optional[AzureTable] = None,
+    debugmode: Optional[bool] = False,
 ) -> Tuple[logging.Logger, Optional[AzureTableLogHandler]]:
     logger = logging.getLogger(name)
     if logger.hasHandlers():
@@ -158,12 +170,12 @@ def get_logger(
     # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(level)
-    console_format = LogFormatter()
+    console_format = LogFormatter(debugmode=debugmode)
     console_handler.setFormatter(console_format)
 
     if table is not None:
         # Azure Table handler
-        azure_table_handler = AzureTableLogHandler(table=table)
+        azure_table_handler = AzureTableLogHandler(table=table, debugmode=debugmode)
         azure_table_handler.setLevel(level)
     else:
         azure_table_handler = None

@@ -65,6 +65,12 @@ try:
 
     IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1")
 
+    is_debugmode = os.environ.get("FABRICKS_IS_DEBUGMODE", None)
+    if is_debugmode is None:
+        is_debugmode = pyproject_config.get("debugmode")
+
+    IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1")
+
     config_path = os.environ.get("FABRICKS_CONFIG")
     if config_path is None:
         if config_path := pyproject_config.get("config"):
