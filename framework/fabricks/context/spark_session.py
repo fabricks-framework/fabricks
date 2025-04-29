@@ -3,7 +3,7 @@ from typing import Optional
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
 
-from fabricks.context.runtime import CATALOG, CONF_RUNTIME, DEFAULT_SPARK_CONF, IS_UNITY_CATALOG, SECRET_SCOPE
+from fabricks.context.runtime import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.secret import add_secret_to_spark, get_secret_from_secret_scope
 from fabricks.utils.spark import spark as _spark
 
@@ -29,7 +29,7 @@ def add_credentials_to_spark(spark: Optional[SparkSession] = None):
 def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = _spark  # type: ignore
-    
+
     # delta default options
     spark.sql("set spark.databricks.delta.schema.autoMerge.enabled = True;")
     spark.sql("set spark.databricks.delta.resolveMergeUpdateStructsByName.enabled = True;")
@@ -46,8 +46,18 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
             spark.conf.set(key, value)
 
 
-def build_spark_session(app_name: Optional[str] = "default") -> SparkSession:
-    _spark = SparkSession.builder.appName(app_name).config("spark.driver.allowMultipleContexts", "true").enableHiveSupport().getOrCreate()
+def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional[str] = "default") -> SparkSession:
+    if spark is not None:
+        _spark = spark
+        _spark.appName(app_name)  # type: ignore
+
+    else:
+        _spark = (
+            SparkSession.builder.appName(app_name)  # type: ignore
+            .config("spark.driver.allowMultipleContexts", "true")
+            .enableHiveSupport()
+            .getOrCreate()
+        )
 
     add_catalog_to_spark(spark=_spark)
     if not IS_UNITY_CATALOG:
