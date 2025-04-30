@@ -7,7 +7,7 @@ import logging
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.context.log import DEFAULT_LOGGER, LOGLEVEL
 from fabricks.core import get_job
 from fabricks.utils.helpers import run_in_parallel
 from tests.integration.utils import landing_to_raw
@@ -77,12 +77,14 @@ errors = []
 
 # COMMAND ----------
 
+
 def _run(job: dict):
     j = get_job(step=job.get("step"), topic=job.get("topic"), item=job.get("item"))  # type: ignore
     try:
         j.run()
     except Exception as e:
-        errors.append(job, e)
+        errors.append((job, e))
+
 
 # COMMAND ----------
 

@@ -180,7 +180,7 @@ class BaseStep:
 
     def get_jobs(self, topic: Optional[str] = None) -> Optional[DataFrame]:
         DEFAULT_LOGGER.info("get jobs", extra={"step": self})
-        
+
         try:
             conf = get_step_conf(self.name)
             schema = get_schema_for_type(conf)

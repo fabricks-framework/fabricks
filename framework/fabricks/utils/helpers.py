@@ -22,7 +22,7 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
     return "concat_ws('*', " + ",".join(coalesce) + ")"
 
 
-def concat_dfs(dfs: Iterable[DataFrame]) -> DataFrame:
+def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
     dfs = [df for df in dfs if df is not None]
     if len(dfs) == 0:
         return None

@@ -45,6 +45,8 @@ def convert_parquet_to_delta(topic: str):
             dfs.append(df)
 
         df = concat_dfs(dfs)
+        assert df is not None
+
         df = df.withColumn(
             "__split",
             expr("split(replace(__file_path, __file_name), '/')"),

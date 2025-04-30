@@ -99,6 +99,8 @@ class DeleteLogBaseParser(BaseParser):
         dfs.append(df_del)
 
         df = concat_dfs(dfs)
+        assert df is not None
+
         df = self.add_timestamp_from_file_path(df)
         df = self.nullify(df)
         # avoid fake updates based on the BEL_UpdateDateUtc

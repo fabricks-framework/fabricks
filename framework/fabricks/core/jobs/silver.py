@@ -114,6 +114,7 @@ class Silver(BaseJob):
                 dfs.append(df)
 
             df = concat_dfs(dfs)
+            assert df is not None
 
         else:
             dfs = []
@@ -142,6 +143,7 @@ class Silver(BaseJob):
                     raise e
 
             df = concat_dfs(dfs)
+            assert df is not None
 
         # transforms
         df = self.filter_where(df)

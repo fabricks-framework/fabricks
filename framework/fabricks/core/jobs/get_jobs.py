@@ -49,6 +49,7 @@ def get_jobs_internal_df() -> DataFrame:
 
         dfs = run_in_parallel(_read_yaml, list(PATHS_RUNTIME.values()))
         df = concat_dfs(dfs)
+        assert df is not None
 
     else:
         df = SPARK.sql("select * from fabricks.jobs")
