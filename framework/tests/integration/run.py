@@ -3,18 +3,14 @@
 
 # COMMAND ----------
 
-from logging import DEBUG
+import logging
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER, LOGLEVEL
 from fabricks.core import get_job
 from fabricks.utils.helpers import run_in_parallel
 from tests.integration.utils import landing_to_raw
-
-# COMMAND ----------
-
-Logger.setLevel(DEBUG)
 
 # COMMAND ----------
 
@@ -77,10 +73,17 @@ if i == 2:
 
 # COMMAND ----------
 
+errors = []
+
+# COMMAND ----------
+
 
 def _run(job: dict):
     j = get_job(step=job.get("step"), topic=job.get("topic"), item=job.get("item"))  # type: ignore
-    j.run()
+    try:
+        j.run()
+    except Exception as e:
+        errors.append((job, e))
 
 
 # COMMAND ----------
@@ -89,9 +92,17 @@ landing_to_raw(i)
 
 # COMMAND ----------
 
-run_in_parallel(_run, bronze)
-run_in_parallel(_run, silver)
-run_in_parallel(_run, gold)
+DEFAULT_LOGGER.setLevel(logging.CRITICAL)
+
+# COMMAND ----------
+
+_ = run_in_parallel(_run, bronze, progress_bar=True)
+_ = run_in_parallel(_run, silver, progress_bar=True)
+_ = run_in_parallel(_run, gold, progress_bar=True)
+
+# COMMAND ----------
+
+DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
 # COMMAND ----------
 

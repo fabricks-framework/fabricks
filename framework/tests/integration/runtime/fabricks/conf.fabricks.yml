@@ -84,7 +84,7 @@
         table_options:
           properties: 
               delta.minReaderVersion: 1
-              delta.minWriterVersion: 2
+              delta.minWriterVersion: 7
               delta.columnMapping.mode: none
         spark_options:
           sql:
@@ -97,14 +97,10 @@
         path_options:
           storage: abfss://dummy@$standard
     credentials:
-      bmsstaprdeuwdatastoresnd.dfs.core.windows.net: bmsstaprdeuwdatastoresnd-access-key
       bmsstatsteuwfabrickssnd.dfs.core.windows.net: bmsstatsteuwfabrickssnd-access-key
       onelake.dfs.fabric.microsoft.com/Fabricks.Lakehouse/Tables: powerbi-application-registration
-      bmesttsteuwdatahubexport.dfs.core.windows.net: datahub-application-registration
-      bmestprdeuwdatahubbronze.dfs.core.windows.net: datahub-application-registration
     variables:
-      \$datahub: bmestprdeuwdatahubbronze
-      \$datastore: bmsstaprdeuwdatastoresnd
       \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
+      \$datastore: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$onelake: onelake.dfs.fabric.microsoft.com/Fabricks.Lakehouse/Tables

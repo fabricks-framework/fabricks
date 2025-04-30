@@ -4,8 +4,9 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Union
 
 from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
-from fabricks.context import DBUTILS, SPARK
+from fabricks.context import SPARK
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 
@@ -22,8 +23,6 @@ class Configurator(ABC):
             spark = SPARK
         assert spark is not None
         self.spark: SparkSession = spark
-
-        self.dbutils = DBUTILS
 
         self.database = Database(database)
         self.levels = levels
@@ -104,7 +103,7 @@ class Configurator(ABC):
         return self.change_data_capture in ["scd1", "scd2"]
 
     def get_src(self, src: Union[DataFrame, Table, str]) -> DataFrame:
-        if isinstance(src, DataFrame):
+        if isinstance(src, (DataFrame, CDataFrame)):
             df = src
         elif isinstance(src, Table):
             df = self.table.dataframe

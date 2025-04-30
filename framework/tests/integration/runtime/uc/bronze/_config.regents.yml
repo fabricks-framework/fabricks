@@ -1,0 +1,24 @@
+---
+# yaml-language-server: $schema=../../job-schema.json
+- job:
+    step: bronze
+    topic: regent
+    item: scd1
+    tags: [test]
+    options:
+      mode: register
+      uri: abfss://test@$datahub/raw/delta/regent
+      keys: [id]
+    extender_options:
+      - extender:  monarch
+- job:
+    step: bronze
+    topic: regent
+    item: scd2
+    tags: [test]
+    options:
+      mode: register
+      uri: abfss://test@$datahub/raw/2/delta/regent
+      keys: [id]
+    extender_options:
+      - extender:  monarch

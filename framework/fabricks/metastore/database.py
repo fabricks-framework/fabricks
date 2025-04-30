@@ -5,7 +5,7 @@ from pyspark.sql import DataFrame, SparkSession
 from typing_extensions import deprecated
 
 from fabricks.context import PATHS_STORAGE, SPARK
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.utils import get_tables, get_views
 from fabricks.utils.path import Path
 
@@ -33,17 +33,17 @@ class Database:
         return self.storage.join("delta")
 
     def create(self):
-        Logger.info("🌟 (create database)", extra={"step": self})
+        DEFAULT_LOGGER.info("🌟 (create database)", extra={"step": self})
         self.spark.sql(f"create database if not exists {self.name};")
 
     def drop(self, rm: Optional[bool] = True):
         if self.exists():
-            Logger.warning("💣 (drop database)", extra={"step": self})
+            DEFAULT_LOGGER.warning("💣 (drop database)", extra={"step": self})
             self.spark.sql(f"drop database if exists {self.name} cascade;")
 
         if rm:
             if self.delta_path.exists():
-                Logger.debug("🧹 (remove delta files)", extra={"step": self})
+                DEFAULT_LOGGER.debug("🧹 (remove delta files)", extra={"step": self})
                 self.delta_path.rm()
 
     def exists(self) -> bool:

@@ -3,13 +3,14 @@ from typing import List, Literal, Type, TypeVar, Union, get_args, get_origin
 import yaml
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import parse_obj_as
-from pyspark.sql import DataFrame, Row
+from pyspark.sql import DataFrame
 from pyspark.sql.types import (
     ArrayType,
     BooleanType,
     DoubleType,
     LongType,
     MapType,
+    Row,
     StringType,
     StructField,
     StructType,

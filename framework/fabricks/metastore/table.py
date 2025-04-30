@@ -9,7 +9,7 @@ from pyspark.sql.types import StructType
 from typing_extensions import deprecated
 
 from fabricks.context import SPARK
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.relational import Relational
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix
@@ -58,7 +58,7 @@ class Table(Relational):
     def drop(self):
         super().drop()
         if self.delta_path.exists():
-            Logger.debug("delete delta folder", extra={"job": self})
+            DEFAULT_LOGGER.debug("delete delta folder", extra={"job": self})
             self.delta_path.rm()
 
     @overload
@@ -120,7 +120,7 @@ class Table(Relational):
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
     ):
-        Logger.info("create table", extra={"job": self})
+        DEFAULT_LOGGER.info("create table", extra={"job": self})
         if not df:
             assert schema is not None
             df = self.spark.createDataFrame([], schema)
@@ -189,7 +189,7 @@ class Table(Relational):
             sql = fix(sql)
         except Exception:
             pass
-        Logger.debug("ddl", extra={"job": self, "sql": sql})
+        DEFAULT_LOGGER.debug("ddl", extra={"job": self, "sql": sql})
         self.spark.sql(sql)
 
     def is_deltatable(self) -> bool:
@@ -202,15 +202,15 @@ class Table(Relational):
         return self.is_deltatable() and self.registered()
 
     def register(self):
-        Logger.debug("register table", extra={"job": self})
+        DEFAULT_LOGGER.debug("register table", extra={"job": self})
         self.spark.sql(f"create table if not exists {self.qualified_name} using delta location '{self.delta_path}'")
 
     def restore_to_version(self, version: int):
-        Logger.info(f"restore table to version {version}", extra={"job": self})
+        DEFAULT_LOGGER.info(f"restore table to version {version}", extra={"job": self})
         self.spark.sql(f"restore table {self.qualified_name} to version as of {version}")
 
     def truncate(self):
-        Logger.warning("truncate table", extra={"job": self})
+        DEFAULT_LOGGER.warning("truncate table", extra={"job": self})
         self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
@@ -218,7 +218,7 @@ class Table(Relational):
         return not self._check_schema_drift(df).isEmpty()
 
     def _check_schema_drift(self, df: DataFrame) -> DataFrame:
-        Logger.debug("check schema drift", extra={"job": self})
+        DEFAULT_LOGGER.debug("check schema drift", extra={"job": self})
 
         new_df = self.spark.createDataFrame(df.dtypes, ["new_name", "new_type"])  # type: ignore
         new_df = new_df.filter(~new_df.new_name.startswith("__"))
@@ -248,14 +248,14 @@ class Table(Relational):
         drift_df = self._check_schema_drift(df)
 
         if not drift_df.isEmpty():
-            Logger.info("update table", extra={"job": self})
+            DEFAULT_LOGGER.info("update table", extra={"job": self})
             todo_df = drift_df.where("operation in ('add', 'update')")
             if not todo_df.isEmpty():
                 for row in todo_df.collect():
                     if row.operation == "add":
-                        Logger.debug(f"add column {row.column}", extra={"job": self})
+                        DEFAULT_LOGGER.debug(f"add column {row.column}", extra={"job": self})
                     else:
-                        Logger.debug(
+                        DEFAULT_LOGGER.debug(
                             f"update column {row.column} ({row.old_type} -> {row.new_type})",
                             extra={"job": self},
                         )
@@ -273,7 +273,7 @@ class Table(Relational):
 
             if overwrite:
                 drift_df = self._check_schema_drift(df)
-                Logger.warning("overwrite table", extra={"job": self})
+                DEFAULT_LOGGER.warning("overwrite table", extra={"job": self})
                 for row in drift_df.collect():
                     if row.operation == "add":
                         self.add_column(row.column, row.new_type)
@@ -295,7 +295,7 @@ class Table(Relational):
         self._fix_schema(df, overwrite=True)
 
     def vacuum(self, retention_days: int = 7):
-        Logger.debug(f"vacuum table (removing files older than {retention_days} days)", extra={"job": self})
+        DEFAULT_LOGGER.debug(f"vacuum table (removing files older than {retention_days} days)", extra={"job": self})
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
         try:
             self.create_restore_point()
@@ -311,7 +311,7 @@ class Table(Relational):
         columns: Optional[Union[str, List[str]]] = None,
         vorder: Optional[bool] = False,
     ):
-        Logger.info("optimize", extra={"job": self})
+        DEFAULT_LOGGER.info("optimize", extra={"job": self})
 
         zorder_by = columns is not None
         if zorder_by:
@@ -321,27 +321,27 @@ class Table(Relational):
             cols = ", ".join(columns)
 
             if vorder:
-                Logger.debug(f"zorder by {cols} vorder", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"zorder by {cols} vorder", extra={"job": self})
                 self.spark.sql(f"optimize {self.qualified_name} zorder by ({cols}) vorder")
             else:
-                Logger.debug(f"zorder by {cols}", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"zorder by {cols}", extra={"job": self})
                 self.spark.sql(f"optimize {self.qualified_name} zorder by ({cols})")
 
         elif vorder:
-            Logger.debug("vorder", extra={"job": self})
+            DEFAULT_LOGGER.debug("vorder", extra={"job": self})
             self.spark.sql(f"optimize {self.qualified_name} vorder")
 
         else:
-            Logger.debug("optimize", extra={"job": self})
+            DEFAULT_LOGGER.debug("optimize", extra={"job": self})
             self.spark.sql(f"optimize {self.qualified_name}")
 
     def analyze(self):
-        Logger.debug("analyze", extra={"job": self})
+        DEFAULT_LOGGER.debug("analyze", extra={"job": self})
         self.compute_statistics()
         self.compute_delta_statistics()
 
     def compute_statistics(self):
-        Logger.debug("compute statistics", extra={"job": self})
+        DEFAULT_LOGGER.debug("compute statistics", extra={"job": self})
         cols = [
             f"`{name}`"
             for name, dtype in self.dataframe.dtypes
@@ -351,12 +351,12 @@ class Table(Relational):
         self.spark.sql(f"analyze table delta.`{self.delta_path}` compute statistics for columns {cols}")
 
     def compute_delta_statistics(self):
-        Logger.debug("compute delta statistics", extra={"job": self})
+        DEFAULT_LOGGER.debug("compute delta statistics", extra={"job": self})
         self.spark.sql(f"analyze table delta.`{self.delta_path}` compute delta statistics")
 
     def drop_column(self, name: str):
         assert self.column_mapping_enabled(), "column mapping not enabled"
-        Logger.warning(f"drop column {name}", extra={"job": self})
+        DEFAULT_LOGGER.warning(f"drop column {name}", extra={"job": self})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -366,7 +366,7 @@ class Table(Relational):
 
     def change_column(self, name: str, type: str):
         assert self.column_mapping_enabled(), "column mapping not enabled"
-        Logger.info(f"change column {name} ({type})", extra={"job": self})
+        DEFAULT_LOGGER.info(f"change column {name} ({type})", extra={"job": self})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -376,7 +376,7 @@ class Table(Relational):
 
     def rename_column(self, old: str, new: str):
         assert self.column_mapping_enabled(), "column mapping not enabled"
-        Logger.info(f"rename column {old} -> {new}", extra={"job": self})
+        DEFAULT_LOGGER.info(f"rename column {old} -> {new}", extra={"job": self})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -411,11 +411,11 @@ class Table(Relational):
             return None
 
     def enable_change_data_feed(self):
-        Logger.debug("enable change data feed", extra={"job": self})
+        DEFAULT_LOGGER.debug("enable change data feed", extra={"job": self})
         self.set_property("delta.enableChangeDataFeed", "true")
 
     def enable_column_mapping(self):
-        Logger.debug("enable column mapping", extra={"job": self})
+        DEFAULT_LOGGER.debug("enable column mapping", extra={"job": self})
         try:
             self.spark.sql(
                 f"""
@@ -424,7 +424,7 @@ class Table(Relational):
                 """
             )
         except Exception:
-            Logger.debug("update reader and writer version", extra={"job": self})
+            DEFAULT_LOGGER.debug("update reader and writer version", extra={"job": self})
             self.spark.sql(
                 f"""
                 alter table {self.qualified_name} 
@@ -437,7 +437,7 @@ class Table(Relational):
             )
 
     def set_property(self, key: Union[str, int], value: Union[str, int]):
-        Logger.debug(f"set property {key} = {value}", extra={"job": self})
+        DEFAULT_LOGGER.debug(f"set property {key} = {value}", extra={"job": self})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -446,7 +446,7 @@ class Table(Relational):
         )
 
     def add_constraint(self, name: str, expr: str):
-        Logger.debug(f"add constraint ({name} check ({expr}))", extra={"job": self})
+        DEFAULT_LOGGER.debug(f"add constraint ({name} check ({expr}))", extra={"job": self})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -455,7 +455,7 @@ class Table(Relational):
         )
 
     def add_comment(self, comment: str):
-        Logger.debug(f"add comment '{comment}'", extra={"job": self})
+        DEFAULT_LOGGER.debug(f"add comment '{comment}'", extra={"job": self})
         self.spark.sql(
             f"""
             comment on table {self.qualified_name}
@@ -465,7 +465,7 @@ class Table(Relational):
 
     def add_materialized_column(self, name: str, expr: str, type: str):
         assert self.column_mapping_enabled(), "column mapping not enabled"
-        Logger.info(f"add materialized column ({name} {type})", extra={"job": self})
+        DEFAULT_LOGGER.info(f"add materialized column ({name} {type})", extra={"job": self})
         self.spark.sql(
             f""""
             alter table {self.qualified_name}
@@ -474,7 +474,7 @@ class Table(Relational):
         )
 
     def add_column(self, name: str, type: str, after: Optional[str] = None):
-        Logger.info(f"add column {name} ({type})", extra={"job": self})
+        DEFAULT_LOGGER.info(f"add column {name} ({type})", extra={"job": self})
         ddl_after = "" if not after else f"after {after}"
         self.spark.sql(
             f"""
@@ -489,7 +489,7 @@ class Table(Relational):
         columns = [f"`{c}`" for c in columns]
         cols = ", ".join(columns)
 
-        Logger.info(f"bloomfilter by {cols}", extra={"job": self})
+        DEFAULT_LOGGER.info(f"bloomfilter by {cols}", extra={"job": self})
         self.spark.sql(
             f"""
             create bloomfilter index on table {self.qualified_name}
@@ -519,7 +519,7 @@ class Table(Relational):
             columns = [columns]
         columns = [f"`{c}`" for c in columns]
         cols = ", ".join(columns)
-        Logger.info(f"cluster by {cols}", extra={"job": self})
+        DEFAULT_LOGGER.info(f"cluster by {cols}", extra={"job": self})
 
         self.spark.sql(
             f"""

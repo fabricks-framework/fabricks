@@ -3,11 +3,11 @@ from logging import ERROR
 import pytest
 
 from fabricks.context import SPARK
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 from tests.integration.compare import compare_gold_to_expected
 
-Logger.setLevel(ERROR)
+DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(221)

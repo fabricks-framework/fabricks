@@ -1,12 +1,11 @@
 import re
 from typing import List, Optional, Union, cast
 
-from databricks.sdk.runtime import dbutils
 from pyspark.sql import DataFrame
 from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import TGold
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
@@ -89,7 +88,7 @@ class Gold(BaseJob):
     def register_udfs(self):
         for u in self.get_udfs():
             if not is_registered(u):
-                Logger.debug(f"register udf ({u})", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"register udf ({u})", extra={"job": self})
                 register_udf(udf=u, spark=self.spark)
 
     def base_transform(self, df: DataFrame) -> DataFrame:
@@ -106,7 +105,9 @@ class Gold(BaseJob):
             df = self.spark.createDataFrame([{}])  # type: ignore
 
         elif self.options.job.get("notebook"):
-            Logger.debug("run notebook", extra={"job": self})
+            from databricks.sdk.runtime import dbutils
+
+            DEFAULT_LOGGER.debug("run notebook", extra={"job": self})
             path = self.paths.runtime.get_notebook_path()
             global_temp_view = dbutils.notebook.run(path, self.timeout, arguments={})  # type: ignore
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
@@ -222,7 +223,7 @@ class Gold(BaseJob):
 
     def create(self):
         if self.mode == "invoke":
-            Logger.info("invoke (no table nor view)", extra={"job": self})
+            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
         else:
             super().create()
             if self.options.job.get_boolean("persist_last_timestamp"):
@@ -230,7 +231,7 @@ class Gold(BaseJob):
 
     def register(self):
         if self.mode == "invoke":
-            Logger.info("invoke (no table nor view)", extra={"job": self})
+            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
         else:
             super().register()
 
@@ -247,7 +248,7 @@ class Gold(BaseJob):
         analyze: Optional[bool] = True,
     ):
         if self.mode == "memory":
-            Logger.debug("memory (no optimize)", extra={"job": self})
+            DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
         else:
             super().optimize()
 

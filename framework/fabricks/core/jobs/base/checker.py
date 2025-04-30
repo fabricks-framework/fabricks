@@ -1,4 +1,4 @@
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.error import (
     PostRunCheckFailedException,
     PostRunCheckWarningException,
@@ -17,7 +17,7 @@ class Checker(Generator):
 
     def _check(self, position: str):
         if self.options.check.get(position):
-            Logger.debug(f"{position.replace('_', ' ')} check", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"{position.replace('_', ' ')} check", extra={"job": self})
 
             p = self.paths.runtime.append(f".{position}.sql")
             assert p.exists(), f"{position} check not found ({p})"
@@ -27,7 +27,7 @@ class Checker(Generator):
 
             if not fail_df.isEmpty():
                 for row in fail_df.collect():
-                    Logger.error(
+                    DEFAULT_LOGGER.error(
                         f"{position.replace('_', ' ')} check failed due to {row['__message']}",
                         extra={"job": self},
                     )
@@ -41,7 +41,7 @@ class Checker(Generator):
 
             elif not warning_df.isEmpty():
                 for row in warning_df.collect():
-                    Logger.warning(
+                    DEFAULT_LOGGER.warning(
                         f"{position.replace('_', ' ')} check failed due to {row['__message']}",
                         extra={"job": self},
                     )
@@ -59,7 +59,7 @@ class Checker(Generator):
         count_must_equal = self.options.check.get("count_must_equal")
 
         if min_rows or max_rows or count_must_equal:
-            Logger.debug("extra post run check", extra={"job": self})
+            DEFAULT_LOGGER.debug("extra post run check", extra={"job": self})
 
             rows = self.spark.sql(f"select count(*) from {self}").collect()[0][0]
             if min_rows:
@@ -78,7 +78,7 @@ class Checker(Generator):
 
     def _check_duplicate(self, column: str):
         if column in self.table.columns:
-            Logger.debug(f"duplicate {column} check", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"duplicate {column} check", extra={"job": self})
 
             cols = [column]
 
@@ -98,7 +98,7 @@ class Checker(Generator):
                 duplicates = ",".join([str(row[column]) for row in df.collect()])
                 raise PostRunCheckWarningException(f"duplicate {column} check failed ({duplicates})")
         else:
-            Logger.debug(f"{column} not found", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"{column} not found", extra={"job": self})
 
     def check_duplicate_key(self):
         self._check_duplicate("__key")

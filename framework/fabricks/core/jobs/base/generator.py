@@ -1,17 +1,18 @@
-from typing import Any, Optional, Union, cast
+from typing import Optional, Union, cast
 
-from pyspark.sql import DataFrame, Row
+from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
+from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.view import create_or_replace_global_temp_view
 
 
 class Generator(Configurator):
     def update_dependencies(self):
-        Logger.info("update dependencies", extra={"job": self})
+        DEFAULT_LOGGER.info("update dependencies", extra={"job": self})
 
         df = self.get_dependencies()
         if df:
@@ -31,31 +32,38 @@ class Generator(Configurator):
         from fabricks.context import CATALOG
 
         df = self.get_data(self.stream)
-        jvm = df._sc._jvm  # type: ignore
-        explain_plan = cast(Any, jvm.PythonSQLUtils).explainString(cast(Any, df._jdf).queryExecution(), "extended")  # type: ignore
+        if df is not None:
+            explain_plan = self.spark.sql("explain extended select * from {df}", df=df).collect()[0][0]
 
-        if CATALOG is None:
-            r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
-        else:
-            r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
+            if CATALOG is None:
+                r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
+            else:
+                r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
 
-        dependencies = []
+            dependencies = []
 
-        matches = re.findall(r, explain_plan)
-        matches = list(set(matches))
-        for m in matches:
-            dependencies.append(Row(self.job_id, m, "parser"))
+            matches = re.findall(r, explain_plan)
+            matches = [m.replace("__current", "") for m in matches]
+            matches = list(set(matches))
 
-        parents = self.options.job.get_list("parents") or []
-        for p in parents:
-            dependencies.append(Row(self.job_id, p, "job"))
+            for m in matches:
+                dependencies.append(Row(self.job_id, m, "parser"))
 
-        if dependencies:
-            Logger.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
-            df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
-            df = df.transform(self.add_dependency_details)
-            assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
-            return df
+            parents = self.options.job.get_list("parents") or []
+            for p in parents:
+                dependencies.append(Row(self.job_id, p, "job"))
+
+            if dependencies:
+                DEFAULT_LOGGER.debug(
+                    f"dependencies ({', '.join([row[1] for row in dependencies])})",
+                    extra={"job": self},
+                )
+
+                df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
+                df = df.transform(self.add_dependency_details)
+
+                assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
+                return df
 
     def rm(self):
         """
@@ -64,7 +72,7 @@ class Generator(Configurator):
         If the schema folder exists, it will be deleted. The method also calls the `rm_checkpoints` method to remove any checkpoints associated with the generator.
         """
         if self.paths.schema.exists():
-            Logger.info("delete schema folder", extra={"job": self})
+            DEFAULT_LOGGER.info("delete schema folder", extra={"job": self})
             self.paths.schema.rm()
         self.rm_checkpoints()
 
@@ -75,7 +83,7 @@ class Generator(Configurator):
         This method checks if the checkpoints folder exists and deletes it if it does.
         """
         if self.paths.checkpoints.exists():
-            Logger.info("delete checkpoints folder", extra={"job": self})
+            DEFAULT_LOGGER.info("delete checkpoints folder", extra={"job": self})
             self.paths.checkpoints.rm()
 
     def rm_commit(self, id: Union[str, int]):
@@ -90,7 +98,7 @@ class Generator(Configurator):
         """
         path = self.paths.commits.join(str(id))
         if path.exists():
-            Logger.warning(f"delete commit {id}", extra={"job": self})
+            DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"job": self})
             path.rm()
 
     def truncate(self):
@@ -103,7 +111,7 @@ class Generator(Configurator):
         Returns:
             None
         """
-        Logger.warning("truncate", extra={"job": self})
+        DEFAULT_LOGGER.warning("truncate", extra={"job": self})
         self.rm()
         if self.persist:
             self.table.truncate()
@@ -137,9 +145,11 @@ class Generator(Configurator):
                 """
             ).collect()[0]
             if cast(int, row.count) > 0:
-                Logger.warning(f"{row.count} children found", extra={"job": self, "content": row.children})
+                DEFAULT_LOGGER.warning(f"{row.count} children found", extra={"job": self, "content": row.children})
+
         except Exception:
             pass
+
         self.cdc.drop()
         self.rm()
 
@@ -257,7 +267,9 @@ class Generator(Configurator):
                         cluster_by.append("__hash")
 
                 if not cluster_by:
-                    Logger.warning("liquid clustering disabled (no clustering columns found)", extra={"job": self})
+                    DEFAULT_LOGGER.warning(
+                        "liquid clustering disabled (no clustering columns found)", extra={"job": self}
+                    )
                     liquid_clustering = False
                     cluster_by = None
 
@@ -276,7 +288,7 @@ class Generator(Configurator):
 
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
-            global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 ==2 "))
+            global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 == 2"))
             sql = f"select * from {global_temp_view}"
 
             self.cdc.create_table(
@@ -295,7 +307,9 @@ class Generator(Configurator):
             if df:
                 if self.stream:
                     # add dummy stream to be sure that the writeStream will start
-                    dummy_df = self.spark.readStream.table("fabricks.dummy")
+                    spark = df.sparkSession
+
+                    dummy_df = spark.readStream.table("fabricks.dummy")
                     # __metadata is always present
                     dummy_df = dummy_df.withColumn("__metadata", lit(None))
                     dummy_df = dummy_df.select("__metadata")
@@ -359,11 +373,11 @@ class Generator(Configurator):
             raise ValueError(f"{self.mode} not allowed")
 
     def update_schema(self, df: Optional[DataFrame] = None):
-        Logger.info("update schema", extra={"job": self})
+        DEFAULT_LOGGER.info("update schema", extra={"job": self})
         self._update_schema(df=df, overwrite=False)
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
-        Logger.info("overwrite schema", extra={"job": self})
+        DEFAULT_LOGGER.info("overwrite schema", extra={"job": self})
         self._update_schema(df=df, overwrite=True)
 
     def enable_liquid_clustering(self):
@@ -393,7 +407,9 @@ class Generator(Configurator):
                 if len(cluster_by) > 0:
                     self.table.enable_liquid_clustering(cluster_by)
                 else:
-                    Logger.warning("liquid clustering not enabled (no clustering column found)", extra={"job": self})
+                    DEFAULT_LOGGER.warning(
+                        "liquid clustering not enabled (no clustering column found)", extra={"job": self}
+                    )
 
         else:
-            Logger.debug("liquid clustering not enabled", extra={"job": self})
+            DEFAULT_LOGGER.debug("liquid clustering not enabled", extra={"job": self})

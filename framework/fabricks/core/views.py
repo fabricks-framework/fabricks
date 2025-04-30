@@ -1,5 +1,5 @@
 from fabricks.context import PATH_VIEWS, SPARK
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix as fix_sql
 
@@ -13,7 +13,7 @@ def create_or_replace_view_internal(path: Path):
     {sql}
     """
     sql = fix_sql(sql)
-    Logger.debug(f"schedule - %sql\n---\n{sql}\n---")
+    DEFAULT_LOGGER.debug(f"schedule - %sql\n---\n{sql}\n---")
 
     SPARK.sql(sql)
 
@@ -23,7 +23,7 @@ def create_or_replace_view(name: str):
     try:
         create_or_replace_view_internal(p)
     except Exception:
-        Logger.warning(f"schedule - {name} not created nor replace")
+        DEFAULT_LOGGER.warning(f"schedule - {name} not created nor replace")
 
 
 def create_or_replace_views():
@@ -31,4 +31,4 @@ def create_or_replace_views():
         try:
             create_or_replace_view_internal(p)
         except Exception:
-            Logger.warning(f"schedule - {p.get_file_name()} not created nor replace")
+            DEFAULT_LOGGER.warning(f"schedule - {p.get_file_name()} not created nor replace")

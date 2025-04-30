@@ -9,17 +9,13 @@ from logging import ERROR, INFO
 import pytest
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context import IS_TEST, PATH_RUNTIME
-from fabricks.context.log import Logger
+from fabricks.context import PATH_RUNTIME
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import run_notebook
 
 # COMMAND ----------
 
-Logger.setLevel(INFO)
-
-# COMMAND ----------
-
-assert IS_TEST
+DEFAULT_LOGGER.setLevel(INFO)
 
 # COMMAND ----------
 
@@ -59,7 +55,7 @@ sys.dont_write_bytecode = True
 
 # COMMAND ----------
 
-Logger.setLevel(ERROR)
+DEFAULT_LOGGER.setLevel(ERROR)
 
 # COMMAND ----------
 

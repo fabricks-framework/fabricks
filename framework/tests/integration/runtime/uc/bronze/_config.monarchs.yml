@@ -1,0 +1,47 @@
+---
+# yaml-language-server: $schema=../../job-schema.json
+- job:
+    step: bronze
+    topic: monarch
+    item: scd1
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/monarch
+      parser: monarch
+      keys: [id]
+- job:
+    step: bronze
+    topic: monarch
+    item: scd2
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/2/monarch
+      parser: monarch
+      keys: [id]
+- job:
+    step: bronze
+    topic: monarch
+    item: delta
+    tags: [test]
+    options:
+      mode: register
+      uri: abfss://test@$datahub/raw/delta/monarch
+      keys: [id]
+    extender_options:
+      - extender: monarch
+        arguments:
+          why: not
+      - extender: add_country
+        arguments:
+          country: Belgium
+- job:
+    step: bronze
+    topic: monarch
+    item: memory
+    tags: [test]
+    options:
+      mode: register
+      uri: abfss://test@$datahub/raw/2/delta/monarch
+      keys: [id]

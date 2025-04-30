@@ -3,10 +3,10 @@ from logging import ERROR
 import pytest
 
 from fabricks.context import PATH_RUNTIME
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import run_notebook
 
-Logger.setLevel(ERROR)
+DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(301)

@@ -1,4 +1,4 @@
-from pyspark.sql import Row
+from pyspark.sql.types import Row
 
 from fabricks.cdc import NoCDC
 from fabricks.context import SPARK
@@ -18,6 +18,7 @@ def collect_stats():
 
     dfs = run_in_parallel(_collect_tables, Steps, workers=8)
     df_table = concat_dfs(dfs)
+    assert df_table is not None
 
     def _collect_stats(row: Row):
         table = row["tableName"]
@@ -45,4 +46,6 @@ def collect_stats():
 
     dfs = run_in_parallel(_collect_stats, df_table, workers=64)
     df = concat_dfs(dfs)
+    assert df is not None
+
     NoCDC("fabricks", "statistics").overwrite(df)

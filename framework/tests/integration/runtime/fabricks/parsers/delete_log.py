@@ -2,6 +2,7 @@ from typing import Optional
 
 from py4j.protocol import Py4JError
 from pyspark.errors.exceptions.base import AnalysisException
+from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, lit, when
 
@@ -64,20 +65,22 @@ class DeleteLogBaseParser(BaseParser):
                 options=self.options.get("read_options"),
                 spark=spark,
             )
+            df.columns
             return df.withColumn("__operation", lit("delete"))
 
-        except (AnalysisException, Py4JError):
+        except (AnalysisException, Py4JError, SparkConnectGrpcException):
             if stream:
                 df = spark.readStream.table("fabricks.dummy")
                 df = df.selectExpr("'delete' as __operation").where("1 == 2")
                 return df.withColumn("__operation", lit("delete"))
 
     def nullify(self, df: DataFrame) -> DataFrame:
-        for c in [c for c in df.columns if not c.startswith("__")]:
-            df = df.withColumn(
-                c,
-                when(df[f"`{c}`"].cast("string") == "1753-01-01 00:00:00.000", None).otherwise(df[f"`{c}`"]),
-            )
+        if df:
+            for c in [c for c in df.columns if not c.startswith("__")]:
+                df = df.withColumn(
+                    c,
+                    when(df[f"`{c}`"].cast("string") == "1753-01-01 00:00:00.000", None).otherwise(df[f"`{c}`"]),
+                )
         return df
 
     def parse(
@@ -96,6 +99,8 @@ class DeleteLogBaseParser(BaseParser):
         dfs.append(df_del)
 
         df = concat_dfs(dfs)
+        assert df is not None
+
         df = self.add_timestamp_from_file_path(df)
         df = self.nullify(df)
         # avoid fake updates based on the BEL_UpdateDateUtc

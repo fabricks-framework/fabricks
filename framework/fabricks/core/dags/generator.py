@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame
 
 from fabricks.context import SPARK
 from fabricks.core.dags.base import BaseDags
-from fabricks.core.dags.log import DagsTableLogger
+from fabricks.core.dags.log import TABLE_LOG_HANDLER
 from fabricks.utils.azure_queue import AzureQueue
 
 
@@ -140,7 +140,7 @@ class DagGenerator(BaseDags):
             """,
             df=job_df,
         )
-        DagsTableLogger.table.upsert(df)
+        TABLE_LOG_HANDLER.table.upsert(df)
 
         cs = self.get_connection_string()
         for row in step_df.collect():

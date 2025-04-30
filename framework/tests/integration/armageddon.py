@@ -7,7 +7,7 @@ from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.scripts.armageddon import armageddon
 from tests.integration._types import steps
 
@@ -17,7 +17,7 @@ print(steps)
 
 # COMMAND ----------
 
-Logger.setLevel(DEBUG)
+DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 

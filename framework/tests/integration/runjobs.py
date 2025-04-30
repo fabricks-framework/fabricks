@@ -3,18 +3,19 @@
 
 # COMMAND ----------
 
-from logging import DEBUG
+import logging
 
-from databricks.sdk.runtime import dbutils
+from databricks.sdk.runtime import dbutils, spark
 
-from fabricks.context.log import Logger
+from fabricks.context import CATALOG
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 from tests.integration._types import paths
 from tests.integration.utils import git_to_landing, landing_to_raw
 
 # COMMAND ----------
 
-Logger.setLevel(DEBUG)
+DEFAULT_LOGGER.setLevel(logging.DEBUG)
 
 # COMMAND ----------
 
@@ -45,6 +46,12 @@ drop = drop.lower() == "true"
 
 if i == 1:
     paths.landing.rm()
+
+    if CATALOG is not None:
+        spark.sql(f"use catalog {CATALOG}")
+        spark.sql("drop schema if exists bronze cascade")
+        spark.sql("create schema if not exists bronze")
+
     paths.raw.rm()
     paths.out.rm()
 
@@ -60,7 +67,7 @@ if i:
 for job in jobs:
     j = get_job(job=job)
 
-    if drop:
+    if drop and i == 1:
         j.drop()
         j.create()
 

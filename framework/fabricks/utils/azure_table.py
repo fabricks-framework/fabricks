@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 
 from azure.data.tables import TableClient, TableServiceClient
 from pyspark.sql import DataFrame
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 
 class AzureTable:
@@ -14,11 +15,13 @@ class AzureTable:
         connection_string: Optional[str] = None,
     ):
         self.name = name
+
         if connection_string is None:
             assert storage_account
             assert access_key
             self.storage_account = storage_account
             self.access_key = access_key
+
             connection_string = f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net"
 
         assert connection_string
@@ -78,7 +81,7 @@ class AzureTable:
                 raise e
 
     def delete(self, data: Union[List, DataFrame, dict]):
-        if isinstance(data, DataFrame):
+        if isinstance(data, (DataFrame, CDataFrame)):
             data = [row.asDict() for row in data.collect()]
         elif not isinstance(data, List):
             data = [data]
@@ -87,7 +90,7 @@ class AzureTable:
         self.submit(operations)
 
     def upsert(self, data: Union[List, DataFrame, dict]):
-        if isinstance(data, DataFrame):
+        if isinstance(data, (DataFrame, CDataFrame)):
             data = [row.asDict() for row in data.collect()]
         elif not isinstance(data, List):
             data = [data]

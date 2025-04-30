@@ -4,9 +4,10 @@ from typing import Optional, Union
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.cdc.base.generator import Generator
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -14,7 +15,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 class Processor(Generator):
     def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
-        if isinstance(src, DataFrame):
+        if isinstance(src, (DataFrame, CDataFrame)):
             name = f"{self.database}_{'_'.join(self.levels)}__data"
             global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False))
             src = f"select * from {global_temp_view}"
@@ -23,7 +24,7 @@ class Processor(Generator):
         return self.spark.sql(sql)
 
     def get_query_context(self, src: Union[DataFrame, Table, str], **kwargs) -> dict:
-        if isinstance(src, DataFrame):
+        if isinstance(src, (DataFrame, CDataFrame)):
             format = "dataframe"
         elif isinstance(src, Table):
             format = "table"
@@ -277,10 +278,10 @@ class Processor(Generator):
             sql = sql.replace("{src}", "src")
             sql = fix_sql(sql)
             sql = sql.replace("`src`", "{src}")
-            Logger.debug("query", extra={"job": self, "sql": sql, "target": "buffer"})
+            DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql, "target": "buffer"})
             return sql
         except Exception as e:
-            Logger.exception("🙈", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.exception("🙈", extra={"job": self, "sql": sql})
             raise e
 
     def fix_context(self, context: dict, fix: Optional[bool] = True, **kwargs) -> dict:
@@ -292,9 +293,9 @@ class Processor(Generator):
             if fix:
                 sql = self.fix_sql(sql)
             else:
-                Logger.debug("fix context", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.debug("fix context", extra={"job": self, "sql": sql})
         except Exception as e:
-            Logger.exception("🙈", extra={"job": self, "context": context})
+            DEFAULT_LOGGER.exception("🙈", extra={"job": self, "context": context})
             raise e
 
         row = self.spark.sql(sql).collect()[0]
@@ -320,9 +321,9 @@ class Processor(Generator):
             if fix:
                 sql = self.fix_sql(sql)
             else:
-                Logger.debug("query", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql})
         except Exception as e:
-            Logger.exception("🙈", extra={"job": self, "context": context})
+            DEFAULT_LOGGER.exception("🙈", extra={"job": self, "context": context})
             raise e
 
         return sql
@@ -338,7 +339,7 @@ class Processor(Generator):
             name = f"{self.database}_{'_'.join(self.levels)}__append"
             create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
 
-            Logger.debug("append", extra={"job": self})
+            DEFAULT_LOGGER.debug("append", extra={"job": self})
             df.write.format("delta").mode("append").save(self.table.delta_path.string)
 
     def overwrite(
@@ -362,7 +363,7 @@ class Processor(Generator):
                     dynamic = True
 
             if dynamic:
-                Logger.debug("dynamic overwrite", extra={"job": self})
+                DEFAULT_LOGGER.debug("dynamic overwrite", extra={"job": self})
                 (
                     df.write.format("delta")
                     .mode("overwrite")
@@ -370,5 +371,5 @@ class Processor(Generator):
                     .save(self.table.delta_path.string)
                 )
             else:
-                Logger.debug("overwrite", extra={"job": self})
+                DEFAULT_LOGGER.debug("overwrite", extra={"job": self})
                 df.write.format("delta").mode("overwrite").save(self.table.delta_path.string)

@@ -2,12 +2,12 @@ from pyspark.sql.types import LongType, StringType, StructField, StructType, Tim
 
 from fabricks.cdc import NoCDC
 from fabricks.context import SPARK
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 
 
 def deploy_tables(drop: bool = False):
-    Logger.info("🌟 (create or replace tables)")
+    DEFAULT_LOGGER.info("🌟 (create or replace tables)")
 
     create_table_log(drop)
     create_table_dummy(drop)

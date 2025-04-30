@@ -4,9 +4,10 @@ from typing import Optional, Union
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.cdc.base.processor import Processor
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -14,7 +15,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 class Merger(Processor):
     def get_merge_context(self, src: Union[DataFrame, str], **kwargs) -> dict:
-        if isinstance(src, DataFrame):
+        if isinstance(src, (DataFrame, CDataFrame)):
             format = "dataframe"
             columns = self.get_columns(src, backtick=False)
         elif isinstance(src, str):
@@ -77,7 +78,7 @@ class Merger(Processor):
         try:
             sql = merge.render(**context)
         except Exception as e:
-            Logger.debug("context", extra={"job": self, "content": context})
+            DEFAULT_LOGGER.debug("context", extra={"job": self, "content": context})
             raise e
 
         if fix:
@@ -85,12 +86,12 @@ class Merger(Processor):
                 sql = sql.replace("{src}", "src")
                 sql = fix_sql(sql)
                 sql = sql.replace("`src`", "{src}")
-                Logger.debug("merge", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.debug("merge", extra={"job": self, "sql": sql})
             except Exception as e:
-                Logger.exception("🙈", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.exception("🙈", extra={"job": self, "sql": sql})
                 raise e
         else:
-            Logger.debug("merge", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("merge", extra={"job": self, "sql": sql})
 
         return sql
 

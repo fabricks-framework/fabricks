@@ -8,7 +8,7 @@ from databricks.sdk.runtime import dbutils, spark
 
 from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core.dags.base import BaseDags
-from fabricks.core.dags.log import DagsLogger
+from fabricks.core.dags.log import LOGGER
 from fabricks.core.dags.run import run
 from fabricks.core.jobs.base._types import TStep
 from fabricks.core.steps.get_step import get_step
@@ -17,7 +17,7 @@ from fabricks.utils.azure_table import AzureTable
 
 
 class DagProcessor(BaseDags):
-    def __init__(self, schedule_id: str, schedule: str, step: Union[TStep, str], notebook: bool = False):
+    def __init__(self, schedule_id: str, schedule: str, step: Union[TStep, str], notebook: bool = True):
         self.step = get_step(step=step)
         self.schedule = schedule
 
@@ -60,7 +60,7 @@ class DagProcessor(BaseDags):
             if len(scheduled) == 0:
                 for _ in range(self.step.workers):
                     self.queue.send_sentinel()
-                DagsLogger.info("🎉 (no more job to schedule)")
+                LOGGER.info("🎉 (no more job to schedule)")
                 break
 
             else:
@@ -69,7 +69,7 @@ class DagProcessor(BaseDags):
                     dependencies = self.table.query(f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'")
                     if len(dependencies) == 0:
                         s["Status"] = "waiting"
-                        DagsLogger.info("waiting", extra=self.extra(s))
+                        LOGGER.info("waiting", extra=self.extra(s))
                         self.table.upsert(s)
                         self.queue.send(s)
 
@@ -79,14 +79,14 @@ class DagProcessor(BaseDags):
         while True:
             response = self.queue.receive()
             if response == self.queue.sentinel:
-                DagsLogger.info("💤 (no more job available)")
+                LOGGER.info("💤 (no more job available)")
                 break
             elif response:
                 j = json.loads(response)
 
                 j["Status"] = "starting"
                 self.table.upsert(j)
-                DagsLogger.info("starting", extra=self.extra(j))
+                LOGGER.info("starting", extra=self.extra(j))
 
                 try:
                     if self.notebook:
@@ -111,12 +111,12 @@ class DagProcessor(BaseDags):
                         )
 
                 except Exception:
-                    DagsLogger.warning("🤯 (failed)", extra={"step": str(self.step), "job": j.get("Job")})
+                    LOGGER.warning("🤯 (failed)", extra={"step": str(self.step), "job": j.get("Job")})
 
                 finally:
                     j["Status"] = "ok"
                     self.table.upsert(j)
-                    DagsLogger.info("ok", extra=self.extra(j))
+                    LOGGER.info("ok", extra=self.extra(j))
 
                 dependencies = self.table.query(f"PartitionKey eq 'dependencies' and ParentId eq '{j.get('JobId')}'")
                 self.table.delete(dependencies)
@@ -159,7 +159,7 @@ class DagProcessor(BaseDags):
         assert isinstance(scheduled, List)
 
         if len(scheduled) > 0:
-            DagsLogger.info("🏎️ (start)")
+            LOGGER.info("🏎️ (start)")
 
             p = Process(target=self._process())
             p.start()
@@ -169,17 +169,17 @@ class DagProcessor(BaseDags):
             self.queue.delete()
 
             if p.exitcode is None:
-                DagsLogger.critical("💥 (timeout)")
+                LOGGER.critical("💥 (timeout)")
                 raise ValueError(f"{self.step} timed out")
 
             else:
                 df = self.get_logs(str(self.step))
                 self.write_logs(df)
 
-                DagsLogger.info("🏁 (end)")
+                LOGGER.info("🏁 (end)")
 
         else:
-            DagsLogger.info("no job to schedule (🏖️)")
+            LOGGER.info("no job to schedule (🏖️)")
 
     def __str__(self) -> str:
         return f"{str(self.step)} ({self.schedule_id})"

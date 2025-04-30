@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Union, cast
 
-from pyspark.dbutils import DBUtils
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
-from fabricks.context.log import Logger, flush
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
 from fabricks.core.jobs.base._types import Modes, Options, Paths, TStep
 from fabricks.core.jobs.get_job_conf import get_job_conf
@@ -87,29 +86,29 @@ class Configurator(ABC):
     @property
     def spark(self) -> SparkSession:
         if not self._spark:
-            spark, _ = build_spark_session()
+            spark = build_spark_session(app_name=str(self))
 
             step_options = self.step_conf.get("spark_options", {})
             step_sql_options = step_options.get("sql", {})
             step_conf_options = step_options.get("conf", {})
             if step_sql_options:
                 for key, value in step_sql_options.items():
-                    Logger.debug(f"add {key} = {value}", extra={"step": self.step})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"step": self.step})
                     spark.sql(f"set {key} = {value}")
             if step_conf_options:
                 for key, value in step_conf_options.items():
-                    Logger.debug(f"add {key} = {value}", extra={"step": self.step})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"step": self.step})
                     spark.conf.set(f"{key}", f"{value}")
 
             job_sql_options = self.options.spark.get_dict("sql")
             job_conf_options = self.options.spark.get_dict("conf")
             if job_sql_options:
                 for key, value in job_sql_options.items():
-                    Logger.debug(f"add {key} = {value}", extra={"job": self})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"job": self})
                     spark.sql(f"set {key} = {value}")
             if job_conf_options:
                 for key, value in job_conf_options.items():
-                    Logger.debug(f"add {key} = {value}", extra={"job": self})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"job": self})
                     spark.conf.set(f"{key}", f"{value}")
 
             self._spark = spark
@@ -122,10 +121,6 @@ class Configurator(ABC):
             assert _conf is not None
             self._step_conf = cast(dict[str, str], _conf)
         return self._step_conf
-
-    @property
-    def dbutils(self) -> DBUtils:
-        return DBUtils(self.spark)
 
     @property
     def qualified_name(self) -> str:
@@ -266,7 +261,6 @@ class Configurator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    @flush
     def run(
         self,
         retry: Optional[bool] = True,
@@ -301,7 +295,7 @@ class Configurator(ABC):
             None
         """
         if self.mode == "memory":
-            Logger.debug("memory (no optimize)", extra={"job": self})
+            DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
         else:
             assert self.table.exists()
 

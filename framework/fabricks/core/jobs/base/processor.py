@@ -3,8 +3,8 @@ from typing import Optional
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 
-from fabricks.context import SECRET_SCOPE
-from fabricks.context.log import Logger, flush
+from fabricks.context import IS_UNITY_CATALOG, SECRET_SCOPE
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.error import (
     PostRunCheckFailedException,
     PostRunCheckWarningException,
@@ -22,20 +22,27 @@ class Processor(Invoker):
         f = self.options.job.get("filter_where")
 
         if f:
-            Logger.debug(f"filter where {f}", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"filter where {f}", extra={"job": self})
             df = df.where(f"{f}")
 
         return df
 
     def encrypt(self, df: DataFrame) -> DataFrame:
         encrypted_columns = self.options.job.get_list("encrypted_columns")
-
         if encrypted_columns:
-            key = self.dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
+            if not IS_UNITY_CATALOG:
+                from databricks.sdk.runtime import dbutils
+
+                key = dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
+            else:
+                import os
+
+                key = os.environ["FABRICKS_ENCRYPTION_KEY"]
+
             assert key, "key not found"
 
             for col in encrypted_columns:
-                Logger.debug(f"encrypt column: {col}", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"job": self})
                 df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
 
         return df
@@ -62,16 +69,16 @@ class Processor(Invoker):
                 assert self.paths.commits.join(last_batch).exists()
 
     def _for_each_batch(self, df: DataFrame, batch: Optional[int] = None):
-        Logger.debug("for each batch starts", extra={"job": self})
+        DEFAULT_LOGGER.debug("for each batch starts", extra={"job": self})
         if batch is not None:
-            Logger.debug(f"batch {batch}", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"batch {batch}", extra={"job": self})
 
         df = self.base_transform(df)
 
         drift = self.table.schema_drifted(df)
         if drift:
             if self.schema_drift:
-                Logger.warning("schema drifted", extra={"job": self})
+                DEFAULT_LOGGER.warning("schema drifted", extra={"job": self})
                 self.update_schema(df=df)
             else:
                 raise ValueError("schema drifted")
@@ -82,10 +89,10 @@ class Processor(Invoker):
             self.table.set_property("fabricks.last_batch", batch)
 
         self.table.create_restore_point()
-        Logger.debug("for each batch ends", extra={"job": self})
+        DEFAULT_LOGGER.debug("for each batch ends", extra={"job": self})
 
     def for_each_run(self, schedule: Optional[str] = None):
-        Logger.debug("for each run starts", extra={"job": self})
+        DEFAULT_LOGGER.debug("for each run starts", extra={"job": self})
 
         if self.virtual:
             self.create_or_replace_view()
@@ -97,7 +104,7 @@ class Processor(Invoker):
             assert df is not None, "no data"
 
             if self.stream:
-                Logger.debug("stream enabled", extra={"job": self})
+                DEFAULT_LOGGER.debug("stream enabled", extra={"job": self})
                 write_stream(
                     df,
                     checkpoints_path=self.paths.checkpoints,
@@ -110,9 +117,8 @@ class Processor(Invoker):
         else:
             raise ValueError(f"{self.mode} - not allowed")
 
-        Logger.debug("for each run ends", extra={"job": self})
+        DEFAULT_LOGGER.debug("for each run ends", extra={"job": self})
 
-    @flush
     def run(
         self,
         retry: Optional[bool] = True,
@@ -135,16 +141,16 @@ class Processor(Invoker):
         if self.persist:
             last_version = self.table.get_property("fabricks.last_version")
             if last_version is not None:
-                Logger.debug(f"last version {last_version}", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"last version {last_version}", extra={"job": self})
             else:
                 last_version = str(self.table.last_version)
 
             last_batch = self.table.get_property("fabricks.last_batch")
             if last_batch is not None:
-                Logger.debug(f"last batch {last_batch}", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"last batch {last_batch}", extra={"job": self})
 
         try:
-            Logger.info("run starts", extra={"job": self})
+            DEFAULT_LOGGER.info("run starts", extra={"job": self})
 
             if invoke:
                 self.invoke_pre_run(schedule=schedule)
@@ -159,33 +165,33 @@ class Processor(Invoker):
             if invoke:
                 self.invoke_post_run(schedule=schedule)
 
-            Logger.info("run ends", extra={"job": self})
+            DEFAULT_LOGGER.info("run ends", extra={"job": self})
 
         except (PreRunCheckWarningException, PostRunCheckWarningException) as e:
-            Logger.exception("🙈 (no retry)", extra={"job": self})
+            DEFAULT_LOGGER.exception("🙈 (no retry)", extra={"job": self})
             raise e
 
         except (PreRunInvokerFailedException, PostRunInvokerFailedException) as e:
-            Logger.exception("🙈 (no retry)", extra={"job": self})
+            DEFAULT_LOGGER.exception("🙈 (no retry)", extra={"job": self})
             raise e
 
         except (PreRunCheckFailedException, PostRunCheckFailedException) as e:
-            Logger.exception("🙈 (no retry)", extra={"job": self})
+            DEFAULT_LOGGER.exception("🙈 (no retry)", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e
 
         except AssertionError as e:
-            Logger.exception("🙈", extra={"job": self})
+            DEFAULT_LOGGER.exception("🙈", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e
 
         except Exception as e:
             if not self.stream or not retry:
-                Logger.exception("🙈 (no retry)", extra={"job": self})
+                DEFAULT_LOGGER.exception("🙈 (no retry)", extra={"job": self})
                 self.restore(last_version, last_batch)
                 raise e
             else:
-                Logger.exception("🙈 (retry)", extra={"job": self})
+                DEFAULT_LOGGER.exception("🙈 (retry)", extra={"job": self})
                 self.run(retry=False, schedule_id=schedule_id)
 
     def overwrite(self):
@@ -199,11 +205,11 @@ class Processor(Invoker):
             Exception: If an error occurs during the execution of the job.
         """
         try:
-            Logger.warning("overwrite job", extra={"job": self})
+            DEFAULT_LOGGER.warning("overwrite job", extra={"job": self})
             self.truncate()
             self.overwrite_schema()
             self.run(retry=False)
 
         except Exception as e:
-            Logger.exception("🙈", extra={"job": self})
+            DEFAULT_LOGGER.exception("🙈", extra={"job": self})
             raise e

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pyspark.sql import Row
+from pyspark.sql.types import Row
 
 from fabricks.context import SPARK
 from fabricks.core.jobs.get_job import get_job

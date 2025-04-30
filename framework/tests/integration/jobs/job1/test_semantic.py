@@ -3,10 +3,10 @@ from logging import ERROR
 import pytest
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context.log import Logger
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 
-Logger.setLevel(ERROR)
+DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(139)
@@ -25,8 +25,8 @@ def test_semantic_fact_step_option():
     assert props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "1", (
         "minReaderVersion <> 1"
     )
-    assert props_df.where("key == 'delta.minWriterVersion'").select("value").collect()[0][0] == "2", (
-        "minWriterVersion <> 2"
+    assert props_df.where("key == 'delta.minWriterVersion'").select("value").collect()[0][0] == "7", (
+        "minWriterVersion <> 7"
     )
     assert props_df.where("key == 'delta.targetFileSize'").select("value").collect()[0][0] == "1073741824", (
         "delta.targetFileSize <> 1073741824"

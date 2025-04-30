@@ -1,12 +1,13 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
 
-from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql import DataFrame
+from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 from typing_extensions import deprecated
 
 from fabricks.utils.path import Path
+from fabricks.utils.spark import spark
 
 
 def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str:
@@ -21,16 +22,24 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
     return "concat_ws('*', " + ",".join(coalesce) + ")"
 
 
-def concat_dfs(dfs: Iterable[DataFrame]) -> DataFrame:
+def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
+    dfs = [df for df in dfs if df is not None]
+    if len(dfs) == 0:
+        return None
     return reduce(lambda x, y: x.unionByName(y, allowMissingColumns=True), dfs)
 
 
-@deprecated("use run_threads instead")
+@deprecated("use run_in_parallel instead")
 def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], workers: int = 8) -> List[Any]:
     return run_in_parallel(func, iter, workers)
 
 
-def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set], workers: int = 8) -> List[Any]:
+def run_in_parallel(
+    func: Callable,
+    iterable: Union[List, DataFrame, range, set],
+    workers: int = 8,
+    progress_bar: bool = False,
+) -> List[Any]:
     """
     Runs the given function in parallel on the elements of the iterable using multiple threads.
 
@@ -43,20 +52,17 @@ def run_in_parallel(func: Callable, iterable: Union[List, DataFrame, range, set]
         List[Any]: A list containing the results of the function calls.
 
     """
-    out = []
+    iterable = iterable.collect() if isinstance(iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        iterable = iterable.collect() if isinstance(iterable, DataFrame) else iterable
-        futures = {executor.submit(func, i): i for i in iterable}
-        for future in as_completed(futures):
-            try:
-                r = future.result()
-                if r:
-                    out.append(r)
-            except Exception:
-                pass
+        if progress_bar:
+            from tqdm import tqdm
 
-    return out
+            results = list(tqdm(executor.map(func, iterable), total=len(iterable)))
+        else:
+            results = list(executor.map(func, iterable))
+
+    return results
 
 
 def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
@@ -71,6 +77,8 @@ def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
     Returns:
         None
     """
+    from databricks.sdk.runtime import dbutils
+
     if timeout is None:
         timeout = 3600
 

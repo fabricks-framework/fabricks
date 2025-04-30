@@ -1,14 +1,15 @@
 import re
+import time
 from typing import Optional, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 
 from fabricks.context import FABRICKS_STORAGE, SECRET_SCOPE, SPARK
-from fabricks.core.dags.log import DagsTableLogger
+from fabricks.context.secret import AccessKey, get_secret_from_secret_scope
+from fabricks.core.dags.log import TABLE_LOG_HANDLER
 from fabricks.metastore.table import Table
 from fabricks.utils.azure_table import AzureTable
-from fabricks.utils.secret import AccessKey, get_secret_from_secret_scope
 
 
 class BaseDags:
@@ -29,7 +30,20 @@ class BaseDags:
     def get_table(self) -> AzureTable:
         if not self._table:
             cs = self.get_connection_string()
-            self._table = AzureTable(f"t{self.schedule_id}", connection_string=cs)
+
+            retries = 3
+            for attempt in range(retries):
+                try:
+                    self._table = AzureTable(f"t{self.schedule_id}", connection_string=cs)
+                except Exception as e:
+                    if attempt < retries - 1:
+                        time.sleep(attempt**attempt)
+                    else:
+                        raise ValueError(f"Failed to create azure table for logs after {retries} attempts: {e}")
+
+        if self._table is None:
+            raise ValueError("Azure table for logs not found")
+
         return self._table
 
     def __enter__(self):
@@ -44,8 +58,9 @@ class BaseDags:
         if step:
             q += f" and Step eq '{step}'"
 
-        d = DagsTableLogger.table.query(q)
+        d = TABLE_LOG_HANDLER.table.query(q)
         df = SPARK.createDataFrame(d)
+
         if "Exception" not in df.columns:
             df = df.withColumn("Exception", expr("null"))
         if "NotebookId" not in df.columns:

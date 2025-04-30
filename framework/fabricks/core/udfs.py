@@ -5,9 +5,8 @@ from typing import Callable, List, Optional
 
 from pyspark.sql import SparkSession
 
-from fabricks.context import PATH_UDFS, SPARK
-from fabricks.context.log import Logger
-from fabricks.core.site_packages import add_site_packages_to_path
+from fabricks.context import CATALOG, IS_UNITY_CATALOG, PATH_UDFS, SPARK
+from fabricks.context.log import DEFAULT_LOGGER
 
 UDFS: dict[str, Callable] = {}
 
@@ -29,7 +28,7 @@ def register_all_udfs():
         try:
             register_udf(udf=split[0], extension=split[1])
         except Exception:
-            Logger.exception(f"udf {udf} not registered")
+            DEFAULT_LOGGER.exception(f"udf {udf} not registered")
 
 
 def get_udfs() -> List[str]:
@@ -43,6 +42,7 @@ def get_extension(udf: str) -> str:
         r = re.compile(rf"{udf}(\.py|\.sql)")
         if re.match(r, u):
             return u.split(".")[1]
+
     raise ValueError(f"{udf} not found")
 
 
@@ -51,8 +51,13 @@ def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
         spark = SPARK
     assert spark is not None
 
-    df = spark.sql("show functions in default")
-    df = df.where(f"function == 'spark_catalog.default.udf_{udf}'")
+    df = spark.sql("show user functions in default")
+
+    if CATALOG:
+        df = df.where(f"function == '{CATALOG}.default.udf_{udf}'")
+    else:
+        df = df.where(f"function == 'spark_catalog.default.udf_{udf}'")
+
     return not df.isEmpty()
 
 
@@ -85,7 +90,10 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
             spark.sql(path.get_sql())
 
         elif extension == "py":
-            assert path.exists(), f"udf not found ({path.string})"
+            if not IS_UNITY_CATALOG:
+                assert path.exists(), f"udf not found ({path.string})"
+            else:
+                DEFAULT_LOGGER.debug(f"could not check if udf exists ({path.string})")
 
             spec = importlib.util.spec_from_file_location(udf, path.string)
             assert spec, f"no valid udf found ({path.string})"
@@ -102,8 +110,6 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
 
 
 def udf(name: str):
-    add_site_packages_to_path()
-
     def decorator(fn: Callable):
         UDFS[name] = fn
         return fn
