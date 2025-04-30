@@ -86,7 +86,7 @@
         table_options:
           properties: 
               delta.minReaderVersion: 1
-              delta.minWriterVersion: 2
+              delta.minWriterVersion: 7
               delta.columnMapping.mode: none
         spark_options:
           sql:
