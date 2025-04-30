@@ -1,9 +1,4 @@
 # Databricks notebook source
-# MAGIC %sql
-# MAGIC use catalog bms_dna_test
-
-# COMMAND ----------
-
 import os
 import sys
 from pathlib import Path
@@ -26,5 +21,3 @@ root = p.absolute()
 
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
-
-# COMMAND ----------
