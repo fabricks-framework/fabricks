@@ -146,6 +146,8 @@ class BaseStep:
             self.update_views()
 
     def get_dependencies(self) -> Optional[DataFrame]:
+        DEFAULT_LOGGER.info("get dependencies", extra={"step": self})
+
         errors = []
 
         def _get_dependencies(row: Row):
@@ -170,14 +172,15 @@ class BaseStep:
                 DEFAULT_LOGGER.error("failed to get dependencies", extra={"step": e})
 
             if dfs:
-                dfs = [d for d in dfs if d is not None]
                 df = concat_dfs(dfs)
-                return df if not df.isEmpty() else None
+                return df
 
     def get_jobs_iter(self, topic: Optional[str] = None):
         return read_yaml(self.runtime, root="job", prio_file_name=topic)
 
     def get_jobs(self, topic: Optional[str] = None) -> Optional[DataFrame]:
+        DEFAULT_LOGGER.info("get jobs", extra={"step": self})
+        
         try:
             conf = get_step_conf(self.name)
             schema = get_schema_for_type(conf)
@@ -257,7 +260,7 @@ class BaseStep:
     def update_tables(self):
         df = self.database.get_tables()
         if df:
-            DEFAULT_LOGGER.debug("update tables", extra={"step": self})
+            DEFAULT_LOGGER.info("update tables", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(table)"))
             SCD1("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
 
@@ -267,7 +270,7 @@ class BaseStep:
     def update_views(self):
         df = self.database.get_views()
         if df:
-            DEFAULT_LOGGER.debug("update views", extra={"step": self})
+            DEFAULT_LOGGER.info("update views", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(view)"))
             SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
 
@@ -277,7 +280,7 @@ class BaseStep:
     def update_dependencies(self):
         df = self.get_dependencies()
         if df:
-            DEFAULT_LOGGER.debug("update dependencies", extra={"step": self})
+            DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
             df.cache()
             SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"])
 

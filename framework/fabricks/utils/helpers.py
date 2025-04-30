@@ -23,6 +23,9 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
 
 
 def concat_dfs(dfs: Iterable[DataFrame]) -> DataFrame:
+    dfs = [df for df in dfs if df is not None]
+    if len(dfs) == 0:
+        return None
     return reduce(lambda x, y: x.unionByName(y, allowMissingColumns=True), dfs)
 
 

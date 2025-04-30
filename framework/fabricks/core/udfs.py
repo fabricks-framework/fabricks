@@ -5,7 +5,7 @@ from typing import Callable, List, Optional
 
 from pyspark.sql import SparkSession
 
-from fabricks.context import CATALOG, IS_UNITY_CATALOG, PATH_UDFS, SPARK
+from fabricks.context import IS_UNITY_CATALOG, PATH_UDFS, SPARK, CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 
 UDFS: dict[str, Callable] = {}
