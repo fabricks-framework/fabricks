@@ -5,7 +5,7 @@
 
 import logging
 
-from databricks.sdk.runtime import dbutils
+from databricks.sdk.runtime import dbutils, spark
 
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
@@ -49,7 +49,7 @@ if i == 1:
 
     if CATALOG is not None:
         spark.sql(f"use catalog {CATALOG}")
-        spark.sql(f"drop schema if exists bronze cascade")
+        spark.sql("drop schema if exists bronze cascade")
         spark.sql("create schema if not exists bronze")
 
     paths.raw.rm()
