@@ -96,9 +96,9 @@ DEFAULT_LOGGER.setLevel(logging.CRITICAL)
 
 # COMMAND ----------
 
-run_in_parallel(_run, bronze, progress_bar=True)
-run_in_parallel(_run, silver, progress_bar=True)
-run_in_parallel(_run, gold, progress_bar=True)
+_ = run_in_parallel(_run, bronze, progress_bar=True)
+_ = run_in_parallel(_run, silver, progress_bar=True)
+_ = run_in_parallel(_run, gold, progress_bar=True)
 
 # COMMAND ----------
 
