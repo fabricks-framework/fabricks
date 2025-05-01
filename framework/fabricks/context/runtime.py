@@ -36,7 +36,7 @@ try:
     pyproject_path, pyproject_config = get_config_from_toml()
 
     runtime = os.environ.get("FABRICKS_RUNTIME", "none")
-    runtime = None if runtime.lower() != "none" else runtime
+    runtime = None if runtime.lower() == "none" else runtime
     if runtime is None:
         if runtime := pyproject_config.get("runtime"):
             assert pyproject_path is not None  # Cannot be null since we got the config from it
@@ -52,7 +52,7 @@ try:
     PATH_RUNTIME: Final[Path] = path_runtime
 
     notebooks = os.environ.get("FABRICKS_NOTEBOOKS", "none")
-    notebooks = None if notebooks.lower() != "none" else notebooks
+    notebooks = None if notebooks.lower() == "none" else notebooks
     if notebooks is None:
         if notebooks := pyproject_config.get("notebooks"):
             assert pyproject_path is not None
