@@ -264,7 +264,3 @@ with
 ## 📄 License
 
 This project is licensed under the MIT License.
-
----
-
-For more information, visit [**Fabricks** Documentation](https://fabricks.readthedocs.io) 📚
