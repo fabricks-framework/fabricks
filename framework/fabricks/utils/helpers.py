@@ -38,7 +38,8 @@ def run_in_parallel(
     func: Callable,
     iterable: Union[List, DataFrame, range, set],
     workers: int = 8,
-    progress_bar: bool = False,
+    progress_bar: Optional[bool] = False,
+    position: Optional[int] = None,
 ) -> List[Any]:
     """
     Runs the given function in parallel on the elements of the iterable using multiple threads.
@@ -58,7 +59,7 @@ def run_in_parallel(
         if progress_bar:
             from tqdm import tqdm
 
-            results = list(tqdm(executor.map(func, iterable), total=len(iterable)))
+            results = list(tqdm(executor.map(func, iterable), total=len(iterable), position=position))
         else:
             results = list(executor.map(func, iterable))
 
