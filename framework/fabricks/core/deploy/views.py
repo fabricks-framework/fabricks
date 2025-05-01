@@ -8,6 +8,8 @@ def deploy_views():
     DEFAULT_LOGGER.info("🌟 (create or replace views)")
 
     create_or_replace_jobs_view()
+    create_or_replace_tables_view()
+    create_or_replace_views_view()
 
     create_or_replace_logs_pivot_view()
     create_or_replace_last_schedule_view()
@@ -21,9 +23,6 @@ def deploy_views():
     create_or_replace_dependencies_unpivot_view()
     create_or_replace_dependencies_circular_view()
 
-    create_or_replace_tables_view()
-    create_or_replace_views_view()
-
     create_or_replace_jobs_to_be_updated_view()
 
 
@@ -32,31 +31,49 @@ def create_or_replace_jobs_view():
 
     for step in Steps:
         table = f"{step}_jobs"
-
-        df = SPARK.sql("show tables in fabricks").where(f"tableName like '{table}'")
-        if not df.isEmpty():
+        try:
             try:
                 SPARK.sql(f"select options.change_data_capture from fabricks.{table}")
                 change_data_capture = "coalesce(options.change_data_capture, 'nocdc') as change_data_capture"
             except Exception:
                 change_data_capture = "'nocdc' as change_data_capture"
 
-            dmls.append(
-                f"""
+            dml = f"""
                 select 
-                  step, 
-                  job_id, 
-                  topic, 
-                  item, 
-                  concat(step, '.', topic, '_', item) as job,
-                  options.mode,
+                  j.step, 
+                  s.expand,
+                  j.job_id, 
+                  j.topic, 
+                  j.item, 
+                  concat(j.step, '.', j.topic, '_', j.item) as job,
+                  j.options.mode,
                   {change_data_capture},
-                  coalesce(options.type, 'default') as type,
-                  tags
+                  coalesce(j.options.type, 'default') as type,
+                  tags,
+                  case
+                    when s.expand == "bronze" then if(j.options.mode in ("append", "register"), "table", null)
+                    when
+                      s.expand == "silver"
+                    then
+                      if(
+                        j.options.mode in ("update", "append", "latest"),
+                        "table",
+                        if(j.options.mode in ("combine", "memory"), "view", null)
+                      )
+                    when
+                      s.expand == "gold"
+                    then
+                      if(j.options.mode in ("update", "append", "complete"), "table", if(j.options.mode in ("memory"), "view", null))
+                  end as object_type
                 from
-                  fabricks.{table}
+                  fabricks.{table} j
+                  left join fabricks.steps s on s.step = j.step
             """
-            )
+            SPARK.sql(dml)  # Check if the table exists
+            dmls.append(dml)
+
+        except Exception:
+            DEFAULT_LOGGER.warning(f"fabricks.{table} not found")
 
     sql = f"""create or replace view fabricks.jobs as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -69,11 +86,8 @@ def create_or_replace_tables_view():
 
     for step in Steps:
         table = f"{step}_tables"
-
-        df = SPARK.sql("show tables in fabricks").where(f"tableName like '{table}'")
-        if not df.isEmpty():
-            dmls.append(
-                f"""
+        try:
+            dml = f"""
                 select 
                   '{step}' as step, 
                   job_id, 
@@ -81,7 +95,11 @@ def create_or_replace_tables_view():
                 from
                   fabricks.{table}
                 """
-            )
+            SPARK.sql(dml)  # Check if the table exists
+            dmls.append(dml)
+
+        except Exception:
+            DEFAULT_LOGGER.warning(f"fabricks.{step}_tables not found")
 
     sql = f"""create or replace view fabricks.tables as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -94,11 +112,8 @@ def create_or_replace_views_view():
 
     for step in Steps:
         table = f"{step}_views"
-
-        df = SPARK.sql("show tables in fabricks").where(f"tableName like '{table}'")
-        if not df.isEmpty():
-            dmls.append(
-                f"""
+        try:
+            dml = f"""
                 select 
                   '{step}' as step, 
                   job_id, 
@@ -106,7 +121,11 @@ def create_or_replace_views_view():
                 from 
                   fabricks.{table}
                 """
-            )
+            SPARK.sql(dml)  # Check if the table exists
+            dmls.append(dml)
+
+        except Exception:
+            DEFAULT_LOGGER.warning(f"fabricks.{step}_views not found")
 
     sql = f"""create or replace view fabricks.views as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -118,12 +137,9 @@ def create_or_replace_dependencies_view():
     dmls = []
 
     for step in Steps:
-        table = f"{step}_dependencies"
-
-        df = SPARK.sql("show tables in fabricks").where(f"tableName like '{table}'")
-        if not df.isEmpty():
-            dmls.append(
-                f"""
+        f"{step}_dependencies"
+        try:
+            dml = f"""
               select
                 '{step}' as step,
                 dependency_id,
@@ -134,7 +150,11 @@ def create_or_replace_dependencies_view():
               from
                 fabricks.{step}_dependencies d
               """
-            )
+            SPARK.sql(dml)  # Check if the table exists
+            dmls.append(dml)
+
+        except Exception:
+            DEFAULT_LOGGER.warning(f"fabricks.{step}_dependencies not found")
 
     sql = f"""create or replace view fabricks.dependencies as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -437,21 +457,7 @@ def create_or_replace_jobs_to_be_updated_view():
         j.item,
         s.expand,
         j.mode as mode,
-        case
-          when s.expand == "bronze" then if(mode in ("append", "register"), "table", null)
-          when
-            s.expand == "silver"
-          then
-            if(
-              mode in ("update", "append", "latest"),
-              "table",
-              if(mode in ("combine", "memory"), "view", null)
-            )
-          when
-            s.expand == "gold"
-          then
-            if(mode in ("update", "append", "complete"), "table", if(mode in ("memory"), "view", null))
-        end as object_type
+        j.object_type as object_type
       from
         fabricks.jobs j
           inner join fabricks.steps s

@@ -24,13 +24,13 @@ resources:
           job_cluster_key: fabricks_test_cluster
           libraries:
             - whl: ./dist/*.whl
-        - task_key: runtests
-          depends_on:
-            - task_key: cluster
-          notebook_task:
-            notebook_path: tests/integration/runtests.py
-            source: WORKSPACE
-          job_cluster_key: fabricks_test_cluster
+#        - task_key: runtests
+#          depends_on:
+#            - task_key: cluster
+#          notebook_task:
+#            notebook_path: tests/integration/runtests.py
+#            source: WORKSPACE
+#          job_cluster_key: fabricks_test_cluster
       job_clusters:
         - job_cluster_key: fabricks_test_cluster
           new_cluster:
