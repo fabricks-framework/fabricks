@@ -128,7 +128,7 @@ class BaseStep:
         else:
             self.update()
 
-    def update(self, update_dependencies: Optional[bool] = True):
+    def update(self, update_dependencies: Optional[bool] = True, progress_bar: Optional[bool] = False):
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
 
@@ -140,12 +140,12 @@ class BaseStep:
             self.create_jobs()
 
             if update_dependencies:
-                self.update_dependencies()
+                self.update_dependencies(progress_bar=progress_bar)
 
             self.update_tables()
             self.update_views()
 
-    def get_dependencies(self) -> Optional[DataFrame]:
+    def get_dependencies(self, progress_bar: Optional[bool] = False) -> Optional[DataFrame]:
         DEFAULT_LOGGER.info("get dependencies", extra={"step": self})
 
         errors = []
@@ -165,7 +165,7 @@ class BaseStep:
             job_df = job_df.where("not options.type <=> 'manual'")
 
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-            dfs = run_in_parallel(_get_dependencies, job_df, workers=16, progress_bar=True)
+            dfs = run_in_parallel(_get_dependencies, job_df, workers=16, progress_bar=progress_bar)
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
             for e in errors:
@@ -277,8 +277,8 @@ class BaseStep:
         else:
             DEFAULT_LOGGER.debug("no view", extra={"step": self})
 
-    def update_dependencies(self):
-        df = self.get_dependencies()
+    def update_dependencies(self, progress_bar: Optional[bool] = False):
+        df = self.get_dependencies(progress_bar=progress_bar)
         if df:
             DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
             df.cache()
