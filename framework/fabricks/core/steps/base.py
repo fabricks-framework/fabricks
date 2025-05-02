@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Union, cast
+from typing import List, Optional, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
@@ -146,7 +146,9 @@ class BaseStep:
             self.update_views()
 
     def get_dependencies(
-        self, progress_bar: Optional[bool] = False, topic: Optional[str] = None
+        self,
+        progress_bar: Optional[bool] = False,
+        topic: Optional[Union[str, List[str]]] = None,
     ) -> Optional[DataFrame]:
         DEFAULT_LOGGER.debug("get dependencies", extra={"step": self})
 
@@ -164,8 +166,12 @@ class BaseStep:
 
         job_df = self.get_jobs()
         if topic and job_df:
-            DEFAULT_LOGGER.debug(f"where topic is {topic}", extra={"step": self})
-            job_df = job_df.where(job_df.topic == topic)
+            if isinstance(topic, str):
+                topic = [topic]
+
+            where = ", ".join([f"'{t}'" for t in topic])
+            DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"step": self})
+            job_df = job_df.where(f"topic in ({where})")
 
         if job_df:
             job_df = job_df.where("not options.type <=> 'manual'")
@@ -283,7 +289,7 @@ class BaseStep:
         else:
             DEFAULT_LOGGER.debug("no view", extra={"step": self})
 
-    def update_dependencies(self, progress_bar: Optional[bool] = False, topic: Optional[str] = None):
+    def update_dependencies(self, progress_bar: Optional[bool] = False, topic: Optional[Union[str, List[str]]] = None):
         df = self.get_dependencies(progress_bar=progress_bar, topic=topic)
         if df:
             DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
@@ -292,9 +298,17 @@ class BaseStep:
             if topic is None:
                 SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"])
             else:
-                DEFAULT_LOGGER.debug(f"where topic is {topic}", extra={"step": self})
+                if isinstance(topic, str):
+                    topic = [topic]
+
+                where = ", ".join([f"'{t}'" for t in topic])
+                DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"step": self})
+
                 SCD1("fabricks", self.name, "dependencies").delete_missing(
-                    df, keys=["dependency_id"], update_where=f"topic = '{topic}'", uuid=True
+                    df,
+                    keys=["dependency_id"],
+                    update_where=f"topic in ({where})",
+                    uuid=True,
                 )
 
         else:
