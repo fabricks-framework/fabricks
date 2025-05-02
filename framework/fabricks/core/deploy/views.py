@@ -451,6 +451,7 @@ def create_or_replace_jobs_to_be_updated_view():
     create or replace view fabricks.jobs_to_be_updated as
     with base as (
       select
+        j.job,
         j.job_id,
         j.step,
         j.topic,
@@ -479,15 +480,18 @@ def create_or_replace_jobs_to_be_updated_view():
         fabricks.views
     )
     select
+      b.job,
       b.job_id,
       b.step,
       b.topic,
       b.item,
       b.expand,
       b.mode,
-      o.object_type,
-      not b.object_type <=> o.object_type as is_to_be_updated,
-      array(b.object_type, o.object_type) as object_types
+      o.object_type as old_object_type,
+      b.object_type as new_object_type,
+      array(old_object_type, new_object_type) as object_types,
+      (old_object_type is not null and new_object_type is null) or (not old_object_type <=> new_object_type and old_object_type is not null ) as is_to_drop,
+      (is_to_drop and new_object_type is not null) or (new_object_type <=> 'view') or (old_object_type is null and new_object_type is not null) as is_to_register
     from
       base b
         left join objects o

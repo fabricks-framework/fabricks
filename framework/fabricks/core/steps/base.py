@@ -145,8 +145,10 @@ class BaseStep:
             self.update_tables()
             self.update_views()
 
-    def get_dependencies(self, progress_bar: Optional[bool] = False) -> Optional[DataFrame]:
-        DEFAULT_LOGGER.info("get dependencies", extra={"step": self})
+    def get_dependencies(
+        self, progress_bar: Optional[bool] = False, topic: Optional[str] = None
+    ) -> Optional[DataFrame]:
+        DEFAULT_LOGGER.debug("get dependencies", extra={"step": self})
 
         errors = []
 
@@ -161,6 +163,10 @@ class BaseStep:
                 errors.append(job)
 
         job_df = self.get_jobs()
+        if topic and job_df:
+            DEFAULT_LOGGER.debug(f"where topic is {topic}", extra={"step": self})
+            job_df = job_df.where(job_df.topic == topic)
+
         if job_df:
             job_df = job_df.where("not options.type <=> 'manual'")
 
@@ -179,7 +185,7 @@ class BaseStep:
         return read_yaml(self.runtime, root="job", prio_file_name=topic)
 
     def get_jobs(self, topic: Optional[str] = None) -> Optional[DataFrame]:
-        DEFAULT_LOGGER.info("get jobs", extra={"step": self})
+        DEFAULT_LOGGER.debug("get jobs", extra={"step": self})
 
         try:
             conf = get_step_conf(self.name)
@@ -277,12 +283,19 @@ class BaseStep:
         else:
             DEFAULT_LOGGER.debug("no view", extra={"step": self})
 
-    def update_dependencies(self, progress_bar: Optional[bool] = False):
-        df = self.get_dependencies(progress_bar=progress_bar)
+    def update_dependencies(self, progress_bar: Optional[bool] = False, topic: Optional[str] = None):
+        df = self.get_dependencies(progress_bar=progress_bar, topic=topic)
         if df:
             DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
             df.cache()
-            SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"])
+
+            if topic is None:
+                SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"])
+            else:
+                DEFAULT_LOGGER.debug(f"where topic is {topic}", extra={"step": self})
+                SCD1("fabricks", self.name, "dependencies").delete_missing(
+                    df, keys=["dependency_id"], update_where=f"topic = '{topic}'", uuid=True
+                )
 
         else:
             DEFAULT_LOGGER.debug("no dependency", extra={"step": self})
