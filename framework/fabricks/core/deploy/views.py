@@ -491,7 +491,7 @@ def create_or_replace_jobs_to_be_updated_view():
       b.object_type as new_object_type,
       array(old_object_type, new_object_type) as object_types,
       (old_object_type is not null and new_object_type is null) or (not old_object_type <=> new_object_type and old_object_type is not null ) as is_to_drop,
-      (is_to_drop and new_object_type is not null) or (new_object_type <=> 'view') or (old_object_type is null and new_object_type is not null) as is_to_register
+      (is_to_drop and new_object_type is not null) or (old_object_type is null and new_object_type is not null) as is_to_register
     from
       base b
         left join objects o

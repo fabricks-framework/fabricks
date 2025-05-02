@@ -208,7 +208,7 @@ class BaseStep:
             return df if not df.isEmpty() else None
 
         except AssertionError as e:
-            DEFAULT_LOGGER.exception("🙈", extra={"step": self})
+            DEFAULT_LOGGER.exception("failed to get jobs", extra={"step": self})
             raise e
 
     def create_jobs(self, retry: Optional[bool] = True):
