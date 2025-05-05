@@ -28,7 +28,7 @@ class BaseParser(ABC):
         )
         df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
         df = df.drop("__split", "__split_size")
-        
+
         return df
 
     def parse(

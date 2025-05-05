@@ -318,6 +318,11 @@ class Silver(BaseJob):
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
         sql = f"select * from {global_temp_view}"
 
+        check_df = self.spark.sql(sql)
+        if check_df.isEmpty():
+            DEFAULT_LOGGER.warning("no data", extra={"job": self})
+            return
+
         if self.mode == "update":
             assert not isinstance(self.cdc, NoCDC)
             self.cdc.update(sql, **context)
