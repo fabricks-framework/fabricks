@@ -2,6 +2,7 @@ from typing import Optional
 
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
+from typing_extensions import deprecated
 
 from fabricks.context.runtime import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.secret import add_secret_to_spark, get_secret_from_secret_scope
@@ -47,9 +48,12 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
 
 
 def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional[str] = "default") -> SparkSession:
+    if app_name is None:
+        app_name = "default"
+
     if spark is not None:
         _spark = spark
-        _spark.appName(app_name)  # type: ignore
+        _spark.builder.appName(app_name)
 
     else:
         _spark = (
@@ -67,11 +71,12 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
     return _spark
 
 
+@deprecated("use build_spark_session instead")
 def init_spark_session(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = _spark  # type: ignore
 
-    build_spark_session(spark=spark)
+    return build_spark_session(spark=spark)
 
 
 SPARK = build_spark_session(app_name="default")
