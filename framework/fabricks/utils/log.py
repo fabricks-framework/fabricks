@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import sys
 from datetime import datetime
 from typing import Optional, Tuple
 
@@ -58,6 +59,7 @@ class LogFormatter(logging.Formatter):
         if self.debugmode:
             if hasattr(record, "sql"):
                 extra += f"\n---\n%sql\n{record.__dict__.get('sql')}\n---"
+
             if hasattr(record, "content"):
                 extra += f"\n---\n{record.__dict__.get('content')}\n---"
 
@@ -150,6 +152,19 @@ class AzureTableLogHandler(logging.Handler):
         self.buffer = []
 
 
+class CustomConsoleHandler(logging.StreamHandler):
+    def __init__(self, stream=None, debugmode: Optional[bool] = False):
+        super().__init__(stream or sys.stderr)
+        self.debugmode = debugmode if debugmode is not None else False
+
+    def emit(self, record):
+        if hasattr(record, "sql"):
+            if self.debugmode:
+                super().emit(record)
+        else:
+            super().emit(record)
+
+
 def get_logger(
     name: str,
     level: int,
@@ -168,7 +183,7 @@ def get_logger(
     logger.propagate = False
 
     # Console handler
-    console_handler = logging.StreamHandler()
+    console_handler = CustomConsoleHandler(debugmode=debugmode)
     console_handler.setLevel(level)
     console_format = LogFormatter(debugmode=debugmode)
     console_handler.setFormatter(console_format)
