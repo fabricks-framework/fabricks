@@ -230,6 +230,9 @@ class Gold(BaseJob):
                 self._update_last_timestamp(create=True)
 
     def register(self):
+        if self.options.job.get_boolean("persist_last_timestamp"):
+            self.cdc_last_timestamp.table.register()
+            
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
         else:
