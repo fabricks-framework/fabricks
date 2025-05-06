@@ -308,6 +308,11 @@ class Bronze(BaseJob):
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
         sql = f"select * from {global_temp_view}"
 
+        check_df = self.spark.sql(sql)
+        if check_df.isEmpty():
+            DEFAULT_LOGGER.warning("no data", extra={"job": self})
+            return
+
         assert isinstance(self.cdc, NoCDC)
         if self.mode == "append":
             self.cdc.append(sql, **context)

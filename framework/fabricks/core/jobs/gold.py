@@ -191,6 +191,11 @@ class Gold(BaseJob):
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
         sql = f"select * from {global_temp_view}"
 
+        check_df = self.spark.sql(sql)
+        if check_df.isEmpty():
+            DEFAULT_LOGGER.warning("no data", extra={"job": self})
+            return
+
         if self.mode == "update":
             assert not isinstance(self.cdc, NoCDC), "nocdc update not allowed"
             self.cdc.update(sql, **context)
@@ -230,6 +235,9 @@ class Gold(BaseJob):
                 self._update_last_timestamp(create=True)
 
     def register(self):
+        if self.options.job.get_boolean("persist_last_timestamp"):
+            self.cdc_last_timestamp.table.register()
+
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
         else:

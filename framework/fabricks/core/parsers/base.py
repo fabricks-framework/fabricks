@@ -28,6 +28,7 @@ class BaseParser(ABC):
         )
         df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
         df = df.drop("__split", "__split_size")
+
         return df
 
     def parse(
@@ -45,8 +46,10 @@ class BaseParser(ABC):
             options=self.options.get("read_options"),
             spark=spark,
         )
+
         if "__timestamp" not in df.columns:
             df = self.add_timestamp_from_file_path(df)
+
         return df
 
     @final
@@ -78,6 +81,7 @@ class BaseParser(ABC):
 
         if "__rescued_data" not in df.columns:
             df = df.withColumn("__rescued_data", lit(None).cast(StringType()))
+
         df = df.withColumn("__rescued_data", from_json(col("__rescued_data"), MapType(StringType(), StringType())))  # type: ignore
 
         assert "__timestamp" in df.columns, "__timestamp mandatory in dataframe"
