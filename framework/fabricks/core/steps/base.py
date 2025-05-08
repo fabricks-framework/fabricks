@@ -281,13 +281,10 @@ class BaseStep:
 
     def update_views(self):
         df = self.database.get_views()
-        if df:
-            DEFAULT_LOGGER.info("update views", extra={"step": self})
-            df = df.withColumn("job_id", expr("md5(view)"))
-            SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
 
-        else:
-            DEFAULT_LOGGER.debug("no view", extra={"step": self})
+        DEFAULT_LOGGER.info("update views", extra={"step": self})
+        df = df.withColumn("job_id", expr("md5(view)"))
+        SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
 
     def update_dependencies(self, progress_bar: Optional[bool] = False, topic: Optional[Union[str, List[str]]] = None):
         df = self.get_dependencies(progress_bar=progress_bar, topic=topic)

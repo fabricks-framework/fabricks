@@ -105,3 +105,6 @@ class Checker(Generator):
 
     def check_duplicate_hash(self):
         self._check_duplicate("__hash")
+
+    def check_duplicate_identity(self):
+        self._check_duplicate("__identity")

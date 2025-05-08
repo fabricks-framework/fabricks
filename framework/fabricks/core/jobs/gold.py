@@ -212,6 +212,7 @@ class Gold(BaseJob):
 
         self.check_duplicate_key()
         self.check_duplicate_hash()
+        self.check_duplicate_identity()
 
     def for_each_run(self, schedule: Optional[str] = None):
         last_version = None

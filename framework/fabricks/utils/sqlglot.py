@@ -20,6 +20,8 @@ def fix(sql: str):
         pretty=True,
         normalize=False,
         normalize_functions="lower",
+        leading_comma=True,
+        max_text_width=119,
     )[0]
     return sql
 
