@@ -45,8 +45,6 @@ class Generator(Configurator):
 
             matches = re.findall(r, explain_plan)
             matches = [m.replace("__current", "") for m in matches]
-            matches = [m for m in matches if not m == str(self)]
-
             matches = list(set(matches))
 
             for m in matches:
@@ -69,6 +67,7 @@ class Generator(Configurator):
             )  # order of the fields is important !
             df = df.transform(self.add_dependency_details)
 
+        assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
         return df
 
     def rm(self):
