@@ -64,7 +64,9 @@ class Generator(Configurator):
                 f"dependencies ({', '.join([row[1] for row in dependencies])})",
                 extra={"job": self},
             )
-            df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"]) # order of the fields is important !
+            df = self.spark.createDataFrame(
+                dependencies, schema=["job_id", "parent", "origin"]
+            )  # order of the fields is important !
             df = df.transform(self.add_dependency_details)
 
         return df
