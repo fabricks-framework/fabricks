@@ -199,10 +199,10 @@ class Options:
 
 SchemaDependencies = StructType(
     [
-        StructField("dependency_id", StringType(), True),
+        StructField("dependency_id", StringType(), False),
         StructField("origin", StringType(), True),
         StructField("job_id", StringType(), True),
-        StructField("parent_id", StringType(), True),
+        StructField("parent_id", StringType(), False),
         StructField("parent", StringType(), True),
     ]
 )

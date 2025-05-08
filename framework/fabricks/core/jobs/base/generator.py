@@ -61,12 +61,14 @@ class Generator(Configurator):
                     f"dependencies ({', '.join([row[1] for row in dependencies])})",
                     extra={"job": self},
                 )
+                df = self.spark.createDataFrame(dependencies, schema=["parent", "job_id", "origin"])
+                df = df.transform(self.add_dependency_details)
 
         else:
             DEFAULT_LOGGER.warning("no dependencies found", extra={"job": self})
 
-        df = self.spark.createDataFrame(dependencies, SchemaDependencies)
-        df = df.transform(self.add_dependency_details)
+        if df is None:
+            df = self.spark.createDataFrame(dependencies, SchemaDependencies)
 
         return df
 
