@@ -165,13 +165,15 @@ class Silver(BaseJob):
             p = f"{self.parent_step}.{self.topic}_{self.item}"
             dependencies.append(Row(self.job_id, p, "parser"))
 
-        if dependencies:
-            DEFAULT_LOGGER.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
+        if len(dependencies) == 0:
+            DEFAULT_LOGGER.warning("no dependencies found", extra={"job": self})
+            df = self.spark.createDataFrame(dependencies, schema=SchemaDependencies)
         else:
-            DEFAULT_LOGGER.debug("no dependencies found", extra={"job": self})
-
-        df = self.spark.createDataFrame(dependencies, schema=SchemaDependencies)
-        df = df.transform(self.add_dependency_details)
+            DEFAULT_LOGGER.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
+            df = self.spark.createDataFrame(
+                dependencies, schema=["job_id", "parent", "origin"]
+            )  # order of the fields is important !
+            df = df.transform(self.add_dependency_details)
 
         return df
 
