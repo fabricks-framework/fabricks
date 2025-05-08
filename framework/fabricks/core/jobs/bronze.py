@@ -81,7 +81,7 @@ class Bronze(BaseJob):
             DEFAULT_LOGGER.warning("no dependencies found", extra={"job": self})
             df = self.spark.createDataFrame(dependencies, schema=SchemaDependencies)
         else:
-            df = self.spark.createDataFrame(dependencies, schema=["parent", "job_id", "origin"])
+            df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"]) # order of the fields is important !
             df = df.transform(self.add_dependency_details)
 
         return df
