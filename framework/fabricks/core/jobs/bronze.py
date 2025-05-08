@@ -82,7 +82,7 @@ class Bronze(BaseJob):
 
         df = self.spark.createDataFrame(dependencies, schema=SchemaDependencies)
         df = df.transform(self.add_dependency_details)
-        
+
         return df
 
     def register_external_table(self):
