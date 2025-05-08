@@ -21,7 +21,7 @@ def fix(sql: str):
         normalize=False,
         normalize_functions="lower",
         leading_comma=True,
-        max_text_width=119
+        max_text_width=119,
     )[0]
     return sql
 

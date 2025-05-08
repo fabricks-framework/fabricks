@@ -58,18 +58,8 @@ class Database:
     def __str__(self):
         return self.name
 
-    def get_tables(self) -> Optional[DataFrame]:
-        try:
-            df = get_tables(self.name)
-            return df if not df.isEmpty() else None
+    def get_tables(self) -> DataFrame:
+        return get_tables(self.name)
 
-        except AnalysisException:
-            return None
-
-    def get_views(self) -> Optional[DataFrame]:
-        try:
-            df = get_views(self.name)
-            return df if not df.isEmpty() else None
-
-        except AnalysisException:
-            return None
+    def get_views(self) -> DataFrame:
+        return get_views(self.name)

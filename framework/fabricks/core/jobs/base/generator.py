@@ -6,6 +6,7 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.jobs.base._types import SchemaDependencies
 from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.view import create_or_replace_global_temp_view
 
@@ -26,12 +27,14 @@ class Generator(Configurator):
         df = df.drop("__parent")
         return df
 
-    def get_dependencies(self) -> Optional[DataFrame]:
+    def get_dependencies(self) -> DataFrame:
         import re
 
         from fabricks.context import CATALOG
 
+        dependencies = []
         df = self.get_data(self.stream)
+
         if df is not None:
             explain_plan = self.spark.sql("explain extended select * from {df}", df=df).collect()[0][0]
 
@@ -40,10 +43,10 @@ class Generator(Configurator):
             else:
                 r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
 
-            dependencies = []
-
             matches = re.findall(r, explain_plan)
             matches = [m.replace("__current", "") for m in matches]
+            matches = [m for m in matches if not m.startswith(str(self))]
+
             matches = list(set(matches))
 
             for m in matches:
@@ -59,11 +62,13 @@ class Generator(Configurator):
                     extra={"job": self},
                 )
 
-                df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
-                df = df.transform(self.add_dependency_details)
+        else:
+            DEFAULT_LOGGER.warning("no dependencies found", extra={"job": self})
 
-                assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
-                return df
+        df = self.spark.createDataFrame(dependencies, SchemaDependencies)
+        df = df.transform(self.add_dependency_details)
+
+        return df
 
     def rm(self):
         """

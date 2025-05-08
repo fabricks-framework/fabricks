@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Literal, Optional, TypedDict, Union
 
+from pyspark.sql.types import StringType, StructField, StructType
+
 from fabricks.cdc.base._types import ChangeDataCaptures
 from fabricks.context import BRONZE, GOLD, SILVER
 from fabricks.core.parsers import ParserOptions
@@ -193,3 +195,12 @@ class Options:
     spark: FDict
     invokers: FDict
     extenders: List
+
+
+SchemaDependencies = StructType(
+    [
+        StructField("job_id", StringType(), True),
+        StructField("parent", StringType(), True),
+        StructField("origin", StringType(), True),
+    ]
+)

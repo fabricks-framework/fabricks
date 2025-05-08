@@ -6,7 +6,7 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import TBronze, TSilver
+from fabricks.core.jobs.base._types import SchemaDependencies, TBronze, TSilver
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -153,21 +153,27 @@ class Silver(BaseJob):
 
         return df
 
-    def get_dependencies(self, df: Optional[DataFrame] = None) -> Optional[DataFrame]:
+    def get_dependencies(self, df: Optional[DataFrame] = None) -> DataFrame:
         dependencies = []
+
         parents = self.options.job.get_list("parents") or []
         if parents:
             for p in parents:
                 dependencies.append(Row(self.job_id, p, "job"))
+
         else:
             p = f"{self.parent_step}.{self.topic}_{self.item}"
             dependencies.append(Row(self.job_id, p, "parser"))
 
         if dependencies:
             DEFAULT_LOGGER.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
-            df = self.spark.createDataFrame(dependencies, schema=["job_id", "parent", "origin"])
-            df = df.transform(self.add_dependency_details)
-            return df
+        else:
+            DEFAULT_LOGGER.debug("no dependencies found", extra={"job": self})
+
+        df = self.spark.createDataFrame(dependencies, schema=SchemaDependencies)
+        df = df.transform(self.add_dependency_details)
+        
+        return df
 
     def create_or_replace_view(self):
         assert self.mode in ["memory", "combine"], f"{self.mode} not allowed"
