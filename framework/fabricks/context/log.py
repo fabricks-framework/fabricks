@@ -3,7 +3,6 @@ import logging
 from typing import Final, Literal, Optional
 
 import requests
-from databricks.sdk.runtime import dbutils
 
 from fabricks.context.runtime import IS_DEBUGMODE, LOGLEVEL, SECRET_SCOPE
 from fabricks.utils.log import get_logger
@@ -32,6 +31,8 @@ def send_message_to_channel(
     Returns:
         bool: True if message was sent successfully, False otherwise
     """
+    from databricks.sdk.runtime import dbutils
+    
     channel = channel.lower()
     channel = channel.replace(" ", "-")
     webhook_url = dbutils.secrets.get(scope=SECRET_SCOPE, key=f"{channel}-webhook-url")
