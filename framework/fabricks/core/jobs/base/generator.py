@@ -45,7 +45,7 @@ class Generator(Configurator):
 
             matches = re.findall(r, explain_plan)
             matches = [m.replace("__current", "") for m in matches]
-            matches = [m for m in matches if not m.startswith(str(self))]
+            matches = [m for m in matches if not m == str(self)]
 
             matches = list(set(matches))
 
