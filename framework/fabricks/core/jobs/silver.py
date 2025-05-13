@@ -166,8 +166,9 @@ class Silver(BaseJob):
             dependencies.append(Row(self.job_id, p, "parser"))
 
         if len(dependencies) == 0:
-            DEFAULT_LOGGER.warning("no dependencies found", extra={"job": self})
+            DEFAULT_LOGGER.debug("no dependency found", extra={"job": self})
             df = self.spark.createDataFrame(dependencies, schema=SchemaDependencies)
+
         else:
             DEFAULT_LOGGER.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
             df = self.spark.createDataFrame(
