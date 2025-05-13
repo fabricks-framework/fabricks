@@ -208,7 +208,7 @@ class BaseStep:
             DEFAULT_LOGGER.exception("failed to get jobs", extra={"step": self})
             raise e
 
-    def create_jobs(self, retry: Optional[bool] = True):
+    def create_jobs(self, retry: Optional[bool] = True) -> List[str]:
         DEFAULT_LOGGER.info("create jobs", extra={"step": self})
 
         errors = []
@@ -246,13 +246,15 @@ class BaseStep:
                     self.update_tables()
                     self.update_views()
 
-                    self.create_jobs(retry=False)
+                    return self.create_jobs(retry=False)
 
                 else:
                     DEFAULT_LOGGER.warning("retry failed", extra={"step": self})
 
         else:
             DEFAULT_LOGGER.debug("no new job", extra={"step": self})
+
+        return errors
 
     def update_jobs(self, drop: Optional[bool] = False):
         df = self.get_jobs()
