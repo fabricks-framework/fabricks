@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union, cast
+from typing import List, Optional, Tuple, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
@@ -8,7 +8,7 @@ from pyspark.sql.types import Row
 from fabricks.cdc import SCD1
 from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import Bronzes, Golds, SchemaDependencies, Silvers, TStep
+from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
@@ -149,11 +149,10 @@ class BaseStep:
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
-    ) -> DataFrame:
+    ) -> Tuple[Optional[DataFrame], List[str]]:
         DEFAULT_LOGGER.debug("get dependencies", extra={"step": self})
 
         errors = []
-        df = None
 
         def _get_dependencies(row: Row):
             job = get_job(step=self.name, job_id=row["job_id"])
@@ -161,9 +160,9 @@ class BaseStep:
                 df = job.get_dependencies()
                 return df
 
-            except Exception as e:  # noqa E722
+            except Exception as e:
                 DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": job})
-                errors.append(job)
+                errors.append((job, e))
 
         job_df = self.get_jobs()
         if topic and job_df:
@@ -178,19 +177,12 @@ class BaseStep:
             job_df = job_df.where("not options.type <=> 'manual'")
 
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-
             dfs = run_in_parallel(_get_dependencies, job_df, workers=16, progress_bar=progress_bar)
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
-            for e in errors:
-                DEFAULT_LOGGER.error("failed to get dependencies", extra={"step": e})
+            return concat_dfs(dfs), errors
 
-            df = concat_dfs(dfs)
-
-        if df is not None:
-            return df
-        else:
-            return SPARK.createDataFrame([], schema=SchemaDependencies)
+        return None, errors
 
     def get_jobs_iter(self, topic: Optional[str] = None):
         return read_yaml(self.runtime, root="job", prio_file_name=topic)
@@ -291,14 +283,20 @@ class BaseStep:
         df = df.withColumn("job_id", expr("md5(view)"))
         SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
 
-    def update_dependencies(self, progress_bar: Optional[bool] = False, topic: Optional[Union[str, List[str]]] = None):
-        df = self.get_dependencies(progress_bar=progress_bar, topic=topic)
+    def update_dependencies(
+        self,
+        progress_bar: Optional[bool] = False,
+        topic: Optional[Union[str, List[str]]] = None,
+    ) -> List[str]:
+        df, errors = self.get_dependencies(progress_bar=progress_bar, topic=topic)
+
         if df:
             DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
             df.cache()
 
             if topic is None:
                 SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"])
+
             else:
                 if isinstance(topic, str):
                     topic = [topic]
@@ -315,6 +313,8 @@ class BaseStep:
 
         else:
             DEFAULT_LOGGER.debug("no dependency", extra={"step": self})
+
+        return errors
 
     def register(self, update: Optional[bool] = False, drop: Optional[bool] = False):
         def _register(row: Row):
