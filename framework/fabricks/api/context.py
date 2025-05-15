@@ -1,11 +1,11 @@
 from fabricks.context import BRONZE, DBUTILS, GOLD, SECRET_SCOPE, SILVER, SPARK, init_spark_session
-from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers
+from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, Steps
 
 # step
 BRONZES = Bronzes
 SILVERS = Silvers
 GOLDS = Golds
-STEPS = BRONZES + SILVERS + GOLDS
+STEPS = Steps
 
 
 __all__ = [

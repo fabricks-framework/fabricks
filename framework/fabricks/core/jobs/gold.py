@@ -171,7 +171,9 @@ class Gold(BaseJob):
         return df
 
     def _get_sql_dependencies(self) -> List[str]:
-        return get_tables(self.sql)
+        from fabricks.core.jobs.base._types import Steps
+
+        return get_tables(self.sql, allowed_databases=Steps)
 
     def _get_notebook_dependencies(self) -> List[str]:
         import re
