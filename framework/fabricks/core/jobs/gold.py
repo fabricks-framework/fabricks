@@ -150,6 +150,10 @@ class Gold(BaseJob):
         else:
             dependencies = self._get_sql_dependencies()
 
+        dependencies = [d for d in dependencies if d not in parents]
+        dependencies = [d.replace("__current", "") for d in dependencies]
+        dependencies = list(set(dependencies))
+
         for d in dependencies:
             data.append(Row(self.job_id, d, "parser"))
 
@@ -173,7 +177,8 @@ class Gold(BaseJob):
     def _get_sql_dependencies(self) -> List[str]:
         from fabricks.core.jobs.base._types import Steps
 
-        return get_tables(self.sql, allowed_databases=Steps)
+        steps = [str(s) for s in Steps]
+        return get_tables(self.sql, allowed_databases=steps)
 
     def _get_notebook_dependencies(self) -> List[str]:
         import re
@@ -192,11 +197,7 @@ class Gold(BaseJob):
                 r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
 
             matches = re.findall(r, explain_plan)
-            matches = [m.replace("__current", "") for m in matches]
-            matches = list(set(matches))
-
-            for m in matches:
-                dependencies.append(Row(self.job_id, m, "parser"))
+            dependencies = list(set(matches))
 
         return dependencies
 
