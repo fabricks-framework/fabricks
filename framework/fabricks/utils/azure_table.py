@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 from azure.data.tables import TableClient, TableServiceClient
 from pyspark.sql import DataFrame
 from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 
 class AzureTable:
@@ -39,15 +40,39 @@ class AzureTable:
     def table(self) -> TableClient:
         return self.create_if_not_exists()
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((Exception)),
+        reraise=True,
+    )
     def create_if_not_exists(self) -> TableClient:
         return self.table_service_client.create_table_if_not_exists(table_name=self.name)
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((Exception)),
+        reraise=True,
+    )
     def drop(self):
         self.table_service_client.delete_table(self.name)
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((Exception)),
+        reraise=True,
+    )
     def query(self, query: str) -> List:
         return list(self.table.query_entities(query))
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((Exception)),
+        reraise=True,
+    )
     def list_all(self) -> List:
         return self.query("")
 

@@ -2,11 +2,9 @@ from typing import Optional, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
-from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import SchemaDependencies
 from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.view import create_or_replace_global_temp_view
 
@@ -28,48 +26,7 @@ class Generator(Configurator):
         return df
 
     def get_dependencies(self) -> DataFrame:
-        import re
-
-        from fabricks.context import CATALOG
-
-        dependencies = []
-        df = self.get_data(self.stream)
-
-        if df is not None:
-            explain_plan = self.spark.sql("explain extended select * from {df}", df=df).collect()[0][0]
-
-            if CATALOG is None:
-                r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
-            else:
-                r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
-
-            matches = re.findall(r, explain_plan)
-            matches = [m.replace("__current", "") for m in matches]
-            matches = list(set(matches))
-
-            for m in matches:
-                dependencies.append(Row(self.job_id, m, "parser"))
-
-            parents = self.options.job.get_list("parents") or []
-            for p in parents:
-                dependencies.append(Row(self.job_id, p, "job"))
-
-        if len(dependencies) == 0:
-            DEFAULT_LOGGER.debug("no dependency found", extra={"job": self})
-            df = self.spark.createDataFrame(dependencies, SchemaDependencies)
-
-        else:
-            DEFAULT_LOGGER.debug(
-                f"dependencies ({', '.join([row[1] for row in dependencies])})",
-                extra={"job": self},
-            )
-            df = self.spark.createDataFrame(
-                dependencies, schema=["job_id", "parent", "origin"]
-            )  # order of the fields is important !
-            df = df.transform(self.add_dependency_details)
-
-        assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
-        return df
+        raise NotImplementedError()
 
     def rm(self):
         """

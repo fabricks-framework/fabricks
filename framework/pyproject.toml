@@ -1,6 +1,6 @@
 [project]
 name = "fabricks"
-version = "2.0.13"
+version = "2.0.14"
 description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },
@@ -17,6 +17,7 @@ dependencies = [
     "python-dotenv >=1.0.1",
     "pyyaml >=6.0.0",
     "sqlglot >=22.1.1",
+    "tenacity>=9.1.2",
     "tomli>=2.2.1;python_version<\"3.11\"",
     "tqdm>=4.67.1",
 ]

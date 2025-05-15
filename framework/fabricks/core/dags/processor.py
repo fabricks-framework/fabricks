@@ -2,9 +2,11 @@ import json
 import threading
 import time
 from multiprocessing import Process
-from typing import List, Union
+from typing import Any, List, Union
 
+from azure.core.exceptions import ServiceRequestError
 from databricks.sdk.runtime import dbutils, spark
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core.dags.base import BaseDags
@@ -42,6 +44,33 @@ class DagProcessor(BaseDags):
         if not self._azure_table:
             self._azure_table = AzureTable(f"t{self.schedule_id}", connection_string=self.get_connection_string())
         return self._azure_table
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((Exception, ServiceRequestError)),
+        reraise=True,
+    )
+    def query(self, data: Any) -> List[dict]:
+        return self.table.query(data)
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((Exception, ServiceRequestError)),
+        reraise=True,
+    )
+    def upsert(self, data: Any) -> None:
+        self.table.upsert(data)
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((Exception, ServiceRequestError)),
+        reraise=True,
+    )
+    def delete(self, data: Any) -> None:
+        self.table.delete(data)
 
     def extra(self, d: dict) -> dict:
         return {
@@ -192,4 +221,5 @@ class DagProcessor(BaseDags):
             self._azure_queue.__exit__()
         if self._azure_table:
             self._azure_table.__exit__()
+
         return super().__exit__(*args, **kwargs)

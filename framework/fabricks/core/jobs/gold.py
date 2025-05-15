@@ -3,14 +3,16 @@ from typing import List, Optional, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.types import Row
+from typing_extensions import deprecated
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import TGold
+from fabricks.core.jobs.base._types import SchemaDependencies, TGold
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.path import Path
+from fabricks.utils.sqlglot import get_tables
 
 
 class Gold(BaseJob):
@@ -63,6 +65,11 @@ class Gold(BaseJob):
     def virtual(self) -> bool:
         return self.mode in ["memory"]
 
+    @property
+    def sql(self) -> str:
+        return self.get_sql()
+
+    @deprecated("use sql instead")
     def get_sql(self) -> str:
         return self.paths.runtime.get_sql()
 
@@ -131,6 +138,65 @@ class Gold(BaseJob):
         df = self.spark.sql(self.get_sql())
         cdc_options = self.get_cdc_context(df)
         self.cdc.create_or_replace_view(self.get_sql(), **cdc_options)
+
+    def get_dependencies(self) -> DataFrame:
+        data = []
+        parents = self.options.job.get_list("parents") or []
+
+        if self.mode == "invoke":
+            dependencies = []
+        elif self.options.job.get("notebook"):
+            dependencies = self._get_notebook_dependencies()
+        else:
+            dependencies = self._get_sql_dependencies()
+
+        for d in dependencies:
+            data.append(Row(self.job_id, d, "parser"))
+
+        for p in parents:
+            data.append(Row(self.job_id, p, "job"))
+
+        if len(dependencies) == 0:
+            DEFAULT_LOGGER.debug("no dependency found", extra={"job": self})
+            df = self.spark.createDataFrame(data, SchemaDependencies)
+
+        else:
+            df = self.spark.createDataFrame(
+                data,
+                schema=["job_id", "parent", "origin"],
+            )  # order of the fields is important !
+            df = df.transform(self.add_dependency_details)
+
+        assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
+        return df
+
+    def _get_sql_dependencies(self) -> List[str]:
+        return get_tables(self.sql)
+
+    def _get_notebook_dependencies(self) -> List[str]:
+        import re
+
+        from fabricks.context import CATALOG
+
+        dependencies = []
+        df = self.get_data(self.stream)
+
+        if df is not None:
+            explain_plan = self.spark.sql("explain extended select * from {df}", df=df).collect()[0][0]
+
+            if CATALOG is None:
+                r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
+            else:
+                r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
+
+            matches = re.findall(r, explain_plan)
+            matches = [m.replace("__current", "") for m in matches]
+            matches = list(set(matches))
+
+            for m in matches:
+                dependencies.append(Row(self.job_id, m, "parser"))
+
+        return dependencies
 
     def get_cdc_context(self, df: DataFrame) -> dict:
         if "__order_duplicate_by_asc" in df.columns:
