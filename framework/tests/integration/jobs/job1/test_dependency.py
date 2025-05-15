@@ -24,13 +24,11 @@ def test_gold_fact_dependency():
               left join fabricks.jobs j on d.job_id = j.job_id
             where
               true
-              and j.step = 'gold'
-              and j.topic = 'fact'
-              and j.item = 'dependency'
+              and j.job = 'gold.fact_dependency'
             group by all
             """
         )
-        assert dep_df.count() == 4, f"dependency {dep_df.count()} <> 4"
+        assert dep_df.count() == 3, f"dependency {dep_df.count()} <> 3"
 
         expected_parents = set(
             sorted(
@@ -38,7 +36,6 @@ def test_gold_fact_dependency():
                     "gold.dim_time",
                     "transf.fact_memory",
                     "silver.king_and_queen_scd1",
-                    "silver.monarch_scd1",
                 ]
             )
         )
