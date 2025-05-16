@@ -39,8 +39,10 @@ class Generator(Configurator):
             assert partition_by, "partitioning column not found"
 
         fields = [c for c in df.columns if not c.startswith("__")]
+
         __leading = [c for c in self.allowed_leading_columns if c in df.columns]
         __trailing = [c for c in self.allowed_trailing_columns if c in df.columns]
+        
         columns = __leading + fields + __trailing
 
         df = df.select([f"`{c}`" for c in columns])
@@ -89,32 +91,46 @@ class Generator(Configurator):
 
     def optimize_table(self):
         liquid_clustering = self.table.get_property("delta.feature.liquid") == "supported"
+
         if liquid_clustering:
             self.table.optimize()
         else:
             columns = None
+
             if self.change_data_capture == "scd1":
                 columns = ["__key"]
             elif self.change_data_capture == "scd2":
                 columns = ["__key", "__valid_from"]
+
             vorder = self.table.get_property("delta.parquet.vorder.enabled") or "false"
             vorder = vorder.lower() == "true"
+
             self.table.optimize(columns=columns, vorder=vorder)
 
-    def update_schema(self, src: Union[DataFrame, Table, str], **kwargs):
-        overwrite = kwargs.get("overwrite", False)
-
+    def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
+        if self.is_view():
+            return None
+        
+        else:
+            kwargs = {"mode": "complete"}
+            df = self.get_data(src, **kwargs)
+            return self.table.schema_drifted(df)
+    
+    def _update_schema(self, src: Union[DataFrame, Table, str], overwrite: bool = False):
         if self.is_view():
             assert not isinstance(src, (DataFrame, CDataFrame)), "dataframe not allowed"
             self.create_or_replace_view(src=src, **kwargs)
 
         else:
-            kwargs["mode"] = "complete"
+            kwargs = {"mode": "complete"}
             df = self.get_data(src, **kwargs)
             if overwrite:
                 self.table.overwrite_schema(df)
             else:
                 self.table.update_schema(df)
 
+    def update_schema(self, src: Union[DataFrame, Table, str]):
+        self._update_schema(src=src)
+
     def overwrite_schema(self, src: Union[DataFrame, Table, str]):
-        self.update_schema(src=src, overwrite=True)
+        self._update_schema(src=src, overwrite=True)
