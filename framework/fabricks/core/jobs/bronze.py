@@ -307,7 +307,7 @@ class Bronze(BaseJob):
     def get_cdc_context(self, df: DataFrame) -> dict:
         return {}
 
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None):
+    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
 
         context = self.get_cdc_context(df)
@@ -326,13 +326,13 @@ class Bronze(BaseJob):
         if self.mode == "append":
             self.cdc.append(sql, **context)
 
-    def for_each_run(self, schedule: Optional[str] = None):
+    def for_each_run(self, **kwargs):
         if self.mode == "register":
             DEFAULT_LOGGER.info("register (no run)", extra={"job": self})
         elif self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no run)", extra={"job": self})
         else:
-            super().for_each_run(schedule=schedule)
+            super().for_each_run(**kwargs)
 
     def create(self):
         if self.mode == "register":

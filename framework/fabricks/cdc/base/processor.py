@@ -298,6 +298,7 @@ class Processor(Generator):
             DEFAULT_LOGGER.exception("🙈", extra={"job": self, "context": context})
             raise e
 
+        print(sql)
         row = self.spark.sql(sql).collect()[0]
         assert row.slices, "no slices found"
 
@@ -367,4 +368,4 @@ class Processor(Generator):
             name = f"{self.database}_{'_'.join(self.levels)}__overwrite"
             create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
 
-            self.spark.sql(f"insert overwrite table {self.table} by name select * from {name}")
+            self.spark.sql(f"insert overwrite table {self.table} by name select * from global_temp.{name}")

@@ -315,7 +315,7 @@ class Silver(BaseJob):
 
         return context
 
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None):
+    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
 
         context = self.get_cdc_context(df)
