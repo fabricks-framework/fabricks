@@ -266,7 +266,7 @@ class Gold(BaseJob):
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"job": self})
             return
-        
+
         if reload:
             DEFAULT_LOGGER.warning("force reload", extra={"job": self})
             self.cdc.complete(sql, **context)

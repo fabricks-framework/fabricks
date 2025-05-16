@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from functools import partial
 from typing import Optional
 
 from pyspark.sql import DataFrame
@@ -16,7 +17,6 @@ from fabricks.core.jobs.base.error import (
 )
 from fabricks.core.jobs.base.invoker import Invoker
 from fabricks.utils.write import write_stream
-from functools import partial
 
 
 class Processor(Invoker):
@@ -105,7 +105,7 @@ class Processor(Invoker):
             df = self.get_data(self.stream)
             assert df is not None, "no data"
 
-            batch_processor = partial(self._for_each_batch, **kwargs)
+            partial(self._for_each_batch, **kwargs)
 
             if self.stream:
                 DEFAULT_LOGGER.debug("stream enabled", extra={"job": self})
