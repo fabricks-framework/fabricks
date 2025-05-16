@@ -370,6 +370,7 @@ class Processor(Generator):
                     .option("partitionOverwriteMode", "dynamic")
                     .save(self.table.delta_path.string)
                 )
+
             else:
                 DEFAULT_LOGGER.debug("overwrite", extra={"job": self})
                 df.write.format("delta").mode("overwrite").save(self.table.delta_path.string)

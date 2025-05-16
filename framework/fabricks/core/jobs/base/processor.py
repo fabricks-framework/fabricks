@@ -206,6 +206,7 @@ class Processor(Invoker):
         """
         try:
             DEFAULT_LOGGER.warning("overwrite job", extra={"job": self})
+
             self.truncate()
             self.overwrite_schema()
             self.run(retry=False)
