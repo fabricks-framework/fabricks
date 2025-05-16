@@ -360,7 +360,7 @@ class Processor(Generator):
                     dynamic = True
 
             if dynamic:
-                self.spark.sql(f"set spark.sql.sources.partitionOverwriteMode=dynamic")
+                self.spark.sql("set spark.sql.sources.partitionOverwriteMode=dynamic")
 
             DEFAULT_LOGGER.info("overwrite", extra={"job": self})
 

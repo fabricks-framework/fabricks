@@ -1,5 +1,5 @@
+from abc import abstractmethod
 from typing import Optional, Union, cast
-from abc import ABC, abstractmethod
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
@@ -346,6 +346,11 @@ class Generator(Configurator):
         self._update_schema(df=df, overwrite=True)
 
     def schema_drifted(self, df: Optional[DataFrame] = None):
+        if df is None:
+            df = self.get_data(self.stream)
+            assert df is not None
+            df = self.base_transform(df)
+
         self.cdc.schema_drifted(df)
 
     def enable_liquid_clustering(self):

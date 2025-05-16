@@ -215,12 +215,16 @@ class Table(Relational):
         self.spark.sql(f"truncate table {self.qualified_name}")
 
     def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: Optional[str] = None) -> bool:
-        schema = self.dataframe.schema
-        new_schema = df.schema
-
         if exclude_columns_with_prefix:
-            schema = schema.filter(lambda f: not f.name.startswith(exclude_columns_with_prefix))
-            new_schema = new_schema.filter(lambda f: not f.name.startswith(exclude_columns_with_prefix))
+            df = df.select([col for col in df.columns if not col.startswith(exclude_columns_with_prefix)])
+            delta_df = self.dataframe.select(
+                [col for col in self.dataframe.columns if not col.startswith(exclude_columns_with_prefix)]
+            )
+        else:
+            delta_df = self.dataframe
+
+        schema = delta_df.schema
+        new_schema = df.schema
 
         if len(schema.fields) != len(new_schema.fields):
             return True

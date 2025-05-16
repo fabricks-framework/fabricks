@@ -77,11 +77,13 @@ class Configurator(ABC):
             "__is_current",
             "__is_deleted",
         ]
+
         if self.change_data_capture == "scd1":
             cols.remove("__valid_from")
             cols.remove("__valid_to")
         elif self.change_data_capture == "scd2":
             cols.remove("__timestamp")
+
         return cols
 
     @property
@@ -92,10 +94,12 @@ class Configurator(ABC):
             "__hash",
             "__rescued_data",
         ]
+
         if self.change_data_capture == "scd1":
             cols.remove("__operation")
         elif self.change_data_capture == "scd2":
             cols.remove("__operation")
+
         return cols
 
     @property
@@ -128,6 +132,7 @@ class Configurator(ABC):
 
     def reorder_columns(self, df: DataFrame) -> DataFrame:
         fields = [f"`{c}`" for c in df.columns if not c.startswith("__")]
+
         __leading = [c for c in self.allowed_leading_columns if c in df.columns]
         __trailing = [c for c in self.allowed_trailing_columns if c in df.columns]
 

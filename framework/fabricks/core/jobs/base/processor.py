@@ -1,5 +1,5 @@
+from abc import abstractmethod
 from typing import Optional
-from abc import ABC, abstractmethod
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -80,7 +80,7 @@ class Processor(Invoker):
             if self.schema_drift:
                 DEFAULT_LOGGER.warning("schema drifted", extra={"job": self})
                 self.update_schema(df=df)
-                
+
             else:
                 raise ValueError("schema drifted")
 

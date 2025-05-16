@@ -31,6 +31,7 @@ class Generator(Configurator):
         kwargs["slice"] = False
         kwargs["rectify"] = False
         kwargs["deduplicate"] = False
+
         df = self.get_data(src, **kwargs)
 
         if liquid_clustering:
@@ -42,7 +43,7 @@ class Generator(Configurator):
 
         __leading = [c for c in self.allowed_leading_columns if c in df.columns]
         __trailing = [c for c in self.allowed_trailing_columns if c in df.columns]
-        
+
         columns = __leading + fields + __trailing
 
         df = df.select([f"`{c}`" for c in columns])
@@ -107,19 +108,19 @@ class Generator(Configurator):
 
             self.table.optimize(columns=columns, vorder=vorder)
 
-    def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
+    def schema_drifted(self, src: Union[DataFrame, Table, str]) -> Optional[bool]:
         if self.is_view():
             return None
-        
+
         else:
             kwargs = {"mode": "complete"}
             df = self.get_data(src, **kwargs)
             return self.table.schema_drifted(df)
-    
+
     def _update_schema(self, src: Union[DataFrame, Table, str], overwrite: bool = False):
         if self.is_view():
             assert not isinstance(src, (DataFrame, CDataFrame)), "dataframe not allowed"
-            self.create_or_replace_view(src=src, **kwargs)
+            self.create_or_replace_view(src=src)
 
         else:
             kwargs = {"mode": "complete"}
