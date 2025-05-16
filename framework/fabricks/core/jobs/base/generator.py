@@ -1,4 +1,5 @@
 from typing import Optional, Union, cast
+from abc import ABC, abstractmethod
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
@@ -25,6 +26,7 @@ class Generator(Configurator):
         df = df.drop("__parent")
         return df
 
+    @abstractmethod
     def get_dependencies(self) -> DataFrame:
         raise NotImplementedError()
 

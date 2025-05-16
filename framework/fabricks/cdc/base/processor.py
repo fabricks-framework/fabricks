@@ -355,22 +355,16 @@ class Processor(Generator):
         if df:
             df = self.reorder_columns(df)
 
-            name = f"{self.database}_{'_'.join(self.levels)}__overwrite"
-            create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
-
             if not dynamic:
                 if kwargs.get("update_where"):
                     dynamic = True
 
             if dynamic:
-                DEFAULT_LOGGER.debug("dynamic overwrite", extra={"job": self})
-                (
-                    df.write.format("delta")
-                    .mode("overwrite")
-                    .option("partitionOverwriteMode", "dynamic")
-                    .save(self.table.delta_path.string)
-                )
+                self.spark.sql(f"set spark.sql.sources.partitionOverwriteMode=dynamic")
 
-            else:
-                DEFAULT_LOGGER.debug("overwrite", extra={"job": self})
-                df.write.format("delta").mode("overwrite").save(self.table.delta_path.string)
+            DEFAULT_LOGGER.info("overwrite", extra={"job": self})
+
+            name = f"{self.database}_{'_'.join(self.levels)}__overwrite"
+            create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
+
+            self.spark.sql(f"insert overwrite table {self.table} by name select * from {name}")

@@ -1,4 +1,5 @@
 from typing import Optional
+from abc import ABC, abstractmethod
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -194,23 +195,6 @@ class Processor(Invoker):
                 DEFAULT_LOGGER.exception("🙈 (retry)", extra={"job": self})
                 self.run(retry=False, schedule_id=schedule_id)
 
+    @abstractmethod
     def overwrite(self):
-        """
-        Executes the overwrite job.
-
-        This method truncates the data, overwrites the schema, and runs the job.
-        If an exception occurs during the execution, it is logged and re-raised.
-
-        Raises:
-            Exception: If an error occurs during the execution of the job.
-        """
-        try:
-            DEFAULT_LOGGER.warning("overwrite job", extra={"job": self})
-
-            self.truncate()
-            self.overwrite_schema()
-            self.run(retry=False)
-
-        except Exception as e:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self})
-            raise e
+        raise NotImplementedError()
