@@ -345,13 +345,13 @@ class Generator(Configurator):
         DEFAULT_LOGGER.info("overwrite schema", extra={"job": self})
         self._update_schema(df=df, overwrite=True)
 
-    def schema_drifted(self, df: Optional[DataFrame] = None):
+    def schema_drifted(self, df: Optional[DataFrame] = None) -> Optional[bool]:
         if df is None:
             df = self.get_data(self.stream)
             assert df is not None
             df = self.base_transform(df)
 
-        self.cdc.schema_drifted(df)
+        return self.cdc.schema_drifted(df)
 
     def enable_liquid_clustering(self):
         df = self.table.dataframe

@@ -1,5 +1,5 @@
 with cte as (
-    select d.time
+    select d.time, d.hour
     from gold.dim_time d 
 )
 select

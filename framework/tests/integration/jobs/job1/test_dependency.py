@@ -44,7 +44,7 @@ def test_gold_fact_dependency_sql():
 
     check()
 
-    j = get_job(step="gold", topic="fact", item="dependency")
+    j = get_job(step="gold", topic="fact", item="dependency_sql")
     j.update_dependencies()
     check()
 
@@ -64,7 +64,7 @@ def test_gold_fact_dependency_notebook():
               left join fabricks.jobs j on d.job_id = j.job_id
             where
               true
-              and j.job = 'gold.fact_dependency_sql'
+              and j.job = 'gold.fact_dependency_notebook'
             group by all
             """
         )

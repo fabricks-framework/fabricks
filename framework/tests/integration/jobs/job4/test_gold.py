@@ -20,14 +20,14 @@ def test_gold_scd1_complete():
 def test_gold_scd1_update():
     j = get_job(step="gold", topic="scd1", item="update")
     j.run(reload=True)
-    compare_gold_to_expected(j, "scd1", 11)
+    compare_gold_to_expected(j, "scd1", 11, where="__is_current")
 
 
 @pytest.mark.order(422)
 def test_gold_scd1_identity():
     j = get_job(step="gold", topic="scd1", item="identity")
     j.run(reload=True)
-    compare_gold_to_expected(j, "scd1", 11)
+    compare_gold_to_expected(j, "scd1", 11, where="__is_current")
 
 
 @pytest.mark.order(424)

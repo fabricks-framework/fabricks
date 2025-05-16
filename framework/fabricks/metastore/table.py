@@ -254,7 +254,8 @@ class Table(Relational):
               outer join {df2} d2 on d1.column = d2.column
             )
             select
-              *,
+              coalesce(`column`, `new_column`) as `column`,
+              * except(`column`, `new_column`),
               if(column is null, 'dropped', if(new_column is null, 'added', 'changed')) as status
             from
               base
@@ -277,6 +278,7 @@ class Table(Relational):
         if not diff_df.isEmpty():
             DEFAULT_LOGGER.info("update table", extra={"job": self})
             for row in diff_df.collect():
+                print(row)
                 try:
                     update_df = df.select(row.column).where("1 == 2")
                     (
