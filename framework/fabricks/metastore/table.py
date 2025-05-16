@@ -214,9 +214,13 @@ class Table(Relational):
         self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
-    def schema_drifted(self, df: DataFrame) -> bool:
+    def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: Optional[str] = None) -> bool:
         schema = self.dataframe.schema
         new_schema = df.schema
+
+        if exclude_columns_with_prefix:
+            schema = schema.filter(lambda f: not f.name.startswith(exclude_columns_with_prefix))
+            new_schema = new_schema.filter(lambda f: not f.name.startswith(exclude_columns_with_prefix))
 
         if len(schema.fields) != len(new_schema.fields):
             return True

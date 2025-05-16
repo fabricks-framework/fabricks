@@ -75,11 +75,11 @@ class Processor(Invoker):
 
         df = self.base_transform(df)
 
-        drift = self.table.schema_drifted(df)
-        if drift:
+        if self.schema_drifted(df):
             if self.schema_drift:
                 DEFAULT_LOGGER.warning("schema drifted", extra={"job": self})
                 self.update_schema(df=df)
+                
             else:
                 raise ValueError("schema drifted")
 
