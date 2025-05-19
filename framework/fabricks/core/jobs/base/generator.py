@@ -306,7 +306,6 @@ class Generator(Configurator):
 
     def _update_schema(self, df: Optional[DataFrame] = None, overwrite: Optional[bool] = False):
         def _update_schema(df: DataFrame, batch: Optional[int] = None):
-            
             context = self.get_cdc_context(df, reload=True)
             if overwrite:
                 self.cdc.overwrite_schema(df, **context)

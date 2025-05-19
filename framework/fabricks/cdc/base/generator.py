@@ -129,7 +129,7 @@ class Generator(Configurator):
             kwargs["mode"] = "complete"
             if "slice" in kwargs:
                 del kwargs["slice"]
-                
+
             df = self.get_data(src, **kwargs)
             if overwrite:
                 self.table.overwrite_schema(df)

@@ -280,7 +280,7 @@ class Processor(Generator):
             sql = sql.replace("`src`", "{src}")
             DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql, "target": "buffer"})
             return sql
-        
+
         except Exception as e:
             DEFAULT_LOGGER.exception("🙈", extra={"job": self, "sql": sql})
             raise e
@@ -325,7 +325,7 @@ class Processor(Generator):
                 sql = self.fix_sql(sql)
             else:
                 DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql})
-                
+
         except Exception as e:
             DEFAULT_LOGGER.exception("🙈", extra={"job": self, "context": context})
             raise e

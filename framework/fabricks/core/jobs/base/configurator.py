@@ -216,7 +216,7 @@ class Configurator(ABC):
         return self.change_data_capture in ["scd1", "scd2"]
 
     @abstractmethod
-    def get_cdc_context(self, df: DataFrame) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict:
         raise NotImplementedError()
 
     def get_cdc_data(self, stream: bool = False) -> Optional[DataFrame]:

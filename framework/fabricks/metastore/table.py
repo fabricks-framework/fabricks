@@ -279,8 +279,10 @@ class Table(Relational):
         if not diff_df.isEmpty():
             DEFAULT_LOGGER.info("update table", extra={"job": self})
             for row in diff_df.collect():
-
-                DEFAULT_LOGGER.debug(f"{row.status.replace('ed', 'ing')} ({row.new_data_type})", extra={"job": self, "column": row.column})
+                DEFAULT_LOGGER.debug(
+                    f"{row.status.replace('ed', 'ing')} ({row.new_data_type})",
+                    extra={"job": self, "column": row.column},
+                )
                 try:
                     update_df = df.select(row.column).where("1 == 2")
                     (
