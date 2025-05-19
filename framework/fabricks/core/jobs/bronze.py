@@ -304,7 +304,7 @@ class Bronze(BaseJob):
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("schema overwrite not allowed", extra={"job": self})
 
-    def get_cdc_context(self, df: DataFrame) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         return {}
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):

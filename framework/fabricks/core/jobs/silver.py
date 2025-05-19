@@ -246,7 +246,7 @@ class Silver(BaseJob):
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"job": self})
 
-    def get_cdc_context(self, df: DataFrame) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df)

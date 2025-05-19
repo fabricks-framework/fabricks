@@ -201,7 +201,7 @@ class Gold(BaseJob):
 
         return dependencies
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         if "__order_duplicate_by_asc" in df.columns:
             order_duplicate_by = {"__order_duplicate_by_asc": "asc"}
         elif "__order_duplicate_by_desc" in df.columns:
