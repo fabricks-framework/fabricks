@@ -58,7 +58,7 @@ class Table(Relational):
 
     @property
     def identity_enabled(self) -> bool:
-        return self.get_property("feature.identityColumns") == "supported"
+        return self.get_property("delta.feature.identityColumns") == "supported"
 
     def drop(self):
         super().drop()
