@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 from typing import List, Optional, Union, overload
 
 from delta import DeltaTable
@@ -7,7 +8,6 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import max
 from pyspark.sql.types import StructType
 from typing_extensions import deprecated
-from functools import lru_cache
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER

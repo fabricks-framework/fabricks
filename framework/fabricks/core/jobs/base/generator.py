@@ -346,7 +346,6 @@ class Generator(Configurator):
         DEFAULT_LOGGER.info("overwrite schema", extra={"job": self})
         self._update_schema(df=df, overwrite=True)
 
-
     def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
         if df is None:
             df = self.get_data(self.stream)

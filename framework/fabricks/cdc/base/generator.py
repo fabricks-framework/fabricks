@@ -101,7 +101,7 @@ class Generator(Configurator):
 
             self.table.optimize(columns=columns, vorder=vorder)
 
-    def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
+    def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[DataFrame]:
         if self.is_view():
             return None
 
