@@ -282,7 +282,7 @@ class Processor(Generator):
             return sql
 
         except Exception as e:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.exception("could not fix sql query", extra={"job": self, "sql": sql})
             raise e
 
     def fix_context(self, context: dict, fix: Optional[bool] = True, **kwargs) -> dict:
@@ -297,7 +297,7 @@ class Processor(Generator):
                 DEFAULT_LOGGER.debug("fix context", extra={"job": self, "sql": sql})
 
         except Exception as e:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self, "context": context})
+            DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "context": context})
             raise e
 
         print(sql)
@@ -327,7 +327,7 @@ class Processor(Generator):
                 DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql})
 
         except Exception as e:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self, "context": context})
+            DEFAULT_LOGGER.exception("could not generate sql query", extra={"job": self, "context": context})
             raise e
 
         return sql

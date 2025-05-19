@@ -138,8 +138,9 @@ class Silver(BaseJob):
                         if dependencies > 1:
                             assert "__source" in df.columns, "__source not found"
                         dfs.append(df)
+
                 except Exception as e:
-                    DEFAULT_LOGGER.exception("🙈", extra={"job": self})
+                    DEFAULT_LOGGER.exception("could not get dependencies", extra={"job": self})
                     raise e
 
             df = concat_dfs(dfs)
@@ -237,7 +238,7 @@ class Silver(BaseJob):
             self.spark.sql(sql)
 
         except Py4JJavaError:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self})
+            DEFAULT_LOGGER.exception("could not create or replace view", extra={"job": self})
 
     def overwrite(self):
         self.truncate()

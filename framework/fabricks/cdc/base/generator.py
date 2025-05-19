@@ -81,7 +81,7 @@ class Generator(Configurator):
         try:
             self.spark.sql(sql)
         except Py4JJavaError:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self})
+            DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "sql": sql})
 
     def optimize_table(self):
         liquid_clustering = self.table.get_property("delta.feature.liquid") == "supported"

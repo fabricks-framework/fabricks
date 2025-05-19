@@ -173,31 +173,31 @@ class Processor(Invoker):
             DEFAULT_LOGGER.info("run ends", extra={"job": self})
 
         except (PreRunCheckWarningException, PostRunCheckWarningException) as e:
-            DEFAULT_LOGGER.exception("🙈 (no retry)", extra={"job": self})
+            DEFAULT_LOGGER.exception("could not pass warning check", extra={"job": self})
             raise e
 
         except (PreRunInvokerFailedException, PostRunInvokerFailedException) as e:
-            DEFAULT_LOGGER.exception("🙈 (no retry)", extra={"job": self})
+            DEFAULT_LOGGER.exception("could not run invoker", extra={"job": self})
             raise e
 
         except (PreRunCheckFailedException, PostRunCheckFailedException) as e:
-            DEFAULT_LOGGER.exception("🙈 (no retry)", extra={"job": self})
+            DEFAULT_LOGGER.exception("could not pass check", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e
 
         except AssertionError as e:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self})
+            DEFAULT_LOGGER.exception("could not run", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e
 
         except Exception as e:
             if not self.stream or not retry:
-                DEFAULT_LOGGER.exception("🙈 (no retry)", extra={"job": self})
+                DEFAULT_LOGGER.exception("could not run", extra={"job": self})
                 self.restore(last_version, last_batch)
                 raise e
 
             else:
-                DEFAULT_LOGGER.warning("🙈 (retry)", extra={"job": self})
+                DEFAULT_LOGGER.warning("retry to run", extra={"job": self})
                 self.run(retry=False, schedule_id=schedule_id)
 
     @abstractmethod
