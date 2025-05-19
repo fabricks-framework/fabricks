@@ -146,8 +146,6 @@ class Configurator(ABC):
 
         columns = __leading + fields + __trailing
 
-        print(columns)
-
         return df.select(columns)
 
     @abstractmethod
