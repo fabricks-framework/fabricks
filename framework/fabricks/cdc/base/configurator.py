@@ -135,7 +135,9 @@ class Configurator(ABC):
 
         leading = self.allowed_leading_columns
         trailing = self.allowed_trailing_columns
-        if "__key" not in df.columns and "__hash" in df.columns: # move __hash to the front of the table to ensure statistics are present
+        if (
+            "__key" not in df.columns and "__hash" in df.columns
+        ):  # move __hash to the front of the table to ensure statistics are present
             leading = ["__hash" if c == "__key" else c for c in leading]
             trailing = [c for c in trailing if c != "__hash"]
 

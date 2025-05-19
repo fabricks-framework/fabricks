@@ -1,7 +1,4 @@
-with cte as (
-    select d.time, d.hour
-    from gold.dim_time d 
-)
+with cte as (select d.time, d.hour from gold.dim_time d)
 select
     udf_key(array(f.id, d.time)) as __key,
     f.id as id,
