@@ -3,7 +3,7 @@ from typing import Optional, Union, cast
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
-
+from functools import lru_cache
 from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
@@ -170,6 +170,7 @@ class Configurator(ABC):
             )
         return self._paths
 
+    @lru_cache(maxsize=None)
     @property
     def options(self) -> Options:
         if not self._options:

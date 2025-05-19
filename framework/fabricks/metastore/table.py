@@ -7,6 +7,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import max
 from pyspark.sql.types import StructType
 from typing_extensions import deprecated
+from functools import lru_cache
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
@@ -217,28 +218,10 @@ class Table(Relational):
         self.spark.sql(f"truncate table {self.qualified_name}")
 
     def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: Optional[str] = None) -> bool:
-        if exclude_columns_with_prefix:
-            df = df.select([col for col in df.columns if not col.startswith(exclude_columns_with_prefix)])
-            delta_df = self.dataframe.select(
-                [col for col in self.dataframe.columns if not col.startswith(exclude_columns_with_prefix)]
-            )
-        else:
-            delta_df = self.dataframe
+        df = self.get_differences_with_dataframe(df)
+        return not df.isEmpty()
 
-        schema = delta_df.schema
-        new_schema = df.schema
-
-        if len(schema.fields) != len(new_schema.fields):
-            return True
-
-        for field, new_field in zip(schema.fields, new_schema.fields):
-            if field.name != new_field.name:
-                return True
-            if field.dataType != new_field.dataType:
-                return True
-
-        return False
-
+    @lru_cache(maxsize=None)
     def get_differences_with_dataframe(self, df: DataFrame) -> DataFrame:
         df1 = self.spark.createDataFrame(self.dataframe.dtypes, ["column", "data_type"])  # type: ignore
         df2 = self.spark.createDataFrame(df.dtypes, ["column", "data_type"])  # type: ignore

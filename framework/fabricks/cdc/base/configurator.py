@@ -157,6 +157,10 @@ class Configurator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs):
+        raise NotImplementedError()
+
+    @abstractmethod
     def overwrite_schema(self, src: Union[DataFrame, Table, str]):
         raise NotImplementedError()
 

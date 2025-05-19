@@ -346,6 +346,17 @@ class Generator(Configurator):
         DEFAULT_LOGGER.info("overwrite schema", extra={"job": self})
         self._update_schema(df=df, overwrite=True)
 
+
+    def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
+        if df is None:
+            df = self.get_data(self.stream)
+            assert df is not None
+            df = self.base_transform(df)
+
+        context = self.get_cdc_context(df, reload=True)
+
+        return self.cdc.get_differences_with_deltatable(df, **context)
+
     def schema_drifted(self, df: Optional[DataFrame] = None) -> Optional[bool]:
         if df is None:
             df = self.get_data(self.stream)

@@ -101,6 +101,19 @@ class Generator(Configurator):
 
             self.table.optimize(columns=columns, vorder=vorder)
 
+    def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
+        if self.is_view():
+            return None
+
+        else:
+            kwargs["mode"] = "complete"
+            if "slice" in kwargs:
+                del kwargs["slice"]
+
+            df = self.get_data(src, **kwargs)
+            df = self.reorder_columns(df)
+            return self.table.get_differences_with_dataframe(df)
+
     def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
         if self.is_view():
             return None
@@ -111,6 +124,7 @@ class Generator(Configurator):
                 del kwargs["slice"]
 
             df = self.get_data(src, **kwargs)
+            df = self.reorder_columns(df)
             return self.table.schema_drifted(df)
 
     def _update_schema(self, src: Union[DataFrame, Table, str], overwrite: bool = False, **kwargs):
@@ -124,6 +138,7 @@ class Generator(Configurator):
                 del kwargs["slice"]
 
             df = self.get_data(src, **kwargs)
+            df = self.reorder_columns(df)
             if overwrite:
                 self.table.overwrite_schema(df)
             else:
