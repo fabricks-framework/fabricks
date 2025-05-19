@@ -306,10 +306,12 @@ class Generator(Configurator):
 
     def _update_schema(self, df: Optional[DataFrame] = None, overwrite: Optional[bool] = False):
         def _update_schema(df: DataFrame, batch: Optional[int] = None):
+            
+            context = self.get_cdc_context(df, reload=True)
             if overwrite:
-                self.cdc.overwrite_schema(df)
+                self.cdc.overwrite_schema(df, **context)
             else:
-                self.cdc.update_schema(df)
+                self.cdc.update_schema(df, **context)
 
         if self.persist:
             if df is not None:
@@ -351,7 +353,9 @@ class Generator(Configurator):
             assert df is not None
             df = self.base_transform(df)
 
-        return self.cdc.schema_drifted(df)
+        context = self.get_cdc_context(df, reload=True)
+
+        return self.cdc.schema_drifted(df, **context)
 
     def enable_liquid_clustering(self):
         df = self.table.dataframe

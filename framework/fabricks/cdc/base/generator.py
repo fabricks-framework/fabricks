@@ -108,30 +108,36 @@ class Generator(Configurator):
 
             self.table.optimize(columns=columns, vorder=vorder)
 
-    def schema_drifted(self, src: Union[DataFrame, Table, str]) -> Optional[bool]:
+    def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
         if self.is_view():
             return None
 
         else:
-            kwargs = {"mode": "complete"}
+            kwargs["mode"] = "complete"
+            if "slice" in kwargs:
+                del kwargs["slice"]
+
             df = self.get_data(src, **kwargs)
             return self.table.schema_drifted(df)
 
-    def _update_schema(self, src: Union[DataFrame, Table, str], overwrite: bool = False):
+    def _update_schema(self, src: Union[DataFrame, Table, str], overwrite: bool = False, **kwargs):
         if self.is_view():
             assert not isinstance(src, (DataFrame, CDataFrame)), "dataframe not allowed"
             self.create_or_replace_view(src=src)
 
         else:
-            kwargs = {"mode": "complete"}
+            kwargs["mode"] = "complete"
+            if "slice" in kwargs:
+                del kwargs["slice"]
+                
             df = self.get_data(src, **kwargs)
             if overwrite:
                 self.table.overwrite_schema(df)
             else:
                 self.table.update_schema(df)
 
-    def update_schema(self, src: Union[DataFrame, Table, str]):
+    def update_schema(self, src: Union[DataFrame, Table, str], **kwargs):
         self._update_schema(src=src)
 
-    def overwrite_schema(self, src: Union[DataFrame, Table, str]):
+    def overwrite_schema(self, src: Union[DataFrame, Table, str], **kwargs):
         self._update_schema(src=src, overwrite=True)

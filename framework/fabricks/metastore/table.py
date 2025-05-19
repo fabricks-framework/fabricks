@@ -146,6 +146,7 @@ class Table(Relational):
                 cluster_by = [cluster_by]
             cluster_by = [f"`{c}`" for c in cluster_by]
             ddl_cluster_by = "cluster by (" + ", ".join(cluster_by) + ")"
+
         if partitioning:
             assert partition_by
             if isinstance(partition_by, str):
@@ -189,6 +190,7 @@ class Table(Relational):
             sql = fix(sql)
         except Exception:
             pass
+
         DEFAULT_LOGGER.debug("ddl", extra={"job": self, "sql": sql})
         self.spark.sql(sql)
 
@@ -256,7 +258,7 @@ class Table(Relational):
             select
               coalesce(`column`, `new_column`) as `column`,
               * except(`column`, `new_column`),
-              if(column is null, 'dropped', if(new_column is null, 'added', 'changed')) as status
+              if(`new_column` is null, 'dropped', if(`column` is null, 'added', 'changed')) as status
             from
               base
             where
@@ -268,7 +270,6 @@ class Table(Relational):
             df1=df1,
             df2=df2,
         )
-
         return df
 
     def update_schema(self, df: DataFrame):
@@ -278,7 +279,8 @@ class Table(Relational):
         if not diff_df.isEmpty():
             DEFAULT_LOGGER.info("update table", extra={"job": self})
             for row in diff_df.collect():
-                print(row)
+
+                DEFAULT_LOGGER.debug(f"{row.status.replace('ed', 'ing')} ({row.new_data_type})", extra={"job": self, "column": row.column})
                 try:
                     update_df = df.select(row.column).where("1 == 2")
                     (
