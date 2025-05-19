@@ -195,8 +195,9 @@ class Processor(Invoker):
                 DEFAULT_LOGGER.exception("🙈 (no retry)", extra={"job": self})
                 self.restore(last_version, last_batch)
                 raise e
+
             else:
-                DEFAULT_LOGGER.exception("🙈 (retry)", extra={"job": self})
+                DEFAULT_LOGGER.warning("🙈 (retry)", extra={"job": self})
                 self.run(retry=False, schedule_id=schedule_id)
 
     @abstractmethod

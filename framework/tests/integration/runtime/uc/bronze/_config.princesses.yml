@@ -120,3 +120,5 @@
       mode: memory
       parser: parquet
       uri: abfss://test@$datahub/raw/too_many_columns
+    extender_options:
+      - extender: force_reload
