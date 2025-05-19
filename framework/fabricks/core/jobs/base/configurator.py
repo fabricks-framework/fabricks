@@ -251,11 +251,11 @@ class Configurator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None):
+    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         raise NotImplementedError()
 
     @abstractmethod
-    def for_each_run(self):
+    def for_each_run(self, **kwargs):
         raise NotImplementedError()
 
     @abstractmethod
