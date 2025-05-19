@@ -56,6 +56,10 @@ class Table(Relational):
         version = df.select(max("version")).collect()[0][0]
         return version
 
+    @property
+    def identity_enabled(self) -> bool:
+        return self.get_property("feature.identityColumns") == "supported"
+
     def drop(self):
         super().drop()
         if self.delta_path.exists():
@@ -160,17 +164,20 @@ class Table(Relational):
 
         if not properties:
             special_char = False
+
             for c in df.columns:
                 match = re.search(r"[^a-zA-Z0-9_]", c)
                 if match:
                     special_char = True
                     break
+
             if special_char:
                 properties = {
                     "delta.columnMapping.mode": "name",
                     "delta.minReaderVersion": "2",
                     "delta.minWriterVersion": "5",
                 }
+
         if properties:
             ddl_tblproperties = (
                 "tblproperties (" + ",".join(f"'{key}' = '{value}'" for key, value in properties.items()) + ")"
@@ -198,6 +205,7 @@ class Table(Relational):
     def is_deltatable(self) -> bool:
         return DeltaTable.isDeltaTable(self.spark, str(self.delta_path))
 
+    @property
     def column_mapping_enabled(self) -> bool:
         return self.get_property("delta.columnMapping.mode") == "name"
 
@@ -223,7 +231,12 @@ class Table(Relational):
 
     @lru_cache(maxsize=None)
     def get_differences_with_dataframe(self, df: DataFrame) -> DataFrame:
-        df1 = self.spark.createDataFrame(self.dataframe.dtypes, ["column", "data_type"])  # type: ignore
+        df1 = self.dataframe
+        if self.identity_enabled:
+            if "__identity" in df1.columns:
+                df1 = df1.drop("__identity")
+
+        df1 = self.spark.createDataFrame(df1.dtypes, ["column", "data_type"])  # type: ignore
         df2 = self.spark.createDataFrame(df.dtypes, ["column", "data_type"])  # type: ignore
 
         df = self.spark.sql(
@@ -359,7 +372,7 @@ class Table(Relational):
         self.spark.sql(f"analyze table delta.`{self.delta_path}` compute delta statistics")
 
     def drop_column(self, name: str):
-        assert self.column_mapping_enabled(), "column mapping not enabled"
+        assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.warning(f"drop column {name}", extra={"job": self})
         self.spark.sql(
@@ -370,7 +383,7 @@ class Table(Relational):
         )
 
     def change_column(self, name: str, type: str):
-        assert self.column_mapping_enabled(), "column mapping not enabled"
+        assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.info(f"change column {name} ({type})", extra={"job": self})
         self.spark.sql(
@@ -381,7 +394,7 @@ class Table(Relational):
         )
 
     def rename_column(self, old: str, new: str):
-        assert self.column_mapping_enabled(), "column mapping not enabled"
+        assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.info(f"rename column {old} -> {new}", extra={"job": self})
         self.spark.sql(
@@ -473,7 +486,7 @@ class Table(Relational):
         )
 
     def add_materialized_column(self, name: str, expr: str, type: str):
-        assert self.column_mapping_enabled(), "column mapping not enabled"
+        assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.info(f"add materialized column ({name} {type})", extra={"job": self})
         self.spark.sql(
