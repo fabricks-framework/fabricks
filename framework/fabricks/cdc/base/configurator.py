@@ -133,10 +133,18 @@ class Configurator(ABC):
     def reorder_columns(self, df: DataFrame) -> DataFrame:
         fields = [f"`{c}`" for c in df.columns if not c.startswith("__")]
 
-        __leading = [c for c in self.allowed_leading_columns if c in df.columns]
-        __trailing = [c for c in self.allowed_trailing_columns if c in df.columns]
+        leading = self.allowed_leading_columns
+        trailing = self.allowed_trailing_columns
+        if "__key" not in df.columns and "__hash" in df.columns: # move __hash to the front of the table to ensure statistics are present
+            leading = ["__hash" if c == "__key" else c for c in leading]
+            trailing = [c for c in trailing if c != "__hash"]
+
+        __leading = [c for c in leading if c in df.columns]
+        __trailing = [c for c in trailing if c in df.columns]
 
         columns = __leading + fields + __trailing
+
+        print(columns)
 
         return df.select(columns)
 

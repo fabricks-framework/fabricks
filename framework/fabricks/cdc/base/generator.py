@@ -39,14 +39,7 @@ class Generator(Configurator):
         elif partitioning:
             assert partition_by, "partitioning column not found"
 
-        fields = [c for c in df.columns if not c.startswith("__")]
-
-        __leading = [c for c in self.allowed_leading_columns if c in df.columns]
-        __trailing = [c for c in self.allowed_trailing_columns if c in df.columns]
-
-        columns = __leading + fields + __trailing
-
-        df = df.select([f"`{c}`" for c in columns])
+        df = self.reorder_columns(df)
 
         identity = False if identity is None else identity
         liquid_clustering = False if liquid_clustering is None else liquid_clustering

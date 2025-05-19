@@ -98,3 +98,10 @@
         - silver.princess_extend
         - silver.princess_calculated_column
         - silver.princess_append
+- job:
+    step: silver
+    topic: princess
+    item: too_many_columns
+    tags: [test]
+    options:
+      mode: latest
