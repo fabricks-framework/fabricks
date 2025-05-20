@@ -1,9 +1,10 @@
 import re
-import time
 from typing import Optional, cast
 
+from azure.core.exceptions import ServiceRequestError
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from fabricks.context import FABRICKS_STORAGE, SECRET_SCOPE, SPARK
 from fabricks.context.secret import AccessKey, get_secret_from_secret_scope
@@ -27,19 +28,16 @@ class BaseDags:
             self._connection_string = connection_string
         return self._connection_string
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((Exception, ServiceRequestError)),
+        reraise=True,
+    )
     def get_table(self) -> AzureTable:
         if not self._table:
             cs = self.get_connection_string()
-
-            retries = 3
-            for attempt in range(retries):
-                try:
-                    self._table = AzureTable(f"t{self.schedule_id}", connection_string=cs)
-                except Exception as e:
-                    if attempt < retries - 1:
-                        time.sleep(attempt**attempt)
-                    else:
-                        raise ValueError(f"Failed to create azure table for logs after {retries} attempts: {e}")
+            self._table = AzureTable(f"t{self.schedule_id}", connection_string=cs)
 
         if self._table is None:
             raise ValueError("Azure table for logs not found")

@@ -31,7 +31,7 @@ send_message_to_channel(
 dbutils.widgets.dropdown("initialize", "True", ["True", "False"])
 dbutils.widgets.dropdown("armageddon", "True", ["True", "False"])
 dbutils.widgets.dropdown("reset", "False", ["True", "False"])
-dbutils.widgets.multiselect("tests", "*", ["*", "job1", "job2", "job3"])
+dbutils.widgets.multiselect("tests", "*", ["*", "job1", "job2", "job3", "job4"])
 
 # COMMAND ----------
 
@@ -40,7 +40,7 @@ initialize = dbutils.widgets.get("initialize").lower() == "true"
 reset = dbutils.widgets.get("reset").lower() == "true"
 tests = [t for t in dbutils.widgets.get("tests").split(",")]
 if "*" in tests:
-    tests = ["job1", "job2", "job3"]
+    tests = ["job1", "job2", "job3", "job4"]
 
 # COMMAND ----------
 

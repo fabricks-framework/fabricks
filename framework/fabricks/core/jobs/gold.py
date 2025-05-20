@@ -3,14 +3,16 @@ from typing import List, Optional, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.types import Row
+from typing_extensions import deprecated
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import TGold
+from fabricks.core.jobs.base._types import SchemaDependencies, TGold
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.path import Path
+from fabricks.utils.sqlglot import get_tables
 
 
 class Gold(BaseJob):
@@ -63,6 +65,11 @@ class Gold(BaseJob):
     def virtual(self) -> bool:
         return self.mode in ["memory"]
 
+    @property
+    def sql(self) -> str:
+        return self.get_sql()
+
+    @deprecated("use sql instead")
     def get_sql(self) -> str:
         return self.paths.runtime.get_sql()
 
@@ -132,7 +139,69 @@ class Gold(BaseJob):
         cdc_options = self.get_cdc_context(df)
         self.cdc.create_or_replace_view(self.get_sql(), **cdc_options)
 
-    def get_cdc_context(self, df: DataFrame) -> dict:
+    def get_dependencies(self) -> DataFrame:
+        data = []
+        parents = self.options.job.get_list("parents") or []
+
+        if self.mode == "invoke":
+            dependencies = []
+        elif self.options.job.get("notebook"):
+            dependencies = self._get_notebook_dependencies()
+        else:
+            dependencies = self._get_sql_dependencies()
+
+        dependencies = [d for d in dependencies if d not in parents]
+        dependencies = [d.replace("__current", "") for d in dependencies]
+        dependencies = list(set(dependencies))
+
+        for d in dependencies:
+            data.append(Row(self.job_id, d, "parser"))
+
+        for p in parents:
+            data.append(Row(self.job_id, p, "job"))
+
+        if len(dependencies) == 0:
+            DEFAULT_LOGGER.debug("no dependency found", extra={"job": self})
+            df = self.spark.createDataFrame(data, SchemaDependencies)
+
+        else:
+            df = self.spark.createDataFrame(
+                data,
+                schema=["job_id", "parent", "origin"],
+            )  # order of the fields is important !
+            df = df.transform(self.add_dependency_details)
+
+        assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
+        return df
+
+    def _get_sql_dependencies(self) -> List[str]:
+        from fabricks.core.jobs.base._types import Steps
+
+        steps = [str(s) for s in Steps]
+        return get_tables(self.sql, allowed_databases=steps)
+
+    def _get_notebook_dependencies(self) -> List[str]:
+        import re
+
+        from fabricks.context import CATALOG
+
+        dependencies = []
+        df = self.get_data(self.stream)
+
+        if df is not None:
+            explain_plan = self.spark.sql("explain extended select * from {df}", df=df).collect()[0][0]
+
+            if CATALOG is None:
+                r = re.compile(r"(?<=SubqueryAlias spark_catalog\.)[^.]*\.[^.\n]*")
+            else:
+                r = re.compile(rf"(?:(?<=SubqueryAlias spark_catalog\.)|(?<=SubqueryAlias {CATALOG}\.))[^.]*\.[^.\n]*")
+
+            matches = re.findall(r, explain_plan)
+            dependencies = list(set(matches))
+
+        return dependencies
+
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         if "__order_duplicate_by_asc" in df.columns:
             order_duplicate_by = {"__order_duplicate_by_asc": "asc"}
         elif "__order_duplicate_by_desc" in df.columns:
@@ -165,8 +234,9 @@ class Gold(BaseJob):
                 else:
                     context["add_operation"] = "upsert"
 
-        if self.mode == "update" and self.change_data_capture == "scd2":
-            context["slice"] = "update"
+        if not reload:
+            if self.mode == "update" and self.change_data_capture == "scd2":
+                context["slice"] = "update"
 
         if self.mode == "memory":
             context["mode"] = "complete"
@@ -181,10 +251,11 @@ class Gold(BaseJob):
 
         return context
 
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None):
+    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
 
-        context = self.get_cdc_context(df=df)
+        reload = kwargs.get("reload")
+        context = self.get_cdc_context(df=df, reload=reload)
 
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}"
@@ -196,7 +267,11 @@ class Gold(BaseJob):
             DEFAULT_LOGGER.warning("no data", extra={"job": self})
             return
 
-        if self.mode == "update":
+        if reload:
+            DEFAULT_LOGGER.warning("force reload", extra={"job": self})
+            self.cdc.complete(sql, **context)
+
+        elif self.mode == "update":
             assert not isinstance(self.cdc, NoCDC), "nocdc update not allowed"
             self.cdc.update(sql, **context)
 
@@ -214,15 +289,16 @@ class Gold(BaseJob):
         self.check_duplicate_hash()
         self.check_duplicate_identity()
 
-    def for_each_run(self, schedule: Optional[str] = None):
+    def for_each_run(self, **kwargs):
         last_version = None
         if self.options.job.get_boolean("persist_last_timestamp"):
             last_version = self.table.get_last_version()
 
         if self.mode == "invoke":
+            schedule = kwargs.get("schedule", None)
             self.invoke(schedule=schedule)
         else:
-            super().for_each_run(schedule=schedule)
+            super().for_each_run(**kwargs)
 
         if self.options.job.get_boolean("persist_last_timestamp"):
             self._update_last_timestamp(last_version=last_version)
@@ -291,3 +367,15 @@ class Gold(BaseJob):
             self.cdc_last_timestamp.table.create(df)
         else:
             self.cdc_last_timestamp.overwrite(df)
+
+    def overwrite(self):
+        if self.mode == "invoke":
+            DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"job": self})
+            return
+        elif self.mode == "memory":
+            DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"job": self})
+            self.create_or_replace_view()
+            return
+
+        self.overwrite_schema()
+        self.run(reload=True)

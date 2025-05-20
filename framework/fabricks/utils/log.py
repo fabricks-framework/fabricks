@@ -5,6 +5,8 @@ import sys
 from datetime import datetime
 from typing import Optional, Tuple
 
+from pyspark.sql import DataFrame
+
 from fabricks.utils.azure_table import AzureTable
 
 
@@ -62,6 +64,11 @@ class LogFormatter(logging.Formatter):
 
             if hasattr(record, "content"):
                 extra += f"\n---\n{record.__dict__.get('content')}\n---"
+
+            if hasattr(record, "df"):
+                df = record.__dict__.get("df")
+                if isinstance(df, DataFrame):
+                    extra += f"\n---\n%df\n{df.toPandas().to_string(index=True)}\n---"
 
         record.levelname = levelname
         record.prefix = prefix

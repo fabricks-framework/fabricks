@@ -280,8 +280,9 @@ class Processor(Generator):
             sql = sql.replace("`src`", "{src}")
             DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql, "target": "buffer"})
             return sql
+
         except Exception as e:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.exception("could not fix sql query", extra={"job": self, "sql": sql})
             raise e
 
     def fix_context(self, context: dict, fix: Optional[bool] = True, **kwargs) -> dict:
@@ -294,10 +295,12 @@ class Processor(Generator):
                 sql = self.fix_sql(sql)
             else:
                 DEFAULT_LOGGER.debug("fix context", extra={"job": self, "sql": sql})
+
         except Exception as e:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self, "context": context})
+            DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "context": context})
             raise e
 
+        print(sql)
         row = self.spark.sql(sql).collect()[0]
         assert row.slices, "no slices found"
 
@@ -322,8 +325,9 @@ class Processor(Generator):
                 sql = self.fix_sql(sql)
             else:
                 DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql})
+
         except Exception as e:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self, "context": context})
+            DEFAULT_LOGGER.exception("could not generate sql query", extra={"job": self, "context": context})
             raise e
 
         return sql
@@ -355,21 +359,16 @@ class Processor(Generator):
         if df:
             df = self.reorder_columns(df)
 
-            name = f"{self.database}_{'_'.join(self.levels)}__overwrite"
-            create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
-
             if not dynamic:
                 if kwargs.get("update_where"):
                     dynamic = True
 
             if dynamic:
-                DEFAULT_LOGGER.debug("dynamic overwrite", extra={"job": self})
-                (
-                    df.write.format("delta")
-                    .mode("overwrite")
-                    .option("partitionOverwriteMode", "dynamic")
-                    .save(self.table.delta_path.string)
-                )
-            else:
-                DEFAULT_LOGGER.debug("overwrite", extra={"job": self})
-                df.write.format("delta").mode("overwrite").save(self.table.delta_path.string)
+                self.spark.sql("set spark.sql.sources.partitionOverwriteMode=dynamic")
+
+            DEFAULT_LOGGER.info("overwrite", extra={"job": self})
+
+            name = f"{self.database}_{'_'.join(self.levels)}__overwrite"
+            create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
+
+            self.spark.sql(f"insert overwrite table {self.table} by name select * from global_temp.{name}")

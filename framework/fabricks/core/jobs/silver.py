@@ -138,8 +138,9 @@ class Silver(BaseJob):
                         if dependencies > 1:
                             assert "__source" in df.columns, "__source not found"
                         dfs.append(df)
+
                 except Exception as e:
-                    DEFAULT_LOGGER.exception("🙈", extra={"job": self})
+                    DEFAULT_LOGGER.exception("could not get dependencies", extra={"job": self})
                     raise e
 
             df = concat_dfs(dfs)
@@ -237,7 +238,7 @@ class Silver(BaseJob):
             self.spark.sql(sql)
 
         except Py4JJavaError:
-            DEFAULT_LOGGER.exception("🙈", extra={"job": self})
+            DEFAULT_LOGGER.exception("could not create or replace view", extra={"job": self})
 
     def overwrite(self):
         self.truncate()
@@ -246,7 +247,7 @@ class Silver(BaseJob):
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"job": self})
 
-    def get_cdc_context(self, df: DataFrame) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
@@ -315,7 +316,7 @@ class Silver(BaseJob):
 
         return context
 
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None):
+    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
 
         context = self.get_cdc_context(df)

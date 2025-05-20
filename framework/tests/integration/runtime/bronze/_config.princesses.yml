@@ -108,7 +108,17 @@
 - job:
     step: bronze
     topic: princess
-    item: empty
+    item: no_column
     options:
       mode: register
-      uri: abfss://fabricks@$datahub/raw/delta/empty
+      uri: abfss://fabricks@$datahub/raw/delta/no_column
+- job:
+    step: bronze
+    topic: princess
+    item: too_many_columns
+    options:
+      mode: memory
+      parser: parquet
+      uri: abfss://fabricks@$datahub/raw/too_many_columns
+    extender_options:
+      - extender: force_reload

@@ -12,12 +12,13 @@ from fabricks.utils.path import Path
 from tests.integration._types import paths
 
 
-def create_empty_delta():
-    uri = f"{paths.raw}/delta/empty"
+def create_random_tables():
     if CATALOG:
         spark.sql(f"use catalog {CATALOG}")
 
     spark.sql("create schema if not exists bronze")
+
+    uri = f"{paths.raw}/delta/no_column"
     spark.sql(f"create table if not exists bronze.princess_no_column using delta location '{uri}'")
 
 

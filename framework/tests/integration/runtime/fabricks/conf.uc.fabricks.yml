@@ -39,6 +39,8 @@
           order: 201
           parent: bronze
           local_checkpoint: true
+        table_options:
+          liquid_clustering: true
     gold:
       - name: gold
         path_options:

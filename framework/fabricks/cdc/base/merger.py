@@ -87,8 +87,9 @@ class Merger(Processor):
                 sql = fix_sql(sql)
                 sql = sql.replace("`src`", "{src}")
                 DEFAULT_LOGGER.debug("merge", extra={"job": self, "sql": sql})
+
             except Exception as e:
-                DEFAULT_LOGGER.exception("🙈", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.exception("could not clean sql query", extra={"job": self, "sql": sql})
                 raise e
         else:
             DEFAULT_LOGGER.debug("merge", extra={"job": self, "sql": sql})

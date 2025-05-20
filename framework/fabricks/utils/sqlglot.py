@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from sqlglot import exp, parse_one, transpile
 from sqlglot.dialects.databricks import Databricks
@@ -37,3 +37,19 @@ def get_global_temp_view(sql: str) -> Optional[str]:
     for t in tables:
         if "global_temp" in str(t):
             return str(t)
+
+
+def parse(sql: str) -> exp.Expression:
+    return parse_one(sql, dialect="fabricks")
+
+
+def get_tables(sql: str, allowed_databases: Optional[List[str]] = None) -> List[str]:
+    tables = set()
+    for table in parse(sql).find_all(exp.Table):
+        if len(table.db) > 0:  # exclude CTEs
+            if allowed_databases:
+                if table.db not in allowed_databases:
+                    continue
+            tables.add(f"{table.db}.{table.name}")
+    tables = list(tables)
+    return tables

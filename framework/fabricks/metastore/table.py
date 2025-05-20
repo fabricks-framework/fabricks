@@ -1,10 +1,11 @@
 import re
+from functools import lru_cache
 from typing import List, Optional, Union, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import expr, max
+from pyspark.sql.functions import max
 from pyspark.sql.types import StructType
 from typing_extensions import deprecated
 
@@ -54,6 +55,10 @@ class Table(Relational):
         df = self.describe_history()
         version = df.select(max("version")).collect()[0][0]
         return version
+
+    @property
+    def identity_enabled(self) -> bool:
+        return self.get_property("delta.feature.identityColumns") == "supported"
 
     def drop(self):
         super().drop()
@@ -146,6 +151,7 @@ class Table(Relational):
                 cluster_by = [cluster_by]
             cluster_by = [f"`{c}`" for c in cluster_by]
             ddl_cluster_by = "cluster by (" + ", ".join(cluster_by) + ")"
+
         if partitioning:
             assert partition_by
             if isinstance(partition_by, str):
@@ -158,17 +164,20 @@ class Table(Relational):
 
         if not properties:
             special_char = False
+
             for c in df.columns:
                 match = re.search(r"[^a-zA-Z0-9_]", c)
                 if match:
                     special_char = True
                     break
+
             if special_char:
                 properties = {
                     "delta.columnMapping.mode": "name",
                     "delta.minReaderVersion": "2",
                     "delta.minWriterVersion": "5",
                 }
+
         if properties:
             ddl_tblproperties = (
                 "tblproperties (" + ",".join(f"'{key}' = '{value}'" for key, value in properties.items()) + ")"
@@ -189,12 +198,14 @@ class Table(Relational):
             sql = fix(sql)
         except Exception:
             pass
+
         DEFAULT_LOGGER.debug("ddl", extra={"job": self, "sql": sql})
         self.spark.sql(sql)
 
     def is_deltatable(self) -> bool:
         return DeltaTable.isDeltaTable(self.spark, str(self.delta_path))
 
+    @property
     def column_mapping_enabled(self) -> bool:
         return self.get_property("delta.columnMapping.mode") == "name"
 
@@ -214,85 +225,96 @@ class Table(Relational):
         self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
-    def schema_drifted(self, df: DataFrame) -> bool:
-        return not self._check_schema_drift(df).isEmpty()
+    def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: Optional[str] = None) -> bool:
+        df = self.get_differences_with_dataframe(df)
+        return not df.isEmpty()
 
-    def _check_schema_drift(self, df: DataFrame) -> DataFrame:
-        DEFAULT_LOGGER.debug("check schema drift", extra={"job": self})
+    @lru_cache(maxsize=None)
+    def get_differences_with_dataframe(self, df: DataFrame) -> DataFrame:
+        df1 = self.dataframe
+        if self.identity_enabled:
+            if "__identity" in df1.columns:
+                df1 = df1.drop("__identity")
 
-        new_df = self.spark.createDataFrame(df.dtypes, ["new_name", "new_type"])  # type: ignore
-        new_df = new_df.filter(~new_df.new_name.startswith("__"))
+        df1 = self.spark.createDataFrame(df1.dtypes, ["column", "data_type"])  # type: ignore
+        df2 = self.spark.createDataFrame(df.dtypes, ["column", "data_type"])  # type: ignore
 
-        old_df = self.spark.createDataFrame(self.dataframe.dtypes, ["old_name", "old_type"])  # type: ignore
-        old_df = old_df.filter(~old_df.old_name.startswith("__"))
-
-        cond = [new_df["new_name"] == old_df["old_name"]]
-        df_diff = (
-            new_df.join(old_df, on=cond, how="outer")
-            .where(
-                """
-                coalesce(old_name, -1) <> coalesce(new_name, -1) 
-                or 
-                coalesce(old_type, -1) <> coalesce(new_type, -1)
-                """
+        df = self.spark.sql(
+            """
+            with base as (
+            select
+              d1.column,
+              d1.data_type,
+              d2.column as new_column,
+              d2.data_type as new_data_type
+            from
+              {df1} d1 full
+              outer join {df2} d2 on d1.column = d2.column
             )
-            .withColumn(
-                "operation",
-                expr("if(new_name is null, 'drop', if(old_name is null, 'add', 'update'))"),
-            )
-            .withColumn("column", expr("coalesce(new_name, old_name)"))
+            select
+              coalesce(`column`, `new_column`) as `column`,
+              * except(`column`, `new_column`),
+              if(`new_column` is null, 'dropped', if(`column` is null, 'added', 'changed')) as status
+            from
+              base
+            where
+              false
+              or column is null
+              or new_column is null
+              or not data_type <=> new_data_type
+            """,
+            df1=df1,
+            df2=df2,
         )
-        return df_diff
 
-    def _fix_schema(self, df: DataFrame, overwrite: bool = False):
-        drift_df = self._check_schema_drift(df)
-
-        if not drift_df.isEmpty():
-            DEFAULT_LOGGER.info("update table", extra={"job": self})
-            todo_df = drift_df.where("operation in ('add', 'update')")
-            if not todo_df.isEmpty():
-                for row in todo_df.collect():
-                    if row.operation == "add":
-                        DEFAULT_LOGGER.debug(f"add column {row.column}", extra={"job": self})
-                    else:
-                        DEFAULT_LOGGER.debug(
-                            f"update column {row.column} ({row.old_type} -> {row.new_type})",
-                            extra={"job": self},
-                        )
-
-                    try:
-                        col_df = df.select(row.column).where("1 == 2")
-                        (
-                            self.deltatable.alias("dt")
-                            .merge(col_df.alias("df"), "1 == 2")
-                            .whenNotMatchedInsertAll()
-                            .execute()
-                        )
-                    except Exception:
-                        pass
-
-            if overwrite:
-                drift_df = self._check_schema_drift(df)
-                DEFAULT_LOGGER.warning("overwrite table", extra={"job": self})
-                for row in drift_df.collect():
-                    if row.operation == "add":
-                        self.add_column(row.column, row.new_type)
-                    elif row.operation == "drop":
-                        self.drop_column(row.column)
-                    elif row.operation == "update":
-                        try:
-                            self.change_column(row.column, row.new_type)
-                        except AnalysisException:
-                            self.drop_column(row.column)
-                            self.add_column(row.column, row.new_type)
-                    else:
-                        raise ValueError(f"{row.operation} not allowed")
+        if not df.isEmpty():
+            DEFAULT_LOGGER.debug("difference(s) with delta table", extra={"job": self, "df": df})
+        return df
 
     def update_schema(self, df: DataFrame):
-        self._fix_schema(df, overwrite=False)
+        diff_df = self.get_differences_with_dataframe(df)
+        diff_df = diff_df.where("status in ('added', 'changed')")
+
+        if not diff_df.isEmpty():
+            DEFAULT_LOGGER.info("update table", extra={"job": self, "df": diff_df})
+            for row in diff_df.collect():
+                DEFAULT_LOGGER.debug(
+                    f"{row.status.replace('ed', 'ing')} ({row.new_data_type})",
+                    extra={"job": self, "column": row.column},
+                )
+                try:
+                    update_df = df.select(row.column).where("1 == 2")
+                    (
+                        self.deltatable.alias("dt")
+                        .merge(update_df.alias("df"), "1 == 2")
+                        .whenNotMatchedInsertAll()
+                        .execute()
+                    )
+                except Exception:
+                    pass
 
     def overwrite_schema(self, df: DataFrame):
-        self._fix_schema(df, overwrite=True)
+        diff_df = self.get_differences_with_dataframe(df)
+
+        if not diff_df.isEmpty():
+            DEFAULT_LOGGER.warning("overwrite table (update)", extra={"job": self, "df": diff_df})
+            self.update_schema(df)
+
+        diff_df = self.get_differences_with_dataframe(df)
+        if not diff_df.isEmpty():
+            diff_df.show()
+            DEFAULT_LOGGER.warning("overwrite table (overwrite)", extra={"job": self, "df": diff_df})
+            for row in diff_df.collect():
+                if row.status == "added":
+                    self.add_column(row.column, row.new_data_type)
+                elif row.status == "dropped":
+                    self.drop_column(row.column)
+                elif row.status == "changed":
+                    try:
+                        self.change_column(row.column, row.new_data_type)
+                    except AnalysisException:
+                        self.drop_column(row.column)
+                        self.add_column(row.column, row.new_data_type)
 
     def vacuum(self, retention_days: int = 7):
         DEFAULT_LOGGER.debug(f"vacuum table (removing files older than {retention_days} days)", extra={"job": self})
@@ -355,7 +377,8 @@ class Table(Relational):
         self.spark.sql(f"analyze table delta.`{self.delta_path}` compute delta statistics")
 
     def drop_column(self, name: str):
-        assert self.column_mapping_enabled(), "column mapping not enabled"
+        assert self.column_mapping_enabled, "column mapping not enabled"
+
         DEFAULT_LOGGER.warning(f"drop column {name}", extra={"job": self})
         self.spark.sql(
             f"""
@@ -365,7 +388,8 @@ class Table(Relational):
         )
 
     def change_column(self, name: str, type: str):
-        assert self.column_mapping_enabled(), "column mapping not enabled"
+        assert self.column_mapping_enabled, "column mapping not enabled"
+
         DEFAULT_LOGGER.info(f"change column {name} ({type})", extra={"job": self})
         self.spark.sql(
             f"""
@@ -375,7 +399,8 @@ class Table(Relational):
         )
 
     def rename_column(self, old: str, new: str):
-        assert self.column_mapping_enabled(), "column mapping not enabled"
+        assert self.column_mapping_enabled, "column mapping not enabled"
+
         DEFAULT_LOGGER.info(f"rename column {old} -> {new}", extra={"job": self})
         self.spark.sql(
             f"""
@@ -416,6 +441,7 @@ class Table(Relational):
 
     def enable_column_mapping(self):
         DEFAULT_LOGGER.debug("enable column mapping", extra={"job": self})
+
         try:
             self.spark.sql(
                 f"""
@@ -423,6 +449,7 @@ class Table(Relational):
                 set tblproperties ('delta.columnMapping.mode' = 'name')
                 """
             )
+
         except Exception:
             DEFAULT_LOGGER.debug("update reader and writer version", extra={"job": self})
             self.spark.sql(
@@ -464,7 +491,8 @@ class Table(Relational):
         )
 
     def add_materialized_column(self, name: str, expr: str, type: str):
-        assert self.column_mapping_enabled(), "column mapping not enabled"
+        assert self.column_mapping_enabled, "column mapping not enabled"
+
         DEFAULT_LOGGER.info(f"add materialized column ({name} {type})", extra={"job": self})
         self.spark.sql(
             f""""

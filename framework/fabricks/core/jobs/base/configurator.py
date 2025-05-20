@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from functools import lru_cache
 from typing import Optional, Union, cast
 
 from pyspark.sql import DataFrame, SparkSession
@@ -171,6 +172,7 @@ class Configurator(ABC):
         return self._paths
 
     @property
+    @lru_cache(maxsize=None)
     def options(self) -> Options:
         if not self._options:
             job = self.conf.options or {}
@@ -216,7 +218,7 @@ class Configurator(ABC):
         return self.change_data_capture in ["scd1", "scd2"]
 
     @abstractmethod
-    def get_cdc_context(self, df: DataFrame) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict:
         raise NotImplementedError()
 
     def get_cdc_data(self, stream: bool = False) -> Optional[DataFrame]:
@@ -249,11 +251,11 @@ class Configurator(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None):
+    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         raise NotImplementedError()
 
     @abstractmethod
-    def for_each_run(self):
+    def for_each_run(self, **kwargs):
         raise NotImplementedError()
 
     @abstractmethod
