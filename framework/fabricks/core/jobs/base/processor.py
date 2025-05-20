@@ -78,7 +78,7 @@ class Processor(Invoker):
         df = self.base_transform(df)
 
         if self.schema_drifted(df):
-            if self.schema_drift:
+            if self.schema_drift or kwargs.get("reload", False):
                 DEFAULT_LOGGER.warning("schema drifted", extra={"job": self})
                 self.update_schema(df=df)
 
