@@ -145,7 +145,7 @@ class Generator(Configurator):
                 self.table.update_schema(df)
 
     def update_schema(self, src: Union[DataFrame, Table, str], **kwargs):
-        self._update_schema(src=src)
+        self._update_schema(src=src, **kwargs)
 
     def overwrite_schema(self, src: Union[DataFrame, Table, str], **kwargs):
-        self._update_schema(src=src, overwrite=True)
+        self._update_schema(src=src, overwrite=True, **kwargs)
