@@ -156,6 +156,8 @@ class Processor(Invoker):
 
         try:
             DEFAULT_LOGGER.info("run starts", extra={"job": self})
+            if reload:
+                DEFAULT_LOGGER.debug("force reload", extra={"job": self})
 
             if invoke:
                 self.invoke_pre_run(schedule=schedule)
