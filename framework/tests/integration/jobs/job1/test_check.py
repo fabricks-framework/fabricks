@@ -13,7 +13,7 @@ DEFAULT_LOGGER.setLevel(ERROR)
 def test_gold_check_fail():
     j = get_job(step="gold", topic="check", item="fail")
     error = get_last_error(j.job_id)
-    assert error == "pre_run_check failed"
+    assert error == "check_pre_run failed"
     assert j.table.rows == 0, "table should be empty"
 
 
@@ -21,7 +21,7 @@ def test_gold_check_fail():
 def test_gold_check_warning():
     j = get_job(step="gold", topic="check", item="warning")
     error = get_last_error(j.job_id)
-    assert error == "post_run_check warning"
+    assert error == "check_post_run warning"
     assert j.table.rows > 0, "table should not be empty"
 
 

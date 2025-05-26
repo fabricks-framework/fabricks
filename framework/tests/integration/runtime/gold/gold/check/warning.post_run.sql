@@ -1,1 +1,1 @@
-select "post_run_check warning" as __message, "warning" as __action
+select "check_post_run warning" as __message, "warning" as __action
