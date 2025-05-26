@@ -179,11 +179,11 @@ class Processor(Invoker):
             DEFAULT_LOGGER.info("run ends", extra={"job": self})
 
         except RunSkipWarning as e:
-            DEFAULT_LOGGER.warning("skip run", extra={"job": self, "message": e.message})
+            DEFAULT_LOGGER.warning("skip run", extra={"job": self})
             raise e
 
         except (PreRunCheckWarning, PostRunCheckWarning) as e:
-            DEFAULT_LOGGER.exception("could not pass warning check", extra={"job": self})
+            DEFAULT_LOGGER.warning("could not pass warning check", extra={"job": self})
             raise e
 
         except (PreRunInvokeException, PostRunInvokeException) as e:
