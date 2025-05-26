@@ -2,6 +2,7 @@ from typing import Optional
 
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 from fabricks.core.jobs import get_job
+from fabricks.core.jobs.base.error import CustomException
 
 
 def run(step: str, job_id: str, schedule_id: str, schedule: str, notebook_id: Optional[str] = None):
@@ -23,6 +24,15 @@ def run(step: str, job_id: str, schedule_id: str, schedule: str, notebook_id: Op
     try:
         job.run(schedule_id=schedule_id, schedule=schedule)
         LOGGER.info("done", extra=extra)
+
+    except CustomException as e:
+        if e.fail:
+            LOGGER.exception("failed", extra=extra)
+            raise e
+
+        else:
+            extra["exc_info"] = e
+            LOGGER.warning("done", extra=extra)
 
     except Exception as e:
         LOGGER.exception("failed", extra=extra)

@@ -1,49 +1,57 @@
 from pyspark.sql import DataFrame
 
 
-class PreRunCheckException(Exception):
+class CustomException(Exception):
+    def __init__(self, fail: bool, *args, **kwargs):
+        self.fail = fail
+        super().__init__(*args, **kwargs)
+
+
+class PreRunCheckException(CustomException):
     def __init__(self, message: str, dataframe: DataFrame):
         self.message = message
         self.dataframe = dataframe
 
-        super().__init__(self.message)
+        super().__init__(fail=True, message=self.message)
 
 
-class PostRunCheckException(Exception):
+class PostRunCheckException(CustomException):
     def __init__(self, message: str, dataframe: DataFrame):
         self.message = message
         self.dataframe = dataframe
 
-        super().__init__(self.message)
+        super().__init__(fail=True, message=self.message)
 
 
-class PreRunCheckWarning(Exception):
+class PreRunCheckWarning(CustomException):
     def __init__(self, message: str, dataframe: DataFrame):
         self.message = message
         self.dataframe = dataframe
 
-        super().__init__(self.message)
+        super().__init__(fail=False, message=self.message)
 
 
-class PostRunCheckWarning(Exception):
+class PostRunCheckWarning(CustomException):
     def __init__(self, message: str, dataframe: DataFrame):
         self.message = message
         self.dataframe = dataframe
 
-        super().__init__(self.message)
+        super().__init__(fail=False, message=self.message)
 
 
-class PreRunInvokeException(Exception):
-    pass
+class PreRunInvokeException(CustomException):
+    def __init__(self, *args):
+        super().__init__(fail=True, *args)
 
 
-class PostRunInvokeException(Exception):
-    pass
+class PostRunInvokeException(CustomException):
+    def __init__(self, *args):
+        super().__init__(fail=True, *args)
 
 
-class RunSkipWarning(Exception):
+class RunSkipWarning(CustomException):
     def __init__(self, message: str, dataframe: DataFrame):
         self.message = message
         self.dataframe = dataframe
 
-        super().__init__(self.message)
+        super().__init__(fail=False, message=self.message)
