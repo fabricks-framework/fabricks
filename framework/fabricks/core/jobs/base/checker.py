@@ -121,5 +121,12 @@ class Checker(Generator):
             assert p.exists(), "skip check not found"
 
             df = self.spark.sql(p.get_sql())
-            if not df.isEmpty():
-                raise RunSkipWarning("skip run", dataframe=df)
+            skip_df = df.where("__skip")
+            if not skip_df.isEmpty():
+                for row in skip_df.collect():
+                    DEFAULT_LOGGER.warning(
+                        f"skip run due to {row['__message']}",
+                        extra={"job": self},
+                    )
+
+                raise RunSkipWarning(row["__message"], dataframe=df)

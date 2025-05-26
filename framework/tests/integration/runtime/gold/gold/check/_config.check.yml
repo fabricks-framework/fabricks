@@ -59,3 +59,12 @@
     tags: [test]
     options:
       mode: complete
+- job:
+    step: gold
+    topic: check
+    item: skip
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      skip: true
