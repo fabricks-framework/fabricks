@@ -77,6 +77,7 @@ def create_or_replace_jobs_view():
 
     sql = f"""create or replace view fabricks.jobs as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.jobs", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -103,6 +104,7 @@ def create_or_replace_tables_view():
 
     sql = f"""create or replace view fabricks.tables as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.tables", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -129,6 +131,7 @@ def create_or_replace_views_view():
 
     sql = f"""create or replace view fabricks.views as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.views", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -158,6 +161,7 @@ def create_or_replace_dependencies_view():
 
     sql = f"""create or replace view fabricks.dependencies as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.dependencies", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -178,8 +182,8 @@ def create_or_replace_dependencies_flat_view():
       fabricks.dependencies d0 
       {join}
     """
-
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_flat", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -219,8 +223,8 @@ def create_or_replace_dependencies_unpivot_view():
         depth asc
     ) = 1
     """
-
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_unpivot", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -260,8 +264,8 @@ def create_or_replace_dependencies_circular_view():
           d1.job_id = d.parent_id
       )
     """
-
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_circular", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -288,6 +292,8 @@ def create_or_replace_logs_pivot_view():
         max(l.timestamp) filter(where l.status = 'done') as done_time,
         max(l.timestamp) filter(where l.status = 'failed') as failed_time,
         max(l.timestamp) filter(where l.status = 'ok') as ok_time,
+        max(l.timestamp) filter(where l.status = 'skiped') as skiped_time,
+        max(l.timestamp) filter(where l.status = 'warned') as warned_time,
         max(l.exception) as exception
       from
         fabricks.logs l
@@ -315,14 +321,16 @@ def create_or_replace_logs_pivot_view():
       g.done_time,
       g.failed_time,
       g.ok_time,
+      g.skiped_time,
+      g.warned_time,
       if(g.timed_out, null, date_diff(SECOND, start_time, end_time)) as duration,
       g.exception
     from
       groupby g
       left join fabricks.jobs j on g.job_id = j.job_id
     """
-
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.logs_pivot", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -348,8 +356,8 @@ def create_or_replace_last_schedule_view():
       fabricks.logs_pivot l
       inner join lst on schedule_id = last_schedule_id
     """
-
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.last_schedule", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -375,8 +383,8 @@ def create_or_replace_last_status_view():
           start_time desc
       ) = 1
     """
-
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.last_status", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -414,8 +422,8 @@ def create_or_replace_previous_schedule_view():
       fabricks.logs_pivot l
       inner join lst on schedule_id = last_schedule_id
     """
-
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.previous_schedule", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -440,8 +448,8 @@ def create_or_replace_schedules_view():
       all
     order by date desc, start_time desc
     """
-
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.schedules", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -497,7 +505,7 @@ def create_or_replace_jobs_to_be_updated_view():
         left join objects o
           on b.job_id = o.job_id    
     """
-
     sql = fix_sql(sql)
+
     DEFAULT_LOGGER.debug("create or replace fabricks.jobs_to_be_updated", extra={"sql": sql})
     SPARK.sql(sql)

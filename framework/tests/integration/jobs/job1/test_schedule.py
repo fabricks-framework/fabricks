@@ -43,7 +43,7 @@ def test_no_unexpected_failure():
             "gold.check_min_rows",
             "gold.check_count_must_equal",
             "gold.check_duplicate_key",
-            "gold.check_duplicate_identity",
+            "gold.check_duplicate_identity"
           )
         """
     )

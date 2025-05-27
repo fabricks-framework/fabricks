@@ -1,5 +1,6 @@
 from fabricks.core.deploy.tables import deploy_tables
 from fabricks.core.deploy.views import deploy_views
+from fabricks.core.deploy.udfs import deploy_udfs
 
 
 class deploy:
@@ -10,3 +11,7 @@ class deploy:
     @staticmethod
     def views():
         deploy_views()
+
+    @staticmethod
+    def udfs():
+        deploy_udfs()
