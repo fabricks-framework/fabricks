@@ -56,7 +56,7 @@ def create_table_log(drop: bool = False):
                             StructField("traceback", StringType(), True),
                         ]
                     ),
-                    True
+                    True,
                 ),
             ]
         )
