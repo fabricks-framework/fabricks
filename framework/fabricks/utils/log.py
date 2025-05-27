@@ -1,7 +1,6 @@
 import hashlib
 import json
 import logging
-import re
 import sys
 from datetime import datetime
 from typing import Optional, Tuple
@@ -120,7 +119,7 @@ class AzureTableLogHandler(logging.Handler):
                 j = str(record.__dict__.get("job", ""))
                 r["Job"] = j
                 r["JobId"] = hashlib.md5(j.encode()).hexdigest()
-            
+
             if hasattr(record, "table"):
                 t = str(record.__dict__.get("table", ""))
                 r["Job"] = t

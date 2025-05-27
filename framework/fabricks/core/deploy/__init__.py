@@ -1,6 +1,6 @@
 from fabricks.core.deploy.tables import deploy_tables
-from fabricks.core.deploy.views import deploy_views
 from fabricks.core.deploy.udfs import deploy_udfs
+from fabricks.core.deploy.views import deploy_views
 
 
 class deploy:

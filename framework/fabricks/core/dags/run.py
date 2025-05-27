@@ -25,10 +25,10 @@ def run(step: str, job_id: str, schedule_id: str, schedule: str, notebook_id: Op
         job.run(schedule_id=schedule_id, schedule=schedule)
         LOGGER.info("done", extra=extra)
 
-    except SkipRunCheckWarning as e:
+    except SkipRunCheckWarning:
         LOGGER.exception("skipped", extra=extra)
-        
-    except CheckWarning as e:
+
+    except CheckWarning:
         LOGGER.exception("warned", extra=extra)
 
     except Exception as e:

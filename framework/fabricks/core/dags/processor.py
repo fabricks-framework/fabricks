@@ -111,7 +111,7 @@ class DagProcessor(BaseDags):
             if response == self.queue.sentinel:
                 LOGGER.info("no more job available")
                 break
-            
+
             elif response:
                 j = json.loads(response)
 
