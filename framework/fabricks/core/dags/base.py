@@ -76,12 +76,13 @@ class BaseDags:
               `Level` as `level`,
               `Message` as `status`,
               to_timestamp(`Created`, 'dd/MM/yy HH:mm:ss') as `timestamp`,
-              from_json(Exception, 'type STRING, message STRING, traceback STRING') as exception
+              if(Exception is not null, from_json(Exception, 'type STRING, message STRING, traceback STRING'), null) as exception
             from
               {df}
             """,
             df=df,
         )
+
         return df
 
     def write_logs(self, df: DataFrame):
