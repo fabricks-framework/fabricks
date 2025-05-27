@@ -76,7 +76,7 @@ class BaseDags:
               `Level` as `level`,
               `Message` as `status`,
               to_timestamp(`Created`, 'dd/MM/yy HH:mm:ss') as `timestamp`,
-              if(Exception is not null, from_json(Exception, 'type STRING, message STRING, traceback STRING'), null) as exception
+              from_json(Exception, 'type STRING, message STRING, traceback STRING') as exception
             from
               {df}
             """,
