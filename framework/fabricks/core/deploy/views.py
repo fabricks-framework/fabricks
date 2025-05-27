@@ -292,7 +292,7 @@ def create_or_replace_logs_pivot_view():
         max(l.timestamp) filter(where l.status = 'done') as done_time,
         max(l.timestamp) filter(where l.status = 'failed') as failed_time,
         max(l.timestamp) filter(where l.status = 'ok') as ok_time,
-        max(l.timestamp) filter(where l.status = 'skiped') as skiped_time,
+        max(l.timestamp) filter(where l.status = 'skipped') as skipped_time,
         max(l.timestamp) filter(where l.status = 'warned') as warned_time,
         max(l.exception) as exception
       from
@@ -321,7 +321,7 @@ def create_or_replace_logs_pivot_view():
       g.done_time,
       g.failed_time,
       g.ok_time,
-      g.skiped_time,
+      g.skipped_time,
       g.warned_time,
       if(g.timed_out, null, date_diff(SECOND, start_time, end_time)) as duration,
       g.exception
