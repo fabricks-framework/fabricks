@@ -23,7 +23,7 @@ def test_schedule():
 
 
 @pytest.mark.order(103)
-def test_no_unexpected_failure():
+def test_no_unforced_failure():
     df = SPARK.sql(
         """
         select
