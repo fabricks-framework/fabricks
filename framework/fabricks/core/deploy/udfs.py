@@ -4,7 +4,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 
 def deploy_udfs():
-    DEFAULT_LOGGER.info("🌟 (create or replace tables)")
+    DEFAULT_LOGGER.info("🌟 (create or replace udfs)")
 
     create_or_replace_udf_job_id()
 

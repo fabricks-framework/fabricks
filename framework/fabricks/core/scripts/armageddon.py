@@ -75,6 +75,8 @@ def armageddon(steps: Optional[Union[TStep, List[TStep], str, List[str]]]):
     fabricks.create()
 
     deploy.tables(drop=True)
+    deploy.udfs()
+
     for s in steps:
         step = BaseStep(s)
         step.create()
