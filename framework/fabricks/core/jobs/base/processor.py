@@ -14,7 +14,7 @@ from fabricks.core.jobs.base.error import (
     PreRunCheckException,
     PreRunCheckWarning,
     PreRunInvokeException,
-    RunSkipWarning,
+    SkipRunCheckWarning,
 )
 from fabricks.core.jobs.base.invoker import Invoker
 from fabricks.utils.write import write_stream
@@ -178,7 +178,7 @@ class Processor(Invoker):
 
             DEFAULT_LOGGER.info("run ends", extra={"job": self})
 
-        except RunSkipWarning as e:
+        except SkipRunCheckWarning as e:
             DEFAULT_LOGGER.warning("skip run", extra={"job": self})
             raise e
 

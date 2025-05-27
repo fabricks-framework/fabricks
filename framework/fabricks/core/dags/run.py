@@ -2,7 +2,7 @@ from typing import Optional
 
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 from fabricks.core.jobs import get_job
-from fabricks.core.jobs.base.error import NoFailException
+from fabricks.core.jobs.base.error import CheckWarning, SkipRunCheckWarning
 
 
 def run(step: str, job_id: str, schedule_id: str, schedule: str, notebook_id: Optional[str] = None):
@@ -25,7 +25,10 @@ def run(step: str, job_id: str, schedule_id: str, schedule: str, notebook_id: Op
         job.run(schedule_id=schedule_id, schedule=schedule)
         LOGGER.info("done", extra=extra)
 
-    except NoFailException as e:
+    except SkipRunCheckWarning as e:
+        LOGGER.info("skipped", extra=extra)
+
+    except CheckWarning as e:
         extra["exc_info"] = e
         LOGGER.warning("done", extra=extra)
 

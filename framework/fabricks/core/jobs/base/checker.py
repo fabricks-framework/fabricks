@@ -6,7 +6,7 @@ from fabricks.core.jobs.base.error import (
     PostRunCheckWarning,
     PreRunCheckException,
     PreRunCheckWarning,
-    RunSkipWarning,
+    SkipRunCheckWarning,
 )
 from fabricks.core.jobs.base.generator import Generator
 
@@ -129,4 +129,4 @@ class Checker(Generator):
                         extra={"job": self},
                     )
 
-                raise RunSkipWarning(row["__message"], dataframe=df)
+                raise SkipRunCheckWarning(row["__message"], dataframe=df)

@@ -1,11 +1,11 @@
 from pyspark.sql import DataFrame
 
 
-class NoFailException(Exception):
+class CustomException(Exception):
     pass
 
 
-class PreRunCheckException(Exception):
+class CheckException(Exception):
     def __init__(self, message: str, dataframe: DataFrame):
         self.message = message
         self.dataframe = dataframe
@@ -13,41 +13,33 @@ class PreRunCheckException(Exception):
         super().__init__(self.message)
 
 
-class PostRunCheckException(Exception):
-    def __init__(self, message: str, dataframe: DataFrame):
-        self.message = message
-        self.dataframe = dataframe
-
-        super().__init__(self.message)
-
-
-class PreRunCheckWarning(NoFailException):
-    def __init__(self, message: str, dataframe: DataFrame):
-        self.message = message
-        self.dataframe = dataframe
-
-        super().__init__(self.message)
-
-
-class PostRunCheckWarning(NoFailException):
-    def __init__(self, message: str, dataframe: DataFrame):
-        self.message = message
-        self.dataframe = dataframe
-
-        super().__init__(self.message)
-
-
-class PreRunInvokeException(Exception):
+class CheckWarning(CheckException):
     pass
 
 
-class PostRunInvokeException(Exception):
+class PreRunCheckException(CheckException):
     pass
 
 
-class RunSkipWarning(NoFailException):
-    def __init__(self, message: str, dataframe: DataFrame):
-        self.message = message
-        self.dataframe = dataframe
+class PostRunCheckException(CheckException):
+    pass
 
-        super().__init__(self.message)
+
+class PreRunCheckWarning(CheckWarning):
+    pass
+
+
+class PostRunCheckWarning(CheckWarning):
+    pass
+
+
+class PreRunInvokeException(CustomException):
+    pass
+
+
+class PostRunInvokeException(CustomException):
+    pass
+
+
+class SkipRunCheckWarning(CheckWarning):
+    pass
