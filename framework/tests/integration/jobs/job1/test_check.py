@@ -57,7 +57,7 @@ def test_gold_check_count_must_equal():
 @pytest.mark.order(166)
 def test_gold_check_skip():
     j = get_job(step="gold", topic="check", item="skip")
-    error = get_last_error(j.job_id, status="warned")
+    error = get_last_error(j.job_id, status="skipped")
 
     assert error == "I want you to skip this !"
     assert j.table.rows == 0, "table should be empty"

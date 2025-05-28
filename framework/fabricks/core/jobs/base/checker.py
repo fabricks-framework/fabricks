@@ -99,7 +99,10 @@ class Checker(Generator):
 
             if not df.isEmpty():
                 duplicates = ",".join([str(row[column]) for row in df.collect()])
-                raise PostRunCheckWarning(f"duplicate {column} check failed ({duplicates})", dataframe=df)
+                raise PostRunCheckException(
+                    f"duplicate {column} check failed ({duplicates})",
+                    dataframe=df,
+                )
 
         else:
             DEFAULT_LOGGER.debug(f"{column} not found", extra={"job": self})
