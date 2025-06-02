@@ -1,30 +1,45 @@
-class PreRunCheckFailedException(Exception):
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(self.message)
+from pyspark.sql import DataFrame
 
 
-class PostRunCheckFailedException(Exception):
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(self.message)
-
-
-class PreRunCheckWarningException(Exception):
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(self.message)
-
-
-class PostRunCheckWarningException(Exception):
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(self.message)
-
-
-class PreRunInvokerFailedException(Exception):
+class CustomException(Exception):
     pass
 
 
-class PostRunInvokerFailedException(Exception):
+class CheckException(Exception):
+    def __init__(self, message: str, dataframe: DataFrame):
+        self.message = message
+        self.dataframe = dataframe
+
+        super().__init__(self.message)
+
+
+class CheckWarning(CheckException):
+    pass
+
+
+class PreRunCheckException(CheckException):
+    pass
+
+
+class PostRunCheckException(CheckException):
+    pass
+
+
+class PreRunCheckWarning(CheckWarning):
+    pass
+
+
+class PostRunCheckWarning(CheckWarning):
+    pass
+
+
+class PreRunInvokeException(CustomException):
+    pass
+
+
+class PostRunInvokeException(CustomException):
+    pass
+
+
+class SkipRunCheckWarning(CheckWarning):
     pass

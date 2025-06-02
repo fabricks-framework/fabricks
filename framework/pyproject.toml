@@ -1,6 +1,6 @@
 [project]
 name = "fabricks"
-version = "2.1.0"
+version = "2.1.1"
 description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },
@@ -93,8 +93,8 @@ dev = [
 runtime = "tests/integration/runtime"
 notebooks = "fabricks/api/notebooks"
 job_config_from_yaml = true
-loglevel = "debug"
-debugmode = true
+loglevel = "info"
+debugmode = false
 config = "tests/integration/runtime/fabricks/conf.uc.fabricks.yml"
 
 [tool.pytest.ini_options]

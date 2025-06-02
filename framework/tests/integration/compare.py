@@ -115,7 +115,7 @@ def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: Optional[
     assert_dfs_equal(df, expected_df)
 
 
-def get_last_error(job_id: str):
+def get_last_error(job_id: str, status: str = "failed"):
     return (
         SPARK.sql(
             f"""
@@ -127,7 +127,7 @@ def get_last_error(job_id: str):
             where 
               true
               and l.job_id = '{job_id}' 
-              and l.status = 'failed' 
+              and l.status = '{status}' 
             order by timestamp desc 
             limit 1
             """

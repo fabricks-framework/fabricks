@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.checker import Checker
-from fabricks.core.jobs.base.error import PostRunInvokerFailedException, PreRunInvokerFailedException
+from fabricks.core.jobs.base.error import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.schedules import get_schedules
 from fabricks.utils.path import Path
 
@@ -44,9 +44,9 @@ class Invoker(Checker):
 
                 except Exception as e:
                     if position == "pre_run":
-                        raise PreRunInvokerFailedException(e)
+                        raise PreRunInvokeException(e)
                     elif position == "post_run":
-                        raise PostRunInvokerFailedException(e)
+                        raise PostRunInvokeException(e)
                     else:
                         raise e
 
@@ -74,9 +74,9 @@ class Invoker(Checker):
 
                 except Exception as e:
                     if position == "pre_run":
-                        raise PreRunInvokerFailedException(e)
+                        raise PreRunInvokeException(e)
                     elif position == "post_run":
-                        raise PostRunInvokerFailedException(e)
+                        raise PostRunInvokeException(e)
                     else:
                         raise e
 

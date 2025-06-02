@@ -1,1 +1,1 @@
-select "fail" as __action, "pre_run_check failed" as __message
+select "fail" as __action, "Please don't fail on me :(" as __message

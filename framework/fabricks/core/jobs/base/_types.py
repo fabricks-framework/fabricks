@@ -67,6 +67,7 @@ class ExtenderOptions(TypedDict):
 
 
 class CheckOptions(TypedDict):
+    skip: Optional[bool]
     pre_run: Optional[bool]
     post_run: Optional[bool]
     min_rows: Optional[int]

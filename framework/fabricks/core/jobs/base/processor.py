@@ -8,12 +8,13 @@ from pyspark.sql.functions import expr
 from fabricks.context import IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.error import (
-    PostRunCheckFailedException,
-    PostRunCheckWarningException,
-    PostRunInvokerFailedException,
-    PreRunCheckFailedException,
-    PreRunCheckWarningException,
-    PreRunInvokerFailedException,
+    PostRunCheckException,
+    PostRunCheckWarning,
+    PostRunInvokeException,
+    PreRunCheckException,
+    PreRunCheckWarning,
+    PreRunInvokeException,
+    SkipRunCheckWarning,
 )
 from fabricks.core.jobs.base.invoker import Invoker
 from fabricks.utils.write import write_stream
@@ -162,27 +163,34 @@ class Processor(Invoker):
             if invoke:
                 self.invoke_pre_run(schedule=schedule)
 
-            self.pre_run_check()
+            if not reload:
+                self.check_skip_run()
+
+            self.check_pre_run()
 
             self.for_each_run(schedule=schedule, reload=reload)
 
-            self.post_run_check()
-            self.post_run_extra_check()
+            self.check_post_run()
+            self.check_post_run_extra()
 
             if invoke:
                 self.invoke_post_run(schedule=schedule)
 
             DEFAULT_LOGGER.info("run ends", extra={"job": self})
 
-        except (PreRunCheckWarningException, PostRunCheckWarningException) as e:
-            DEFAULT_LOGGER.exception("could not pass warning check", extra={"job": self})
+        except SkipRunCheckWarning as e:
+            DEFAULT_LOGGER.warning("skip run", extra={"job": self})
             raise e
 
-        except (PreRunInvokerFailedException, PostRunInvokerFailedException) as e:
+        except (PreRunCheckWarning, PostRunCheckWarning) as e:
+            DEFAULT_LOGGER.warning("could not pass warning check", extra={"job": self})
+            raise e
+
+        except (PreRunInvokeException, PostRunInvokeException) as e:
             DEFAULT_LOGGER.exception("could not run invoker", extra={"job": self})
             raise e
 
-        except (PreRunCheckFailedException, PostRunCheckFailedException) as e:
+        except (PreRunCheckException, PostRunCheckException) as e:
             DEFAULT_LOGGER.exception("could not pass check", extra={"job": self})
             self.restore(last_version, last_batch)
             raise e

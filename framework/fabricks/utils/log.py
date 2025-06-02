@@ -45,7 +45,7 @@ class LogFormatter(logging.Formatter):
     def format(self, record):
         levelname = record.levelname
         padding = self.PADDINGS[levelname]
-        levelname = f"{self.COLORS[record.levelno]}{levelname}:{padding}{self.RESET}"
+        levelname_formatted = f"{self.COLORS[record.levelno]}{levelname}:{padding}{self.RESET}"
 
         prefix = ""
         if hasattr(record, "job"):
@@ -70,7 +70,7 @@ class LogFormatter(logging.Formatter):
                 if isinstance(df, DataFrame):
                     extra += f"\n---\n%df\n{df.toPandas().to_string(index=True)}\n---"
 
-        record.levelname = levelname
+        record.levelname = levelname_formatted
         record.prefix = prefix
         record.timestamp = self.formatTime(record)
         record.extra = extra
@@ -93,17 +93,33 @@ class AzureTableLogHandler(logging.Handler):
         if hasattr(record, "target"):
             target = record.__dict__.get("target")
 
+            level = record.levelname
+            if "debug" in level.lower():
+                level = "DEBUG"
+            elif "info" in level.lower():
+                level = "INFO"
+            elif "warning" in level.lower():
+                level = "WARNING"
+            elif "error" in level.lower():
+                level = "ERROR"
+            elif "critical" in level.lower():
+                level = "CRITICAL"
+            else:
+                level = "INFO"
+
             r = {
                 "Created": str(
                     datetime.fromtimestamp(record.created).strftime("%d/%m/%y %H:%M:%S")
                 ),  # timestamp not present when querying Azure Table
-                "Level": str(record.levelname),
+                "Level": level,
                 "Message": record.message,
             }
+
             if hasattr(record, "job"):
                 j = str(record.__dict__.get("job", ""))
                 r["Job"] = j
                 r["JobId"] = hashlib.md5(j.encode()).hexdigest()
+
             if hasattr(record, "table"):
                 t = str(record.__dict__.get("table", ""))
                 r["Job"] = t

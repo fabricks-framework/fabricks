@@ -23,7 +23,7 @@ def test_schedule():
 
 
 @pytest.mark.order(103)
-def test_no_unexpected_failure():
+def test_no_unforced_failure():
     df = SPARK.sql(
         """
         select
@@ -33,12 +33,17 @@ def test_no_unexpected_failure():
         where
           true
           and l.failed
-          and l.topic not in ("check")
           and l.job not in (
             "silver.princess_drop", 
             "gold.invoke_failed_pre_run", 
             "gold.invoke_timedout",
-            "gold.invoke_timedout_pre_run"
+            "gold.invoke_timedout_pre_run",
+            "gold.check_fail",
+            "gold.check_max_rows",
+            "gold.check_min_rows",
+            "gold.check_count_must_equal",
+            "gold.check_duplicate_key",
+            "gold.check_duplicate_identity"
           )
         """
     )

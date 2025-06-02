@@ -116,8 +116,10 @@ class DagGenerator(BaseDags):
         step_df = self.get_steps(job_df)
 
         table = self.get_table()
+
         table.create_if_not_exists()
         table.truncate_all_partitions()
+
         table.upsert(job_df)
         table.upsert(deps_df)
 
@@ -140,11 +142,13 @@ class DagGenerator(BaseDags):
             """,
             df=job_df,
         )
+
         TABLE_LOG_HANDLER.table.upsert(df)
 
         cs = self.get_connection_string()
         for row in step_df.collect():
             step = self.remove_invalid_characters(row.Step)
+
             with AzureQueue(f"q{step}{self.schedule_id}", connection_string=cs) as queue:
                 queue.create_if_not_exists()
                 queue.clear()

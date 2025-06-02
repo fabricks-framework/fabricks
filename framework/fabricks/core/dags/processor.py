@@ -89,13 +89,14 @@ class DagProcessor(BaseDags):
             if len(scheduled) == 0:
                 for _ in range(self.step.workers):
                     self.queue.send_sentinel()
-                LOGGER.info("🎉 (no more job to schedule)")
+                LOGGER.info("no more job to schedule")
                 break
 
             else:
                 sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
                 for s in sorted_scheduled:
                     dependencies = self.table.query(f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'")
+
                     if len(dependencies) == 0:
                         s["Status"] = "waiting"
                         LOGGER.info("waiting", extra=self.extra(s))
@@ -108,8 +109,9 @@ class DagProcessor(BaseDags):
         while True:
             response = self.queue.receive()
             if response == self.queue.sentinel:
-                LOGGER.info("💤 (no more job available)")
+                LOGGER.info("no more job available")
                 break
+
             elif response:
                 j = json.loads(response)
 
@@ -140,7 +142,7 @@ class DagProcessor(BaseDags):
                         )
 
                 except Exception:
-                    LOGGER.warning("🤯 (failed)", extra={"step": str(self.step), "job": j.get("Job")})
+                    LOGGER.warning("failed", extra={"step": str(self.step), "job": j.get("Job")})
 
                 finally:
                     j["Status"] = "ok"
@@ -188,7 +190,7 @@ class DagProcessor(BaseDags):
         assert isinstance(scheduled, List)
 
         if len(scheduled) > 0:
-            LOGGER.info("🏎️ (start)")
+            LOGGER.info("start")
 
             p = Process(target=self._process())
             p.start()
@@ -198,17 +200,17 @@ class DagProcessor(BaseDags):
             self.queue.delete()
 
             if p.exitcode is None:
-                LOGGER.critical("💥 (timeout)")
+                LOGGER.critical("timeout")
                 raise ValueError(f"{self.step} timed out")
 
             else:
                 df = self.get_logs(str(self.step))
                 self.write_logs(df)
 
-                LOGGER.info("🏁 (end)")
+                LOGGER.info("end")
 
         else:
-            LOGGER.info("no job to schedule (🏖️)")
+            LOGGER.info("no job to schedule")
 
     def __str__(self) -> str:
         return f"{str(self.step)} ({self.schedule_id})"

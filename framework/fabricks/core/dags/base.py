@@ -82,6 +82,7 @@ class BaseDags:
             """,
             df=df,
         )
+
         return df
 
     def write_logs(self, df: DataFrame):

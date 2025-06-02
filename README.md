@@ -25,10 +25,10 @@ No need for magic here. It's all your Data Lakehouse/Data Warehouse code in one 
 You'll find more documentation in the [Framework Readme](framework/README.md), with additional information coming soon. 📖👀
 
 For basic examples, please refer to our tests:
-- [Jobs Config](framework/tests/integration/runtime/gold/gold/invoke/config.invoke.yml) ⚙️
+- [Jobs Config](framework/tests/integration/runtime/gold/gold/invoke/_config.invoke.yml) ⚙️
   - `pre_run` is for Notebooks to be run before a job, typically used for ingestion
   - `post_run` is for Notebooks to be run after a job, typically used for distribution
-- [Sample SQL Query for a Job](framework/tests/integration/runtime/gold/gold/fact/dependency.sql) 📝
+- [Sample SQL Query for a Job](framework/tests/integration/runtime/gold/gold/fact/dependency_sql.sql) 📝
 
 ## About this repo 🕵️‍♂️
 We're just getting started with open-sourcing Fabricks! There are many areas where we want to improve:
