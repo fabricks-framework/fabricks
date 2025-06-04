@@ -160,7 +160,7 @@ class Gold(BaseJob):
         for p in parents:
             data.append(Row(self.job_id, p, "job"))
 
-        if len(dependencies) == 0:
+        if len(data) == 0:
             DEFAULT_LOGGER.debug("no dependency found", extra={"job": self})
             df = self.spark.createDataFrame(data, SchemaDependencies)
 
