@@ -208,9 +208,13 @@ class Gold(BaseJob):
             order_duplicate_by = {"__order_duplicate_by_desc": "desc"}
         else:
             order_duplicate_by = None
-        
-        deduplicate = self.options.job.get_boolean("deduplicate", None)   # assume no duplicate in gold (to improve performance)
-        rectify = self.options.job.get_boolean("rectify", None)  # assume no reload in gold (to improve performance)
+
+        deduplicate = self.options.job.get_boolean(
+            "deduplicate", None
+        )  # assume no duplicate in gold (to improve performance)
+        rectify = self.options.job.get_boolean(
+            "rectify_as_upserts", None
+        )  # assume no reload in gold (to improve performance)
         correct_valid_from = self.options.job.get_boolean("correct_valid_from", True)
 
         context = {
@@ -219,7 +223,7 @@ class Gold(BaseJob):
             "deduplicate_key": None,
             "deduplicate_hash": True if self.slowly_changing_dimension else None,
             "deduplicate": False,
-            "rectify": False, 
+            "rectify": False,
             "order_duplicate_by": order_duplicate_by,
             "correct_valid_from": correct_valid_from,
         }
