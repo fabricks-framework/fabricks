@@ -48,6 +48,8 @@ def create_or_replace_view_internal(name: str, options: dict):
     tag = "-- no tag provided"
     view = "-- no view provided"
 
+    assert isinstance(options, dict), "options must be a dict"
+
     if options.get("steps") is not None:
         steps = [f"'{s}'" for s in options.get("steps")]  # type: ignore
         step = f"and j.step in ({', '.join(steps)})"
@@ -90,7 +92,7 @@ def create_or_replace_views():
     df = get_schedules_df()
     for row in df.collect():
         try:
-            create_or_replace_view_internal(row.name, row.options)
+            create_or_replace_view_internal(row.name, row.options.asDict())
         except Exception:
             DEFAULT_LOGGER.exception(f"schedule - {row.name} not created nor replaced")
 
