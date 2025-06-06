@@ -30,30 +30,33 @@ def get_schedules():
 def get_schedules_df() -> DataFrame:
     schema = get_schema_for_type(Schedule)
     df = SPARK.createDataFrame(list(get_schedules()), schema=schema)  # type: ignore
+
     assert df, "no schedules found"
     return df
 
 
 def get_schedule(name: str) -> Row:
-    scheds = [s for s in get_schedules() if s["name"] == name]
+    schedules = [s for s in get_schedules() if s["name"] == name]
 
-    assert scheds, "schedule not found"
-    assert len(scheds) == 1, "schedule duplicated"
-    return Row(**scheds[0])
+    assert schedules, "schedule not found"
+    assert len(schedules) == 1, "schedule duplicated"
+    return Row(**schedules[0])
 
 
-def create_or_replace_view_internal(name: str, options: DataFrame):
+def create_or_replace_view_internal(name: str, options: dict):
     step = "-- no step provided"
     tag = "-- no tag provided"
     view = "-- no view provided"
 
-    if options.steps is not None:
-        steps = [f"'{s}'" for s in options.steps]  # type: ignore
+    if options.get("steps") is not None:
+        steps = [f"'{s}'" for s in options.get("steps")]  # type: ignore
         step = f"and j.step in ({', '.join(steps)})"
-    if options.tag is not None:
-        tag = f"and array_contains(j.tags, '{options.tag}')"
-    if options.view is not None:
-        view = f"inner join fabricks.{options.view} v on j.job_id = v.job_id"
+
+    if options.get("tag") is not None:
+        tag = f"""and array_contains(j.tags, '{options.get("tag")}')"""
+
+    if options.get("view") is not None:
+        view = f"""inner join fabricks.{options.get("view")} v on j.job_id = v.job_id"""
 
     sql = f"""
     create or replace view fabricks.{name}_schedule
