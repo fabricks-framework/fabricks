@@ -337,7 +337,7 @@ class Generator(Configurator):
 
         elif self.virtual:
             self.create_or_replace_view()
-            
+
         else:
             raise ValueError(f"{self.mode} not allowed")
 

@@ -302,7 +302,7 @@ class Table(Relational):
         diff_df = self.get_differences_with_dataframe(df)
         if not diff_df.isEmpty():
             DEFAULT_LOGGER.warning("overwrite schema", extra={"job": self, "df": diff_df})
-            
+
             for row in diff_df.collect():
                 if row.status == "added":
                     self.add_column(row.column, row.new_data_type)

@@ -392,7 +392,7 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"job": self})
             return
-        
+
         elif self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"job": self})
             self.create_or_replace_view()
