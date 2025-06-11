@@ -342,11 +342,9 @@ class Generator(Configurator):
             raise ValueError(f"{self.mode} not allowed")
 
     def update_schema(self, df: Optional[DataFrame] = None):
-        DEFAULT_LOGGER.info("update schema", extra={"job": self})
         self._update_schema(df=df, overwrite=False)
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
-        DEFAULT_LOGGER.info("overwrite schema", extra={"job": self})
         self._update_schema(df=df, overwrite=True)
 
     def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
