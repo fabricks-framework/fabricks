@@ -1,17 +1,16 @@
 from typing import Optional
 
-from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
 from typing_extensions import deprecated
 
 from fabricks.context.runtime import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.secret import add_secret_to_spark, get_secret_from_secret_scope
-from fabricks.utils.spark import spark as _spark
+from fabricks.utils.spark import get_dbutils, get_spark
 
 
 def add_catalog_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
-        spark = _spark  # type: ignore
+        spark = get_spark()
 
     if CATALOG is not None:
         spark.sql(f"use catalog {CATALOG};")
@@ -19,7 +18,7 @@ def add_catalog_to_spark(spark: Optional[SparkSession] = None):
 
 def add_credentials_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
-        spark = _spark  # type: ignore
+        spark = get_spark()
 
     credentials = CONF_RUNTIME.get("credentials", {})
     for uri, secret in credentials.items():
@@ -29,7 +28,7 @@ def add_credentials_to_spark(spark: Optional[SparkSession] = None):
 
 def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
-        spark = _spark  # type: ignore
+        spark = get_spark()
 
     # delta default options
     spark.sql("set spark.databricks.delta.schema.autoMerge.enabled = True;")
@@ -74,13 +73,13 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
 @deprecated("use build_spark_session instead")
 def init_spark_session(spark: Optional[SparkSession] = None):
     if spark is None:
-        spark = _spark  # type: ignore
+        spark = get_spark()
 
     return build_spark_session(spark=spark)
 
 
 SPARK = build_spark_session(app_name="default")
 try:
-    DBUTILS = DBUtils(SPARK)
+    DBUTILS = get_dbutils(SPARK)
 except Exception:
     DBUTILS = None

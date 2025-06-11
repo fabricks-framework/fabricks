@@ -1,38 +1,33 @@
 import os
-from typing import Optional, Tuple
+from typing import Optional
 
 from databricks.sdk.dbutils import RemoteDbUtils
 from pyspark.sql import DataFrame, SparkSession
 
 
-def get_spark_session() -> Tuple[SparkSession, RemoteDbUtils]:
+def get_spark() -> SparkSession:
     localmode = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
 
     if localmode:
         from databricks.connect.session import DatabricksSession
-        from databricks.sdk import WorkspaceClient
         from databricks.sdk.core import Config
+
+        profile = os.getenv("DATABRICKS_PROFILE", "DEFAULT")
 
         cluster_id = os.getenv("DATABRICKS_CLUSTER_ID")
         assert cluster_id, "DATABRICKS_CLUSTER_ID environment variable is not set"
 
-        profile = os.getenv("DATABRICKS_PROFILE", "DEFAULT")
-
-        w = WorkspaceClient()
         c = Config(profile=profile, cluster_id=cluster_id)
 
-        dbutils = w.dbutils
         spark = DatabricksSession.builder.sdkConfig(c).getOrCreate()
 
     else:
-        from databricks.sdk.runtime import dbutils
+        pass
 
         spark = SparkSession.builder.getOrCreate()  # type: ignore
-        dbutils = dbutils
 
     assert spark is not None
-
-    return spark, dbutils  # type: ignore
+    return spark  # type: ignore
 
 
 def display(df: DataFrame, limit: Optional[int] = None) -> None:
@@ -47,6 +42,7 @@ def display(df: DataFrame, limit: Optional[int] = None) -> None:
 
         if limit is not None:
             df = df.limit(limit)
+
         display(df.toPandas())
 
     else:
@@ -54,7 +50,27 @@ def display(df: DataFrame, limit: Optional[int] = None) -> None:
 
         if limit is not None:
             df = df.limit(limit)
+
         display(df)
 
 
-spark, dbutils = get_spark_session()
+def get_dbutils(spark: Optional[SparkSession] = None) -> RemoteDbUtils:
+    localmode = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
+
+    if localmode:
+        from databricks.sdk import WorkspaceClient
+
+        w = WorkspaceClient()
+        dbutils = w.dbutils
+
+    else:
+        from pyspark.dbutils import DBUtils
+
+        dbutils = DBUtils(spark)
+
+    assert dbutils is not None
+    return dbutils  # type: ignore
+
+
+spark = get_spark()
+dbutils = get_dbutils(spark=spark)
