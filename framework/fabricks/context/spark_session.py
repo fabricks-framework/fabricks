@@ -79,7 +79,4 @@ def init_spark_session(spark: Optional[SparkSession] = None):
 
 
 SPARK = build_spark_session(app_name="default")
-try:
-    DBUTILS = get_dbutils(SPARK)
-except Exception:
-    DBUTILS = None
+DBUTILS = get_dbutils(SPARK)

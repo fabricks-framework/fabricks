@@ -54,22 +54,26 @@ def display(df: DataFrame, limit: Optional[int] = None) -> None:
         display(df)
 
 
-def get_dbutils(spark: Optional[SparkSession] = None) -> RemoteDbUtils:
-    localmode = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
+def get_dbutils(spark: Optional[SparkSession] = None) -> Optional[RemoteDbUtils]:
+    try:
+        localmode = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
 
-    if localmode:
-        from databricks.sdk import WorkspaceClient
+        if localmode:
+            from databricks.sdk import WorkspaceClient
 
-        w = WorkspaceClient()
-        dbutils = w.dbutils
+            w = WorkspaceClient()
+            dbutils = w.dbutils
 
-    else:
-        from pyspark.dbutils import DBUtils
+        else:
+            from pyspark.dbutils import DBUtils
 
-        dbutils = DBUtils(spark)
+            dbutils = DBUtils(spark)
 
-    assert dbutils is not None
-    return dbutils  # type: ignore
+        assert dbutils is not None
+        return dbutils  # type: ignore
+
+    except Exception:
+        return None
 
 
 spark = get_spark()
