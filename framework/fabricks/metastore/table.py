@@ -269,6 +269,7 @@ class Table(Relational):
 
         if not df.isEmpty():
             DEFAULT_LOGGER.debug("difference(s) with delta table", extra={"job": self, "df": df})
+
         return df
 
     def update_schema(self, df: DataFrame):
@@ -302,8 +303,8 @@ class Table(Relational):
 
         diff_df = self.get_differences_with_dataframe(df)
         if not diff_df.isEmpty():
-            diff_df.show()
             DEFAULT_LOGGER.warning("overwrite table (overwrite)", extra={"job": self, "df": diff_df})
+            
             for row in diff_df.collect():
                 if row.status == "added":
                     self.add_column(row.column, row.new_data_type)
