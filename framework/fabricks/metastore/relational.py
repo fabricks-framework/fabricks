@@ -28,7 +28,8 @@ class Relational:
     def qualified_name(self) -> str:
         return f"{self.database.name}.{self.name}"
 
-    def registered(self):
+    @property
+    def is_registered(self) -> bool:
         try:
             df = self.spark.sql(f"show tables in {self.database}").where(f"tableName == '{self.name}'")
             return not df.isEmpty()
@@ -36,7 +37,8 @@ class Relational:
         except AnalysisException:
             return False
 
-    def is_view(self):
+    @property
+    def is_view(self) -> bool:
         try:
             df = self.spark.sql(f"show views in {self.database}").where(f"viewName == '{self.name}'")
             return not df.isEmpty()
@@ -44,17 +46,18 @@ class Relational:
         except AnalysisException:
             return False
 
-    def is_table(self):
-        if self.is_view():
+    @property
+    def is_table(self) -> bool:
+        if self.is_view:
             return False
         else:
-            return self.registered()
+            return self.is_registered
 
     def drop(self):
-        if self.is_view():
+        if self.is_view:
             DEFAULT_LOGGER.warning("drop view from metastore", extra={"job": self})
             self.spark.sql(f"drop view if exists {self}")
-        elif self.is_table():
+        elif self.is_table:
             DEFAULT_LOGGER.warning("drop table from metastore", extra={"job": self})
             self.spark.sql(f"drop table if exists {self}")
 

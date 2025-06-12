@@ -201,6 +201,7 @@ class Table(Relational):
         DEFAULT_LOGGER.debug("ddl", extra={"job": self, "sql": sql})
         self.spark.sql(sql)
 
+    @property
     def is_deltatable(self) -> bool:
         return DeltaTable.isDeltaTable(self.spark, str(self.delta_path))
 
@@ -209,7 +210,7 @@ class Table(Relational):
         return self.get_property("delta.columnMapping.mode") == "name"
 
     def exists(self) -> bool:
-        return self.is_deltatable() and self.registered()
+        return self.is_deltatable and self.is_registered
 
     def register(self):
         DEFAULT_LOGGER.debug("register table", extra={"job": self})

@@ -102,7 +102,7 @@ class Generator(Configurator):
             self.table.optimize(columns=columns, vorder=vorder)
 
     def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[DataFrame]:
-        if self.is_view():
+        if self.is_view:
             return None
 
         else:
@@ -115,7 +115,7 @@ class Generator(Configurator):
             return self.table.get_differences_with_dataframe(df)
 
     def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
-        if self.is_view():
+        if self.is_view:
             return None
 
         else:
@@ -128,7 +128,7 @@ class Generator(Configurator):
             return self.table.schema_drifted(df)
 
     def _update_schema(self, src: Union[DataFrame, Table, str], overwrite: bool = False, **kwargs):
-        if self.is_view():
+        if self.is_view:
             assert not isinstance(src, (DataFrame, CDataFrame)), "dataframe not allowed"
             self.create_or_replace_view(src=src)
 

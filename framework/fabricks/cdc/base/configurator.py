@@ -29,11 +29,13 @@ class Configurator(ABC):
         self.change_data_capture = change_data_capture
         self.table = Table(self.database.name, *self.levels, spark=self.spark)
 
+    @property
     def is_view(self):
-        return self.table.is_view()
+        return self.table.is_view
 
-    def registered(self):
-        return self.table.registered()
+    @property
+    def is_registered(self):
+        return self.table.is_registered
 
     @abstractmethod
     def get_query(self, src: Union[DataFrame, Table, str], **kwargs):
