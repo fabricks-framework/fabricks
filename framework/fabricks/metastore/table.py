@@ -413,7 +413,6 @@ class Table(Relational):
 
     def drop_column(self, name: str):
         assert self.exists, f"{self} does not exist"
-
         assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.warning(f"drop column {name}", extra={"job": self})
@@ -426,7 +425,6 @@ class Table(Relational):
 
     def change_column(self, name: str, type: str):
         assert self.exists, f"{self} does not exist"
-
         assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.info(f"change column {name} ({type})", extra={"job": self})
@@ -439,7 +437,6 @@ class Table(Relational):
 
     def rename_column(self, old: str, new: str):
         assert self.exists, f"{self} does not exist"
-
         assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.info(f"rename column {old} -> {new}", extra={"job": self})
@@ -555,7 +552,6 @@ class Table(Relational):
 
     def add_materialized_column(self, name: str, expr: str, type: str):
         assert self.exists, f"{self} does not exist"
-
         assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.info(f"add materialized column ({name} {type})", extra={"job": self})
