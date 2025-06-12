@@ -267,7 +267,7 @@ class Generator(Configurator):
                 **cdc_options,
             )
 
-        if not self.table.exists():
+        if not self.table.exists:
             df = self.get_data(self.stream)
             if df:
                 if self.stream:

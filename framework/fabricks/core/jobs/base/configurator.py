@@ -299,7 +299,7 @@ class Configurator(ABC):
         if self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
         else:
-            assert self.table.exists()
+            assert self.table.exists
 
             if vacuum:
                 self.vacuum()

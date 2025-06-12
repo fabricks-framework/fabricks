@@ -45,7 +45,7 @@ def _reset(row: Row):
     elif job.mode == "register":
         pass
     else:
-        if job.table.exists():
+        if job.table.exists:
             job.table.restore_to_version(0)
         else:
             job.create()

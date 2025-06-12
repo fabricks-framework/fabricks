@@ -333,7 +333,7 @@ class Processor(Generator):
         return sql
 
     def append(self, src: Union[DataFrame, Table, str], **kwargs):
-        if not self.table.exists():
+        if not self.table.exists:
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
@@ -352,7 +352,7 @@ class Processor(Generator):
         dynamic: Optional[bool] = False,
         **kwargs,
     ):
-        if not self.table.exists():
+        if not self.table.exists:
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)

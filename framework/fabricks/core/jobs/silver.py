@@ -258,7 +258,7 @@ class Silver(BaseJob):
 
         rectify = False
         if not_append and not nocdc:
-            if not self.stream and self.mode == "update" and self.table.exists():
+            if not self.stream and self.mode == "update" and self.table.exists:
                 timestamp = "__valid_from" if self.change_data_capture == "scd2" else "__timestamp"
                 extra_check = f" and __timestamp > coalesce((select max({timestamp}) from {self}), cast('0001-01-01' as timestamp))"
             else:

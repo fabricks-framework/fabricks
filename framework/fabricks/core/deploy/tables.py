@@ -19,7 +19,7 @@ def create_table_step(drop: bool = False):
     if drop:
         table.drop()
 
-    if not table.exists():
+    if not table.exists:
         schema = StructType(
             [
                 StructField("step", StringType(), True),
@@ -35,7 +35,7 @@ def create_table_log(drop: bool = False):
     if drop:
         table.drop()
 
-    if not table.exists():
+    if not table.exists:
         schema = StructType(
             [
                 StructField("schedule_id", StringType(), True),

@@ -12,7 +12,7 @@ DEFAULT_LOGGER.setLevel(ERROR)
 @pytest.mark.order(139)
 def test_semantic_fact_table():
     j = get_job(step="semantic", topic="fact", item="table")
-    assert j.table.exists(), f"{j} not found"
+    assert j.table.exists, f"{j} not found"
     cols = [c for c in j.table.columns if c.startswith("__")]
     assert "__metadata" in cols, "__metadata not found"
     assert len(cols) == 1, "__ col found"
