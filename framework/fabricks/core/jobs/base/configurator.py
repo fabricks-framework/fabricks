@@ -159,8 +159,10 @@ class Configurator(ABC):
         if not self._paths:
             storage = PATHS_STORAGE.get(self.step)
             assert storage
+
             runtime_root = PATHS_RUNTIME.get(self.step)
             assert runtime_root
+
             self._paths = Paths(
                 storage=storage,
                 tmp=storage.joinpath("tmp", self.topic, self.item),
@@ -169,6 +171,7 @@ class Configurator(ABC):
                 schema=storage.joinpath("schema", self.topic, self.item),
                 runtime=runtime_root.joinpath(self.topic, self.item),
             )
+
         return self._paths
 
     @property
