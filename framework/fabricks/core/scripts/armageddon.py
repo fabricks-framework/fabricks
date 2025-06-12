@@ -60,16 +60,16 @@ def armageddon(steps: Optional[Union[TStep, List[TStep], str, List[str]]]):
         step = BaseStep(s)
         step.drop()
 
-    tmp = FABRICKS_STORAGE.join("tmp")
+    tmp = FABRICKS_STORAGE.joinpath("tmp")
     tmp.rm()
 
-    checkpoint = FABRICKS_STORAGE.join("checkpoints")
+    checkpoint = FABRICKS_STORAGE.joinpath("checkpoints")
     checkpoint.rm()
 
-    schema = FABRICKS_STORAGE.join("schemas")
+    schema = FABRICKS_STORAGE.joinpath("schemas")
     schema.rm()
 
-    schedule = FABRICKS_STORAGE.join("schedules")
+    schedule = FABRICKS_STORAGE.joinpath("schedules")
     schedule.rm()
 
     fabricks.create()

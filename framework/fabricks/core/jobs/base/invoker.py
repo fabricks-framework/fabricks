@@ -29,7 +29,7 @@ class Invoker(Checker):
                 try:
                     notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
-                    path = PATH_RUNTIME.join(notebook)
+                    path = PATH_RUNTIME.joinpath(notebook)
 
                     arguments = i.get("arguments") or {}
                     timeout = i.get("timeout")
@@ -59,7 +59,7 @@ class Invoker(Checker):
                 try:
                     notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
-                    path = PATH_RUNTIME.join(notebook)
+                    path = PATH_RUNTIME.joinpath(notebook)
 
                     arguments = i.get("arguments", {})
                     timeout = i.get("timeout")
@@ -121,8 +121,15 @@ class Invoker(Checker):
             invoker = invokers[0]
 
             notebook = invoker.get("notebook")
-            path = PATH_RUNTIME.join(notebook)
-            assert path.exists, f"{path} not found"
+            path = PATH_RUNTIME.joinpath(notebook)
+
+            try:
+                assert path, f"{path} not found"
+                assert path.exists, f"{path} does not exist"
+                
+            except AssertionError:
+                pypath = path.append(".py")
+                assert pypath.exists, f"{pypath} does not exist"
 
             arguments = invoker.get("arguments", {})
             timeout = invoker.get("timeout")

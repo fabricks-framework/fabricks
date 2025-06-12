@@ -23,11 +23,11 @@ class Table(Relational):
     @property
     @deprecated("use delta_path instead")
     def deltapath(self) -> Path:
-        return self.database.delta_path.join("/".join(self.levels))
+        return self.database.delta_path.joinpath("/".join(self.levels))
 
     @property
     def delta_path(self) -> Path:
-        return self.database.delta_path.join("/".join(self.levels))
+        return self.database.delta_path.joinpath("/".join(self.levels))
 
     @property
     def deltatable(self) -> DeltaTable:

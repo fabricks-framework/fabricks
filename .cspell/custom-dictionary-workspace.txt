@@ -1,3 +1,5 @@
 # Custom Dictionary Words
 localmode
 deltatable
+udfs
+pypath

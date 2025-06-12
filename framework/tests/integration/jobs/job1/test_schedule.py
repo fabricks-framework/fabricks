@@ -16,7 +16,7 @@ def test_schedule():
     table.drop()
 
     try:
-        run_notebook(PATH_RUNTIME.parent().join("schedule"), schedule="test")
+        run_notebook(PATH_RUNTIME.parent().joinpath("schedule"), schedule="test")
         assert False  # notebook should fail
     except Exception:
         assert True

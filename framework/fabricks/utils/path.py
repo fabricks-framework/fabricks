@@ -105,7 +105,7 @@ class Path:
         except Exception:
             return False
 
-    def join(self, *other):
+    def joinpath(self, *other):
         new_path = self.pathlib.joinpath(*other)
         return Path(path=new_path, assume_git=self.assume_git)
 

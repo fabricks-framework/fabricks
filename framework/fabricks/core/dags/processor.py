@@ -122,7 +122,7 @@ class DagProcessor(BaseDags):
                 try:
                     if self.notebook:
                         dbutils.notebook.run(  # type: ignore
-                            PATH_NOTEBOOKS.join("run").get_notebook_path(),  # type: ignore
+                            PATH_NOTEBOOKS.joinpath("run").get_notebook_path(),  # type: ignore
                             self.step.timeouts.job,  # type: ignore
                             {
                                 "schedule_id": self.schedule_id,

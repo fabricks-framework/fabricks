@@ -163,11 +163,11 @@ class Configurator(ABC):
             assert runtime_root
             self._paths = Paths(
                 storage=storage,
-                tmp=storage.join("tmp", self.topic, self.item),
-                checkpoints=storage.join("checkpoints", self.topic, self.item),
-                commits=storage.join("checkpoints", self.topic, self.item, "commits"),
-                schema=storage.join("schema", self.topic, self.item),
-                runtime=runtime_root.join(self.topic, self.item),
+                tmp=storage.joinpath("tmp", self.topic, self.item),
+                checkpoints=storage.joinpath("checkpoints", self.topic, self.item),
+                commits=storage.joinpath("checkpoints", self.topic, self.item, "commits"),
+                schema=storage.joinpath("schema", self.topic, self.item),
+                runtime=runtime_root.joinpath(self.topic, self.item),
             )
         return self._paths
 

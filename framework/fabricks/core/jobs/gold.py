@@ -77,17 +77,20 @@ class Gold(BaseJob):
         # udf not allowed in invoke
         if self.mode == "invoke":
             return []
+
         # udf not allowed in notebook
         elif self.options.job.get("notebook"):
             return []
+
         # udf not allowed in table
         elif self.options.job.get("table"):
             return []
+
         else:
             matches = []
-            if "udf_" in self.get_sql():
+            if "udf_" in self.sql:
                 r = re.compile(r"(?<=udf_)\w*(?=\()")
-                matches = re.findall(r, self.get_sql())
+                matches = re.findall(r, self.sql)
                 matches = set(matches)
                 matches = list(matches)
             return matches
@@ -125,9 +128,9 @@ class Gold(BaseJob):
             df = self.spark.read.table(table)  # type: ignore
 
         else:
-            assert self.get_sql(), "sql not found"
+            assert self.sql, "sql not found"
             self.register_udfs()
-            df = self.spark.sql(self.get_sql())
+            df = self.spark.sql(self.sql)
 
         if transform:
             df = self.base_transform(df)
@@ -136,9 +139,9 @@ class Gold(BaseJob):
     def create_or_replace_view(self):
         assert self.mode == "memory", f"{self.mode} not allowed"
 
-        df = self.spark.sql(self.get_sql())
+        df = self.spark.sql(self.sql)
         cdc_options = self.get_cdc_context(df)
-        self.cdc.create_or_replace_view(self.get_sql(), **cdc_options)
+        self.cdc.create_or_replace_view(self.sql, **cdc_options)
 
     def get_dependencies(self) -> DataFrame:
         data = []
@@ -211,10 +214,12 @@ class Gold(BaseJob):
             order_duplicate_by = None
 
         deduplicate = self.options.job.get_boolean(
-            "deduplicate", None
+            "deduplicate",
+            None,
         )  # assume no duplicate in gold (to improve performance)
         rectify = self.options.job.get_boolean(
-            "rectify_as_upserts", None
+            "rectify_as_upserts",
+            None,
         )  # assume no reload in gold (to improve performance)
         correct_valid_from = self.options.job.get_boolean("correct_valid_from", True)
 

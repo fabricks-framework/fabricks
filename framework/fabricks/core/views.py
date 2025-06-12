@@ -19,7 +19,7 @@ def create_or_replace_view_internal(path: Path):
 
 
 def create_or_replace_view(name: str):
-    p = PATH_VIEWS.join(f"{name}.sql")
+    p = PATH_VIEWS.joinpath(f"{name}.sql")
     try:
         create_or_replace_view_internal(p)
     except Exception:

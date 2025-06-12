@@ -26,11 +26,11 @@ class Database:
     @property
     @deprecated("use delta_path instead")
     def deltapath(self) -> Path:
-        return self.storage.join("delta")
+        return self.storage.joinpath("delta")
 
     @property
     def delta_path(self) -> Path:
-        return self.storage.join("delta")
+        return self.storage.joinpath("delta")
 
     def create(self):
         DEFAULT_LOGGER.info("🌟 (create database)", extra={"step": self})

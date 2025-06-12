@@ -53,7 +53,7 @@ display(dependency_df)
 def _schedule(task: Any):
     step = get_step(step=cast(TStep, task))
     run_notebook(
-        PATH_NOTEBOOKS.join("process"),
+        PATH_NOTEBOOKS.joinpath("process"),
         timeout=step.timeouts.step,
         step=task,
         schedule_id=schedule_id,
