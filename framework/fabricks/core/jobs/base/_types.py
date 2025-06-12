@@ -115,7 +115,8 @@ class GoldOptions(TypedDict):
     # default
     parents: Optional[List[str]]
     # extra
-    deduplicate: Optional[bool]
+    deduplicate: Optional[bool]  # remove duplicates on the keys and on the hash
+    rectify_as_upserts: Optional[bool]  # convert reloads into upserts and deletes
     correct_valid_from: Optional[bool]
     persist_last_timestamp: Optional[bool]
     # else

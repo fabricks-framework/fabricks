@@ -209,16 +209,32 @@ class Gold(BaseJob):
         else:
             order_duplicate_by = None
 
+        deduplicate = self.options.job.get_boolean(
+            "deduplicate", None
+        )  # assume no duplicate in gold (to improve performance)
+        rectify = self.options.job.get_boolean(
+            "rectify_as_upserts", None
+        )  # assume no reload in gold (to improve performance)
+        correct_valid_from = self.options.job.get_boolean("correct_valid_from", True)
+
         context = {
             "add_metadata": True,
             "soft_delete": True if self.slowly_changing_dimension else None,
-            "deduplicate_key": self.options.job.get_boolean("deduplicate", None),
+            "deduplicate_key": None,
             "deduplicate_hash": True if self.slowly_changing_dimension else None,
-            "deduplicate": False,  # assume no duplicate in gold
-            "rectify": False,  # assume no reload in gold
+            "deduplicate": False,
+            "rectify": False,
             "order_duplicate_by": order_duplicate_by,
-            "correct_valid_from": self.options.job.get_boolean("correct_valid_from", True),
+            "correct_valid_from": correct_valid_from,
         }
+
+        if deduplicate is not None:
+            context["deduplicate"] = deduplicate
+            context["deduplicate_key"] = deduplicate
+            context["deduplicate_hash"] = deduplicate
+
+        if rectify is not None:
+            context["rectify"] = rectify
 
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
@@ -227,10 +243,14 @@ class Gold(BaseJob):
                 context["add_hash"] = True
 
             if "__operation" not in df.columns:
-                context["deduplicate_hash"] = None  # assume no duplicate hash
+                if deduplicate is None:
+                    context["deduplicate_hash"] = None  # assume no duplicate hash
+
                 if self.mode == "update":
                     context["add_operation"] = "reload"
-                    context["rectify"] = True
+                    if rectify is None:
+                        context["rectify"] = True
+
                 else:
                     context["add_operation"] = "upsert"
 
@@ -372,6 +392,7 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"job": self})
             return
+
         elif self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"job": self})
             self.create_or_replace_view()

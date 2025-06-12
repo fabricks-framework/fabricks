@@ -143,6 +143,7 @@ class Processor(Invoker):
         """
         last_version = None
         last_batch = None
+        exception = None
 
         if self.persist:
             last_version = self.table.get_property("fabricks.last_version")
@@ -166,15 +167,25 @@ class Processor(Invoker):
             if not reload:
                 self.check_skip_run()
 
-            self.check_pre_run()
+            try:
+                self.check_pre_run()
+            except PreRunCheckWarning as e:
+                exception = e
 
             self.for_each_run(schedule=schedule, reload=reload)
 
-            self.check_post_run()
+            try:
+                self.check_post_run()
+            except PostRunCheckWarning as e:
+                exception = e
+
             self.check_post_run_extra()
 
             if invoke:
                 self.invoke_post_run(schedule=schedule)
+
+            if exception:
+                raise exception
 
             DEFAULT_LOGGER.info("run ends", extra={"job": self})
 

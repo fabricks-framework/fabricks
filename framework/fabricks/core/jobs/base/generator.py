@@ -315,6 +315,7 @@ class Generator(Configurator):
         if self.persist:
             if df is not None:
                 _update_schema(df)
+
             else:
                 df = self.get_data(self.stream)
                 assert df is not None
@@ -330,20 +331,20 @@ class Generator(Configurator):
                     )
                     query.awaitTermination()
                     path.rm()
+
                 else:
                     _update_schema(df)
 
         elif self.virtual:
             self.create_or_replace_view()
+
         else:
             raise ValueError(f"{self.mode} not allowed")
 
     def update_schema(self, df: Optional[DataFrame] = None):
-        DEFAULT_LOGGER.info("update schema", extra={"job": self})
         self._update_schema(df=df, overwrite=False)
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
-        DEFAULT_LOGGER.info("overwrite schema", extra={"job": self})
         self._update_schema(df=df, overwrite=True)
 
     def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):

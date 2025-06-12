@@ -1,5 +1,4 @@
 import re
-from functools import lru_cache
 from typing import List, Optional, Union, overload
 
 from delta import DeltaTable
@@ -229,7 +228,6 @@ class Table(Relational):
         df = self.get_differences_with_dataframe(df)
         return not df.isEmpty()
 
-    @lru_cache(maxsize=None)
     def get_differences_with_dataframe(self, df: DataFrame) -> DataFrame:
         df1 = self.dataframe
         if self.identity_enabled:
@@ -269,6 +267,7 @@ class Table(Relational):
 
         if not df.isEmpty():
             DEFAULT_LOGGER.debug("difference(s) with delta table", extra={"job": self, "df": df})
+
         return df
 
     def update_schema(self, df: DataFrame):
@@ -276,7 +275,8 @@ class Table(Relational):
         diff_df = diff_df.where("status in ('added', 'changed')")
 
         if not diff_df.isEmpty():
-            DEFAULT_LOGGER.info("update table", extra={"job": self, "df": diff_df})
+            DEFAULT_LOGGER.info("update schema", extra={"job": self, "df": diff_df})
+
             for row in diff_df.collect():
                 DEFAULT_LOGGER.debug(
                     f"{row.status.replace('ed', 'ing')} ({row.new_data_type})",
@@ -297,13 +297,12 @@ class Table(Relational):
         diff_df = self.get_differences_with_dataframe(df)
 
         if not diff_df.isEmpty():
-            DEFAULT_LOGGER.warning("overwrite table (update)", extra={"job": self, "df": diff_df})
             self.update_schema(df)
 
         diff_df = self.get_differences_with_dataframe(df)
         if not diff_df.isEmpty():
-            diff_df.show()
-            DEFAULT_LOGGER.warning("overwrite table (overwrite)", extra={"job": self, "df": diff_df})
+            DEFAULT_LOGGER.warning("overwrite schema", extra={"job": self, "df": diff_df})
+
             for row in diff_df.collect():
                 if row.status == "added":
                     self.add_column(row.column, row.new_data_type)
