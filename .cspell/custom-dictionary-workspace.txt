@@ -1,5 +1,8 @@
 # Custom Dictionary Words
-localmode
+abfss
+deltapath
 deltatable
-udfs
+localmode
+pathlibpath
 pypath
+udfs

@@ -14,7 +14,7 @@ class Paths:
 
 
 paths: Final[Paths] = Paths(
-    tests=Path(PATH_RUNTIME.pathlib.parent.resolve(), assume_git=True),
+    tests=Path(PATH_RUNTIME.pathlibpath.parent.resolve(), assume_git=True),
     landing=FABRICKS_STORAGE.joinpath("landing"),
     raw=FABRICKS_STORAGE.joinpath("raw"),
     out=FABRICKS_STORAGE.joinpath("out"),

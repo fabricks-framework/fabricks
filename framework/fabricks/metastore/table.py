@@ -6,7 +6,6 @@ from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import max
 from pyspark.sql.types import StructType
-from typing_extensions import deprecated
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
@@ -21,7 +20,6 @@ class Table(Relational):
         return cls(step, topic, item, spark=spark)
 
     @property
-    @deprecated("use delta_path instead")
     def deltapath(self) -> Path:
         return self.database.delta_path.joinpath("/".join(self.levels))
 

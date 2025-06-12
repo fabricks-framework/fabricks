@@ -126,7 +126,7 @@ class Invoker(Checker):
             try:
                 assert path, f"{path} not found"
                 assert path.exists, f"{path} does not exist"
-                
+
             except AssertionError:
                 pypath = path.append(".py")
                 assert pypath.exists, f"{pypath} does not exist"

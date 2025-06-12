@@ -66,13 +66,13 @@ try:
     if is_job_config_from_yaml is None:
         is_job_config_from_yaml = pyproject_config.get("job_config_from_yaml")
 
-    IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1")
+    IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1", "yes")
 
     is_debugmode = os.environ.get("FABRICKS_IS_DEBUGMODE", None)
     if is_debugmode is None:
         is_debugmode = pyproject_config.get("debugmode")
 
-    IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1")
+    IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1", "yes")
 
     loglevel = os.environ.get("FABRICKS_LOGLEVEL", None)
     if loglevel is None:
@@ -130,7 +130,7 @@ try:
     conf_options = CONF_RUNTIME.get("options", {})
     assert conf_options, "options mandatory"
 
-    IS_UNITY_CATALOG: Final[bool] = str(conf_options.get("unity_catalog", "False")).lower() in ("true", "1")
+    IS_UNITY_CATALOG: Final[bool] = str(conf_options.get("unity_catalog", "False")).lower() in ("true", "1", "yes")
     CATALOG: Optional[str] = conf_options.get("catalog")
 
     if IS_UNITY_CATALOG and not CATALOG:

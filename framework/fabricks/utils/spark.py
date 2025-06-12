@@ -1,14 +1,14 @@
 import os
-from typing import Optional
+from typing import Final, Optional
 
 from databricks.sdk.dbutils import RemoteDbUtils
 from pyspark.sql import DataFrame, SparkSession
 
+DATABRICKS_LOCALMODE: Final[bool] = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
+
 
 def get_spark() -> SparkSession:
-    localmode = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
-
-    if localmode:
+    if DATABRICKS_LOCALMODE:
         from databricks.connect.session import DatabricksSession
         from databricks.sdk.core import Config
 
@@ -35,9 +35,7 @@ def display(df: DataFrame, limit: Optional[int] = None) -> None:
     Display a Spark DataFrame in Databricks notebook or local environment.
     If running in local mode, it converts the DataFrame to a Pandas DataFrame for display.
     """
-    localmode = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
-
-    if localmode:
+    if DATABRICKS_LOCALMODE:
         from IPython.display import display
 
         if limit is not None:
@@ -56,9 +54,7 @@ def display(df: DataFrame, limit: Optional[int] = None) -> None:
 
 def get_dbutils(spark: Optional[SparkSession] = None) -> Optional[RemoteDbUtils]:
     try:
-        localmode = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
-
-        if localmode:
+        if DATABRICKS_LOCALMODE:
             from databricks.sdk import WorkspaceClient
 
             w = WorkspaceClient()
