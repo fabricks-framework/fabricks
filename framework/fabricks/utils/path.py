@@ -15,7 +15,7 @@ class Path:
             path = path.as_posix()
 
         new_path = str(path)
-        if new_path.startswith("abfss:/"):
+        if new_path.startswith("abfss:/") and not new_path.startswith("abfss://"):
             new_path = new_path.replace("abfss:/", "abfss://")  # // is replaced by / by pathlibpath
 
         self.path: str = new_path
@@ -230,7 +230,7 @@ class Path:
                     yield from self._rm(child.path)
                 else:
                     yield dbutils.fs.rm(child.path, recurse=True)
-                    
+
         except Exception:
             return False
 
