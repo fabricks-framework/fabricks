@@ -42,7 +42,7 @@ class Database:
             self.spark.sql(f"drop database if exists {self.name} cascade;")
 
         if rm:
-            if self.delta_path.exists:
+            if self.delta_path.exists():
                 DEFAULT_LOGGER.debug("🧹 (remove delta files)", extra={"step": self})
                 self.delta_path.rm()
 

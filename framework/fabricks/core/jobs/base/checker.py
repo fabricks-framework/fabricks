@@ -23,7 +23,7 @@ class Checker(Generator):
             DEFAULT_LOGGER.debug(f"{position.replace('_', ' ')} check", extra={"job": self})
 
             p = self.paths.runtime.append(f".{position}.sql")
-            assert p.exists, f"{position} check not found ({p})"
+            assert p.exists(), f"{position} check not found ({p})"
 
             df = self.spark.sql(p.get_sql())
             fail_df = df.where("__action == 'fail'")
@@ -121,7 +121,7 @@ class Checker(Generator):
             DEFAULT_LOGGER.debug("skip check", extra={"job": self})
 
             p = self.paths.runtime.append(".skip.sql")
-            assert p.exists, "skip check not found"
+            assert p.exists(), "skip check not found"
 
             df = self.spark.sql(p.get_sql())
             skip_df = df.where("__skip")

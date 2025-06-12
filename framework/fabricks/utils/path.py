@@ -98,7 +98,6 @@ class Path:
     def is_sql(self) -> bool:
         return self.string.endswith(".sql")
 
-    @property
     def exists(self) -> bool:
         try:
             if self.assume_git:
@@ -144,7 +143,7 @@ class Path:
         file_format: Optional[str] = None,
     ) -> List:
         out = []
-        if self.exists:
+        if self.exists():
             if self.pathlibpath.is_file():
                 out = [self.string]
             elif depth:
@@ -217,7 +216,7 @@ class Path:
     def rm(self):
         from databricks.sdk.runtime import dbutils
 
-        if self.exists:
+        if self.exists():
             list(self._rm(self.string))
             dbutils.fs.rm(self.string, recurse=True)
 

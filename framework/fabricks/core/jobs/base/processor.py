@@ -69,7 +69,7 @@ class Processor(Invoker):
                 self.rm_commit(current_batch)
 
                 assert last_batch == self.table.get_property("fabricks.last_batch")
-                assert self.paths.commits.joinpath(last_batch).exists
+                assert self.paths.commits.joinpath(last_batch).exists()
 
     def _for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         DEFAULT_LOGGER.debug("for each batch starts", extra={"job": self})
@@ -101,7 +101,7 @@ class Processor(Invoker):
             self.create_or_replace_view()
 
         elif self.persist:
-            assert self.table.exists, "delta table not found"
+            assert self.table.exists(), "delta table not found"
 
             df = self.get_data(self.stream)
             assert df is not None, "no data"

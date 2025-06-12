@@ -125,11 +125,11 @@ class Invoker(Checker):
 
             try:
                 assert path, f"{path} not found"
-                assert path.exists, f"{path} does not exist"
+                assert path.exists(), f"{path} does not exist"
 
             except AssertionError:
                 pypath = path.append(".py")
-                assert pypath.exists, f"{pypath} does not exist"
+                assert pypath.exists(), f"{pypath} does not exist"
 
             arguments = invoker.get("arguments", {})
             timeout = invoker.get("timeout")

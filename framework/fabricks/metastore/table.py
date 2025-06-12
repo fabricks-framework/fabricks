@@ -37,25 +37,25 @@ class Table(Relational):
 
     @property
     def dataframe(self) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.spark.sql(f"select * from {self}")
 
     @property
     def columns(self) -> List[str]:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.dataframe.columns
 
     @property
     def rows(self) -> int:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.spark.sql(f"select count(*) from {self}").collect()[0][0]
 
     @property
     def last_version(self) -> int:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         df = self.describe_history()
         version = df.select(max("version")).collect()[0][0]
@@ -63,13 +63,13 @@ class Table(Relational):
 
     @property
     def identity_enabled(self) -> bool:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.get_property("delta.feature.identityColumns") == "supported"
 
     def drop(self):
         super().drop()
-        if self.delta_path.exists:
+        if self.delta_path.exists():
             DEFAULT_LOGGER.debug("delete delta folder", extra={"job": self})
             self.delta_path.rm()
 
@@ -215,11 +215,10 @@ class Table(Relational):
 
     @property
     def column_mapping_enabled(self) -> bool:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.get_property("delta.columnMapping.mode") == "name"
 
-    @property
     def exists(self) -> bool:
         return self.is_deltatable and self.is_registered
 
@@ -228,26 +227,26 @@ class Table(Relational):
         self.spark.sql(f"create table if not exists {self.qualified_name} using delta location '{self.delta_path}'")
 
     def restore_to_version(self, version: int):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.info(f"restore table to version {version}", extra={"job": self})
         self.spark.sql(f"restore table {self.qualified_name} to version as of {version}")
 
     def truncate(self):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.warning("truncate table", extra={"job": self})
         self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
     def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: Optional[str] = None) -> bool:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         df = self.get_differences_with_dataframe(df)
         return not df.isEmpty()
 
     def get_differences_with_dataframe(self, df: DataFrame) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         df1 = self.dataframe
         if self.identity_enabled:
@@ -291,7 +290,7 @@ class Table(Relational):
         return df
 
     def update_schema(self, df: DataFrame):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         diff_df = self.get_differences_with_dataframe(df)
         diff_df = diff_df.where("status in ('added', 'changed')")
@@ -316,7 +315,7 @@ class Table(Relational):
                     pass
 
     def overwrite_schema(self, df: DataFrame):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         diff_df = self.get_differences_with_dataframe(df)
 
@@ -340,7 +339,7 @@ class Table(Relational):
                         self.add_column(row.column, row.new_data_type)
 
     def vacuum(self, retention_days: int = 7):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.debug(f"vacuum table (removing files older than {retention_days} days)", extra={"job": self})
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
@@ -358,7 +357,7 @@ class Table(Relational):
         columns: Optional[Union[str, List[str]]] = None,
         vorder: Optional[bool] = False,
     ):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.info("optimize", extra={"job": self})
 
@@ -385,14 +384,14 @@ class Table(Relational):
             self.spark.sql(f"optimize {self.qualified_name}")
 
     def analyze(self):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.debug("analyze", extra={"job": self})
         self.compute_statistics()
         self.compute_delta_statistics()
 
     def compute_statistics(self):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.debug("compute statistics", extra={"job": self})
         cols = [
@@ -404,13 +403,13 @@ class Table(Relational):
         self.spark.sql(f"analyze table delta.`{self.delta_path}` compute statistics for columns {cols}")
 
     def compute_delta_statistics(self):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.debug("compute delta statistics", extra={"job": self})
         self.spark.sql(f"analyze table delta.`{self.delta_path}` compute delta statistics")
 
     def drop_column(self, name: str):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
         assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.warning(f"drop column {name}", extra={"job": self})
@@ -422,7 +421,7 @@ class Table(Relational):
         )
 
     def change_column(self, name: str, type: str):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
         assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.info(f"change column {name} ({type})", extra={"job": self})
@@ -434,7 +433,7 @@ class Table(Relational):
         )
 
     def rename_column(self, old: str, new: str):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
         assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.info(f"rename column {old} -> {new}", extra={"job": self})
@@ -446,35 +445,35 @@ class Table(Relational):
         )
 
     def get_details(self) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.spark.sql(f"describe detail {self.qualified_name}")
 
     def get_properties(self) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.spark.sql(f"show tblproperties {self.qualified_name}")
 
     def get_description(self) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.spark.sql(f"describe extended {self.qualified_name}")
 
     def get_history(self) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         df = self.spark.sql(f"describe history {self.qualified_name}")
         return df
 
     def get_last_version(self) -> int:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         df = self.get_history()
         version = df.select(max("version")).collect()[0][0]
         return version
 
     def get_property(self, key: str) -> Optional[str]:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         try:
             value = self.get_properties().where(f"key == '{key}'").select("value").collect()[0][0]
@@ -484,13 +483,13 @@ class Table(Relational):
             return None
 
     def enable_change_data_feed(self):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.debug("enable change data feed", extra={"job": self})
         self.set_property("delta.enableChangeDataFeed", "true")
 
     def enable_column_mapping(self):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.debug("enable column mapping", extra={"job": self})
 
@@ -516,7 +515,7 @@ class Table(Relational):
             )
 
     def set_property(self, key: Union[str, int], value: Union[str, int]):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.debug(f"set property {key} = {value}", extra={"job": self})
         self.spark.sql(
@@ -527,7 +526,7 @@ class Table(Relational):
         )
 
     def add_constraint(self, name: str, expr: str):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.debug(f"add constraint ({name} check ({expr}))", extra={"job": self})
         self.spark.sql(
@@ -538,7 +537,7 @@ class Table(Relational):
         )
 
     def add_comment(self, comment: str):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.debug(f"add comment '{comment}'", extra={"job": self})
         self.spark.sql(
@@ -549,7 +548,7 @@ class Table(Relational):
         )
 
     def add_materialized_column(self, name: str, expr: str, type: str):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
         assert self.column_mapping_enabled, "column mapping not enabled"
 
         DEFAULT_LOGGER.info(f"add materialized column ({name} {type})", extra={"job": self})
@@ -561,7 +560,7 @@ class Table(Relational):
         )
 
     def add_column(self, name: str, type: str, after: Optional[str] = None):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         DEFAULT_LOGGER.info(f"add column {name} ({type})", extra={"job": self})
         ddl_after = "" if not after else f"after {after}"
@@ -573,7 +572,7 @@ class Table(Relational):
         )
 
     def create_bloomfilter_index(self, columns: Union[str, List[str]]):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         if isinstance(columns, str):
             columns = [columns]
@@ -589,34 +588,34 @@ class Table(Relational):
         )
 
     def create_restore_point(self):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         last_version = self.get_last_version() + 1
         self.set_property("fabricks.last_version", last_version)
 
     def show_properties(self) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.spark.sql(f"show tblproperties {self.qualified_name}")
 
     def describe_detail(self) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.spark.sql(f"describe detail {self.qualified_name}")
 
     def describe_extended(self) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         return self.spark.sql(f"describe extended {self.qualified_name}")
 
     def describe_history(self) -> DataFrame:
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         df = self.spark.sql(f"describe history {self.qualified_name}")
         return df
 
     def enable_liquid_clustering(self, columns: Union[str, List[str]]):
-        assert self.exists, f"{self} does not exist"
+        assert self.exists(), f"{self} does not exist"
 
         if isinstance(columns, str):
             columns = [columns]

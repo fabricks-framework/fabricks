@@ -97,7 +97,7 @@ class Merger(Processor):
         return sql
 
     def merge(self, src: Union[DataFrame, Table, str], **kwargs):
-        if not self.table.exists:
+        if not self.table.exists():
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)

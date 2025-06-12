@@ -91,7 +91,7 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
 
         elif extension == "py":
             if not IS_UNITY_CATALOG:
-                assert path.exists, f"udf not found ({path.string})"
+                assert path.exists(), f"udf not found ({path.string})"
             else:
                 DEFAULT_LOGGER.debug(f"could not check if udf exists ({path.string})")
 

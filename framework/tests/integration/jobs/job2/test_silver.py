@@ -90,5 +90,5 @@ def test_silver_princess_schema_drift():
 def test_silver_princess_check():
     job = get_job(step="silver", topic="princess", item="check")
     assert job.table.get_property("fabricks.last_batch") == "0", "last batch <> 0"
-    assert job.paths.commits.joinpath("0").exists, "commit 0 not found"
-    assert not job.paths.commits.joinpath("1").exists, "commit 1 found"
+    assert job.paths.commits.joinpath("0").exists(), "commit 0 not found"
+    assert not job.paths.commits.joinpath("1").exists(), "commit 1 found"
