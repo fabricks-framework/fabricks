@@ -122,7 +122,7 @@ class Invoker(Checker):
 
             notebook = invoker.get("notebook")
             path = PATH_RUNTIME.join(notebook)
-            assert path.exists(), f"{path} not found"
+            assert path.exists, f"{path} not found"
 
             arguments = invoker.get("arguments", {})
             timeout = invoker.get("timeout")

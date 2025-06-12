@@ -103,15 +103,15 @@ class BaseStep:
         assert fs
 
         tmp = fs.join("tmp")
-        if tmp.exists():
+        if tmp.exists:
             tmp.rm()
 
         checkpoint = fs.join("checkpoints")
-        if checkpoint.exists():
+        if checkpoint.exists:
             checkpoint.rm()
 
         schema = fs.join("schemas")
-        if schema.exists():
+        if schema.exists:
             schema.rm()
 
         for t in ["jobs", "tables", "dependencies", "views"]:
@@ -123,13 +123,13 @@ class BaseStep:
     def create(self):
         DEFAULT_LOGGER.info("🌟 (create)", extra={"step": self})
 
-        if not self.runtime.exists():
+        if not self.runtime.exists:
             DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
         else:
             self.update()
 
     def update(self, update_dependencies: Optional[bool] = True, progress_bar: Optional[bool] = False):
-        if not self.runtime.exists():
+        if not self.runtime.exists:
             DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
 
         else:

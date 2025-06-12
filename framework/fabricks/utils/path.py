@@ -82,22 +82,26 @@ class Path:
         p = self.string
         if not p.endswith(".sql"):
             p += ".sql"
+
         with open(p, "r") as f:
             sql = f.read()
+
         return sql
 
     def is_sql(self) -> bool:
         return self.string.endswith(".sql")
 
+    @property
     def exists(self) -> bool:
-        from databricks.sdk.runtime import dbutils
-
         try:
             if self.assume_git:
                 return self.pathlib.exists()
             else:
+                from databricks.sdk.runtime import dbutils
+
                 dbutils.fs.ls(self.string)
                 return True
+
         except Exception:
             return False
 
@@ -115,6 +119,7 @@ class Path:
 
     def get_file_info(self) -> DataFrame:
         assert not self.assume_git
+
         rows = self._yield_file_info(self.string)
         df = spark.createDataFrame(
             rows,
@@ -126,7 +131,7 @@ class Path:
         self, depth: Optional[int] = None, convert: Optional[bool] = False, file_format: Optional[str] = None
     ) -> List:
         out = []
-        if self.exists():
+        if self.exists:
             if self.pathlib.is_file():
                 out = [self.string]
             elif depth:
@@ -199,7 +204,7 @@ class Path:
     def rm(self):
         from databricks.sdk.runtime import dbutils
 
-        if self.exists():
+        if self.exists:
             list(self._rm(self.string))
             dbutils.fs.rm(self.string, recurse=True)
 

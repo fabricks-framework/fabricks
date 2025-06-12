@@ -36,7 +36,7 @@ class Generator(Configurator):
 
         If the schema folder exists, it will be deleted. The method also calls the `rm_checkpoints` method to remove any checkpoints associated with the generator.
         """
-        if self.paths.schema.exists():
+        if self.paths.schema.exists:
             DEFAULT_LOGGER.info("delete schema folder", extra={"job": self})
             self.paths.schema.rm()
         self.rm_checkpoints()
@@ -47,7 +47,7 @@ class Generator(Configurator):
 
         This method checks if the checkpoints folder exists and deletes it if it does.
         """
-        if self.paths.checkpoints.exists():
+        if self.paths.checkpoints.exists:
             DEFAULT_LOGGER.info("delete checkpoints folder", extra={"job": self})
             self.paths.checkpoints.rm()
 
@@ -62,7 +62,7 @@ class Generator(Configurator):
             None
         """
         path = self.paths.commits.join(str(id))
-        if path.exists():
+        if path.exists:
             DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"job": self})
             path.rm()
 
@@ -281,7 +281,7 @@ class Generator(Configurator):
 
                     df = df.unionByName(dummy_df, allowMissingColumns=True)
                     path = self.paths.checkpoints.append("__init")
-                    if path.exists():
+                    if path.exists:
                         path.rm()
 
                     query = (

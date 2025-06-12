@@ -67,11 +67,11 @@ class Gold(BaseJob):
 
     @property
     def sql(self) -> str:
-        return self.get_sql()
+        return self.paths.runtime.get_sql()
 
     @deprecated("use sql instead")
     def get_sql(self) -> str:
-        return self.paths.runtime.get_sql()
+        return self.sql
 
     def get_udfs(self) -> List[str]:
         # udf not allowed in invoke
@@ -116,6 +116,7 @@ class Gold(BaseJob):
 
             DEFAULT_LOGGER.debug("run notebook", extra={"job": self})
             path = self.paths.runtime.get_notebook_path()
+
             global_temp_view = dbutils.notebook.run(path, self.timeout, arguments={})  # type: ignore
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
 

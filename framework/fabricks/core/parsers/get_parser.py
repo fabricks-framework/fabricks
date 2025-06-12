@@ -9,7 +9,7 @@ from fabricks.core.parsers.base import PARSERS, BaseParser
 def get_parser(name: str, parser_options: Optional[ParserOptions] = None) -> BaseParser:
     if name not in ["json", "parquet", "avro", "csv", "tsv", "delta", "table"]:
         path = PATH_PARSERS.join(name).append(".py")
-        assert path.exists(), f"parser not found ({path})"
+        assert path.exists, f"parser not found ({path})"
 
         spec = spec_from_file_location(name, path.string)
         assert spec, f"parser not found ({path})"

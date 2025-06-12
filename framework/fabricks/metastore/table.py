@@ -71,7 +71,7 @@ class Table(Relational):
 
     def drop(self):
         super().drop()
-        if self.delta_path.exists():
+        if self.delta_path.exists:
             DEFAULT_LOGGER.debug("delete delta folder", extra={"job": self})
             self.delta_path.rm()
 

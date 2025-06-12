@@ -69,7 +69,7 @@ class Processor(Invoker):
                 self.rm_commit(current_batch)
 
                 assert last_batch == self.table.get_property("fabricks.last_batch")
-                assert self.paths.commits.join(last_batch).exists()
+                assert self.paths.commits.join(last_batch).exists
 
     def _for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         DEFAULT_LOGGER.debug("for each batch starts", extra={"job": self})

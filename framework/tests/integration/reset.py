@@ -33,9 +33,9 @@ landing_to_raw(1)
 
 def _reset(row: Row):
     job = get_job(step=row["step"], job_id=row["job_id"])
-    if job.paths.schema.exists():
+    if job.paths.schema.exists:
         job.paths.schema.rm()
-    if job.paths.checkpoints.exists():
+    if job.paths.checkpoints.exists:
         job.paths.checkpoints.rm()
 
     if job.mode == "memory":
