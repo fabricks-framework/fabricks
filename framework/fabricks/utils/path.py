@@ -138,7 +138,10 @@ class Path:
         return df
 
     def walk(
-        self, depth: Optional[int] = None, convert: Optional[bool] = False, file_format: Optional[str] = None
+        self,
+        depth: Optional[int] = None,
+        convert: Optional[bool] = False,
+        file_format: Optional[str] = None,
     ) -> List:
         out = []
         if self.exists:
@@ -227,6 +230,7 @@ class Path:
                     yield from self._rm(child.path)
                 else:
                     yield dbutils.fs.rm(child.path, recurse=True)
+                    
         except Exception:
             return False
 
