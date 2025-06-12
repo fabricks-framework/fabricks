@@ -391,7 +391,7 @@ class Table(Relational):
         self.compute_delta_statistics()
 
     def compute_statistics(self):
-        assert self.is_registered, f"{self} not registered"
+        assert self.is_deltatable, f"{self} not a delta table"
 
         DEFAULT_LOGGER.debug("compute statistics", extra={"job": self})
         cols = [
@@ -403,7 +403,7 @@ class Table(Relational):
         self.spark.sql(f"analyze table delta.`{self.delta_path}` compute statistics for columns {cols}")
 
     def compute_delta_statistics(self):
-        assert self.is_registered, f"{self} not registered"
+        assert self.is_deltatable, f"{self} not a delta table"
 
         DEFAULT_LOGGER.debug("compute delta statistics", extra={"job": self})
         self.spark.sql(f"analyze table delta.`{self.delta_path}` compute delta statistics")
