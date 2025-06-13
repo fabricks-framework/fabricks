@@ -1,2 +1,8 @@
 # Custom Dictionary Words
+abfss
+deltapath
+deltatable
 localmode
+pathlibpath
+pypath
+udfs

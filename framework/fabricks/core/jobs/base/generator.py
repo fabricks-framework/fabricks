@@ -61,7 +61,7 @@ class Generator(Configurator):
         Returns:
             None
         """
-        path = self.paths.commits.join(str(id))
+        path = self.paths.commits.joinpath(str(id))
         if path.exists():
             DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"job": self})
             path.rm()

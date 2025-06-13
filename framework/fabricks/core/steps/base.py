@@ -102,15 +102,15 @@ class BaseStep:
         fs = self.database.storage
         assert fs
 
-        tmp = fs.join("tmp")
+        tmp = fs.joinpath("tmp")
         if tmp.exists():
             tmp.rm()
 
-        checkpoint = fs.join("checkpoints")
+        checkpoint = fs.joinpath("checkpoints")
         if checkpoint.exists():
             checkpoint.rm()
 
-        schema = fs.join("schemas")
+        schema = fs.joinpath("schemas")
         if schema.exists():
             schema.rm()
 

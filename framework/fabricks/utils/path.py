@@ -11,11 +11,14 @@ class Path:
     def __init__(self, path: Union[str, PathlibPath], assume_git: bool = False):
         self.assume_git = assume_git
 
-        # // is replaced by / by pathlib
         if isinstance(path, PathlibPath):
-            self.path: str = str(path).replace("abfss:/", "abfss://")
-        else:
-            self.path: str = str(path)
+            path = path.as_posix()
+
+        new_path = str(path)
+        if new_path.startswith("abfss:/") and not new_path.startswith("abfss://"):
+            new_path = new_path.replace("abfss:/", "abfss://")  # // is replaced by / by pathlibpath
+
+        self.path: str = new_path
 
     @classmethod
     def from_uri(
@@ -36,7 +39,7 @@ class Path:
         return cls(uri, assume_git=assume_git)
 
     @property
-    def pathlib(self) -> PathlibPath:
+    def pathlibpath(self) -> PathlibPath:
         return PathlibPath(self.string)
 
     @property
@@ -47,6 +50,7 @@ class Path:
         import re
 
         assert self.string.startswith("abfss://")
+
         r = re.compile(r"(?<=abfss:\/\/)(.+?)(?=@)")
         m = re.findall(r, self.string)[0]
         return m
@@ -55,24 +59,27 @@ class Path:
         import re
 
         assert self.string.startswith("abfss://")
+
         r = re.compile(r"(?<=@)(.+?)(?=\.)")
         m = re.findall(r, self.string)[0]
         return m
 
     def get_file_name(self) -> str:
-        return self.pathlib.name
+        return self.pathlibpath.name
 
     def get_file_system(self) -> str:
         import re
 
         assert self.string.startswith("abfss://")
+
         r = re.compile(r"(?<=\.)(.+)(?=\/)")
         m = re.findall(r, self.string)[0]
         return m
 
     def get_dbfs_mnt_path(self) -> str:
-        mount_point = self.pathlib.parts[1].split(".")[0].split("@")[0]
-        rest = self.pathlib.parts[2:]
+        mount_point = self.pathlibpath.parts[1].split(".")[0].split("@")[0]
+        rest = self.pathlibpath.parts[2:]
+
         return str(os.path.join("/dbfs/mnt", mount_point, "/".join(rest)))
 
     def get_notebook_path(self) -> str:
@@ -82,27 +89,33 @@ class Path:
         p = self.string
         if not p.endswith(".sql"):
             p += ".sql"
+
         with open(p, "r") as f:
             sql = f.read()
+
         return sql
 
     def is_sql(self) -> bool:
         return self.string.endswith(".sql")
 
     def exists(self) -> bool:
-        from databricks.sdk.runtime import dbutils
-
         try:
             if self.assume_git:
-                return self.pathlib.exists()
+                return self.pathlibpath.exists()
+
             else:
+                from fabricks.utils.spark import dbutils
+
+                assert dbutils is not None, "dbutils not found"
+
                 dbutils.fs.ls(self.string)
                 return True
+
         except Exception:
             return False
 
-    def join(self, *other):
-        new_path = self.pathlib.joinpath(*other)
+    def joinpath(self, *other):
+        new_path = self.pathlibpath.joinpath(*other)
         return Path(path=new_path, assume_git=self.assume_git)
 
     def append(self, other: str):
@@ -110,11 +123,12 @@ class Path:
         return Path(path=new_path, assume_git=self.assume_git)
 
     def parent(self, *other):
-        new_path = self.pathlib.parent
+        new_path = self.pathlibpath.parent
         return Path(path=new_path, assume_git=self.assume_git)
 
     def get_file_info(self) -> DataFrame:
         assert not self.assume_git
+
         rows = self._yield_file_info(self.string)
         df = spark.createDataFrame(
             rows,
@@ -123,11 +137,14 @@ class Path:
         return df
 
     def walk(
-        self, depth: Optional[int] = None, convert: Optional[bool] = False, file_format: Optional[str] = None
+        self,
+        depth: Optional[int] = None,
+        convert: Optional[bool] = False,
+        file_format: Optional[str] = None,
     ) -> List:
         out = []
         if self.exists():
-            if self.pathlib.is_file():
+            if self.pathlibpath.is_file():
                 out = [self.string]
             elif depth:
                 assert not self.assume_git
@@ -212,6 +229,7 @@ class Path:
                     yield from self._rm(child.path)
                 else:
                     yield dbutils.fs.rm(child.path, recurse=True)
+
         except Exception:
             return False
 

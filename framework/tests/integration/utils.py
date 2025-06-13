@@ -28,7 +28,7 @@ def convert_parquet_to_delta(topic: str):
 
         root = paths.raw
         if i > 1:
-            root = root.join(str(i))
+            root = root.joinpath(str(i))
 
         for p in [f"{topic}__deletelog", topic]:
             df = (
@@ -97,8 +97,8 @@ def git_to_landing():
     for i in range(1, 12):
         job = f"job{i}"
         DEFAULT_LOGGER.debug(f"copy json from git to landing ({job})")
-        from_dir = paths.tests.join("data", job)
-        to_dir = paths.landing.join(job)
+        from_dir = paths.tests.joinpath("data", job)
+        to_dir = paths.landing.joinpath(job)
         convert_json_to_parquet(from_dir, to_dir)
 
 
@@ -112,7 +112,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
         job = f"job{i}"
         DEFAULT_LOGGER.debug(f"copy parquet from landing to raw ({job})")
 
-        landing = paths.landing.join(job)
+        landing = paths.landing.joinpath(job)
         for f in landing.walk():
             if str(f).endswith("parquet"):
                 path = Path(f)
@@ -134,7 +134,7 @@ def create_expected_views():
     DEFAULT_LOGGER.info("expected - create views")
 
     def _create_views(step: str, cdc: str):
-        views = paths.tests.join("expected", step, cdc)
+        views = paths.tests.joinpath("expected", step, cdc)
         for v in sorted(views.walk()):
             DEFAULT_LOGGER.debug(f"create view {v}")
             spark.sql(Path(v).get_sql())

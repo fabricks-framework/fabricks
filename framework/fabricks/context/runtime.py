@@ -58,7 +58,7 @@ try:
             assert pyproject_path is not None
             notebooks = pyproject_path.joinpath(notebooks)
 
-    notebooks = notebooks if notebooks else path_runtime.join("notebooks")
+    notebooks = notebooks if notebooks else path_runtime.joinpath("notebooks")
     assert notebooks, "notebooks mandatory"
     PATH_NOTEBOOKS: Final[Path] = Path(str(notebooks), assume_git=True)
 
@@ -66,13 +66,13 @@ try:
     if is_job_config_from_yaml is None:
         is_job_config_from_yaml = pyproject_config.get("job_config_from_yaml")
 
-    IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1")
+    IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1", "yes")
 
     is_debugmode = os.environ.get("FABRICKS_IS_DEBUGMODE", None)
     if is_debugmode is None:
         is_debugmode = pyproject_config.get("debugmode")
 
-    IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1")
+    IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1", "yes")
 
     loglevel = os.environ.get("FABRICKS_LOGLEVEL", None)
     if loglevel is None:
@@ -100,10 +100,10 @@ try:
             assert pyproject_path is not None  # Cannot be null since we got the config from it
             config_path = pyproject_path.joinpath(config_path)
     else:
-        config_path = PATH_RUNTIME.join(config_path).string if config_path else None
+        config_path = PATH_RUNTIME.joinpath(config_path).string if config_path else None
 
     if not config_path:
-        config_path = PATH_RUNTIME.join(
+        config_path = PATH_RUNTIME.joinpath(
             "fabricks",
             f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
         ).string
@@ -130,7 +130,7 @@ try:
     conf_options = CONF_RUNTIME.get("options", {})
     assert conf_options, "options mandatory"
 
-    IS_UNITY_CATALOG: Final[bool] = str(conf_options.get("unity_catalog", "False")).lower() in ("true", "1")
+    IS_UNITY_CATALOG: Final[bool] = str(conf_options.get("unity_catalog", "False")).lower() in ("true", "1", "yes")
     CATALOG: Optional[str] = conf_options.get("catalog")
 
     if IS_UNITY_CATALOG and not CATALOG:
@@ -149,27 +149,27 @@ try:
 
     path_udfs = path_options.get("udfs")
     assert path_udfs, "udfs mandatory in path options"
-    PATH_UDFS: Final[Path] = PATH_RUNTIME.join(path_udfs)
+    PATH_UDFS: Final[Path] = PATH_RUNTIME.joinpath(path_udfs)
 
     path_parsers = path_options.get("parsers")
     assert path_parsers, "parsers mandatory in path options"
-    PATH_PARSERS: Final[Path] = PATH_RUNTIME.join(path_parsers)
+    PATH_PARSERS: Final[Path] = PATH_RUNTIME.joinpath(path_parsers)
 
     path_extenders = path_options.get("extenders")
     assert path_extenders, "extenders mandatory in path options"
-    PATH_EXTENDERS: Final[Path] = PATH_RUNTIME.join(path_extenders)
+    PATH_EXTENDERS: Final[Path] = PATH_RUNTIME.joinpath(path_extenders)
 
     path_views = path_options.get("views")
     assert path_views, "views mandatory in path options"
-    PATH_VIEWS: Final[Path] = PATH_RUNTIME.join(path_views)
+    PATH_VIEWS: Final[Path] = PATH_RUNTIME.joinpath(path_views)
 
     path_schedules = path_options.get("schedules")
     assert path_schedules, "schedules mandatory in path options"
-    PATH_SCHEDULES: Final[Path] = PATH_RUNTIME.join(path_schedules)
+    PATH_SCHEDULES: Final[Path] = PATH_RUNTIME.joinpath(path_schedules)
 
     path_requirements = path_options.get("requirements")
     assert path_requirements, "requirements mandatory in path options"
-    PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.join(path_requirements)
+    PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.joinpath(path_requirements)
 
     def _get_storage_paths(objects: List[dict]) -> dict:
         d = {}
@@ -197,7 +197,7 @@ try:
             assert name
             uri = o.get("path_options", {}).get("runtime")
             assert uri
-            d[name] = PATH_RUNTIME.join(uri)
+            d[name] = PATH_RUNTIME.joinpath(uri)
         return d
 
     PATHS_RUNTIME: Final[dict[str, Path]] = {

@@ -46,7 +46,7 @@ if "*" in tests:
 
 if initialize:
     run_notebook(
-        PATH_RUNTIME.parent().join("initialize"),
+        PATH_RUNTIME.parent().joinpath("initialize"),
         expected="True",
         i=1,
     )
@@ -54,9 +54,9 @@ if initialize:
 # COMMAND ----------
 
 if armageddon:
-    run_notebook(PATH_RUNTIME.parent().join("armageddon"))
+    run_notebook(PATH_RUNTIME.parent().joinpath("armageddon"))
 elif reset:
-    run_notebook(PATH_RUNTIME.parent().join("reset"))
+    run_notebook(PATH_RUNTIME.parent().joinpath("reset"))
 
 # COMMAND ----------
 

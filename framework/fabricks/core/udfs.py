@@ -84,7 +84,7 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
 
         assert extension
 
-        path = PATH_UDFS.join(f"{udf}.{extension}")
+        path = PATH_UDFS.joinpath(f"{udf}.{extension}")
 
         if extension == "sql":
             spark.sql(path.get_sql())
