@@ -3,11 +3,12 @@ from typing import Optional
 from pyspark.sql.types import Row
 
 from fabricks.context import SPARK
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.get_job import get_job
 from fabricks.utils.helpers import run_in_parallel
 
 
-def optimize(schedule_id: Optional[str] = None):
+def optimize(schedule_id: Optional[str] = None, workers: Optional[int] = 16):
     """
     Cleans the Fabricks jobs by vacuuming and optimizing the tables.
 
@@ -38,8 +39,21 @@ def optimize(schedule_id: Optional[str] = None):
     else:
         df = SPARK.sql("select * from fabricks.jobs where not mode = 'memory'")
 
+    errors = []
+
     def _optimize(row: Row):
         job = get_job(step=row["step"], job_id=row["job_id"])
-        job.optimize()
+        try:
+            job.optimize()
+        except Exception as e:
+            errors.append((str(job), e))
 
-    run_in_parallel(_optimize, df, 16)
+    if workers is None:
+        workers = 16
+
+    run_in_parallel(_optimize, df, workers)
+    for e in errors:
+        DEFAULT_LOGGER.exception("could not optimize job", extra={"job": e[0]}, exc_info=e[1])
+
+    if len(errors) > 0:
+        raise ValueError(f"Failed to optimize {len(errors)} job(s)")
