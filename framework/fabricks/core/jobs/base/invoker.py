@@ -123,19 +123,21 @@ class Invoker(Checker):
             notebook = invoker.get("notebook")
             path = PATH_RUNTIME.joinpath(notebook)
 
-            try:
-                assert path, f"{path} not found"
-                assert path.exists(), f"{path} does not exist"
-
-            except AssertionError:
-                pypath = path.append(".py")
-                assert pypath.exists(), f"{pypath} does not exist"
-
             arguments = invoker.get("arguments", {})
             timeout = invoker.get("timeout")
 
+        assert path is not None
+
+        for ext in [None, ".py", ".ipynb"]:
+            path_incl_ext = path.append(ext) if ext else path
+            if path_incl_ext.exists():
+                path = path_incl_ext
+                break
+
         if timeout is None:
             timeout = self.timeout
+
+        assert timeout is not None
 
         variables = None
         if schedule is not None:
@@ -148,9 +150,6 @@ class Invoker(Checker):
 
         if arguments is None:
             arguments = {}
-
-        assert path is not None
-        assert timeout is not None
 
         dbutils.notebook.run(
             path=path.get_notebook_path(),  # type: ignore

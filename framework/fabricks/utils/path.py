@@ -83,7 +83,12 @@ class Path:
         return str(os.path.join("/dbfs/mnt", mount_point, "/".join(rest)))
 
     def get_notebook_path(self) -> str:
-        return self.path.replace("Workspace/", "")
+        path = self.path.replace("Workspace/", "")
+        if path.endswith(".ipynb"):
+            path = path.replace(".ipynb", "")
+        if path.endswith(".py"):
+            path = path.replace(".py", "")
+        return path
 
     def get_sql(self) -> str:
         p = self.string

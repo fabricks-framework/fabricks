@@ -2,6 +2,7 @@
 abfss
 deltapath
 deltatable
+ipynb
 localmode
 pathlibpath
 pypath
