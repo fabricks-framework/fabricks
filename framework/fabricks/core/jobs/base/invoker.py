@@ -123,16 +123,14 @@ class Invoker(Checker):
             notebook = invoker.get("notebook")
             path = PATH_RUNTIME.joinpath(notebook)
 
-            for ext in [None, ".py", ".ipynb"]:
-                path_incl_ext = path.append(ext) if ext else path
-                if path_incl_ext.exists():
-                    path = path_incl_ext
-                    break
-
-            assert path is not None, f"path {path} does not exist (.py, .ipynb, or no extension)"
-
             arguments = invoker.get("arguments", {})
             timeout = invoker.get("timeout")
+    
+        for ext in [None, ".py", ".ipynb"]:
+            path_incl_ext = path.append(ext) if ext else path
+            if path_incl_ext.exists():
+                path = path_incl_ext
+                break
 
         if timeout is None:
             timeout = self.timeout
