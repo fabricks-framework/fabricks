@@ -391,7 +391,7 @@ class Table(Relational):
         self.compute_delta_statistics()
 
     def compute_statistics(self):
-        assert self.is_deltatable, f"{self} not a delta table"
+        assert self.is_registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug("compute statistics", extra={"job": self})
         cols = [
@@ -400,13 +400,13 @@ class Table(Relational):
             if not dtype.startswith("struct") and not dtype.startswith("array") and name not in ["__metadata"]
         ]
         cols = ", ".join(sorted(cols))
-        self.spark.sql(f"analyze table delta.`{self.delta_path}` compute statistics for columns {cols}")
+        self.spark.sql(f"analyze table {self.qualified_name} compute statistics for columns {cols}")
 
     def compute_delta_statistics(self):
-        assert self.is_deltatable, f"{self} not a delta table"
+        assert self.is_registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug("compute delta statistics", extra={"job": self})
-        self.spark.sql(f"analyze table delta.`{self.delta_path}` compute delta statistics")
+        self.spark.sql(f"analyze table {self.qualified_name} compute delta statistics")
 
     def drop_column(self, name: str):
         assert self.is_registered, f"{self} not registered"
