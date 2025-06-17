@@ -123,13 +123,13 @@ class Invoker(Checker):
             notebook = invoker.get("notebook")
             path = PATH_RUNTIME.joinpath(notebook)
 
-            try:
-                assert path, f"{path} not found"
-                assert path.exists(), f"{path} does not exist"
+            for ext in [None, ".py", ".ipynb"]:
+                path_incl_ext = path.append(ext) if ext else path
+                if path_incl_ext.exists():
+                    path = path_incl_ext
+                    break
 
-            except AssertionError:
-                pypath = path.append(".py")
-                assert pypath.exists(), f"{pypath} does not exist"
+            assert path is not None, f"path {path} does not exist (.py, .ipynb, or no extension)"
 
             arguments = invoker.get("arguments", {})
             timeout = invoker.get("timeout")
