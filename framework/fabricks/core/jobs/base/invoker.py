@@ -125,7 +125,9 @@ class Invoker(Checker):
 
             arguments = invoker.get("arguments", {})
             timeout = invoker.get("timeout")
-    
+
+        assert path is not None
+
         for ext in [None, ".py", ".ipynb"]:
             path_incl_ext = path.append(ext) if ext else path
             if path_incl_ext.exists():
@@ -134,6 +136,8 @@ class Invoker(Checker):
 
         if timeout is None:
             timeout = self.timeout
+
+        assert timeout is not None
 
         variables = None
         if schedule is not None:
@@ -146,9 +150,6 @@ class Invoker(Checker):
 
         if arguments is None:
             arguments = {}
-
-        assert path is not None
-        assert timeout is not None
 
         dbutils.notebook.run(
             path=path.get_notebook_path(),  # type: ignore
