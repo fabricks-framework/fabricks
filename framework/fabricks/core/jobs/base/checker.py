@@ -90,9 +90,12 @@ class Checker(Generator):
 
             if self.change_data_capture == "scd2":
                 cols.append("__valid_to")
+
             elif self.change_data_capture == "nocdc":
                 if "__valid_to" in self.table.columns:
                     cols.append("__valid_to")
+                elif "__timestamp" in self.table.columns:
+                    cols.append("__timestamp")
 
             cols = ", ".join(cols)
             df = self.spark.sql(f"select {cols} from {self} group by all having count(*) > 1 limit 5")

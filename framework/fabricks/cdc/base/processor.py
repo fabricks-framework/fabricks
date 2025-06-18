@@ -42,7 +42,7 @@ class Processor(Generator):
         if mode == "update":
             tgt = str(self.table)
         elif mode == "append" and "__timestamp" in columns:
-            tgt = str(self.table) 
+            tgt = str(self.table)
         else:
             tgt = None
 
