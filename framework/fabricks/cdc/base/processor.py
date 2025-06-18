@@ -38,7 +38,13 @@ class Processor(Generator):
 
         keys = kwargs.get("keys", None)
         mode = kwargs.get("mode", "complete")
-        tgt = str(self.table) if mode == "update" else None
+
+        if mode == "update":
+            tgt = str(self.table)
+        elif mode == "append" and "__timestamp" in columns:
+            tgt = str(self.table) 
+        else:
+            tgt = None
 
         order_duplicate_by = kwargs.get("order_duplicate_by", None)
         if order_duplicate_by:
