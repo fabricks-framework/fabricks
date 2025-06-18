@@ -83,3 +83,10 @@
     tags: [test]
     options:
       mode: complete
+- job:
+    step: gold
+    topic: fact
+    item: append
+    tags: [test]
+    options:
+      mode: append
