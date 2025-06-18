@@ -264,6 +264,9 @@ class Gold(BaseJob):
             if self.mode == "update" and self.change_data_capture == "scd2":
                 context["slice"] = "update"
 
+            if self.mode == "append" and "__timestamp" in df.columns:
+                context["slice"] = "update"
+
         if self.mode == "memory":
             context["mode"] = "complete"
 
