@@ -94,7 +94,7 @@ class Checker(Generator):
             elif self.change_data_capture == "nocdc":
                 if "__valid_to" in self.table.columns:
                     cols.append("__valid_to")
-                elif "__timestamp" in self.table.columns:
+                elif self.mode == "append":
                     cols.append("__timestamp")
 
             cols = ", ".join(cols)
