@@ -146,6 +146,8 @@ try:
     fabricks_uri = path_options.get("storage")
     assert fabricks_uri, "storage mandatory in path options"
     FABRICKS_STORAGE: Final[Path] = Path.from_uri(fabricks_uri, regex=variables)
+    
+    FABRICKS_STORAGE_CREDENTIAL: Final[Optional[str]] = path_options.get("storage_credential")
 
     path_udfs = path_options.get("udfs")
     assert path_udfs, "udfs mandatory in path options"

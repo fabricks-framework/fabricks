@@ -1,12 +1,13 @@
 import time
-from typing import List, Optional, Union
+from typing import List, Optional, Union, TYPE_CHECKING
 
 from azure.data.tables import TableClient, TableServiceClient
 from pyspark.sql import DataFrame
 from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-
+if TYPE_CHECKING:
+    from azure.core.credentials import TokenCredential
 class AzureTable:
     def __init__(
         self,
@@ -14,16 +15,19 @@ class AzureTable:
         storage_account: Optional[str] = None,
         access_key: Optional[str] = None,
         connection_string: Optional[str] = None,
+        credential: "Optional[TokenCredential]" = None,
     ):
         self.name = name
 
         if connection_string is None:
-            assert storage_account
-            assert access_key
+            assert storage_account, "storage_account must be provided if connection_string is not set"
+            assert access_key or credential, "Either access_key or credential must be provided"
             self.storage_account = storage_account
             self.access_key = access_key
+            self.credential = credential
+            self.storage_account = storage_account
 
-            connection_string = f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net"
+            connection_string = f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net" if access_key else None
 
         assert connection_string
         self.connection_string = connection_string
@@ -33,6 +37,11 @@ class AzureTable:
     @property
     def table_service_client(self) -> TableServiceClient:
         if not self._table_client:
+            if self.connection_string is None:
+                return TableServiceClient(
+                    endpoint=f"https://{self.storage_account}.table.core.windows.net",
+                    credential=self.credential,
+                )
             self._table_client = TableServiceClient.from_connection_string(self.connection_string)
         return self._table_client
 

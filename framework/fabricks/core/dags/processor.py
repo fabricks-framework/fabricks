@@ -35,14 +35,14 @@ class DagProcessor(BaseDags):
         if not self._azure_queue:
             step = self.remove_invalid_characters(str(self.step))
             self._azure_queue = AzureQueue(
-                f"q{step}{self.schedule_id}", connection_string=self.get_connection_string()
+                f"q{step}{self.schedule_id}", **self.get_connection_info()  # type: ignore
             )
         return self._azure_queue
 
     @property
     def table(self) -> AzureTable:
         if not self._azure_table:
-            self._azure_table = AzureTable(f"t{self.schedule_id}", connection_string=self.get_connection_string())
+            self._azure_table = AzureTable(f"t{self.schedule_id}",  **self.get_connection_info() ) # type: ignore
         return self._azure_table
 
     @retry(
