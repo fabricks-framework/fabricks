@@ -21,6 +21,7 @@ from fabricks.context.runtime import (
     SILVER,
     STEPS,
     VARIABLES,
+    FABRICKS_STORAGE_CREDENTIAL
 )
 from fabricks.context.spark_session import DBUTILS, SPARK, build_spark_session, init_spark_session
 
@@ -31,6 +32,7 @@ __all__ = [
     "CONF_RUNTIME",
     "DBUTILS",
     "FABRICKS_STORAGE",
+    "FABRICKS_STORAGE_CREDENTIAL",
     "GOLD",
     "init_spark_session",
     "IS_JOB_CONFIG_FROM_YAML",
