@@ -145,11 +145,11 @@ class DagGenerator(BaseDags):
 
         TABLE_LOG_HANDLER.table.upsert(df)
 
-        cs = self.get_connection_string()
+        cs = self.get_connection_info()
         for row in step_df.collect():
             step = self.remove_invalid_characters(row.Step)
 
-            with AzureQueue(f"q{step}{self.schedule_id}", connection_string=cs) as queue:
+            with AzureQueue(f"q{step}{self.schedule_id}", **dict(cs)) as queue: # type: ignore
                 queue.create_if_not_exists()
                 queue.clear()
 
