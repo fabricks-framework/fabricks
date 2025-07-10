@@ -8,7 +8,7 @@ from pyspark.sql.types import Row
 from fabricks.cdc import SCD1
 from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import Bronzes, Golds, JobDependency, Silvers, TStep
+from fabricks.core.jobs.base._types import Bronzes, Golds, JobDependency, Silvers, TStep, SchemaDependencies
 from fabricks.core.jobs.get_job import get_job
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
@@ -183,7 +183,7 @@ class BaseStep:
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
             run_in_parallel(_get_dependencies, job_df, workers=16, progress_bar=progress_bar)
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
-            df = self.spark.createDataFrame([d.model_dump() for d in all_deps]) # type: ignore
+            df = self.spark.createDataFrame([d.model_dump() for d in all_deps], SchemaDependencies) # type: ignore
             return df, errors
 
         return None, errors
