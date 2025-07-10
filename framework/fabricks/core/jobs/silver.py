@@ -1,4 +1,4 @@
-from typing import Optional, Union, cast
+from typing import Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -6,7 +6,7 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import SchemaDependencies, TBronze, TSilver
+from fabricks.core.jobs.base._types import JobDependency, SchemaDependencies, TBronze, TSilver
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -96,20 +96,19 @@ class Silver(BaseJob):
         return df
 
     def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> DataFrame:
-        dep_df = self.get_dependencies()
-        assert dep_df, "not dependency found"
-        dep_df = dep_df.orderBy("parent_id")
-        dependencies = dep_df.count()
+        deps = self.get_dependencies()
+        assert deps, "not dependency found"
 
         if self.mode == "memory":
-            assert dependencies == 1, f"more than 1 dependency not allowed ({dependencies})"
+            assert len(deps) == 1, f"more than 1 dependency not allowed ({deps})"
 
-            parent = dep_df.collect()[0].parent
+            parent = deps[0].parent
             df = self.spark.sql(f"select * from {parent}")
 
         elif self.mode == "combine":
             dfs = []
-            for row in dep_df.collect():
+            
+            for row in sorted(deps, key= lambda x: x.parent_id):
                 df = self.spark.sql(f"select * from {row.parent}")
                 dfs.append(df)
 
@@ -119,9 +118,9 @@ class Silver(BaseJob):
         else:
             dfs = []
 
-            for row in dep_df.collect():
+            for row in sorted(deps, key= lambda x: x.parent_id):
                 try:
-                    bronze = Bronze.from_job_id(step=self.parent_step, job_id=row["parent_id"])
+                    bronze = Bronze.from_job_id(step=self.parent_step, job_id=row.parent_id)
                     if bronze.mode in ["memory", "register"]:
                         # data already transformed if bronze is persisted
                         df = bronze.get_data(stream=stream, transform=True)
@@ -135,7 +134,7 @@ class Silver(BaseJob):
                         )
 
                     if df:
-                        if dependencies > 1:
+                        if len(deps) > 1:
                             assert "__source" in df.columns, "__source not found"
                         dfs.append(df)
 
@@ -154,41 +153,30 @@ class Silver(BaseJob):
 
         return df
 
-    def get_dependencies(self, df: Optional[DataFrame] = None) -> DataFrame:
-        dependencies = []
+    def get_dependencies(self, *, append_to: list[JobDependency] |None = None) -> Sequence[JobDependency]:
+        dependencies : list[JobDependency]= append_to or []
 
         parents = self.options.job.get_list("parents") or []
         if parents:
             for p in parents:
-                dependencies.append(Row(self.job_id, p, "job"))
+                dependencies.append(JobDependency.from_job_id_parent_origin(self.job_id, p, "job"))
 
         else:
             p = f"{self.parent_step}.{self.topic}_{self.item}"
-            dependencies.append(Row(self.job_id, p, "parser"))
+            dependencies.append(JobDependency.from_job_id_parent_origin(self.job_id, p, "parser"))
 
-        if len(dependencies) == 0:
-            DEFAULT_LOGGER.debug("no dependency found", extra={"job": self})
-            df = self.spark.createDataFrame(dependencies, schema=SchemaDependencies)
-
-        else:
-            DEFAULT_LOGGER.debug(f"dependencies ({', '.join([row[1] for row in dependencies])})", extra={"job": self})
-            df = self.spark.createDataFrame(
-                dependencies, schema=["job_id", "parent", "origin"]
-            )  # order of the fields is important !
-            df = df.transform(self.add_dependency_details)
-
-        return df
+        return dependencies
 
     def create_or_replace_view(self):
         assert self.mode in ["memory", "combine"], f"{self.mode} not allowed"
 
-        dep_df = self.get_dependencies()
-        assert dep_df, "dependency not found"
+        deps = self.get_dependencies()
+        assert deps, "dependency not found"
 
         if self.mode == "combine":
             queries = []
 
-            for row in dep_df.collect():
+            for row in deps:
                 columns = self.get_data().columns
                 df = self.spark.sql(f"select * from {row.parent}")
                 cols = [f"`{c}`" if c in df.columns else f"null as `{c}`" for c in columns if c not in ["__source"]]
@@ -202,9 +190,9 @@ class Silver(BaseJob):
             self.spark.sql(sql)
 
         else:
-            assert dep_df.count() == 1, "only one dependency allowed"
+            assert len(deps) == 1, "only one dependency allowed"
 
-            parent = dep_df.collect()[0].parent
+            parent = deps[0].parent
             sql = f"select * from {parent}"
             sql = fix_sql(sql)
             DEFAULT_LOGGER.debug("view", extra={"job": self, "sql": sql})
