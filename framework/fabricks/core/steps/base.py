@@ -149,6 +149,7 @@ class BaseStep:
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
+        include_manual = False
     ) -> Tuple[Optional[DataFrame], List[str]]:
         DEFAULT_LOGGER.debug("get dependencies", extra={"step": self})
 
@@ -176,7 +177,8 @@ class BaseStep:
             job_df = job_df.where(f"topic in ({where})")
 
         if job_df:
-            job_df = job_df.where("not options.type <=> 'manual'")
+            if not include_manual:
+                job_df = job_df.where("not options.type <=> 'manual'")
 
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
             run_in_parallel(_get_dependencies, job_df, workers=16, progress_bar=progress_bar)
@@ -291,15 +293,17 @@ class BaseStep:
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
+        include_manual = False
     ) -> List[str]:
-        df, errors = self.get_dependencies(progress_bar=progress_bar, topic=topic)
+        df, errors = self.get_dependencies(progress_bar=progress_bar, topic=topic, 
+                                           include_manual=include_manual)
 
         if df:
             DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
             df.cache()
 
             if topic is None:
-                SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"])
+                SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"], update_where=" not options.type <=> 'manual'" if not include_manual else None)
 
             else:
                 if isinstance(topic, str):
@@ -311,7 +315,7 @@ class BaseStep:
                 SCD1("fabricks", self.name, "dependencies").delete_missing(
                     df,
                     keys=["dependency_id"],
-                    update_where=f"topic in ({where})",
+                    update_where=f"topic in ({where})" + (" and not options.type <=> 'manual'" if not include_manual else ""),
                     uuid=True,
                 )
 
