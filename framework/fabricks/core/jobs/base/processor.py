@@ -26,9 +26,18 @@ class SchemaDriftError(Exception):
 
     @staticmethod
     def from_diffs(table_name: str, diffs: Sequence[SchemaDiff]):
-        if len(diffs) < 3:
-            return SchemaDriftError(f"Schema drift detected in table {table_name}: {', '.join(map(str, diffs))}", diffs)
-        return SchemaDriftError(f"Schema drift detected in table {table_name}, {len(diffs)} changes detected", diffs)
+        added = [d.new_column or d.column for d in diffs if d.status =="added"]
+        diff_strs = []
+        if added:
+            diff_strs.append(f"Added columns: {', '.join(added)}. ")
+        removed = [d.column for d in diffs if d.status == "dropped"]
+        if removed:
+            diff_strs.append(f"Removed columns: {', '.join(removed)}. ")
+        modified = [f"{d.column} ({d.data_type} -> {d.new_data_type})" for d in diffs if d.status == "changed"]
+        if modified:
+            diff_strs.append(f"Modified columns: {', '.join(modified)}. ")
+        diff_str = "\r\n ".join(diff_strs)
+        return SchemaDriftError(f"Schema drift detected in table {table_name}:\n {diff_str}", diffs)
 
     def __init__(self, message: str, diffs: Sequence[SchemaDiff]):
         super().__init__(message)
