@@ -29,13 +29,13 @@ class SchemaDriftError(Exception):
         added = [d.new_column or d.column for d in diffs if d.status =="added"]
         diff_strs = []
         if added:
-            diff_strs.append(f"Added columns: {', '.join(added)}. ")
+            diff_strs.append(f"Added columns: {', '.join(added)}")
         removed = [d.column for d in diffs if d.status == "dropped"]
         if removed:
-            diff_strs.append(f"Removed columns: {', '.join(removed)}. ")
+            diff_strs.append(f"Removed columns: {', '.join(removed)}")
         modified = [f"{d.column} ({d.data_type} -> {d.new_data_type})" for d in diffs if d.status == "changed"]
         if modified:
-            diff_strs.append(f"Modified columns: {', '.join(modified)}. ")
+            diff_strs.append(f"Modified columns: {', '.join(modified)}")
         diff_str = "\r\n ".join(diff_strs)
         return SchemaDriftError(f"Schema drift detected in table {table_name}:\n {diff_str}", diffs)
 
