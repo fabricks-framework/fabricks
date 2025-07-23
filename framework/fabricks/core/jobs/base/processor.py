@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from functools import partial
-from typing import Optional
+from typing import Optional, Sequence
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -17,8 +17,22 @@ from fabricks.core.jobs.base.error import (
     SkipRunCheckWarning,
 )
 from fabricks.core.jobs.base.invoker import Invoker
+from fabricks.metastore.table import SchemaDiff
 from fabricks.utils.write import write_stream
 
+
+class SchemaDriftError(Exception):
+    """Raised when a schema drift is detected."""
+
+    @staticmethod
+    def from_diffs(table_name: str, diffs: Sequence[SchemaDiff]):
+        if len(diffs) < 3:
+            return SchemaDriftError(f"Schema drift detected in table {table_name}: {', '.join(map(str, diffs))}", diffs)
+        return SchemaDriftError(f"Schema drift detected in table {table_name}, {len(diffs)} changes detected", diffs)
+
+    def __init__(self, message: str, diffs: Sequence[SchemaDiff]):
+        super().__init__(message)
+        self.diffs = diffs
 
 class Processor(Invoker):
     def filter_where(self, df: DataFrame) -> DataFrame:
@@ -78,13 +92,13 @@ class Processor(Invoker):
 
         df = self.base_transform(df)
 
-        if self.schema_drifted(df):
+        if diffs := self.get_schema_differences(df):
             if self.schema_drift or kwargs.get("reload", False):
-                DEFAULT_LOGGER.warning("schema drifted", extra={"job": self})
+                DEFAULT_LOGGER.warning("schema drifted", extra={"job": self, "diffs": diffs})
                 self.update_schema(df=df)
 
             else:
-                raise ValueError("schema drifted")
+                raise SchemaDriftError.from_diffs(str(self), diffs)
 
         self.for_each_batch(df, batch, **kwargs)
 

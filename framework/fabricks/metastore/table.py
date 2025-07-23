@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Union, overload
+from typing import List, Literal, Optional, Sequence, Union, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
@@ -12,7 +12,24 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.relational import Relational
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix
+from pydantic import BaseModel
 
+class SchemaDiff(BaseModel):
+    column: str
+    data_type: Optional[str]
+    new_column: Optional[str] = None
+    new_data_type: Optional[str] = None
+    status: Literal["added", "changed", "dropped"]
+
+    def __str__(self):
+        if self.status == "added":
+            return f"Added {self.new_column} with type {self.new_data_type}"
+        elif self.status == "changed":
+            return f"Changed {self.column} from {self.data_type} to {self.new_data_type}"
+        elif self.status == "dropped":
+            return f"Dropped {self.column}"
+        else:
+            return super().__str__() # should not happen, but just in case
 
 class Table(Relational):
     @classmethod
@@ -242,10 +259,10 @@ class Table(Relational):
     def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: Optional[str] = None) -> bool:
         assert self.is_registered, f"{self} not registered"
 
-        df = self.get_differences_with_dataframe(df)
-        return not df.isEmpty()
+        diffs = self.get_schema_differences(df)
+        return len(diffs) > 0
 
-    def get_differences_with_dataframe(self, df: DataFrame) -> DataFrame:
+    def get_schema_differences(self, df: DataFrame) -> Sequence[SchemaDiff]:
         assert self.is_registered, f"{self} not registered"
 
         df1 = self.dataframe
@@ -253,52 +270,35 @@ class Table(Relational):
             if "__identity" in df1.columns:
                 df1 = df1.drop("__identity")
 
-        df1 = self.spark.createDataFrame(df1.dtypes, ["column", "data_type"])  # type: ignore
-        df2 = self.spark.createDataFrame(df.dtypes, ["column", "data_type"])  # type: ignore
+        all_columns = set(df1.columns).union(set(df.columns))
+        df1_dict = {name: dtype for name, dtype in df1.dtypes}
+        df2_dict = {name: dtype for name, dtype in df.dtypes}
+        diffs: list[SchemaDiff] = []
+        for c in all_columns:
+            old_datatype = df1_dict.get(c)
+            new_datatype = df2_dict.get(c)
+            if old_datatype is None and new_datatype is not None:
+                diffs.append(SchemaDiff(column=c, new_column=c, data_type=None, new_data_type=new_datatype, status="added"))
+            elif old_datatype is not None and new_datatype is None:
+                diffs.append(SchemaDiff(column=c, new_column=None, data_type=old_datatype, new_data_type=None, status="dropped"))
+            elif old_datatype != new_datatype:
+                diffs.append(SchemaDiff(column=c, new_column=c, data_type=old_datatype, new_data_type=new_datatype, status="changed"))
 
-        df = self.spark.sql(
-            """
-            with base as (
-            select
-              d1.column,
-              d1.data_type,
-              d2.column as new_column,
-              d2.data_type as new_data_type
-            from
-              {df1} d1 full
-              outer join {df2} d2 on d1.column = d2.column
-            )
-            select
-              coalesce(`column`, `new_column`) as `column`,
-              * except(`column`, `new_column`),
-              if(`new_column` is null, 'dropped', if(`column` is null, 'added', 'changed')) as status
-            from
-              base
-            where
-              false
-              or column is null
-              or new_column is null
-              or not data_type <=> new_data_type
-            """,
-            df1=df1,
-            df2=df2,
-        )
-
-        if not df.isEmpty():
+        if diffs:
             DEFAULT_LOGGER.debug("difference(s) with delta table", extra={"job": self, "df": df})
 
-        return df
+        return diffs
 
     def update_schema(self, df: DataFrame):
         assert self.is_registered, f"{self} not registered"
 
-        diff_df = self.get_differences_with_dataframe(df)
-        diff_df = diff_df.where("status in ('added', 'changed')")
+        diffs = self.get_schema_differences(df)
+        diffs = [d for d in diffs if d.status in ('added', 'changed')]
 
-        if not diff_df.isEmpty():
-            DEFAULT_LOGGER.info("update schema", extra={"job": self, "df": diff_df})
+        if diffs:
+            DEFAULT_LOGGER.info("update schema", extra={"job": self, "df": diffs})
 
-            for row in diff_df.collect():
+            for row in diffs:
                 DEFAULT_LOGGER.debug(
                     f"{row.status.replace('ed', 'ing')} ({row.new_data_type})",
                     extra={"job": self, "column": row.column},
@@ -317,21 +317,23 @@ class Table(Relational):
     def overwrite_schema(self, df: DataFrame):
         assert self.is_registered, f"{self} not registered"
 
-        diff_df = self.get_differences_with_dataframe(df)
+        diffs = self.get_schema_differences(df)
 
-        if not diff_df.isEmpty():
+        if diffs:
             self.update_schema(df)
 
-        diff_df = self.get_differences_with_dataframe(df)
-        if not diff_df.isEmpty():
-            DEFAULT_LOGGER.warning("overwrite schema", extra={"job": self, "df": diff_df})
+        diffs = self.get_schema_differences(df)
+        if diffs:
+            DEFAULT_LOGGER.warning("overwrite schema", extra={"job": self, "df": diffs})
 
-            for row in diff_df.collect():
+            for row in diffs:
                 if row.status == "added":
+                    assert row.new_data_type is not None, "new_data_type must be defined for added columns"
                     self.add_column(row.column, row.new_data_type)
                 elif row.status == "dropped":
                     self.drop_column(row.column)
                 elif row.status == "changed":
+                    assert row.new_data_type is not None, "new_data_type must be defined for changed columns"
                     try:
                         self.change_column(row.column, row.new_data_type)
                     except AnalysisException:
