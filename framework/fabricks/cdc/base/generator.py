@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import List, Optional, Sequence, Union, Any, cast
 
 from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
@@ -8,7 +8,7 @@ from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.cdc.base.configurator import Configurator
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.metastore.table import Table
+from fabricks.metastore.table import SchemaDiff, Table
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
@@ -106,15 +106,27 @@ class Generator(Configurator):
             return None
 
         else:
+            from pyspark.sql.types import StructField, StructType, StringType
             kwargs["mode"] = "complete"
             if "slice" in kwargs:
                 del kwargs["slice"]
 
             df = self.get_data(src, **kwargs)
             df = self.reorder_columns(df)
-            return self.table.get_differences_with_dataframe(df)
+            diffs = self.table.get_schema_differences(df)
+            df_diff = self.spark.createDataFrame([cast(Any,d.model_dump()) for d in diffs],
+                                                schema = StructType(
+                                                    [
+                                                        StructField("column", StringType(), False),
+                                                        StructField("data_type", StringType(), True),
+                                                        StructField("new_column", StringType(), True),
+                                                        StructField("new_data_type", StringType(), True),
+                                                        StructField("status", StringType(), True)
+                                                    ]
+                                                ))
+            return df_diff
 
-    def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
+    def get_schema_differences(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[Sequence[SchemaDiff]]:
         if self.is_view:
             return None
 
@@ -125,7 +137,13 @@ class Generator(Configurator):
 
             df = self.get_data(src, **kwargs)
             df = self.reorder_columns(df)
-            return self.table.schema_drifted(df)
+            return self.table.get_schema_differences(df)
+        
+    def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
+        d = self.get_schema_differences(src, **kwargs)
+        if d is None:
+            return None
+        return len(d) > 0
 
     def _update_schema(self, src: Union[DataFrame, Table, str], overwrite: bool = False, **kwargs):
         if self.is_view:

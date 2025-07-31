@@ -1,6 +1,5 @@
 from abc import abstractmethod
-from collections.abc import Sequence
-from typing import Optional, Union, cast
+from typing import Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
@@ -9,6 +8,7 @@ from fabricks.cdc import SCD1
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import JobDependency
 from fabricks.core.jobs.base.configurator import Configurator
+from fabricks.metastore.table import SchemaDiff
 from fabricks.metastore.view import create_or_replace_global_temp_view
 
 
@@ -354,7 +354,7 @@ class Generator(Configurator):
 
         return self.cdc.get_differences_with_deltatable(df, **context)
 
-    def schema_drifted(self, df: Optional[DataFrame] = None) -> Optional[bool]:
+    def get_schema_differences(self, df: Optional[DataFrame] = None) -> Optional[Sequence[SchemaDiff]]:
         if df is None:
             df = self.get_data(self.stream)
             assert df is not None
@@ -362,8 +362,14 @@ class Generator(Configurator):
 
         context = self.get_cdc_context(df, reload=True)
 
-        return self.cdc.schema_drifted(df, **context)
+        return self.cdc.get_schema_differences(df, **context)
 
+    def schema_drifted(self, df: Optional[DataFrame] = None) -> Optional[bool]:
+        d = self.get_schema_differences(df)
+        if d is None:
+            return None
+        return len(d) > 0
+    
     def enable_liquid_clustering(self):
         df = self.table.dataframe
         enable = False
