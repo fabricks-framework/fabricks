@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from typing import List, Literal, Optional, TypedDict, Union
 
+from pydantic import BaseModel, ConfigDict, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
+from fabricks.core.jobs.get_job_id import get_job_id
+from fabricks.utils.helpers import md5
 
 from fabricks.cdc.base._types import ChangeDataCaptures
 from fabricks.context import BRONZE, GOLD, SILVER
@@ -197,7 +200,35 @@ class Options:
     spark: FDict
     invokers: FDict
     extenders: List
+class JobDependency(BaseModel):
+    model_config = ConfigDict(extra='forbid', frozen=True)  
+    origin: Literal["parser", "job"]
+    job_id: str
+    parent: str
+    parent_id: str
+    dependency_id: str
 
+    def __str__(self) -> str:
+        return f"{self.job_id} -> {self.parent}"
+    
+    
+    @model_validator(mode='after')
+    def check_no_circular_dependency(self):
+        if self.job_id == self.parent_id:
+            raise ValueError('Circular dependency detected')
+        return self
+
+    @staticmethod
+    def from_job_id_parent_origin(job_id: str, parent: str, origin: Literal["parser", "job"]):
+        parent = parent.removesuffix("__current")
+        return JobDependency(
+            job_id=job_id,
+            origin=origin,
+            parent=parent,
+            parent_id=get_job_id(job=parent),
+            dependency_id=md5(job_id + "*" + parent)
+        )
+    
 
 SchemaDependencies = StructType(
     [
