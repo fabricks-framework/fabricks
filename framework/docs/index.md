@@ -6,31 +6,34 @@ This landing page provides concise summaries and links to detailed references.
 
 ---
 
-## Step Summaries
+# Steps Overview
 
-High‑level overview of each pipeline step. See each step page for modes, options, and examples.
+Fabricks organizes your Lakehouse into clear layers. Each step has a dedicated reference with modes, options, and examples.
 
 ### Bronze
 Raw ingestion from source systems (files, streams, existing tables). Keep logic light; land data for downstream processing.
 - Typical modes: memory, append, register
+- Focus: lightweight parsing/landing; no business logic
 - Output: raw tables or temporary views
-- Read the full reference → [Bronze](steps/bronze.md)
+
+
+Read the full reference → [Bronze Step](steps/bronze.md)
 
 ### Silver
 Standardize, clean, and enrich data; optionally apply CDC (SCD1/SCD2). Produces conformed datasets and convenience views.
 - Typical modes: memory, append, latest, update, combine
-- CDC: nocdc, scd1, scd2 with built‑in helpers
-- Read the full reference → [Silver](steps/silver.md)
+- CDC: nocdc, scd1, scd2 with built-in helpers and views
+- Output: conformed tables and curated views
+
+Read the full reference → [Silver Step](steps/silver.md)
 
 ### Gold
 Curated business models for analytics and reporting; dimensional or mart‑style outputs. Can also invoke notebooks when needed.
-- Typical modes: memory, append, complete, update, invoke
-- Read the full reference → [Gold](steps/gold.md)
+- Typical modes: memory, append, complete, update, invoke (notebooks)
+- Focus: dimensional models, marts, KPI-ready data
+- Output: business-consumption tables and views
 
-### Semantic
-Apply table properties/metadata and optional copy operations to standardize governance and table features.
-- Mode: complete (apply properties/metadata/copy)
-- Read the full reference → [Semantic](steps/semantic.md)
+Read the  reference → [Gold Step](steps/gold.md)
 
 ---
 
