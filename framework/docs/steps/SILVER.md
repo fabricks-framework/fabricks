@@ -1,4 +1,4 @@
-### Silver Step Reference
+# Silver Step Reference
 
 The Silver step standardizes and enriches data, and applies CDC (SCD1/SCD2) if configured.
 

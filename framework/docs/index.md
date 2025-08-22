@@ -1,4 +1,4 @@
-### Fabricks User Guide
+# Fabricks User Guide
 
 Fabricks (Framework for Databricks) is a Python framework to define and run Lakehouse pipelines on Databricks using YAML for orchestration and SQL for business logic. This guide covers setup, core concepts, authoring jobs, execution, CDC, checks, and troubleshooting.
 
@@ -51,9 +51,9 @@ What you get:
 
 ## Quick Links
 
-- Step overviews: Bronze, Silver, Gold
+- Step overviews: [Bronze](./steps/bronze.md), [Silver](./steps/silver.md), [Gold](./steps/gold.md)
 - Detailed step references: [Bronze](./steps/bronze.md), [Silver](./steps/silver.md), [Gold](./steps/gold.md)
-- Sample runtime to copy: `framework/examples/runtime/`
+- Sample runtime: [examples/runtime](./examples/runtime/)
 - Integration examples: `framework/tests/integration/runtime/`
 
 ## Installation
@@ -782,5 +782,3 @@ Starter runtime with bronze/silver/transf/gold/semantic examples is available un
 ## License
 
 MIT License. See repository license for details.
-
-

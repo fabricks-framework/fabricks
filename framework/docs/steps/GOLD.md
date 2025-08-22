@@ -1,4 +1,4 @@
-### Gold Step Reference 
+# Gold Step Reference
 
 Gold steps produce consumption-ready models, usually via SQL. Semantic applies table properties/metadata.
 

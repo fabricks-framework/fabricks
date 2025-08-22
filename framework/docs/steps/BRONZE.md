@@ -1,4 +1,4 @@
-### Bronze Step Reference
+# Bronze Step Reference
 
 The Bronze step ingests raw data from files/streams/sources into the Lakehouse.
 
