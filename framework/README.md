@@ -139,6 +139,11 @@ or directly create a delta file using a pre-run, which we'll show below:
             url: https://shouldideploy.today # just some arbitrary args
 ```
 
+### Examples
+
+- Sample bronze job: `framework/examples/runtime/bronze/_config.example.yml`
+- More bronze patterns: `framework/tests/integration/runtime/bronze/`
+
 ## 🥈 Silver Step
 
 The intermediate stage for data processing. It will handle scd1/scd2
@@ -163,6 +168,11 @@ In addition, a view named `TABLENAME__current` will be created for convenience.
         max_rows: 1000000
 ```
 
+### Examples
+
+- Sample silver job: `framework/examples/runtime/silver/_config.example.yml`
+- Rich silver scenarios (SCD1/2, latest, combine, extenders): `framework/tests/integration/runtime/silver/`
+
 ## 🥇 Gold Step Type
 
 The final stage for data consumption. Usually just sql. There can also be multiple gold steps,
@@ -178,6 +188,11 @@ so you could create a transf step, a gold step, a power bi step, all of which ar
       mode: complete
       change_data_capture: scd2
 ```
+
+### Examples
+
+- Sample gold jobs: `framework/examples/runtime/gold/gold/_config.example.yml` and `hello_world.sql`
+- Advanced gold scenarios (SCD1/2, options, dependencies, invoke): `framework/tests/integration/runtime/gold/gold/`
 
 ## 📚 Use Cases / Features
 
@@ -260,6 +275,11 @@ with
 ```
 
 
+
+
+## 🧾 Conclusion
+
+Fabricks helps you define pipelines declaratively in YAML and implement logic in SQL, while handling CDC, dependencies, logging, and table lifecycle. Start from the examples near each step, then evolve to advanced features like checks, UDFs, extenders, and semantic properties.
 
 ## 📄 License
 

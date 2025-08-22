@@ -88,6 +88,9 @@ dev = [
     "shandy-sqlfmt >=0.23.2",
     "yamlfix >=1.14.0",
 ]
+doc = [
+    "mkdocs>=1.6.1",
+]
 
 [tool.fabricks]
 runtime = "tests/integration/runtime"

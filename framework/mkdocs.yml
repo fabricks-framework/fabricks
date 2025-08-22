@@ -1,0 +1,11 @@
+site_name: Fabricks
+theme:
+  name: readthedocs
+  locale: en
+nav:
+  - Introduction: 'index.md'
+  - Steps:
+      - Bronze: 'steps/bronze.md'
+      - Silver: 'steps/silver.md'
+      - Gold: 'steps/gold.md'
+repo_url: https://github.com/fabricks-framework/fabricks

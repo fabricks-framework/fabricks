@@ -1,0 +1,13 @@
+---
+# yaml-language-server: $schema=../../tests/integration/runtime/job-schema.json
+- job:
+    step: bronze
+    topic: demo
+    item: source
+    tags: [example]
+    options:
+      mode: append
+      uri: /mnt/demo/raw/demo
+      parser: parquet
+      keys: [id]
+
