@@ -159,7 +159,6 @@ How to use this sample
   - [Bronze](./steps/bronze.md)
   - [Silver](./steps/silver.md)
   - [Gold](./steps/gold.md)
-  - [Semantic](./steps/semantic.md)
 - Data quality checks and contracts: [Checks & Data Quality](./reference/checks-data-quality.md)
 - Table properties and physical layout: [Table Options](./reference/table-options.md)
 - Custom logic integration: [Extenders, UDFs & Views](./reference/extenders-udfs-views.md)

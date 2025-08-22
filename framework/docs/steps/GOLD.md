@@ -330,7 +330,7 @@ select 1 as __key, 2 as dummy, 2 as __order_duplicate_by_desc
 
 ## Related
 
-- Next steps: [Semantic Step](./semantic.md), [Table Options](../reference/table-options.md)
+- Next steps: [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
 - Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
 - Sample runtime: [Sample runtime](../runtime.md#sample-runtime)
