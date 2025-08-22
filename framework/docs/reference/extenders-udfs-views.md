@@ -148,10 +148,20 @@ class MonarchParser:
         return df
 ```
 
+```python
+from pyspark.sql import DataFrame
+from pyspark.sql.functions import lit
+from fabricks.core.extenders import extender
+
+@extender(name="add_country")
+def add_country(df: DataFrame, **kwargs) -> DataFrame:
+    return df.withColumn("country", lit(kwargs.get("country")))
+```
+
 ---
 
 ## Related
 
-- Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md) • [Semantic](../steps/semantic.md)
+- Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
 - Reference: [Checks & Data Quality](checks-data-quality.md) • [Table Options](table-options.md)
 - Runtime: [Runtime Configuration](../runtime.md)

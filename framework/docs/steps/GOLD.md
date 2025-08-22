@@ -2,29 +2,77 @@
 
 Gold steps produce consumption-ready models, usually via SQL. Semantic applies table properties/metadata.
 
-Modes
-- memory: View only
-- append: Append to table
-- complete: Full refresh/overwrite
-- update: Merge/upsert
-- invoke: Run a notebook instead of SQL (configured via invoker_options)
+## Modes
 
-CDC input fields (when using SCD)
-- scd2 (required): `__key`, `__timestamp`, `__operation` ('upsert'|'delete')
-- scd1 (required): `__key`; optional `__timestamp`/`__operation` for deletes
-- Optional helpers: `__order_duplicate_by_asc` / `__order_duplicate_by_desc`, `__identity` (with identity tables)
+| Mode    | Description                                                                 |
+|---------|-----------------------------------------------------------------------------|
+| memory  | View-only result; no table is written.                                      |
+| append  | Append rows to the target table.                                            |
+| complete| Full refresh/overwrite of the target table.                                 |
+| update  | Merge/upsert semantics (typically used with CDC).                           |
+| invoke  | Run a notebook instead of SQL (configure via `invoker_options`).            |
 
-Common options
-- type: default vs manual
-- parents, update_where, deduplicate
-- correct_valid_from, persist_last_timestamp
-- table: target override
-- timeout, requirements
-- invoker_options: pre_run/run/post_run notebook execution
+See Gold CDC input fields below for required `__` columns when using SCD.
 
-Semantic (grouped with gold)
-- Mode: complete
-- Applies table options/properties and can copy from `options.table`
+## Options at a glance
+
+| Option                 | Purpose                                                                                          |
+|------------------------|--------------------------------------------------------------------------------------------------|
+| type                   | `default` vs `manual` (manual: you manage persistence yourself).                                 |
+| mode                   | One of: `memory`, `append`, `complete`, `update`, `invoke`.                                      |
+| change_data_capture    | CDC strategy: `nocdc` \| `scd1` \| `scd2`.                                                       |
+| update_where           | Additional predicate limiting updates during merges.                                             |
+| parents                | Explicit upstream dependencies for scheduling/recomputation.                                     |
+| deduplicate            | Drop duplicate keys in the result before writing.                                                |
+| persist_last_timestamp | Persist the last processed timestamp for incremental loads.                                       |
+| correct_valid_from     | Adjust SCD2 timestamps that would otherwise start at a sentinel date.                            |
+| table                  | Target table override (useful for semantic/table-copy scenarios).                                |
+| table_options          | Delta table options and metadata (identity, clustering, properties, comments).                   |
+| spark_options          | Per-job Spark session/SQL options mapping.                                                       |
+| udfs                   | Path to UDFs registry to load before executing the job.                                          |
+| check_options          | Configure DQ checks (pre_run, post_run, max_rows, min_rows, count_must_equal, skip).            |
+| notebook               | Mark job to run as a notebook (used with `mode: invoke`).                                        |
+| invoker_options        | Configure `pre_run` / `run` / `post_run` notebook execution and arguments.                       |
+| requirements           | If true, install/resolve additional requirements for this job.                                   |
+| timeout                | Per-job timeout seconds (overrides step defaults).                                               |
+
+## Field reference
+
+- *Core*
+    - **type**: `default` vs `manual`. Manual means Fabricks will not auto-generate DDL/DML; you control persistence.
+    - **mode**: Processing behavior (`memory`, `append`, `complete`, `update`, `invoke`).
+    - **timeout**: Per-job timeout seconds; overrides step defaults.
+    - **requirements**: Resolve/install additional requirements for this job.
+
+- *CDC*
+    - **change_data_capture**: `nocdc`, `scd1`, or `scd2`. Governs merge semantics when `mode: update`.
+
+- *Incremental & merge*
+    - **update_where**: Predicate that constrains rows affected during merge/upsert.
+    - **deduplicate**: Drop duplicate keys prior to write.
+    - **persist_last_timestamp**: Persist last processed timestamp to support incremental loads.
+    - **correct_valid_from**: Adjusts start timestamps for SCD2 validity windows when needed.
+
+- *Dependencies & targets*
+    - **parents**: Explicit upstream jobs that must complete before this job runs.
+    - **table**: Target table override (commonly used when coordinating with Semantic/table-copy flows).
+
+- *Table & Spark*
+    - **table_options**: Delta table options and metadata (e.g., identity, clustering, properties, comments).
+    - **spark_options**: Per-job Spark session/SQL options mapping.
+- *UDFs*
+    - **udfs**: Path to UDFs registry to load before executing the job.
+- *Checks*
+    - **check_options**: Configure DQ checks (e.g., `pre_run`, `post_run`, `max_rows`, `min_rows`, `count_must_equal`, `skip`).
+- *Notebook invocation*
+    - **notebook**: When coupled with `mode: invoke`, mark this job to run a notebook.
+    - **invoker_options**: Configure `pre_run`, `run`, and `post_run` notebooks and pass arguments.
+
+Notes:
+
+  - Memory outputs ignore columns starting with `__` (e.g., `__it_should_not_be_found`).
+
+---
 
 Minimal examples
 
@@ -66,34 +114,6 @@ More examples
 - Example config/SQL: `framework/examples/runtime/gold/gold/_config.example.yml`, `framework/examples/runtime/gold/gold/hello_world.sql`
 - Integration scenarios: `framework/tests/integration/runtime/gold/gold/` and `.../semantic/`
 
-SCD2 in gold (pattern)
-```sql
-with
-  newkey as (
-    select only_offer_id as __key, * except(__key) from offer_and_lines_table d
-  ),
-  deletes as (
-    select only_offer_id as __key, max(__valid_to) + interval 1 second as deleted_date
-    from offer_and_lines_table
-    group by only_offer_id
-    having max(`__valid_to`) < '9999-12-31'
-  ),
-  dates as (
-    select __key, __valid_from as __timestamp, 'upsert' as __operation from newkey
-    union
-    select __key, deleted_date as __timestamp, 'delete' as __operation from deletes
-  )
-select
-  d.__key,
-  d.__timestamp,
-  d.__operation,
-  sum(case when d.__operation = 'delete' and d.__timestamp = r.__valid_to then 0 else sales end) as sales,
-  sum(case when d.__operation = 'delete' and d.__timestamp = r.__valid_to then 0 else sales_gross end) as sales_gross
-from dates d
-left join newkey r on d.__timestamp between r.__valid_from and r.__valid_to and d.only_offer_id = r.only_offer_id
-group by d.only_offer_id, __timestamp, __operation
-```
-
 Dependencies
 ```sql
 with cte as (select d.time, d.hour from gold.dim_time d)
@@ -119,7 +139,7 @@ Invoke (notebooks)
     options: { mode: memory }
     invoker_options:
       post_run:
-        - notebook: gold/gold/invoke/post_run/exe
+          - notebook: gold/gold/invoke/post_run/exe
           arguments: { arg1: 1, arg2: 2, arg3: 3 }
 - job:
     step: gold
@@ -180,32 +200,19 @@ union all
 select 1 as __key, 2 as dummy, 2 as __order_duplicate_by_desc
 ```
 
+---
 
 ### Gold options
 
-- type: Default vs manual (manual: you manage persistence yourself).
-- mode:
-  - memory: View-only result.
-  - append: Append rows to table.
-  - complete: Full overwrite of the table.
-  - update: Merge/update into table.
-  - invoke: Run a notebook instead of SQL (see invoker_options).
-- change_data_capture: `nocdc` | `scd1` | `scd2` (same semantics as silver).
-- update_where: Additional predicate limiting updates.
-- parents: Explicit dependencies for scheduling and recomputation.
-- deduplicate: Drop duplicate keys before write.
-- correct_valid_from: For SCD2 pipelines, adjust timestamps that would otherwise start at a sentinel date.
-- persist_last_timestamp: Persist the last processed timestamp for incremental loads.
-- table: Target table override (mainly used in semantic or table-copy jobs).
-- notebook: Mark job to run as notebook (used with `mode: invoke`).
-- requirements: If true, install/resolve extra requirements for this job.
-- timeout: Per-job timeout seconds.
+See Options at a glance and Field reference above.
 
 ### CDC input fields for gold jobs
 
 - scd2 (required): `__key`, `__timestamp`, `__operation` ('upsert'|'delete').
 - scd1 (required): `__key`; optional `__timestamp`/`__operation` for delete handling.
 - Optional helpers: `__order_duplicate_by_asc` / `__order_duplicate_by_desc`, `__identity` (with `table_options.identity: true`).
+
+
 
 ### Gold jobs
 
@@ -321,18 +328,9 @@ union all
 select 1 as __key, 2 as dummy, 2 as __order_duplicate_by_desc
 ```
 
-### Gold CDC input fields (`__` columns)
+## Related
 
-- scd2 (required):
-  - `__key`: Unique identifier for the row version (any type). Often built with a function like `udf_key(...)`.
-  - `__timestamp`: Effective time of the change/delete (builds validity windows).
-  - `__operation`: Either `'upsert'` or `'delete'`.
-
-- scd1:
-  - `__key`: Unique identifier for the entity to upsert.
-  - Optional but recommended when handling deletes:
-    - `__timestamp` and `__operation` to correctly mark deletions.
-
-- Optional helpers (both scd1/scd2):
-  - `__order_duplicate_by_asc` / `__order_duplicate_by_desc`: When multiple candidate rows share the same `__key`, pick the one with the highest/lowest order value accordingly.
-  - `__identity`: When `table_options.identity: true`, provide a deterministic identity value to persist.
+- Next steps: [Semantic Step](./semantic.md), [Table Options](../reference/table-options.md)
+- Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
+- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+- Sample runtime: [Sample runtime](../runtime.md#sample-runtime)

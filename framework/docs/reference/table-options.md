@@ -4,19 +4,18 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 
 ## Common options
 
-- identity: Adds `__identity` column support for Delta identity tables. Provide a deterministic identity value using the `__identity` helper column when writing.
-- liquid_clustering: Enables Delta Liquid Clustering where supported by the Databricks runtime.
-- partition_by: List of partition columns (e.g., `[date_id, country]`).
-- zorder_by: Columns used for Z-Ordering (improves data skipping).
-- cluster_by: Logical clustering keys (materialization depends on runtime features).
-- bloomfilter_by: Columns to maintain Bloom filters on (where supported).
-- constraints: Map of table constraints (e.g., `primary key(__key)`).
-- properties: Arbitrary Delta table properties (key/value pairs).
-- comment: Table comment/description.
-- calculated_columns: Map of computed columns populated on write.
-- retention_days: Table VACUUM retention period (days).
-- powerbi: true to apply Power BI–specific metadata (if supported).
-- layout (advanced): Additional physical layout options where supported by the runtime.
+- **identity**: Adds `__identity` column support for Delta identity tables. Provide a deterministic identity value using the `__identity` helper column when writing.
+- **liquid_clustering**: Enables Delta Liquid Clustering where supported by the Databricks runtime.
+- **partition_by**: List of partition columns (e.g., `[date_id, country]`).
+- **zorder_by**: Columns used for Z-Ordering (improves data skipping).
+- **cluster_by**: Logical clustering keys (materialization depends on runtime features).
+- **bloomfilter_by**: Columns to maintain Bloom filters on (where supported).
+- **constraints**: Map of table constraints (e.g., `primary key(__key)`).
+- **properties**: Arbitrary Delta table properties (key/value pairs).
+- **comment**: Table comment/description.
+- **calculated_columns**: Map of computed columns populated on write.
+- **retention_days**: Table VACUUM retention period (days).
+- **powerbi**: true to apply Power BI–specific metadata (if supported).
 
 ## Minimal example
 
@@ -76,7 +75,6 @@ Table options control how Fabricks creates and manages physical Delta tables acr
   - [Bronze](../steps/bronze.md)
   - [Silver](../steps/silver.md)
   - [Gold](../steps/gold.md)
-  - [Semantic](../steps/semantic.md) (often used to apply/standardize table properties)
 - Data quality checks: [Checks & Data Quality](./checks-data-quality.md)
 - Custom logic integration: [Extenders, UDFs & Views](./extenders-udfs-views.md)
 - Runtime configuration: [Runtime](../runtime.md)

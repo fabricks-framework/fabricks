@@ -7,23 +7,14 @@ What it does
 - Optionally filters, calculates, or encrypts columns
 - Appends or registers data for downstream steps
 
-Modes
-- memory: Register a temporary view only (no table written)
-- append: Append records to the target table (no merge/upsert)
-- register: Register an existing Delta table/view at `uri`
+## Modes
 
-Common options
-- type: default vs manual (manual disables auto DDL/DML; you own persistence)
-- uri: Source location (e.g., `/mnt/...`, `abfss://...`)
-- parser: Input parser (e.g., `parquet`, or custom)
-- source: Logical source label for lineage/logging
-- keys: Business keys used for dedup and downstream CDC
-- parents: Upstream jobs to enforce dependencies
-- filter_where: Predicate applied during ingestion
-- encrypted_columns: Columns to encrypt
-- calculated_columns: New columns as SQL expressions
-- operation: upsert | reload | delete (for changelog-like feeds)
-- timeout: Per-job timeout seconds (overrides step default)
+| Mode    | Description                                                    |
+|---------|----------------------------------------------------------------|
+| memory  | Register a temporary view only; no Delta table is written.     |
+| append  | Append records to the target table (no merge/upsert).          |
+| register| Register an existing Delta table/view at `uri`.                |
+
 
 Minimal example
 ```yaml
@@ -45,18 +36,58 @@ More examples
 
 ### Bronze options
 
-- type: Switch between default behavior and manual. Manual means Fabricks won’t auto-generate DDL/DML; you control it.
-- mode: How data is ingested/written.
-  - memory: Register as a temporary view only; no Delta table is written.
-  - append: Append new rows to the target table.
-  - register: Register an existing Delta table/view.
-- uri: Source location (e.g., `/mnt/...`, `abfss://...`) used by the parser.
-- parser: Parser implementation to read the source (e.g., `parquet`, custom parser name).
-- source: Optional logical source name for lineage or logging.
-- keys: Natural/business keys for deduplication and CDC downstream.
-- parents: Upstream jobs that must exist/complete; used for dependency graphs.
-- filter_where: SQL filter applied during ingestion.
-- encrypted_columns: List of columns to encrypt.
-- calculated_columns: Mapping of new columns to SQL expressions applied during load.
-- operation: For change logs: `upsert`, `reload`, or `delete` semantics.
-- timeout: Per-job timeout seconds; overrides step defaults.
+#### All Options at a glance
+
+| Option             | Purpose                                                                                   |
+|--------------------|-------------------------------------------------------------------------------------------|
+| type               | `default` vs `manual` (manual disables auto DDL/DML; you manage persistence).             |
+| mode               | One of: `memory`, `append`, `register`.                                                   |
+| uri                | Source location (e.g., `/mnt/...`, `abfss://...`) used by the parser.                     |
+| parser             | Input parser (e.g., `parquet`) or the name of a custom parser.                            |
+| source             | Logical source label for lineage/logging.                                                 |
+| keys               | Business keys used for dedup and downstream CDC.                                          |
+| parents            | Upstream jobs to enforce dependencies and ordering.                                       |
+| filter_where       | SQL predicate applied during ingestion.                                                   |
+| encrypted_columns  | Columns to encrypt at write time.                                                         |
+| calculated_columns | Derived columns defined as SQL expressions.                                               |
+| extender           | Name of a Python extender to apply (see Extenders).                                       |
+| extender_options   | Arguments for the extender (mapping).                                                     |
+| operation          | Changelog semantics for certain feeds: `upsert` \| `reload` \| `delete`.                  |
+| timeout            | Per-job timeout seconds (overrides step default).                                         |
+
+#### Bronze dedicated options
+
+- *Core*
+    - **type**: `default` vs `manual`. Manual means Fabricks will not auto-generate DDL/DML; you control persistence.
+    - **mode**: Controls ingestion behavior (`memory`, `append`, `register`).
+    - **timeout**: Per-job timeout seconds; overrides step defaults.
+
+- *Source*
+    - **uri**: Filesystem or table/view location resolved by the parser.
+    - **parser**: Name of the parser to read the source (e.g., `parquet`) or a custom parser.
+    - **source**: Optional logical label used for lineage/logging.
+
+- *Dependencies & ordering*
+    - **parents**: Explicit upstream jobs that must complete before this job runs.
+    - **keys**: Natural/business keys used for deduplication and for downstream CDC.
+
+- *Transformations & security*
+    - **filter_where**: SQL predicate to filter rows during ingestion.
+    - **calculated_columns**: Mapping of new columns to SQL expressions evaluated at load time.
+    - **encrypted_columns**: List of columns to encrypt during write.
+
+- *Changelog semantics*
+    - **operation**: For change-log style feeds, indicates whether incoming rows should be treated (`upsert`, `reload`, `delete`).
+
+#### Extensibility
+
+- extender: Apply a Python extender to the ingested DataFrame.
+- extender_options: Mapping of arguments passed to the extender.
+- See also: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+
+#### Related
+
+- Next steps: [Silver Step](./silver.md), [Table Options](../reference/table-options.md)
+- Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
+- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+- Sample runtime: [Sample runtime](../runtime.md#sample-runtime)

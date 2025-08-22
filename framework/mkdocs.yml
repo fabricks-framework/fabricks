@@ -14,6 +14,10 @@ nav:
     - Checks & Data Quality: 'reference/checks-data-quality.md'
     - Table Options: 'reference/table-options.md'
     - Extenders, UDFs & Views: 'reference/extenders-udfs-views.md'
+  - Helpers:
+    - Initialize: 'helpers/init.md'
+    - Job: 'helpers/job.md'
+    - Step: 'helpers/step.md'
   - About:
     - License: license.md
     - Release Notes: release-notes.md
