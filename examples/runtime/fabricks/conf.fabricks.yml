@@ -1,0 +1,31 @@
+---
+- conf:
+    name: getting-started
+    options:
+      secret_scope: my_scope
+      timeouts:
+        step: 1800
+        job: 1800
+      workers: 2
+    path_options:
+      storage: /mnt/demo
+      schedules: fabricks/schedules
+    bronze:
+      - name: bronze
+        path_options:
+          runtime: bronze
+        options:
+          order: 101
+    silver:
+      - name: silver
+        path_options:
+          runtime: silver
+        options:
+          order: 201
+    gold:
+      - name: gold
+        path_options:
+          runtime: gold/gold
+        options:
+          order: 301
+
