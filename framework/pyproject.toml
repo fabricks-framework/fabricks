@@ -88,7 +88,8 @@ dev = [
     "shandy-sqlfmt >=0.23.2",
     "yamlfix >=1.14.0",
 ]
-doc = [
+docs = [
+    "mkdocs-material>=9.6.18",
     "mkdocs>=1.6.1",
 ]
 
