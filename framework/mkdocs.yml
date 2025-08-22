@@ -5,7 +5,11 @@ theme:
 nav:
   - Introduction: 'index.md'
   - Steps:
-      - Bronze: 'steps/bronze.md'
-      - Silver: 'steps/silver.md'
-      - Gold: 'steps/gold.md'
+    - Steps: 'steps.md'
+    - Bronze: 'steps/bronze.md'
+    - Silver: 'steps/silver.md'
+    - Gold: 'steps/gold.md'
+  - About:
+    - License: license.md
+    - Release Notes: release-notes.md
 repo_url: https://github.com/fabricks-framework/fabricks
