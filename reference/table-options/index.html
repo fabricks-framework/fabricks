@@ -894,7 +894,7 @@
 <p>Table options control how Fabricks creates and manages physical Delta tables across steps. Use these options to define properties, layout, constraints, identity, retention, and more. Options are generally provided under <code>table_options</code> at the job level (and may also be set as step defaults in your runtime config).</p>
 <h2 id="common-options">Common options<a class="headerlink" href="#common-options" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>identity</strong>: Adds <code>__identity</code> column support for Delta identity tables. Provide a deterministic identity value using the <code>__identity</code> helper column when writing.</li>
+<li><strong>identity</strong>: Enables a Delta identity column on the target table. If <code>identity: true</code>, the identity column is auto-created when the table is created.</li>
 <li><strong>liquid_clustering</strong>: Enables Delta Liquid Clustering where supported by the Databricks runtime.</li>
 <li><strong>partition_by</strong>: List of partition columns (e.g., <code>[date_id, country]</code>).</li>
 <li><strong>zorder_by</strong>: Columns used for Z-Ordering (improves data skipping).</li>
@@ -951,7 +951,7 @@
 <ul>
 <li>Scope: <code>table_options</code> apply to physical table modes (<code>append</code>, <code>complete</code>, <code>update</code>). They do not apply to <code>memory</code> mode (view-only).</li>
 <li>CDC compatibility: Properties like <code>delta.enableChangeDataFeed</code> can be useful for change data capture downstream; set under <code>properties</code>.</li>
-<li>Identity: When <code>identity: true</code> is enabled, provide a deterministic <code>__identity</code> helper column in your SELECT statement to persist identity values.</li>
+<li>Identity: When <code>identity: true</code> is enabled, the identity column is defined at create time using GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( [ START WITH start ] [ INCREMENT BY step ] ) ]; do not include <code>__identity</code> in your SELECT. Only include <code>__identity</code> when <code>identity</code> is not true. <a href="https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using">Identity</a>.</li>
 <li>Layout vs performance: Start with <code>partition_by</code> on low-cardinality columns; add <code>zorder_by</code> for frequently filtered high-cardinality columns. Use Bloom filters selectively for point-lookups.</li>
 <li>Defaults: You can specify step-level defaults in your runtime config and override them per job.</li>
 </ul>

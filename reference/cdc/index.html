@@ -1072,7 +1072,7 @@
 <li>Note: If <code>__operation</code> is absent in Gold SCD update jobs, Fabricks auto-injects <code>__operation = 'reload'</code> and enables rectification.</li>
 <li>Optional helpers used by merges:<ul>
 <li><code>__order_duplicate_by_asc</code> / <code>__order_duplicate_by_desc</code></li>
-<li><code>__identity</code> (when <code>table_options.identity: true</code>)</li>
+<li><code>__identity</code> (only when <code>table_options.identity</code> is not true; if <code>identity: true</code>, the identity column is auto-created and you should not supply <code>__identity</code>)</li>
 <li><code>__source</code> (to scope merges by logical source)</li>
 </ul>
 </li>
@@ -1129,7 +1129,8 @@
 </ul>
 <p><em>Identity and hash</em></p>
 <ul>
-<li>If <code>__identity</code> is present and <code>table_options.identity: true</code>, it is persisted as part of the target schema.</li>
+<li>If <code>table_options.identity: true</code>, the identity column is created automatically when the table is created.</li>
+<li>If <code>table_options.identity</code> is not true and <code>__identity</code> is present in the input, it will be written as a regular column.</li>
 <li>If <code>__hash</code> is present, it is updated during upsert operations.</li>
 </ul>
 <p><em>Update filtering</em></p>
@@ -1152,7 +1153,7 @@
 </ul>
 </li>
 </ul>
-<p><em>Convenience view</em></p>
+<p><em>Convenience view (in Silver)</em></p>
 <ul>
 <li><code>{table}__current</code>: filters current (non‑deleted) rows for simplified consumption.</li>
 </ul>
@@ -1262,7 +1263,7 @@ For explicit control, you can produce rows with <code>__operation = 'reload'</co
 </ul>
 <p><em>Tip</em></p>
 <ul>
-<li>When <code>table_options.identity: true</code>, include an <code>__identity</code> helper column in your SELECT to persist identity values. See <a href="../table-options/">Table Options</a>.</li>
+<li>Only provide <code>__identity</code> when <code>table_options.identity</code> is not true. If <code>identity: true</code>, the identity column is auto-created when the table is created; do not include <code>__identity</code>. See <a href="../table-options/">Table Options</a>.</li>
 </ul>
 <hr />
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>

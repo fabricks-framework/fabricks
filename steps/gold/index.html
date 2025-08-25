@@ -1238,7 +1238,7 @@
 <ul>
 <li>scd2 (required): <code>__key</code>, <code>__timestamp</code>, <code>__operation</code> ('upsert'|'delete'|'reload').</li>
 <li>scd1 (required): <code>__key</code>; optional <code>__timestamp</code>/<code>__operation</code> ('upsert'|'delete'|'reload') for delete/rectify handling. If <code>__operation</code> is omitted for SCD in <code>mode: update</code>, Fabricks injects <code>'reload'</code> and enables rectification.</li>
-<li>Optional helpers: <code>__order_duplicate_by_asc</code> / <code>__order_duplicate_by_desc</code>, <code>__identity</code> (with <code>table_options.identity: true</code>).</li>
+<li>Optional helpers: <code>__order_duplicate_by_asc</code> / <code>__order_duplicate_by_desc</code>, <code>__identity</code>.</li>
 <li>See: <a href="../../reference/cdc/">Change Data Capture (CDC)</a> for full details and examples.</li>
 </ul>
 <h3 id="gold-jobs">Gold jobs<a class="headerlink" href="#gold-jobs" title="Permanent link">&para;</a></h3>
