@@ -1287,8 +1287,10 @@
 <span class="k">left</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="w"> </span><span class="k">between</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_from</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_to</span>
 </code></pre></div>
 
-<p>When to model SCD2 in Gold (different grain)
-- Use SCD2 in Gold when the base SCD2 tables do not align with the required consumption grain, and you need to derive a slowly changing history at a coarser/different grain (e.g., roll up line-item SCD2 to order-level SCD2, or derive a customer segment SCD2 from underlying attribute histories).</p>
+<p>When to model SCD2 in Gold (different grain)</p>
+<ul>
+<li>Use SCD2 in Gold when the base SCD2 tables do not align with the required consumption grain, and you need to derive a slowly changing history at a coarser/different grain (e.g., roll up line-item SCD2 to order-level SCD2, or derive a customer segment SCD2 from underlying attribute histories).</li>
+</ul>
 <p>Example: roll up line-item SCD2 (silver.order_item_scd2) to order-level SCD2 (total_amount by order_id)</p>
 <div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
@@ -1341,16 +1343,20 @@
 <span class="k">group</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">__key</span><span class="p">,</span><span class="w"> </span><span class="n">oh</span><span class="p">.</span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">seg</span><span class="p">.</span><span class="n">segment</span><span class="p">,</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">__operation</span><span class="p">,</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">__timestamp</span>
 </code></pre></div>
 
-<p>Notes
-- The change_points CTE promotes underlying SCD2 intervals to the desired Gold grain by emitting 'upsert' at each interval start and 'delete' at interval end (or for deleted keys).
-- At each change point, compute the Gold attributes as-of that timestamp. Fabricks will render the SCD2 merge using <code>__key</code>, <code>__timestamp</code>, and <code>__operation</code>.
-- Article/price changes: extra unions in change_points add <code>silver.article_scd2</code> validity boundaries (within each item window) so totals recompute when article prices change.
-- Joining extra tables:
-  - Static/non-SCD2 tables (e.g., <code>silver.order_header</code>) can be joined directly on business keys (e.g., <code>order_id</code>).
-  - SCD2 dimensions (e.g., <code>silver.customer_segment_scd2</code>) must be joined as-of the change point using a validity-window predicate: <code>cp.__timestamp between seg.__valid_from and seg.__valid_to</code>.
-- If your derived attribute can also disappear (e.g., no remaining items), the 'delete' operation correctly closes the last interval for that Gold key.</p>
+<p><em>Notes</em></p>
 <ul>
-<li>Fact options: table options, clustering, properties, and Spark options:</li>
+<li>The change_points CTE promotes underlying SCD2 intervals to the desired Gold grain by emitting 'upsert' at each interval start and 'delete' at interval end (or for deleted keys).</li>
+<li>At each change point, compute the Gold attributes as-of that timestamp. Fabricks will render the SCD2 merge using <code>__key</code>, <code>__timestamp</code>, and <code>__operation</code>.</li>
+<li>Article/price changes: extra unions in change_points add <code>silver.article_scd2</code> validity boundaries (within each item window) so totals recompute when article prices change.</li>
+<li>Joining extra tables:</li>
+<li>Static/non-SCD2 tables (e.g., <code>silver.order_header</code>) can be joined directly on business keys (e.g., <code>order_id</code>).</li>
+<li>SCD2 dimensions (e.g., <code>silver.customer_segment_scd2</code>) must be joined as-of the change point using a validity-window predicate: <code>cp.__timestamp between seg.__valid_from and seg.__valid_to</code>.</li>
+<li>
+<p>If your derived attribute can also disappear (e.g., no remaining items), the 'delete' operation correctly closes the last interval for that Gold key.</p>
+</li>
+<li>
+<p>Fact options: table options, clustering, properties, and Spark options:</p>
+</li>
 </ul>
 <div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
