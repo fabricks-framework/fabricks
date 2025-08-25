@@ -329,7 +329,6 @@ left join silver.order_header oh
 left join silver.customer_segment_scd2 seg
   on oh.customer_id = seg.customer_id
   and cp.__timestamp between seg.__valid_from and seg.__valid_to
-group by cp.__key, oh.customer_id, seg.segment, cp.__operation, cp.__timestamp
 ```
 
 *Notes*
