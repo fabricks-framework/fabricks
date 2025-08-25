@@ -1145,7 +1145,7 @@
 <h1 id="runtime-configuration">Runtime Configuration<a class="headerlink" href="#runtime-configuration" title="Permanent link">&para;</a></h1>
 <p>The Fabricks runtime is the folder where your Lakehouse project lives (configs, SQL, jobs, UDFs, extenders, views). This page explains how to point Fabricks to your runtime, how to structure it, and how to configure schedules and step paths.</p>
 <h2 id="pointing-to-your-runtime">Pointing to your runtime<a class="headerlink" href="#pointing-to-your-runtime" title="Permanent link">&para;</a></h2>
-<p>Configure Fabricks in your project&#39;s <code>pyproject.toml</code>:</p>
+<p>Configure Fabricks in your project's <code>pyproject.toml</code>:</p>
 <div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[tool.fabricks]</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">runtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;tests/integration/runtime&quot;</span><span class="w">          </span><span class="c1"># Path to your runtime (jobs, SQL, configs)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">notebooks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;fabricks/api/notebooks&quot;</span><span class="w">           </span><span class="c1"># Notebook helpers shipped with Fabricks</span>
