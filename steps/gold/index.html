@@ -435,15 +435,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#related" class="md-nav__link">
-    <span class="md-ellipsis">
-      Related
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -910,15 +901,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#related" class="md-nav__link">
-    <span class="md-ellipsis">
-      Related
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1287,7 +1269,8 @@
 <span class="k">left</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="w"> </span><span class="k">between</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_from</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_to</span>
 </code></pre></div>
 
-<p>When to model SCD2 in Gold (different grain)</p>
+<hr />
+<h1 id="when-to-model-scd2-in-gold-different-grain">When to model SCD2 in Gold (different grain)<a class="headerlink" href="#when-to-model-scd2-in-gold-different-grain" title="Permanent link">&para;</a></h1>
 <ul>
 <li>Use SCD2 in Gold when the base SCD2 tables do not align with the required consumption grain, and you need to derive a slowly changing history at a coarser/different grain (e.g., roll up line-item SCD2 to order-level SCD2, or derive a customer segment SCD2 from underlying attribute histories).</li>
 </ul>
@@ -1340,7 +1323,6 @@
 <span class="k">left</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">customer_segment_scd2</span><span class="w"> </span><span class="n">seg</span>
 <span class="w">  </span><span class="k">on</span><span class="w"> </span><span class="n">oh</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">seg</span><span class="p">.</span><span class="n">customer_id</span>
 <span class="w">  </span><span class="k">and</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">__timestamp</span><span class="w"> </span><span class="k">between</span><span class="w"> </span><span class="n">seg</span><span class="p">.</span><span class="n">__valid_from</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">seg</span><span class="p">.</span><span class="n">__valid_to</span>
-<span class="k">group</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">__key</span><span class="p">,</span><span class="w"> </span><span class="n">oh</span><span class="p">.</span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">seg</span><span class="p">.</span><span class="n">segment</span><span class="p">,</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">__operation</span><span class="p">,</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">__timestamp</span>
 </code></pre></div>
 
 <p><em>Notes</em></p>
@@ -1351,12 +1333,11 @@
 <li>Joining extra tables:</li>
 <li>Static/non-SCD2 tables (e.g., <code>silver.order_header</code>) can be joined directly on business keys (e.g., <code>order_id</code>).</li>
 <li>SCD2 dimensions (e.g., <code>silver.customer_segment_scd2</code>) must be joined as-of the change point using a validity-window predicate: <code>cp.__timestamp between seg.__valid_from and seg.__valid_to</code>.</li>
-<li>
-<p>If your derived attribute can also disappear (e.g., no remaining items), the 'delete' operation correctly closes the last interval for that Gold key.</p>
-</li>
-<li>
-<p>Fact options: table options, clustering, properties, and Spark options:</p>
-</li>
+<li>If your derived attribute can also disappear (e.g., no remaining items), the 'delete' operation correctly closes the last interval for that Gold key.</li>
+</ul>
+<hr />
+<ul>
+<li>Fact options: table options, clustering, properties, and Spark options:</li>
 </ul>
 <div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
