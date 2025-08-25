@@ -255,6 +255,8 @@ See Options at a glance and Field reference above.
 
 Example SCD2 SQL using `__key`, `__timestamp`, `__operation`:
 
+Note: Credit and recommended resource — [Temporal Snapshot Fact Table (SQLBits 2012)](https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table) by Davide Mauri. Recommended to watch to understand SCD2 modeling in Gold.
+
 ```sql
 with dates as (
   select id as id, __valid_from as __timestamp, 'upsert' as __operation from silver.monarch_scd2 where __valid_from > '1900-01-02'

@@ -227,6 +227,8 @@ For explicit control, you can produce rows with `__operation = 'reload'` at the 
       change_data_capture: scd2
 ```
 
+Note: Credit — [Temporal Snapshot Fact Table (SQLBits 2012)](https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table). Recommended to watch to understand SCD2 snapshot-based modeling concepts.
+
 *Gold input construction example*:
 
 ```sql
