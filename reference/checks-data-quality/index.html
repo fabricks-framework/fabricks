@@ -324,7 +324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/gold/" class="md-nav__link">
+      <a href="../../steps/gold.md" class="md-nav__link">
         
   
   
@@ -894,20 +894,19 @@
 <p>Fabricks provides built-in mechanisms to validate data before and/or after a job runs. Checks can enforce row counts, equality constraints, and custom SQL contracts that return actions and messages.</p>
 <h2 id="configuring-checks">Configuring checks<a class="headerlink" href="#configuring-checks" title="Permanent link">&para;</a></h2>
 <p>Enable checks per job using <code>check_options</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
-<span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check</span>
-<span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max_rows</span>
-<span class="w">    </span><span class="nt">options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> mode</span><span class="p">:</span><span class="w"> </span><span class="nv">complete</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="w">    </span><span class="nt">check_options</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">pre_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">         </span><span class="c1"># run checks before writing</span>
-<span class="w">      </span><span class="nt">post_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">        </span><span class="c1"># run checks after writing</span>
-<span class="w">      </span><span class="nt">min_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">          </span><span class="c1"># minimum expected row count</span>
-<span class="w">      </span><span class="nt">max_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span><span class="w">       </span><span class="c1"># maximum expected row count</span>
-<span class="w">      </span><span class="nt">count_must_equal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fabricks.dummy</span><span class="w">  </span><span class="c1"># enforce row count equality with another table</span>
-<span class="w">      </span><span class="nt">skip</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">           </span><span class="c1"># skip all checks if true</span>
-</code></pre></div>
-
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max_rows</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> mode</span><span class="p">:</span><span class="w"> </span><span class="nv">complete</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">check_options</span><span class="p">:</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">pre_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">         </span><span class="c1"># run checks before writing</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="nt">post_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">        </span><span class="c1"># run checks after writing</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">min_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">          </span><span class="c1"># minimum expected row count</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">max_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span><span class="w">       </span><span class="c1"># maximum expected row count</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">count_must_equal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fabricks.dummy</span><span class="w">  </span><span class="c1"># enforce row count equality with another table</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">skip</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">           </span><span class="c1"># skip all checks if true</span>
+</span></code></pre></div>
 <p>Supported options:
 - pre_run/post_run: Run checks around the execution of the job.
 - min_rows/max_rows: Row count bounds.
@@ -921,13 +920,12 @@
 - <code>__action</code>: either <code>'fail'</code> or <code>'warning'</code>
 - <code>__message</code>: human-readable message</p>
 <p>Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1">-- fail.pre_run.sql</span>
-<span class="k">select</span><span class="w"> </span><span class="ss">&quot;fail&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;Please don&#39;t fail on me :(&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
-
-<span class="c1">-- warning.post_run.sql</span>
-<span class="k">select</span><span class="w"> </span><span class="ss">&quot;warning&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;I want you to warn me !&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
-</code></pre></div>
-
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">-- fail.pre_run.sql</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">select</span><span class="w"> </span><span class="ss">&quot;fail&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;Please don&#39;t fail on me :(&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1">-- warning.post_run.sql</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">select</span><span class="w"> </span><span class="ss">&quot;warning&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;I want you to warn me !&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
+</span></code></pre></div>
 <h2 id="behavior-and-rollback">Behavior and rollback<a class="headerlink" href="#behavior-and-rollback" title="Permanent link">&para;</a></h2>
 <ul>
 <li>For physical tables (append/complete/update modes), a failed check triggers an automatic rollback to the previous successful version.</li>
@@ -945,7 +943,7 @@
 <li>Step references:</li>
 <li><a href="../../steps/bronze/">Bronze</a></li>
 <li><a href="../../steps/silver/">Silver</a></li>
-<li><a href="../../steps/gold/">Gold</a></li>
+<li><a href="../steps/gold.md">Gold</a></li>
 <li>Table properties and physical layout: <a href="../table-options/">Table Options</a></li>
 <li>Custom logic integration: <a href="../extenders-udfs-views/">Extenders, UDFs &amp; Views</a></li>
 </ul>
@@ -997,7 +995,7 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>

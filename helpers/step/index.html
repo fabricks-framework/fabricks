@@ -324,7 +324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/gold/" class="md-nav__link">
+      <a href="../../steps/gold.md" class="md-nav__link">
         
   
   
@@ -907,32 +907,28 @@
 <li>Execute selected actions in sequence</li>
 <li>Report progress/errors</li>
 </ul>
-<p>Core imports used:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.steps.get_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_step</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.context.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_LOGGER</span>
-</code></pre></div>
-
+<p>Core imports used:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.steps.get_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_step</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.context.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_LOGGER</span>
+</span></code></pre></div></p>
 <h2 id="typical-usage-in-a-databricks-notebook">Typical usage in a Databricks notebook<a class="headerlink" href="#typical-usage-in-a-databricks-notebook" title="Permanent link">&para;</a></h2>
-<p>1) Resolve the step:</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.steps.get_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_step</span>
-<span class="n">s</span> <span class="o">=</span> <span class="n">get_step</span><span class="p">(</span><span class="s2">&quot;gold&quot;</span><span class="p">)</span>  <span class="c1"># or &quot;bronze&quot;/&quot;silver&quot;</span>
-</code></pre></div>
-
-<p>2) Run actions based on widgets:</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Examples:</span>
-<span class="n">s</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">update_dependencies</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">progress_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">s</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">s</span><span class="o">.</span><span class="n">update_dependencies</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sales&quot;</span><span class="p">,</span> <span class="s2">&quot;finance&quot;</span><span class="p">],</span> <span class="n">progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">s</span><span class="o">.</span><span class="n">create</span><span class="p">()</span>
-<span class="c1"># Cleanup if required:</span>
-<span class="c1"># s.drop()</span>
-</code></pre></div>
-
-<p>3) To inspect jobs and dependencies:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">jobs_df</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get_jobs</span><span class="p">()</span>
-<span class="n">deps_df</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get_dependencies</span><span class="p">(</span><span class="n">progress_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="s2">&quot;sales&quot;</span><span class="p">)</span>
-</code></pre></div>
-
+<p>1) Resolve the step:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.steps.get_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_step</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">s</span> <span class="o">=</span> <span class="n">get_step</span><span class="p">(</span><span class="s2">&quot;gold&quot;</span><span class="p">)</span>  <span class="c1"># or &quot;bronze&quot;/&quot;silver&quot;</span>
+</span></code></pre></div></p>
+<p>2) Run actions based on widgets:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Examples:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">s</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">update_dependencies</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">progress_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">s</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">s</span><span class="o">.</span><span class="n">update_dependencies</span><span class="p">(</span><span class="n">topic</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sales&quot;</span><span class="p">,</span> <span class="s2">&quot;finance&quot;</span><span class="p">],</span> <span class="n">progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">s</span><span class="o">.</span><span class="n">create</span><span class="p">()</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Cleanup if required:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># s.drop()</span>
+</span></code></pre></div></p>
+<p>3) To inspect jobs and dependencies:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">jobs_df</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get_jobs</span><span class="p">()</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">deps_df</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get_dependencies</span><span class="p">(</span><span class="n">progress_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">topic</span><span class="o">=</span><span class="s2">&quot;sales&quot;</span><span class="p">)</span>
+</span></code></pre></div></p>
 <h2 id="methods-explained-from-core">Methods explained (from core)<a class="headerlink" href="#methods-explained-from-core" title="Permanent link">&para;</a></h2>
 <p>Below is a summary of what each step-level method does in the Fabricks core, as implemented by <code>BaseStep</code>. References indicate where behaviors are implemented.</p>
 <ul>
@@ -1054,7 +1050,7 @@
 </ul>
 <h2 id="related-topics">Related topics<a class="headerlink" href="#related-topics" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Steps: <a href="../../steps/bronze/">Bronze</a> • <a href="../../steps/silver/">Silver</a> • <a href="../../steps/gold/">Gold</a></li>
+<li>Steps: <a href="../../steps/bronze/">Bronze</a> • <a href="../../steps/silver/">Silver</a> • <a href="../steps/gold.md">Gold</a></li>
 <li>Runtime overview and sample runtime: <a href="../../runtime/">Runtime</a></li>
 <li>Checks &amp; Data Quality: <a href="../../reference/checks-data-quality/">Checks and Data Quality</a></li>
 <li>Table options and storage layout: <a href="../../reference/table-options/">Table Options</a></li>
@@ -1108,7 +1104,7 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
