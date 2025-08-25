@@ -129,4 +129,4 @@ References:
 - Runtime overview and sample runtime: [Runtime](../runtime.md)
 - Checks & Data Quality: [Checks and Data Quality](../reference/checks-data-quality.md)
 - Table options and storage layout: [Table Options](../reference/table-options.md)
-- Extenders, UDFs & Views: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+- Extenders, UDFs & Views: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)

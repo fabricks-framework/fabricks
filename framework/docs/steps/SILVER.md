@@ -60,7 +60,7 @@ The Silver step standardizes and enriches data, and applies CDC (SCD1/SCD2) if c
 - *Extensibility*
     - **extender**: Apply a Python extender to the DataFrame.
     - **extender_options**: Mapping of arguments passed to the extender.
-  - See also: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+  - See also: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
 
 - Checks
   - check_options: Configure DQ checks (e.g., `pre_run`, `post_run`, `max_rows`, `min_rows`, `count_must_equal`, `skip`). See [Checks & Data Quality](../reference/checks-data-quality.md)
@@ -201,7 +201,7 @@ See Options at a glance and Field reference above.
 
 - Next steps: [Gold Step](./gold.md), [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
-- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
 - Sample runtime: [Sample runtime](../runtime.md#sample-runtime)
 
 Special characters in column names are preserved (see `prince.special_char`).

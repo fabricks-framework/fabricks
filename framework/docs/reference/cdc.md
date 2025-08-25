@@ -318,5 +318,5 @@ Gold SCD1 update with incremental timestamp
 ## Related
 
 - Steps: [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
-- Reference: [Table Options](./table-options.md), [Extenders, UDFs & Views](./extenders-udfs-views.md)
+- Reference: [Table Options](./table-options.md), [Extenders, UDFs & Parsers](./extenders-udfs-parsers.md)
 - Sample runtime: [Sample runtime](../runtime.md#sample-runtime)

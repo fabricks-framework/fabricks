@@ -52,7 +52,8 @@ nav:
     - Change Data Capture (CDC): 'reference/cdc.md'
     - Checks & Data Quality: 'reference/checks-data-quality.md'
     - Table Options: 'reference/table-options.md'
-    - Extenders, UDFs & Views: 'reference/extenders-udfs-views.md'
+    - Extenders, UDFs & Parsers: 'reference/extenders-udfs-parsers.md'
+    - Views: 'reference/views.md'
   - Helpers:
     - Initialize: 'helpers/init.md'
     - Job: 'helpers/job.md'

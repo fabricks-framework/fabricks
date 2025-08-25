@@ -78,11 +78,11 @@ Minimal example
 
 - extender: Apply a Python extender to the ingested DataFrame.
 - extender_options: Mapping of arguments passed to the extender.
-- See also: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+- See also: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
 
 #### Related
 
 - Next steps: [Silver Step](./silver.md), [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
-- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
 - Sample runtime: [Sample runtime](../runtime.md#sample-runtime)

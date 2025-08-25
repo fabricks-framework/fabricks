@@ -44,8 +44,9 @@ Read the  reference → [Gold Step](steps/gold.md)
 - Project configuration, schedules, and structure → [Runtime](runtime.md)
 - Data quality and rollback behavior → [Checks & Data Quality](reference/checks-data-quality.md)
 - Table properties, clustering, and layout → [Table Options](reference/table-options.md)
-- Custom logic and reusable SQL assets → [Extenders, UDFs & Views](reference/extenders-udfs-views.md)
+- Custom logic and reusable SQL assets → [Extenders, UDFs & Views](reference/extenders-udfs-parsers.md)
 - Change Data Capture (CDC) → [CDC](reference/cdc.md)
+- Views → [Views](reference/views.md)
 
 ---
 

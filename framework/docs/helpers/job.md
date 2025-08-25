@@ -138,4 +138,4 @@ Below is a summary of what each job-level method does in the Fabricks core, as i
 - Runtime overview and sample runtime: [Runtime](../runtime.md)
 - Checks & Data Quality: [Checks and Data Quality](../reference/checks-data-quality.md)
 - Table options and storage layout: [Table Options](../reference/table-options.md)
-- Extenders, UDFs & Views: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+- Extenders, UDFs & Views: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)

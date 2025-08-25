@@ -708,5 +708,5 @@ Notes
 
 - Next steps: [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
-- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-views.md)
+- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
 - Sample runtime: [Sample runtime](../runtime.md#sample-runtime)

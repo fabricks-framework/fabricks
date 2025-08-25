@@ -1,9 +1,8 @@
-# Extenders, UDFs, and Views
+# Extenders, UDFs, and Parsers
 
 This reference explains how to extend Fabricks with custom Python code and reusable SQL assets:
 - Extenders: Python functions that transform a Spark DataFrame before it is written.
 - UDFs: User-defined functions you register on the Spark session and use in SQL.
-- Views: Reusable SQL views you ship with your runtime and reference from jobs.
 - Parsers: Source-specific readers/cleaners that return a DataFrame (optional, advanced).
 
 Use these to encapsulate business logic, reuse patterns, and keep SQL jobs focused and readable.
@@ -85,20 +84,7 @@ Notes:
 
 ---
 
-## Views
-
-Views package reusable SQL logic you can reference across jobs.
-
-- Location: Place them under your runtime, e.g., `fabricks/views`.
-- Usage: Reference them directly in SQL of downstream jobs:
-  ```sql
-  select * from fabricks.views.dim_calendar
-  ```
-- Keep views small and well-documented; use them to standardize joins, filters, and derivations.
-
----
-
-## Parsers (optional)
+## Parsers
 
 Parsers read and lightly clean raw data. They return a DataFrame and should not write output or mutate state.
 
