@@ -347,6 +347,207 @@ left join silver.customer_segment_scd2 seg
   - SCD2 dimensions (e.g., `silver.customer_segment_scd2`) must be joined as-of the change point using a validity-window predicate: `cp.__timestamp between seg.__valid_from and seg.__valid_to`.
 - If your derived attribute can also disappear (e.g., no remaining items), the 'delete' operation correctly closes the last interval for that Gold key.
 
+## SCD2 with Aggregation Example (composite keys: order_id × customer_id)
+
+This example demonstrates how to derive a Gold SCD2 stream with aggregation at a different grain than the source, by:
+- Computing change points (upsert at interval starts, delete at terminal interval ends) at the target business key grain.
+- Aggregating measures as of each change point over all source SCD2 segments that are valid at that timestamp.
+- Zeroing out measures at delete timestamps to correctly close intervals.
+
+```sql
+with
+    -- 1) Establish target business key for Gold grain (order_id × customer_id)
+    source_with_business_key as (
+        select
+            concat_ws('*', order_id, customer_id) as composite_business_key,
+            *
+        from silver.order_item_scd2
+    ),
+
+    -- 2) Identify terminal segments at the target grain
+    --    For terminal segments we will emit a 'delete' change point at __valid_to.
+    scd2_segments as (
+        select
+            if(
+                coalesce(
+                    lead(composite_business_key) over (
+                        partition by __key
+                        order by __valid_from
+                    ),
+                    composite_business_key
+                ) = composite_business_key,
+                __is_deleted,
+                true
+            ) as is_terminal_segment,
+            *
+        from source_with_business_key
+    ),
+
+    -- 3) Build change points at the Gold grain:
+    --    - 'upsert' at each __valid_from
+    --    - 'delete' at __valid_to only for terminal segments
+    change_points as (
+        select
+            order_id,
+            customer_id,
+            __valid_from as change_timestamp,
+            'upsert' as change_op
+        from scd2_segments
+
+        union
+
+        select
+            order_id,
+            customer_id,
+            __valid_to as change_timestamp,
+            'delete' as change_op
+        from scd2_segments
+        where is_terminal_segment
+    ),
+
+    -- 4) Aggregate measures as of each change point over active segments
+    snapshot_aggregates as (
+        select
+            concat_ws('*', d.order_id, d.customer_id) as __key,
+            d.order_id,
+            d.customer_id,
+            d.change_timestamp as __timestamp,
+            'upsert' as __operation,
+
+            sum(
+                if(d.change_op = 'delete' and d.change_timestamp = r.__valid_to, 0, r.item_qty)
+            ) as total_item_qty,
+
+            sum(
+                if(d.change_op = 'delete' and d.change_timestamp = r.__valid_to, 0, r.item_amount)
+            ) as total_item_amount,
+
+            sum(
+                if(d.change_op = 'delete' and d.change_timestamp = r.__valid_to, 0, r.item_cost)
+            ) as total_item_cost,
+
+            sum(
+                if(d.change_op = 'delete' and d.change_timestamp = r.__valid_to, 0, r.pending_item_qty)
+            ) as pending_total_item_qty,
+
+            sum(
+                if(d.change_op = 'delete' and d.change_timestamp = r.__valid_to, 0, r.pending_item_amount)
+            ) as pending_total_item_amount,
+
+            sum(
+                if(d.change_op = 'delete' and d.change_timestamp = r.__valid_to, 0, r.pending_item_cost)
+            ) as pending_total_item_cost
+        from change_points d
+        inner join scd2_segments r
+            on d.change_timestamp between r.__valid_from and r.__valid_to
+           and d.customer_id = r.customer_id
+           and d.order_id = r.order_id
+        group by d.order_id, d.customer_id, d.change_timestamp, d.change_op
+    )
+select *
+from snapshot_aggregates;
+```
+
+Notes
+- composite_business_key ensures a clear target-grain identity for reasoning about terminal segments.
+- is_terminal_segment marks final intervals at the target grain, causing a 'delete' change point at __valid_to.
+- At delete timestamps, measures are zeroed to close the interval cleanly and avoid double counting.
+- The output conforms to Gold SCD2 inputs: (__key, __timestamp, __operation), with __operation fixed to 'upsert' as Fabricks handles rectification in update mode.
+- Adjust function names (if/concat_ws) to your SQL engine equivalents if needed.
+
+---
+
+## SCD2 header-line change points with header closure (order_id × order_line_id)
+
+This example shows how to generate SCD2 change points when combining header and line SCD2 sources, including:
+- Emitting upserts at each validity start across header and lines.
+- Emitting a delete for the header-only row as soon as a corresponding line exists (to close the sentinel header row).
+- Emitting deletes at validity end for deleted intervals.
+- Joining an additional SCD2 stream (e.g., item price) to ensure change points also reflect price boundaries.
+
+```sql
+with
+  -- 1) Gather validity boundaries across header, line, and related SCD2 (price)
+  hdr_line_dates as (
+    select h.order_id, l.order_line_id, h.__valid_to, h.__valid_from, h.__is_deleted
+    from silver.order_header_scd2 h
+    left join silver.order_line_scd2 l
+      on h.order_id = l.order_id
+      and h.__valid_from between l.__valid_from and l.__valid_to
+
+    union
+
+    select order_id, order_line_id, __valid_to, __valid_from, __is_deleted
+    from silver.order_line_scd2
+
+    union
+
+    -- ensure we have entries for the latest price window intersecting current header/line
+    select h.order_id, l.order_line_id, ip.__valid_to, ip.__valid_from, false
+    from silver.order_header_scd2__current h
+    inner join silver.order_line_scd2__current l
+      on h.order_id = l.order_id
+    inner join silver.item_price_scd2 ip
+      on ip.item_id = l.item_id
+     and ip.price_list_id = h.price_list_id
+     and ip.__is_current
+  ),
+
+  -- 2) Build change points
+  change_points as (
+    -- upsert at each validity start
+    select order_id, order_line_id, __valid_from as __timestamp, 'upsert' as __operation
+    from hdr_line_dates
+
+    union
+
+    -- as soon as a line exists, close the header-only row (order_line_id is NULL sentinel)
+    select order_id, null as order_line_id, __valid_from as __timestamp, 'delete' as __operation
+    from hdr_line_dates
+    where order_line_id is not null
+
+    union
+
+    -- delete at validity end for deleted intervals
+    select order_id, order_line_id, __valid_to as __timestamp, 'delete' as __operation
+    from hdr_line_dates
+    where __is_deleted
+  )
+
+-- 3) Project attributes as of each change point
+select
+  concat_ws('*', p.order_id, coalesce(p.order_line_id, -1)) as __key,
+  p.order_id,
+  p.order_line_id,
+
+  -- header attributes (examples)
+  h.customer_id,
+  h.price_list_id,
+  h.order_date,
+
+  -- line attributes (examples)
+  l.item_id,
+  l.quantity,
+  l.unit_price,
+
+  -- CDC fields
+  p.__operation,
+  p.__timestamp
+from change_points p
+left join silver.order_header_scd2 h
+  on p.order_id = h.order_id
+ and p.__timestamp between h.__valid_from and h.__valid_to
+left join silver.order_line_scd2 l
+  on p.order_id = l.order_id
+ and coalesce(p.order_line_id, -1) = coalesce(l.order_line_id, -1)
+ and p.__timestamp between l.__valid_from and l.__valid_to
+```
+
+Notes
+- The null-sentinel header row (order_line_id = null -> coerced to -1 in __key) is closed via a 'delete' when any line appears at the same boundary.
+- Additional SCD2 inputs (e.g., item_price_scd2) can be unioned into the dates set to force change points whenever related dimensions change.
+- The output stream conforms to Gold SCD2 input fields: __key, __timestamp, __operation.
+
 ---
 
 - Fact options: table options, clustering, properties, and Spark options:
