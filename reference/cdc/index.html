@@ -1,0 +1,1309 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../../runtime/">
+      
+      
+        <link rel="next" href="../checks-data-quality/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+    
+    
+      
+        <title>Change Data Capture (CDC) - Fabricks</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#change-data-capture-cdc" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Fabricks" class="md-header__button md-logo" aria-label="Fabricks" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fabricks
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Change Data Capture (CDC)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/fabricks-framework/fabricks" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fabricks-framework/fabricks
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Fabricks" class="md-nav__button md-logo" aria-label="Fabricks" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Fabricks
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/fabricks-framework/fabricks" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    fabricks-framework/fabricks
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Steps
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Steps
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/bronze/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Bronze
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/silver/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Silver
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gold/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Gold
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Runtime
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Change Data Capture (CDC)
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Change Data Capture (CDC)
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategies
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-enable-cdc" class="md-nav__link">
+    <span class="md-ellipsis">
+      How to enable CDC
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Input contracts
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#merge-semantics-under-the-hood" class="md-nav__link">
+    <span class="md-ellipsis">
+      Merge semantics (under the hood)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scd1-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      SCD1 details
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reload-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reload operation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scd2-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      SCD2 details
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keys-and-__key" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keys and __key
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operational notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      Related
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checks-data-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Checks & Data Quality
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../table-options/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Table Options
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extenders-udfs-views/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Extenders, UDFs & Views
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Helpers
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Helpers
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helpers/init/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Initialize
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helpers/job/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Job
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helpers/step/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Step
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    License
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release-notes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Release Notes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategies
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-enable-cdc" class="md-nav__link">
+    <span class="md-ellipsis">
+      How to enable CDC
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#input-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Input contracts
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#merge-semantics-under-the-hood" class="md-nav__link">
+    <span class="md-ellipsis">
+      Merge semantics (under the hood)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scd1-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      SCD1 details
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reload-operation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reload operation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scd2-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      SCD2 details
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keys-and-__key" class="md-nav__link">
+    <span class="md-ellipsis">
+      Keys and __key
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operational notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related" class="md-nav__link">
+    <span class="md-ellipsis">
+      Related
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="change-data-capture-cdc">Change Data Capture (CDC)<a class="headerlink" href="#change-data-capture-cdc" title="Permanent link">&para;</a></h1>
+<p>Fabricks provides built-in Change Data Capture (CDC) patterns to keep downstream tables synchronized with upstream changes using SQL-first pipelines. CDC is enabled per job via <code>options.change_data_capture</code> and implemented by generated MERGE/INSERT statements driven by small helper columns.</p>
+<p>This page explains the supported CDC strategies, required inputs, merge semantics, and examples.</p>
+<hr />
+<h2 id="strategies">Strategies<a class="headerlink" href="#strategies" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Description</th>
+<th>Convenience views</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>nocdc</code></td>
+<td>No CDC; writes the result as-is.</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>scd1</code></td>
+<td>Tracks current vs deleted; maintains flags <code>__is_current</code>, <code>__is_deleted</code>.</td>
+<td><code>{table}__current</code></td>
+</tr>
+<tr>
+<td><code>scd2</code></td>
+<td>Slowly Changing Dimension Type 2: validity windows with <code>__valid_from</code>, <code>__valid_to</code>.</td>
+<td><code>{table}__current</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Silver jobs commonly produce conformed datasets with optional CDC applied.</li>
+<li>Gold jobs typically consume CDC tables and may perform additional merges.</li>
+</ul>
+<p>See also:
+- Silver step reference: <a href="../../steps/silver/#cdc-strategies">Silver</a>
+- Gold step reference: <a href="../../steps/gold/#cdc-input-fields-for-gold-jobs">Gold</a></p>
+<hr />
+<h2 id="how-to-enable-cdc">How to enable CDC<a class="headerlink" href="#how-to-enable-cdc" title="Permanent link">&para;</a></h2>
+<p>Set the CDC strategy in the job options:</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
+<span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">demo</span>
+<span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+<span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+<span class="w">      </span><span class="nt">parents</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">bronze.demo_source</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p>For Gold:</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
+<span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd2</span>
+<span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd2</span>
+</code></pre></div>
+
+<p>Supported values: <code>nocdc</code>, <code>scd1</code>, <code>scd2</code>.</p>
+<hr />
+<h2 id="input-contracts">Input contracts<a class="headerlink" href="#input-contracts" title="Permanent link">&para;</a></h2>
+<p>Some helper columns govern CDC behavior. Fabricks generates additional internal helpers during processing.</p>
+<ul>
+<li>Gold jobs (consumer side):</li>
+<li>scd2 (required): <code>__key</code>, <code>__timestamp</code>, <code>__operation</code> with values <code>'upsert' | 'delete' | 'reload'</code>.</li>
+<li>scd1 (required): <code>__key</code>; optional <code>__timestamp</code> / <code>__operation</code> (<code>'upsert' | 'delete' | 'reload'</code>) for delete/rectify handling.</li>
+<li>Note: If <code>__operation</code> is absent in Gold SCD update jobs, Fabricks auto-injects <code>__operation = 'reload'</code> and enables rectification.</li>
+<li>Optional helpers used by merges:<ul>
+<li><code>__order_duplicate_by_asc</code> / <code>__order_duplicate_by_desc</code></li>
+<li><code>__identity</code> (when <code>table_options.identity: true</code>)</li>
+<li><code>__source</code> (to scope merges by logical source)</li>
+</ul>
+</li>
+<li>Silver jobs (producer side):</li>
+<li>Provide business keys through job-level <code>keys</code> (or compute a <code>__key</code>) to support downstream CDC.</li>
+<li>Silver can apply CDC directly and yields convenience views (e.g., <code>{table}__current</code>).</li>
+</ul>
+<p>Note
+- Memory outputs ignore columns that start with <code>__</code>.
+- Special characters in column names are preserved.</p>
+<p>See details in:
+- <a href="../../steps/gold/">Gold</a>
+- <a href="../../steps/silver/">Silver</a>
+- <a href="../table-options/">Table Options</a></p>
+<hr />
+<h2 id="merge-semantics-under-the-hood">Merge semantics (under the hood)<a class="headerlink" href="#merge-semantics-under-the-hood" title="Permanent link">&para;</a></h2>
+<p>Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The core logic lives in <code>fabricks.cdc</code>:</p>
+<ul>
+<li><code>Merger.get_merge_query</code> renders <code>templates/merge.sql.jinja</code> for the selected <code>change_data_capture</code> strategy.</li>
+<li>The framework computes internal columns such as:</li>
+<li><code>__merge_condition</code> — one of <code>'upsert' | 'delete' | 'update' | 'insert'</code> depending on strategy and inputs.</li>
+<li><code>__merge_key</code> — a synthetic key used to join against the target.</li>
+<li>You usually do not set these internal fields manually; they are derived from your inputs (<code>__key</code>, <code>__operation</code>, <code>__timestamp</code>) and job options.</li>
+</ul>
+<p>Join keys
+- If a <code>__key</code> column exists in the target, merges use <code>t.__key = s.__merge_key</code>.
+- Otherwise, the configured <code>keys</code> option is used to build an equality join on business keys.</p>
+<p>Source scoping
+- If <code>__source</code> exists in both sides, merges add <code>t.__source = s.__source</code> to support multi-source data in the same table.</p>
+<p>Soft delete vs hard delete (SCD1)
+- If the incoming data contains <code>__is_deleted</code>, the SCD1 template performs soft deletes:
+  - Sets <code>__is_current = false</code>, <code>__is_deleted = true</code> on delete.
+- If <code>__is_deleted</code> is absent, deletes are physical for SCD1.</p>
+<p>Timestamps and metadata
+- If the incoming data provides <code>__timestamp</code>, it is propagated to the target.
+- If the target has <code>__metadata</code>, the <code>updated</code> timestamp is set to the current time during updates/deletes.</p>
+<p>Identity and hash
+- If <code>__identity</code> is present and <code>table_options.identity: true</code>, it is persisted as part of the target schema.
+- If <code>__hash</code> is present, it is updated during upsert operations.</p>
+<p>Update filtering
+- <code>options.update_where</code> can constrain rows affected during merges (useful for limiting the scope of updates).</p>
+<p>Internals reference
+- <code>framework/fabricks/cdc/base/merger.py</code>
+- Templates under <code>framework/fabricks/cdc/templates/merge/*.sql.jinja</code></p>
+<hr />
+<h2 id="scd1-details">SCD1 details<a class="headerlink" href="#scd1-details" title="Permanent link">&para;</a></h2>
+<p>Behavior (see <code>merge/scd1.sql.jinja</code>):
+- Upsert (<code>__merge_condition = 'upsert'</code>): updates matching rows and inserts non‑matching rows.
+- Delete (<code>__merge_condition = 'delete'</code>):
+  - Soft delete if <code>__is_deleted</code> is part of the schema: sets <code>__is_current = false</code>, <code>__is_deleted = true</code>.
+  - Otherwise, performs a physical delete.</p>
+<p>Convenience view:
+- <code>{table}__current</code>: filters current (non‑deleted) rows for simplified consumption.</p>
+<p>Minimal Silver example:</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
+<span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monarch</span>
+<span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+<span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+</code></pre></div>
+
+<p>Gold consumption example:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Example: consuming current rows from SCD1 silver output</span>
+<span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">monarch</span>
+<span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd1__current</span>
+</code></pre></div>
+
+<hr />
+<h2 id="reload-operation">Reload operation<a class="headerlink" href="#reload-operation" title="Permanent link">&para;</a></h2>
+<p><code>'reload'</code> is a CDC input operation used as a reconciliation boundary. It is not a direct MERGE action; instead, it signals Fabricks to rectify the target table using the supplied snapshot at that timestamp.</p>
+<ul>
+<li>Purpose: mark a full or partial snapshot boundary so missing keys can be treated as deletes and present keys as upserts as needed.</li>
+<li>Auto-injection: when a Gold SCD job runs in <code>mode: update</code> and your SQL does not provide <code>__operation</code>, Fabricks injects <code>__operation = 'reload'</code> and turns on rectification.</li>
+<li>Silver behavior:</li>
+<li>If a batch contains <code>'reload'</code> after the target’s max timestamp, Silver enables rectification logic.</li>
+<li>In <code>mode: latest</code>, <code>'reload'</code> is not allowed and will be rejected.</li>
+<li>Gold behavior:</li>
+<li>Passing <code>reload=True</code> to a Gold job run triggers a full <code>complete</code> write for that run.</li>
+<li>Internals: rectification is computed in <code>framework/fabricks/cdc/templates/query/rectify.sql.jinja</code>, which computes next operations/windows around <code>'reload'</code> markers.</li>
+</ul>
+<p>Tip: You generally do not need to emit <code>'reload'</code> manually in Gold SCD update jobs; it is injected for you when <code>__operation</code> is missing. For explicit control, you can produce rows with <code>__operation = 'reload'</code> at the snapshot timestamp.</p>
+<hr />
+<h2 id="scd2-details">SCD2 details<a class="headerlink" href="#scd2-details" title="Permanent link">&para;</a></h2>
+<p>Behavior (see <code>merge/scd2.sql.jinja</code>):
+- Update (<code>__merge_condition = 'update'</code>): closes the current row by setting <code>__valid_to = __valid_from - 1 second</code>, <code>__is_current = false</code>. A subsequent insert creates the new current row.
+- Delete (<code>__merge_condition = 'delete'</code>): closes the current row and sets <code>__is_current = false</code> (and <code>__is_deleted = true</code> if soft delete is modeled).
+- Insert (<code>__merge_condition = 'insert'</code>): inserts a new current row.</p>
+<p>Required Gold inputs:
+- <code>__key</code>, <code>__timestamp</code>, <code>__operation</code> with values <code>'upsert' | 'delete' | 'reload'</code>.</p>
+<p>Reload notes:
+- <code>'reload'</code> marks a reconciliation boundary; Fabricks derives concrete actions (e.g., closing current rows, inserting new ones, deleting missing keys) across that boundary.
+- If you omit <code>__operation</code> in Gold SCD update jobs, Fabricks injects <code>'reload'</code> and enables rectification automatically.
+- In Silver:
+  - Presence of <code>'reload'</code> (beyond target’s max timestamp) enables rectification.
+  - <code>'reload'</code> is forbidden in <code>mode: latest</code>.</p>
+<p>Optional features:
+- <code>options.correct_valid_from</code>: adjusts start timestamps for validity windows.
+- <code>options.persist_last_timestamp</code>: persists last processed timestamp for incremental loads.</p>
+<p>Convenience view:
+- <code>{table}__current</code>: returns only the latest (current) rows per business key.</p>
+<p>Minimal Silver example:</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
+<span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monarch</span>
+<span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd2</span>
+<span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd2</span>
+</code></pre></div>
+
+<p>Gold input construction example:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Turn SCD2 changes into Gold input operations</span>
+<span class="k">with</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">__valid_from</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;upsert&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__operation</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">__valid_from</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">&#39;1900-01-02&#39;</span>
+<span class="w">  </span><span class="k">union</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">__valid_to</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;delete&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__operation</span>
+<span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">__is_deleted</span>
+<span class="p">)</span>
+<span class="k">select</span>
+<span class="w">  </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__key</span><span class="p">,</span>
+<span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">monarch</span><span class="p">,</span>
+<span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">doubleField</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">value</span><span class="p">,</span>
+<span class="w">  </span><span class="n">d</span><span class="p">.</span><span class="n">__operation</span><span class="p">,</span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">__operation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">interval</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">second</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span>
+<span class="k">from</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span><span class="n">d</span>
+<span class="k">left</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="n">s</span>
+<span class="w">  </span><span class="k">on</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="w"> </span><span class="k">between</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_from</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_to</span>
+</code></pre></div>
+
+<hr />
+<h2 id="keys-and-__key">Keys and <code>__key</code><a class="headerlink" href="#keys-and-__key" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Preferred: produce a stable <code>__key</code> in your SELECTs (e.g., UDF that hashes business keys).</li>
+<li>Alternative: configure <code>options.keys: [ ... ]</code> to specify business keys. Fabricks derives join predicates from these when <code>__key</code> is not present.</li>
+</ul>
+<p>Tip
+- When <code>table_options.identity: true</code>, include an <code>__identity</code> helper column in your SELECT to persist identity values. See <a href="../table-options/">Table Options</a>.</p>
+<hr />
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<p>Silver SCD1 with duplicates handling</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
+<span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">princess</span>
+<span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order_duplicate</span>
+<span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+<span class="w">      </span><span class="nt">order_duplicate_by</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">order_by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">desc</span>
+</code></pre></div>
+
+<p>Gold SCD1 update with incremental timestamp</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
+<span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+<span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">last_timestamp</span>
+<span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+<span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
+<span class="w">      </span><span class="nt">persist_last_timestamp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+
+<hr />
+<h2 id="operational-notes">Operational notes<a class="headerlink" href="#operational-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Streaming: where supported, <code>options.stream: true</code> enables incremental semantics.</li>
+<li>Parents: use <code>options.parents</code> to order upstream dependencies.</li>
+<li>Checks: configure quality gates via <code>options.check_options</code>. See <a href="../checks-data-quality/">Checks &amp; Data Quality</a>.</li>
+</ul>
+<hr />
+<h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Steps: <a href="../../steps/silver/">Silver</a>, <a href="../../steps/gold/">Gold</a></li>
+<li>Reference: <a href="../table-options/">Table Options</a>, <a href="../extenders-udfs-views/">Extenders, UDFs &amp; Views</a></li>
+<li>Sample runtime: <a href="../../runtime/#sample-runtime">Sample runtime</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
+      
+    
+  </body>
+</html>
