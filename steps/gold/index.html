@@ -1366,9 +1366,6 @@
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">        </span><span class="nt">delta.minReaderVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">        </span><span class="nt">delta.minWriterVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
 </span></code></pre></div></p>
-<p>More examples
-- Example config/SQL: <code>framework/examples/runtime/gold/gold/_config.example.yml</code>, <code>framework/examples/runtime/gold/gold/hello_world.sql</code>
-- Integration scenarios: <code>framework/tests/integration/runtime/gold/gold/</code> and <code>.../semantic/</code></p>
 <p>Dependencies
 <div class="language-sql highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span><span class="w"> </span><span class="n">cte</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span><span class="k">select</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="k">time</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">hour</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">gold</span><span class="p">.</span><span class="n">dim_time</span><span class="w"> </span><span class="n">d</span><span class="p">)</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">select</span>

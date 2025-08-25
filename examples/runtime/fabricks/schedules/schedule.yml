@@ -1,6 +1,0 @@
----
-- schedule:
-    name: example
-    options:
-      steps: [bronze, silver, transf, gold, semantic]
-
