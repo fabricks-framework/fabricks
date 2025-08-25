@@ -45,6 +45,7 @@ Read the  reference → [Gold Step](steps/gold.md)
 - Data quality and rollback behavior → [Checks & Data Quality](reference/checks-data-quality.md)
 - Table properties, clustering, and layout → [Table Options](reference/table-options.md)
 - Custom logic and reusable SQL assets → [Extenders, UDFs & Views](reference/extenders-udfs-views.md)
+- Change Data Capture (CDC) → [CDC](reference/cdc.md)
 
 ---
 
