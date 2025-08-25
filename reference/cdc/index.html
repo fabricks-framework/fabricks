@@ -1020,12 +1020,12 @@
 <tr>
 <td><code>scd1</code></td>
 <td>Tracks current vs deleted; maintains flags <code>__is_current</code>, <code>__is_deleted</code>.</td>
-<td><code>{table}__current</code></td>
+<td><code>{table}__current</code> in Silver</td>
 </tr>
 <tr>
 <td><code>scd2</code></td>
 <td>Slowly Changing Dimension Type 2: validity windows with <code>__valid_from</code>, <code>__valid_to</code>.</td>
-<td><code>{table}__current</code></td>
+<td><code>{table}__current</code> in Silver</td>
 </tr>
 </tbody>
 </table>
@@ -1064,7 +1064,9 @@
 <h2 id="input-contracts">Input contracts<a class="headerlink" href="#input-contracts" title="Permanent link">&para;</a></h2>
 <p>Some helper columns govern CDC behavior. Fabricks generates additional internal helpers during processing.</p>
 <ul>
-<li>Gold jobs (consumer side):<ul>
+<li>
+<p>Gold jobs (consumer side):</p>
+<ul>
 <li>scd2 (required): <code>__key</code>, <code>__timestamp</code>, <code>__operation</code> with values <code>'upsert' | 'delete' | 'reload'</code>.</li>
 <li>scd1 (required): <code>__key</code>; optional <code>__timestamp</code> / <code>__operation</code> (<code>'upsert' | 'delete' | 'reload'</code>) for delete/rectify handling.</li>
 <li>Note: If <code>__operation</code> is absent in Gold SCD update jobs, Fabricks auto-injects <code>__operation = 'reload'</code> and enables rectification.</li>
@@ -1076,7 +1078,9 @@
 </li>
 </ul>
 </li>
-<li>Silver jobs (producer side):<ul>
+<li>
+<p>Silver jobs (producer side):</p>
+<ul>
 <li>Provide business keys through job-level <code>keys</code> (or compute a <code>__key</code>) to support downstream CDC.</li>
 <li>Silver can apply CDC directly and yields convenience views (e.g., <code>{table}__current</code>).</li>
 </ul>
