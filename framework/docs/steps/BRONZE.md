@@ -29,11 +29,6 @@ Minimal example
       keys: [id]
 ```
 
-More examples
-- Example config: `framework/examples/runtime/bronze/_config.example.yml`
-- Integration scenarios: `framework/tests/integration/runtime/bronze/`
-
-
 ### Bronze options
 
 #### All Options at a glance

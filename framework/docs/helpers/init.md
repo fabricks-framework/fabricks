@@ -27,7 +27,7 @@ Python >=3.9,<4 is recommended; align with your Databricks LTS runtime.
 
 Fabricks discovers its runtime via either environment variables or [tool.fabricks] in your pyproject.toml. The core lookup logic is implemented in fabricks/context/runtime.py.
 
-Option A: Configure via pyproject.toml (preferred for repo-managed projects):
+*Option A*: Configure via pyproject.toml (preferred for repo-managed projects):
 ```toml
 [tool.fabricks]
 runtime = "path/to/your/runtime"                   # e.g., tests/integration/runtime or examples/runtime
@@ -38,7 +38,8 @@ debugmode = false                                  # optional
 config = "path/to/your/runtime/fabricks/conf.fabricks.yml"  # main runtime YAML
 ```
 
-Option B: Configure via environment variables (useful on clusters):
+*Option B*: Configure via environment variables (useful on clusters):
+
 - FABRICKS_RUNTIME: path to your runtime (jobs, SQL, configs)
 - FABRICKS_CONFIG: full path to your main conf.fabricks.yml (if not set, Fabricks tries to infer a conf.uc.<orgId>.yml)
 - FABRICKS_NOTEBOOKS: optional helper notebook path
@@ -83,7 +84,8 @@ armageddon(steps=["bronze", "silver", "gold"])  # multiple steps
 armageddon(steps=None)                        # default behavior, follow runtime config
 ```
 
-Notes:
+*Notes*:
+
 - armageddon will log progress using Fabricks DEFAULT_LOGGER. You can set logging level through FABRICKS_LOGLEVEL or tool.fabricks.loglevel.
 - Ensure your runtime conf (conf.fabricks.yml) is reachable via PATH_CONFIG and defines required path_options (udfs, parsers, extenders, views, schedules, requirements) and options (secret_scope, unity_catalog/catalog if applicable).
 - For Unity Catalog, set options.unity_catalog: true and options.catalog accordingly.

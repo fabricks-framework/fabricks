@@ -71,10 +71,7 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 
 ## Related topics
 
-- Step references:
-  - [Bronze](../steps/bronze.md)
-  - [Silver](../steps/silver.md)
-  - [Gold](../steps/gold.md)
+- Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
 - Data quality checks: [Checks & Data Quality](./checks-data-quality.md)
 - Custom logic integration: [Extenders, UDFs & Views](./extenders-udfs-views.md)
 - Runtime configuration: [Runtime](../runtime.md)

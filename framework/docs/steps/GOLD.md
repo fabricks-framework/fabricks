@@ -118,10 +118,6 @@ Semantic table
         delta.minWriterVersion: 5
 ```
 
-More examples
-- Example config/SQL: `framework/examples/runtime/gold/gold/_config.example.yml`, `framework/examples/runtime/gold/gold/hello_world.sql`
-- Integration scenarios: `framework/tests/integration/runtime/gold/gold/` and `.../semantic/`
-
 Dependencies
 ```sql
 with cte as (select d.time, d.hour from gold.dim_time d)

@@ -61,9 +61,6 @@ select "warning" as __action, "I want you to warn me !" as __message;
 
 ## Related topics
 
-- Step references:
-  - [Bronze](../steps/bronze.md)
-  - [Silver](../steps/silver.md)
-  - [Gold](../steps/gold.md)
+- Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
 - Table properties and physical layout: [Table Options](./table-options.md)
 - Custom logic integration: [Extenders, UDFs & Views](./extenders-udfs-views.md)

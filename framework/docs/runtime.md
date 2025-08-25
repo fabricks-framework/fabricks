@@ -4,7 +4,7 @@ The Fabricks runtime is the folder where your Lakehouse project lives (configs, 
 
 ## Pointing to your runtime
 
-Configure Fabricks in your project&#39;s `pyproject.toml`:
+Configure Fabricks in your project's `pyproject.toml`:
 
 ```toml
 [tool.fabricks]
@@ -155,10 +155,7 @@ How to use this sample
 
 ## Related topics
 
-- Step overviews and details:
-  - [Bronze](./steps/bronze.md)
-  - [Silver](./steps/silver.md)
-  - [Gold](./steps/gold.md)
+- Steps: [Bronze](steps/bronze.md) • [Silver](steps/silver.md) • [Gold](steps/gold.md)
 - Data quality checks and contracts: [Checks & Data Quality](./reference/checks-data-quality.md)
 - Table properties and physical layout: [Table Options](./reference/table-options.md)
 - Custom logic integration: [Extenders, UDFs & Views](./reference/extenders-udfs-views.md)

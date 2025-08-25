@@ -77,10 +77,6 @@ Minimal example
       parents: [bronze.demo_source]
 ```
 
-More examples
-- Example config: `framework/examples/runtime/silver/_config.example.yml`
-- Integration scenarios: `framework/tests/integration/runtime/silver/`
-
 ---
 
 ### Silver options

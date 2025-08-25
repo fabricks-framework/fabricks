@@ -88,8 +88,7 @@ Note
 
 See details in:
 
-- [Gold](../steps/gold.md)
-- [Silver](../steps/silver.md)
+- Steps: [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
 - [Table Options](./table-options.md)
 
 ---
