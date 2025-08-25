@@ -65,7 +65,7 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 
 - Scope: `table_options` apply to physical table modes (`append`, `complete`, `update`). They do not apply to `memory` mode (view-only).
 - CDC compatibility: Properties like `delta.enableChangeDataFeed` can be useful for change data capture downstream; set under `properties`.
-- Identity: When `identity: true` is enabled, the identity column is defined at create time using GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( [ START WITH start ] [ INCREMENT BY step ] ) ]; do not include `__identity` in your SELECT. Only include `__identity` when `identity` is not true. [Identity](https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using).
+- Identity: When `identity: true` is enabled, the identity column is defined at create time - See [Identity](https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using).
 - Layout vs performance: Start with `partition_by` on low-cardinality columns; add `zorder_by` for frequently filtered high-cardinality columns. Use Bloom filters selectively for point-lookups.
 - Defaults: You can specify step-level defaults in your runtime config and override them per job.
 
