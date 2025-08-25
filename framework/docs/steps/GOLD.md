@@ -273,6 +273,7 @@ left join silver.monarch_scd2 s on d.id = s.id and d.__timestamp between s.__val
 ```
 
 When to model SCD2 in Gold (different grain)
+
 - Use SCD2 in Gold when the base SCD2 tables do not align with the required consumption grain, and you need to derive a slowly changing history at a coarser/different grain (e.g., roll up line-item SCD2 to order-level SCD2, or derive a customer segment SCD2 from underlying attribute histories).
 
 Example: roll up line-item SCD2 (silver.order_item_scd2) to order-level SCD2 (total_amount by order_id)
@@ -329,7 +330,8 @@ left join silver.customer_segment_scd2 seg
 group by cp.__key, oh.customer_id, seg.segment, cp.__operation, cp.__timestamp
 ```
 
-Notes
+*Notes*
+
 - The change_points CTE promotes underlying SCD2 intervals to the desired Gold grain by emitting 'upsert' at each interval start and 'delete' at interval end (or for deleted keys).
 - At each change point, compute the Gold attributes as-of that timestamp. Fabricks will render the SCD2 merge using `__key`, `__timestamp`, and `__operation`.
 - Article/price changes: extra unions in change_points add `silver.article_scd2` validity boundaries (within each item window) so totals recompute when article prices change.
