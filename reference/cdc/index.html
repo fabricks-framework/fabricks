@@ -1174,12 +1174,12 @@
 <ul>
 <li>Purpose: mark a full or partial snapshot boundary so missing keys can be treated as deletes and present keys as upserts as needed.</li>
 <li>Auto-injection: when a Gold SCD job runs in <code>mode: update</code> and your SQL does not provide <code>__operation</code>, Fabricks injects <code>__operation = 'reload'</code> and turns on rectification.</li>
-<li>Silver behavior:<ul>
+<li><strong>Silver</strong> behavior:<ul>
 <li>If a batch contains <code>'reload'</code> after the target’s max timestamp, Silver enables rectification logic.</li>
 <li>In <code>mode: latest</code>, <code>'reload'</code> is not allowed and will be rejected.</li>
 </ul>
 </li>
-<li>Gold behavior:<ul>
+<li><strong>Gold</strong> behavior:<ul>
 <li>Passing <code>reload=True</code> to a Gold job run triggers a full <code>complete</code> write for that run.</li>
 </ul>
 </li>
