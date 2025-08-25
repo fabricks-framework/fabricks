@@ -14,6 +14,14 @@ Gold steps produce consumption-ready models, usually via SQL. Semantic applies t
 
 See Gold CDC input fields below for required `__` columns when using SCD.
 
+Quick CDC overview
+- Strategies: `nocdc`, `scd1`, `scd2`
+- SCD1: uses soft-delete flags `__is_current`, `__is_deleted`
+- SCD2: uses validity windows `__valid_from`, `__valid_to`
+- Gold inputs and operations: `__operation` values are `'upsert' | 'delete' | 'reload'`. If omitted for SCD in `mode: update`, Fabricks injects `'reload'` and enables rectification automatically
+
+See the CDC reference for details and examples: [Change Data Capture (CDC)](../reference/cdc.md)
+
 ## Options at a glance
 
 | Option                 | Purpose                                                                                          |
@@ -208,9 +216,10 @@ See Options at a glance and Field reference above.
 
 ### CDC input fields for gold jobs
 
-- scd2 (required): `__key`, `__timestamp`, `__operation` ('upsert'|'delete').
-- scd1 (required): `__key`; optional `__timestamp`/`__operation` for delete handling.
-- Optional helpers: `__order_duplicate_by_asc` / `__order_duplicate_by_desc`, `__identity` (with `table_options.identity: true`).
+- scd2 (required): `__key`, `__timestamp`, `__operation` ('upsert'|'delete'|'reload').
+- scd1 (required): `__key`; optional `__timestamp`/`__operation` ('upsert'|'delete'|'reload') for delete/rectify handling. If `__operation` is omitted for SCD in `mode: update`, Fabricks injects `'reload'` and enables rectification.
+- Optional helpers: `__order_duplicate_by_asc` / `__order_duplicate_by_desc`, `__identity`.
+- See: [Change Data Capture (CDC)](../reference/cdc.md) for full details and examples.
 
 
 

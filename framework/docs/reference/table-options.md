@@ -4,7 +4,7 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 
 ## Common options
 
-- **identity**: Adds `__identity` column support for Delta identity tables. Provide a deterministic identity value using the `__identity` helper column when writing.
+- **identity**: Enables a Delta identity column on the target table. If `identity: true`, the identity column is auto-created when the table is created.
 - **liquid_clustering**: Enables Delta Liquid Clustering where supported by the Databricks runtime.
 - **partition_by**: List of partition columns (e.g., `[date_id, country]`).
 - **zorder_by**: Columns used for Z-Ordering (improves data skipping).
@@ -65,7 +65,7 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 
 - Scope: `table_options` apply to physical table modes (`append`, `complete`, `update`). They do not apply to `memory` mode (view-only).
 - CDC compatibility: Properties like `delta.enableChangeDataFeed` can be useful for change data capture downstream; set under `properties`.
-- Identity: When `identity: true` is enabled, provide a deterministic `__identity` helper column in your SELECT statement to persist identity values.
+- Identity: When `identity: true` is enabled, the identity column is defined at create time using GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( [ START WITH start ] [ INCREMENT BY step ] ) ]; do not include `__identity` in your SELECT. Only include `__identity` when `identity` is not true. [Identity](https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using).
 - Layout vs performance: Start with `partition_by` on low-cardinality columns; add `zorder_by` for frequently filtered high-cardinality columns. Use Bloom filters selectively for point-lookups.
 - Defaults: You can specify step-level defaults in your runtime config and override them per job.
 

@@ -8,11 +8,11 @@ This page explains the supported CDC strategies, required inputs, merge semantic
 
 ## Strategies
 
-| Strategy | Description                                                                                   | Convenience views         |
-|---------|-----------------------------------------------------------------------------------------------|---------------------------|
-| `nocdc` | No CDC; writes the result as-is.                                                              | —                         |
-| `scd1`  | Tracks current vs deleted; maintains flags `__is_current`, `__is_deleted`.                    | `{table}__current`        |
-| `scd2`  | Slowly Changing Dimension Type 2: validity windows with `__valid_from`, `__valid_to`.         | `{table}__current`        |
+| Strategy | Description                                                                                   | Convenience views                  |
+|---------|-----------------------------------------------------------------------------------------------|-------------------------------------|
+| `nocdc` | No CDC; writes the result as-is.                                                              | —                                   |
+| `scd1`  | Tracks current vs deleted; maintains flags `__is_current`, `__is_deleted`.                    | `{table}__current` in Silver        |
+| `scd2`  | Slowly Changing Dimension Type 2: validity windows with `__valid_from`, `__valid_to`.         | `{table}__current` in Silver        |
 
 - Silver jobs commonly produce conformed datasets with optional CDC applied.
 - Gold jobs typically consume CDC tables and may perform additional merges.
@@ -64,8 +64,9 @@ Some helper columns govern CDC behavior. Fabricks generates additional internal 
     - Note: If `__operation` is absent in Gold SCD update jobs, Fabricks auto-injects `__operation = 'reload'` and enables rectification.
     - Optional helpers used by merges:
         - `__order_duplicate_by_asc` / `__order_duplicate_by_desc`
-        - `__identity` (when `table_options.identity: true`)
+        - `__identity` (only when `table_options.identity` is not true; if `identity: true`, the identity column is auto-created and you should not supply `__identity`)
         - `__source` (to scope merges by logical source)
+        
 - Silver jobs (producer side):
     - Provide business keys through job-level `keys` (or compute a `__key`) to support downstream CDC.
     - Silver can apply CDC directly and yields convenience views (e.g., `{table}__current`).
@@ -113,7 +114,8 @@ Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The co
 
 *Identity and hash*
 
-- If `__identity` is present and `table_options.identity: true`, it is persisted as part of the target schema.
+- If `table_options.identity: true`, the identity column is created automatically when the table is created.
+- If `table_options.identity` is not true and `__identity` is present in the input, it will be written as a regular column.
 - If `__hash` is present, it is updated during upsert operations.
 
 *Update filtering*
@@ -136,7 +138,7 @@ Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The co
     - Soft delete if `__is_deleted` is part of the schema: sets `__is_current = false`, `__is_deleted = true`.
     - Otherwise, performs a physical delete.
 
-*Convenience view*
+*Convenience view (in Silver)*
 
 - `{table}__current`: filters current (non‑deleted) rows for simplified consumption.
 
@@ -168,11 +170,11 @@ from silver.monarch_scd1__current
 
 - Purpose: mark a full or partial snapshot boundary so missing keys can be treated as deletes and present keys as upserts as needed.
 - Auto-injection: when a Gold SCD job runs in `mode: update` and your SQL does not provide `__operation`, Fabricks injects `__operation = 'reload'` and turns on rectification.
-- Silver behavior:
-    - If a batch contains `'reload'` after the target’s max timestamp, Silver enables rectification logic.
-    - In `mode: latest`, `'reload'` is not allowed and will be rejected.
-- Gold behavior:
-    - Passing `reload=True` to a Gold job run triggers a full `complete` write for that run.
+- **Silver** behavior:
+      - If a batch contains `'reload'` after the target’s max timestamp, Silver enables rectification logic.
+      - In `mode: latest`, `'reload'` is not allowed and will be rejected.
+- **Gold** behavior:
+      - Passing `reload=True` to a Gold job run triggers a full `complete` write for that run.
 - Internals: rectification is computed in `framework/fabricks/cdc/templates/query/rectify.sql.jinja`, which computes next operations/windows around `'reload'` markers.
 
 Tip:
@@ -255,7 +257,7 @@ left join silver.monarch_scd2 s
 
 *Tip*
 
-- When `table_options.identity: true`, include an `__identity` helper column in your SELECT to persist identity values. See [Table Options](./table-options.md).
+- Only provide `__identity` when `table_options.identity` is not true. If `identity: true`, the identity column is auto-created when the table is created; do not include `__identity`. See [Table Options](./table-options.md).
 
 ---
 
