@@ -272,7 +272,9 @@ from dates d
 left join silver.monarch_scd2 s on d.id = s.id and d.__timestamp between s.__valid_from and s.__valid_to
 ```
 
-When to model SCD2 in Gold (different grain)
+---
+
+# When to model SCD2 in Gold (different grain)
 
 - Use SCD2 in Gold when the base SCD2 tables do not align with the required consumption grain, and you need to derive a slowly changing history at a coarser/different grain (e.g., roll up line-item SCD2 to order-level SCD2, or derive a customer segment SCD2 from underlying attribute histories).
 
@@ -339,6 +341,8 @@ group by cp.__key, oh.customer_id, seg.segment, cp.__operation, cp.__timestamp
   - Static/non-SCD2 tables (e.g., `silver.order_header`) can be joined directly on business keys (e.g., `order_id`).
   - SCD2 dimensions (e.g., `silver.customer_segment_scd2`) must be joined as-of the change point using a validity-window predicate: `cp.__timestamp between seg.__valid_from and seg.__valid_to`.
 - If your derived attribute can also disappear (e.g., no remaining items), the 'delete' operation correctly closes the last interval for that Gold key.
+
+---
 
 - Fact options: table options, clustering, properties, and Spark options:
 
