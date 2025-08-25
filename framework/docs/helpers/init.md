@@ -40,10 +40,12 @@ config = "path/to/your/runtime/fabricks/conf.fabricks.yml"  # main runtime YAML
 
 *Option B*: Configure via environment variables (useful on clusters):
 
-- FABRICKS_RUNTIME: path to your runtime (jobs, SQL, configs)
-- FABRICKS_CONFIG: full path to your main conf.fabricks.yml (if not set, Fabricks tries to infer a conf.uc.<orgId>.yml)
-- FABRICKS_NOTEBOOKS: optional helper notebook path
-- FABRICKS_IS_JOB_CONFIG_FROM_YAML, FABRICKS_LOGLEVEL, FABRICKS_IS_DEBUGMODE: optional toggles
+```python
+# FABRICKS_RUNTIME: path to your runtime (jobs, SQL, configs)
+# FABRICKS_CONFIG: full path to your main conf.fabricks.yml (if not set, Fabricks tries to infer a conf.uc.<orgId>.yml)
+# FABRICKS_NOTEBOOKS: optional helper notebook path
+# FABRICKS_IS_JOB_CONFIG_FROM_YAML, FABRICKS_LOGLEVEL, FABRICKS_IS_DEBUGMODE: optional toggles
+```
 
 Example on Databricks (Cluster → Configuration → Advanced options → Environment variables):
 ```
