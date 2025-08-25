@@ -72,10 +72,12 @@ Some helper columns govern CDC behavior. Fabricks generates additional internal 
     - Silver can apply CDC directly and yields convenience views (e.g., `{table}__current`).
 
 Note
+
 - Memory outputs ignore columns that start with `__`.
 - Special characters in column names are preserved.
 
 See details in:
+
 - [Gold](../steps/gold.md)
 - [Silver](../steps/silver.md)
 - [Table Options](./table-options.md)
