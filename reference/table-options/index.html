@@ -951,7 +951,7 @@
 <ul>
 <li>Scope: <code>table_options</code> apply to physical table modes (<code>append</code>, <code>complete</code>, <code>update</code>). They do not apply to <code>memory</code> mode (view-only).</li>
 <li>CDC compatibility: Properties like <code>delta.enableChangeDataFeed</code> can be useful for change data capture downstream; set under <code>properties</code>.</li>
-<li>Identity: When <code>identity: true</code> is enabled, the identity column is defined at create time using GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [ ( [ START WITH start ] [ INCREMENT BY step ] ) ]; do not include <code>__identity</code> in your SELECT. Only include <code>__identity</code> when <code>identity</code> is not true. <a href="https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using">Identity</a>.</li>
+<li>Identity: When <code>identity: true</code> is enabled, the identity column is defined at create time - See <a href="https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using">Identity</a>.</li>
 <li>Layout vs performance: Start with <code>partition_by</code> on low-cardinality columns; add <code>zorder_by</code> for frequently filtered high-cardinality columns. Use Bloom filters selectively for point-lookups.</li>
 <li>Defaults: You can specify step-level defaults in your runtime config and override them per job.</li>
 </ul>
