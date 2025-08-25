@@ -10,6 +10,7 @@ nav:
     - Gold: 'steps/gold.md'
   - Runtime: 'runtime.md'
   - Reference:
+    - Change Data Capture (CDC): 'reference/cdc.md'
     - Checks & Data Quality: 'reference/checks-data-quality.md'
     - Table Options: 'reference/table-options.md'
     - Extenders, UDFs & Views: 'reference/extenders-udfs-views.md'
