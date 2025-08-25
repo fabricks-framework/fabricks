@@ -1086,13 +1086,17 @@
 </ul>
 </li>
 </ul>
-<p>Note
-- Memory outputs ignore columns that start with <code>__</code>.
-- Special characters in column names are preserved.</p>
-<p>See details in:
-- <a href="../../steps/gold/">Gold</a>
-- <a href="../../steps/silver/">Silver</a>
-- <a href="../table-options/">Table Options</a></p>
+<p>Note</p>
+<ul>
+<li>Memory outputs ignore columns that start with <code>__</code>.</li>
+<li>Special characters in column names are preserved.</li>
+</ul>
+<p>See details in:</p>
+<ul>
+<li><a href="../../steps/gold/">Gold</a></li>
+<li><a href="../../steps/silver/">Silver</a></li>
+<li><a href="../table-options/">Table Options</a></li>
+</ul>
 <hr />
 <h2 id="merge-semantics-under-the-hood">Merge semantics (under the hood)<a class="headerlink" href="#merge-semantics-under-the-hood" title="Permanent link">&para;</a></h2>
 <p>Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The core logic lives in <code>fabricks.cdc</code>:</p>
