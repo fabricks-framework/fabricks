@@ -272,6 +272,72 @@ from dates d
 left join silver.monarch_scd2 s on d.id = s.id and d.__timestamp between s.__valid_from and s.__valid_to
 ```
 
+When to model SCD2 in Gold (different grain)
+- Use SCD2 in Gold when the base SCD2 tables do not align with the required consumption grain, and you need to derive a slowly changing history at a coarser/different grain (e.g., roll up line-item SCD2 to order-level SCD2, or derive a customer segment SCD2 from underlying attribute histories).
+
+Example: roll up line-item SCD2 (silver.order_item_scd2) to order-level SCD2 (total_amount by order_id)
+```yaml
+- job:
+    step: gold
+    topic: order
+    item: total_amount_scd2
+    options:
+      mode: update
+      change_data_capture: scd2
+```
+
+```sql
+-- Derive Gold SCD2 change points (upserts/deletes) at the order_id grain
+with change_points as (
+  select order_id as __key, __valid_from as __timestamp, 'upsert' as __operation
+  from silver.order_item_scd2
+  union
+  select order_id as __key, __valid_to as __timestamp, 'delete' as __operation
+  from silver.order_item_scd2
+  where __is_deleted
+  union
+  -- article-level price change boundaries that fall within the order_item validity window
+  select oi.order_id as __key, a.__valid_from as __timestamp, 'upsert' as __operation
+  from silver.order_item_scd2 oi
+  join silver.article_scd2 a
+    on oi.article_id = a.article_id
+    and a.__valid_from between oi.__valid_from and oi.__valid_to
+  union
+  select oi.order_id as __key, a.__valid_to as __timestamp, 'upsert' as __operation
+  from silver.order_item_scd2 oi
+  join silver.article_scd2 a
+    on oi.article_id = a.article_id
+    and a.__valid_to between oi.__valid_from and oi.__valid_to
+)
+-- Compute the order-level attributes as of each change point
+select
+  cp.__key,
+  oh.customer_id as customer_id,
+  seg.segment as customer_segment,
+  sum(oi.amount) as total_amount,
+  cp.__operation,
+  if(cp.__operation = 'delete', cp.__timestamp + interval 1 second, cp.__timestamp) as __timestamp
+from change_points cp
+left join silver.order_item_scd2 oi
+  on cp.__key = oi.order_id
+  and cp.__timestamp between oi.__valid_from and oi.__valid_to
+left join silver.order_header oh
+  on cp.__key = oh.order_id
+left join silver.customer_segment_scd2 seg
+  on oh.customer_id = seg.customer_id
+  and cp.__timestamp between seg.__valid_from and seg.__valid_to
+group by cp.__key, oh.customer_id, seg.segment, cp.__operation, cp.__timestamp
+```
+
+Notes
+- The change_points CTE promotes underlying SCD2 intervals to the desired Gold grain by emitting 'upsert' at each interval start and 'delete' at interval end (or for deleted keys).
+- At each change point, compute the Gold attributes as-of that timestamp. Fabricks will render the SCD2 merge using `__key`, `__timestamp`, and `__operation`.
+- Article/price changes: extra unions in change_points add `silver.article_scd2` validity boundaries (within each item window) so totals recompute when article prices change.
+- Joining extra tables:
+  - Static/non-SCD2 tables (e.g., `silver.order_header`) can be joined directly on business keys (e.g., `order_id`).
+  - SCD2 dimensions (e.g., `silver.customer_segment_scd2`) must be joined as-of the change point using a validity-window predicate: `cp.__timestamp between seg.__valid_from and seg.__valid_to`.
+- If your derived attribute can also disappear (e.g., no remaining items), the 'delete' operation correctly closes the last interval for that Gold key.
+
 - Fact options: table options, clustering, properties, and Spark options:
 
 ```yaml
