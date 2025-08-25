@@ -1064,7 +1064,7 @@
 <h2 id="input-contracts">Input contracts<a class="headerlink" href="#input-contracts" title="Permanent link">&para;</a></h2>
 <p>Some helper columns govern CDC behavior. Fabricks generates additional internal helpers during processing.</p>
 <ul>
-<li>Gold jobs (consumer side):</li>
+<li>Gold jobs (consumer side):<ul>
 <li>scd2 (required): <code>__key</code>, <code>__timestamp</code>, <code>__operation</code> with values <code>'upsert' | 'delete' | 'reload'</code>.</li>
 <li>scd1 (required): <code>__key</code>; optional <code>__timestamp</code> / <code>__operation</code> (<code>'upsert' | 'delete' | 'reload'</code>) for delete/rectify handling.</li>
 <li>Note: If <code>__operation</code> is absent in Gold SCD update jobs, Fabricks auto-injects <code>__operation = 'reload'</code> and enables rectification.</li>
@@ -1074,9 +1074,13 @@
 <li><code>__source</code> (to scope merges by logical source)</li>
 </ul>
 </li>
-<li>Silver jobs (producer side):</li>
+</ul>
+</li>
+<li>Silver jobs (producer side):<ul>
 <li>Provide business keys through job-level <code>keys</code> (or compute a <code>__key</code>) to support downstream CDC.</li>
 <li>Silver can apply CDC directly and yields convenience views (e.g., <code>{table}__current</code>).</li>
+</ul>
+</li>
 </ul>
 <p>Note
 - Memory outputs ignore columns that start with <code>__</code>.
@@ -1090,41 +1094,65 @@
 <p>Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The core logic lives in <code>fabricks.cdc</code>:</p>
 <ul>
 <li><code>Merger.get_merge_query</code> renders <code>templates/merge.sql.jinja</code> for the selected <code>change_data_capture</code> strategy.</li>
-<li>The framework computes internal columns such as:</li>
+<li>The framework computes internal columns such as:<ul>
 <li><code>__merge_condition</code> — one of <code>'upsert' | 'delete' | 'update' | 'insert'</code> depending on strategy and inputs.</li>
 <li><code>__merge_key</code> — a synthetic key used to join against the target.</li>
+</ul>
+</li>
 <li>You usually do not set these internal fields manually; they are derived from your inputs (<code>__key</code>, <code>__operation</code>, <code>__timestamp</code>) and job options.</li>
 </ul>
-<p>Join keys
-- If a <code>__key</code> column exists in the target, merges use <code>t.__key = s.__merge_key</code>.
-- Otherwise, the configured <code>keys</code> option is used to build an equality join on business keys.</p>
-<p>Source scoping
-- If <code>__source</code> exists in both sides, merges add <code>t.__source = s.__source</code> to support multi-source data in the same table.</p>
-<p>Soft delete vs hard delete (SCD1)
-- If the incoming data contains <code>__is_deleted</code>, the SCD1 template performs soft deletes:
-  - Sets <code>__is_current = false</code>, <code>__is_deleted = true</code> on delete.
-- If <code>__is_deleted</code> is absent, deletes are physical for SCD1.</p>
-<p>Timestamps and metadata
-- If the incoming data provides <code>__timestamp</code>, it is propagated to the target.
-- If the target has <code>__metadata</code>, the <code>updated</code> timestamp is set to the current time during updates/deletes.</p>
-<p>Identity and hash
-- If <code>__identity</code> is present and <code>table_options.identity: true</code>, it is persisted as part of the target schema.
-- If <code>__hash</code> is present, it is updated during upsert operations.</p>
-<p>Update filtering
-- <code>options.update_where</code> can constrain rows affected during merges (useful for limiting the scope of updates).</p>
-<p>Internals reference
-- <code>framework/fabricks/cdc/base/merger.py</code>
-- Templates under <code>framework/fabricks/cdc/templates/merge/*.sql.jinja</code></p>
+<p><em>Join keys</em></p>
+<ul>
+<li>If a <code>__key</code> column exists in the target, merges use <code>t.__key = s.__merge_key</code>.</li>
+<li>Otherwise, the configured <code>keys</code> option is used to build an equality join on business keys.</li>
+</ul>
+<p><em>Source scoping</em></p>
+<ul>
+<li>If <code>__source</code> exists in both sides, merges add <code>t.__source = s.__source</code> to support multi-source data in the same table.</li>
+</ul>
+<p><em>Soft delete vs hard delete (SCD1)</em></p>
+<ul>
+<li>If the incoming data contains <code>__is_deleted</code>, the SCD1 template performs soft deletes:<ul>
+<li>Sets <code>__is_current = false</code>, <code>__is_deleted = true</code> on delete.</li>
+</ul>
+</li>
+<li>If <code>__is_deleted</code> is absent, deletes are physical for SCD1.</li>
+</ul>
+<p><em>Timestamps and metadata</em></p>
+<ul>
+<li>If the incoming data provides <code>__timestamp</code>, it is propagated to the target.</li>
+<li>If the target has <code>__metadata</code>, the <code>updated</code> timestamp is set to the current time during updates/deletes.</li>
+</ul>
+<p><em>Identity and hash</em></p>
+<ul>
+<li>If <code>__identity</code> is present and <code>table_options.identity: true</code>, it is persisted as part of the target schema.</li>
+<li>If <code>__hash</code> is present, it is updated during upsert operations.</li>
+</ul>
+<p><em>Update filtering</em></p>
+<ul>
+<li><code>options.update_where</code> can constrain rows affected during merges (useful for limiting the scope of updates).</li>
+</ul>
+<p><em>Internals reference</em></p>
+<ul>
+<li><code>framework/fabricks/cdc/base/merger.py</code></li>
+<li>Templates under <code>framework/fabricks/cdc/templates/merge/*.sql.jinja</code></li>
+</ul>
 <hr />
 <h2 id="scd1-details">SCD1 details<a class="headerlink" href="#scd1-details" title="Permanent link">&para;</a></h2>
-<p>Behavior (see <code>merge/scd1.sql.jinja</code>):
-- Upsert (<code>__merge_condition = 'upsert'</code>): updates matching rows and inserts non‑matching rows.
-- Delete (<code>__merge_condition = 'delete'</code>):
-  - Soft delete if <code>__is_deleted</code> is part of the schema: sets <code>__is_current = false</code>, <code>__is_deleted = true</code>.
-  - Otherwise, performs a physical delete.</p>
-<p>Convenience view:
-- <code>{table}__current</code>: filters current (non‑deleted) rows for simplified consumption.</p>
-<p>Minimal Silver example:</p>
+<p><em>Behavior</em> (see <code>merge/scd1.sql.jinja</code>)</p>
+<ul>
+<li>Upsert (<code>__merge_condition = 'upsert'</code>): updates matching rows and inserts non‑matching rows.</li>
+<li>Delete (<code>__merge_condition = 'delete'</code>):<ul>
+<li>Soft delete if <code>__is_deleted</code> is part of the schema: sets <code>__is_current = false</code>, <code>__is_deleted = true</code>.</li>
+<li>Otherwise, performs a physical delete.</li>
+</ul>
+</li>
+</ul>
+<p><em>Convenience view</em></p>
+<ul>
+<li><code>{table}__current</code>: filters current (non‑deleted) rows for simplified consumption.</li>
+</ul>
+<p><em>Minimal Silver example</em></p>
 <div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
 <span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monarch</span>
@@ -1134,7 +1162,7 @@
 <span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
 </code></pre></div>
 
-<p>Gold consumption example:</p>
+<p><em>Gold consumption example</em></p>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- Example: consuming current rows from SCD1 silver output</span>
 <span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">monarch</span>
 <span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd1__current</span>
@@ -1146,34 +1174,52 @@
 <ul>
 <li>Purpose: mark a full or partial snapshot boundary so missing keys can be treated as deletes and present keys as upserts as needed.</li>
 <li>Auto-injection: when a Gold SCD job runs in <code>mode: update</code> and your SQL does not provide <code>__operation</code>, Fabricks injects <code>__operation = 'reload'</code> and turns on rectification.</li>
-<li>Silver behavior:</li>
+<li>Silver behavior:<ul>
 <li>If a batch contains <code>'reload'</code> after the target’s max timestamp, Silver enables rectification logic.</li>
 <li>In <code>mode: latest</code>, <code>'reload'</code> is not allowed and will be rejected.</li>
-<li>Gold behavior:</li>
+</ul>
+</li>
+<li>Gold behavior:<ul>
 <li>Passing <code>reload=True</code> to a Gold job run triggers a full <code>complete</code> write for that run.</li>
+</ul>
+</li>
 <li>Internals: rectification is computed in <code>framework/fabricks/cdc/templates/query/rectify.sql.jinja</code>, which computes next operations/windows around <code>'reload'</code> markers.</li>
 </ul>
-<p>Tip: You generally do not need to emit <code>'reload'</code> manually in Gold SCD update jobs; it is injected for you when <code>__operation</code> is missing. For explicit control, you can produce rows with <code>__operation = 'reload'</code> at the snapshot timestamp.</p>
+<p>Tip:</p>
+<p>You generally do not need to emit <code>'reload'</code> manually in Gold SCD update jobs; it is injected for you when <code>__operation</code> is missing. 
+For explicit control, you can produce rows with <code>__operation = 'reload'</code> at the snapshot timestamp.</p>
 <hr />
 <h2 id="scd2-details">SCD2 details<a class="headerlink" href="#scd2-details" title="Permanent link">&para;</a></h2>
-<p>Behavior (see <code>merge/scd2.sql.jinja</code>):
-- Update (<code>__merge_condition = 'update'</code>): closes the current row by setting <code>__valid_to = __valid_from - 1 second</code>, <code>__is_current = false</code>. A subsequent insert creates the new current row.
-- Delete (<code>__merge_condition = 'delete'</code>): closes the current row and sets <code>__is_current = false</code> (and <code>__is_deleted = true</code> if soft delete is modeled).
-- Insert (<code>__merge_condition = 'insert'</code>): inserts a new current row.</p>
-<p>Required Gold inputs:
-- <code>__key</code>, <code>__timestamp</code>, <code>__operation</code> with values <code>'upsert' | 'delete' | 'reload'</code>.</p>
-<p>Reload notes:
-- <code>'reload'</code> marks a reconciliation boundary; Fabricks derives concrete actions (e.g., closing current rows, inserting new ones, deleting missing keys) across that boundary.
-- If you omit <code>__operation</code> in Gold SCD update jobs, Fabricks injects <code>'reload'</code> and enables rectification automatically.
-- In Silver:
-  - Presence of <code>'reload'</code> (beyond target’s max timestamp) enables rectification.
-  - <code>'reload'</code> is forbidden in <code>mode: latest</code>.</p>
-<p>Optional features:
-- <code>options.correct_valid_from</code>: adjusts start timestamps for validity windows.
-- <code>options.persist_last_timestamp</code>: persists last processed timestamp for incremental loads.</p>
-<p>Convenience view:
-- <code>{table}__current</code>: returns only the latest (current) rows per business key.</p>
-<p>Minimal Silver example:</p>
+<p><em>Behavior</em> (see <code>merge/scd2.sql.jinja</code>):</p>
+<ul>
+<li>Update (<code>__merge_condition = 'update'</code>): closes the current row by setting <code>__valid_to = __valid_from - 1 second</code>, <code>__is_current = false</code>. A subsequent insert creates the new current row.</li>
+<li>Delete (<code>__merge_condition = 'delete'</code>): closes the current row and sets <code>__is_current = false</code> (and <code>__is_deleted = true</code> if soft delete is modeled).</li>
+<li>Insert (<code>__merge_condition = 'insert'</code>): inserts a new current row.</li>
+</ul>
+<p><em>Required Gold inputs</em>:</p>
+<ul>
+<li><code>__key</code>, <code>__timestamp</code>, <code>__operation</code> with values <code>'upsert' | 'delete' | 'reload'</code>.</li>
+</ul>
+<p><em>Reload notes</em>:</p>
+<ul>
+<li><code>'reload'</code> marks a reconciliation boundary; Fabricks derives concrete actions (e.g., closing current rows, inserting new ones, deleting missing keys) across that boundary.</li>
+<li>If you omit <code>__operation</code> in Gold SCD update jobs, Fabricks injects <code>'reload'</code> and enables rectification automatically.</li>
+<li>In Silver:<ul>
+<li>Presence of <code>'reload'</code> (beyond target’s max timestamp) enables rectification.</li>
+<li><code>'reload'</code> is forbidden in <code>mode: latest</code>.</li>
+</ul>
+</li>
+</ul>
+<p><em>Optional features</em>:</p>
+<ul>
+<li><code>options.correct_valid_from</code>: adjusts start timestamps for validity windows.</li>
+<li><code>options.persist_last_timestamp</code>: persists last processed timestamp for incremental loads.</li>
+</ul>
+<p><em>Convenience view</em>:</p>
+<ul>
+<li><code>{table}__current</code>: returns only the latest (current) rows per business key.</li>
+</ul>
+<p><em>Minimal Silver example</em>:</p>
 <div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
 <span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monarch</span>
@@ -1183,7 +1229,7 @@
 <span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd2</span>
 </code></pre></div>
 
-<p>Gold input construction example:</p>
+<p><em>Gold input construction example</em>:</p>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- Turn SCD2 changes into Gold input operations</span>
 <span class="k">with</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
 <span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">__valid_from</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;upsert&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__operation</span>
@@ -1210,8 +1256,10 @@
 <li>Preferred: produce a stable <code>__key</code> in your SELECTs (e.g., UDF that hashes business keys).</li>
 <li>Alternative: configure <code>options.keys: [ ... ]</code> to specify business keys. Fabricks derives join predicates from these when <code>__key</code> is not present.</li>
 </ul>
-<p>Tip
-- When <code>table_options.identity: true</code>, include an <code>__identity</code> helper column in your SELECT to persist identity values. See <a href="../table-options/">Table Options</a>.</p>
+<p><em>Tip</em></p>
+<ul>
+<li>When <code>table_options.identity: true</code>, include an <code>__identity</code> helper column in your SELECT to persist identity values. See <a href="../table-options/">Table Options</a>.</li>
+</ul>
 <hr />
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>Silver SCD1 with duplicates handling</p>
