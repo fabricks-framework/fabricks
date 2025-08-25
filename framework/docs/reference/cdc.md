@@ -21,6 +21,16 @@ See also:
 - Silver step reference: [Silver](../steps/silver.md#cdc-strategies)
 - Gold step reference: [Gold](../steps/gold.md#cdc-input-fields-for-gold-jobs)
 
+### What is SCD1?
+- Definition: Slowly Changing Dimension Type 1 keeps only the current state of each business key. Attribute changes overwrite previous values rather than preserving history.
+- Typical columns in Fabricks: `__is_current`, `__is_deleted`. A convenience view `{table}__current` in Silver selects current non-deleted rows.
+- When to use: When downstream consumers only need the latest values and you do not need to answer “as-of” questions or audit historical attribute values.
+
+### What is SCD2?
+- Definition: Slowly Changing Dimension Type 2 preserves the full change history by creating a new versioned row each time attributes change. Each row covers a validity window for a given business key.
+- Typical columns in Fabricks: `__valid_from`, `__valid_to`, and `__is_current` (optional `__is_deleted` if soft-deletes are modeled). Silver also provides `{table}__current` for latest rows.
+- When to use: When you must answer “as-of” queries (e.g., “What was the customer segment on 2024‑03‑01?”), analyze changes over time, or maintain auditable history. In Gold SCD2 merges, inputs use `__key`, `__timestamp`, `__operation` to define change points.
+
 ---
 
 ## How to enable CDC
@@ -227,7 +237,9 @@ For explicit control, you can produce rows with `__operation = 'reload'` at the 
       change_data_capture: scd2
 ```
 
-Note: Credit — [Temporal Snapshot Fact Table (SQLBits 2012)](https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table). Recommended to watch to understand SCD2 snapshot-based modeling concepts.
+*Note*: Credit — [Temporal Snapshot Fact Table (SQLBits 2012)](https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table). Recommended to watch to understand SCD2 snapshot-based modeling concepts. 
+
+*Slides*: [Temporal Snapshot Fact Tables (slides)](https://www.slideshare.net/slideshow/temporal-snapshot-fact-tables/15900670#45)
 
 *Gold input construction example*:
 

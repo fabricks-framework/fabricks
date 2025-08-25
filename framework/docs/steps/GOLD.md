@@ -255,7 +255,11 @@ See Options at a glance and Field reference above.
 
 Example SCD2 SQL using `__key`, `__timestamp`, `__operation`:
 
-Note: Credit and recommended resource — [Temporal Snapshot Fact Table (SQLBits 2012)](https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table) by Davide Mauri. Recommended to watch to understand SCD2 modeling in Gold.
+*Note*: Credit — [Temporal Snapshot Fact Table (SQLBits 2012)](https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table). Recommended to watch to understand SCD2 modeling in Gold. 
+
+
+*Slides*: [Temporal Snapshot Fact Tables (slides)](https://www.slideshare.net/slideshow/temporal-snapshot-fact-tables/15900670#45)
+
 
 ```sql
 with dates as (
