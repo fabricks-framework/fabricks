@@ -1253,6 +1253,8 @@
 </code></pre></div>
 
 <p>Example SCD2 SQL using <code>__key</code>, <code>__timestamp</code>, <code>__operation</code>:</p>
+<p><em>Note</em>: Credit — <a href="https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table">Temporal Snapshot Fact Table (SQLBits 2012)</a>. Recommended to watch to understand SCD2 modeling in Gold. </p>
+<p><em>Slides</em>: <a href="https://www.slideshare.net/slideshow/temporal-snapshot-fact-tables/15900670#45">Temporal Snapshot Fact Tables (slides)</a></p>
 <div class="codehilite"><pre><span></span><code><span class="k">with</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
 <span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">__valid_from</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;upsert&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__operation</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">__valid_from</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">&#39;1900-01-02&#39;</span>
 <span class="w">  </span><span class="k">union</span>
