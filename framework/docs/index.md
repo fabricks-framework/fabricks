@@ -47,10 +47,3 @@ Read the full reference → [Gold Step](steps/gold.md)
 - Custom logic and reusable SQL assets → [Extenders, UDFs & Parsers](reference/extenders-udfs-parsers.md)
 - Change Data Capture (CDC) → [CDC](reference/cdc.md)
 
----
-
-## Get Started
-
-- Start with the Quickstart: [Getting Started](helpers/getting-started.md)
-- Copy the minimal sample and adapt it: [Sample runtime](helpers/runtime.md#sample-runtime)
-- Point `tool.fabricks.runtime` and `config` to your runtime and start adding jobs in SQL and YAML.
