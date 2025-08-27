@@ -59,11 +59,11 @@ Example (simple addition UDF):
 from pyspark.sql import SparkSession
 from fabricks.core.udfs import udf
 
-@udf(name="additition")
-def additition(spark: SparkSession):
+@udf(name="addition")
+def addition(spark: SparkSession):
     def _add(a: int, b: int) -> int:
         return a + b
-    spark.udf.register("udf_additition", _add)
+    spark.udf.register("udf_addition", _add)
 ```
 
 Using built-in helpers and a custom UDF in SQL:
@@ -74,7 +74,7 @@ select
   udf_key(array(s.id)) as __key,
   s.id as id,
   s.name as monarch,
-  udf_additition(1, 2) as addition
+  udf_addition(1, 2) as addition
 from silver.monarch_scd1__current s
 ```
 
@@ -150,4 +150,4 @@ def add_country(df: DataFrame, **kwargs) -> DataFrame:
 
 - Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
 - Reference: [Checks & Data Quality](checks-data-quality.md) • [Table Options](table-options.md)
-- Runtime: [Runtime Configuration](../runtime.md)
+- Runtime: [Runtime Configuration](../helpers/runtime.md)

@@ -12,6 +12,22 @@ The Silver step standardizes and enriches data, and applies CDC (SCD1/SCD2) if c
 | update  | Merge/upsert semantics; typically used with CDC.                                         |
 | combine | Combine/union outputs from parent jobs into one result.                                  |
 
+### Behavior notes
+
+- Deduplication and ordering
+  - `deduplicate` drops duplicate keys within the current batch.
+  - If `order_duplicate_by` is provided, rows are ordered by the specified sort before deduplication; the first row per key is kept.
+  - In `latest` mode, only within-batch keys are considered (historical rows are not consulted). In `update` mode, winners are merged against the existing table.
+
+- Streaming constraints
+  - `stream: true` is supported where your connectors/environment support streaming.
+  - In `append` mode it appends micro-batches; in `latest`/`update` modes semantics rely on deterministic keys and, if used, stable ordering columns.
+  - With streaming, `pre_run` counts can be zero; prefer `post_run` checks for row count bounds.
+
+- Combine behavior
+  - `combine` mode unions all parent outputs into a single logical result.
+  - Parents should be schema-compatible; columns are aligned by name. No de-duplication is performed unless `deduplicate` is enabled.
+
 ## CDC strategies
 
 | Strategy | What it does                                                                                         | Convenience views |
@@ -36,6 +52,27 @@ The Silver step standardizes and enriches data, and applies CDC (SCD1/SCD2) if c
 | extender            | Name of a Python extender to apply (see Extenders).                                         |
 | extender_options    | Arguments for the extender (mapping).                                                       |
 | check_options       | Configure DQ checks (pre_run, post_run, max_rows, min_rows, count_must_equal, skip).        |
+
+#### Option matrix (types • defaults • required)
+
+| Option              | Type                                  | Default | Required | Description                                                                                 |
+|---------------------|---------------------------------------|---------|----------|---------------------------------------------------------------------------------------------|
+| type                | enum: default, manual                 | default | no       | `manual` disables auto DDL/DML; you manage persistence yourself.                            |
+| mode                | enum: memory, append, latest, update, combine | —       | yes      | Processing behavior.                                                                        |
+| change_data_capture | enum: nocdc, scd1, scd2               | nocdc   | no       | CDC strategy applied when writing.                                                          |
+| parents             | array[string]                         | —       | no       | Upstream job identifiers to enforce ordering.                                               |
+| filter_where        | string (SQL predicate)                 | —       | no       | Predicate applied at transform time.                                                        |
+| deduplicate         | boolean                                | false   | no       | Drop duplicate keys within the current batch.                                               |
+| order_duplicate_by  | map (e.g., { columns: [ts], order_by: desc }) | — | no       | Choose preferred row for duplicates before `deduplicate`.                                   |
+| stream              | boolean                                | false   | no       | Enable streaming semantics where supported.                                                 |
+| timeout             | integer (seconds)                      | —       | no       | Per-job timeout; overrides step default.                                                    |
+| extender            | string                                 | —       | no       | Python extender to transform the DataFrame.                                                 |
+| extender_options    | map[string,any]                        | {}      | no       | Arguments passed to the extender.                                                           |
+| check_options       | map                                     | —       | no       | Data quality checks (see Checks & Data Quality).                                            |
+
+Notes:
+- If both `order_duplicate_by` and `deduplicate` are set, ordering is applied first, then the first row per key is retained.
+- `latest` considers only the current batch; use `update` if you need to merge winners against an existing table.
 
 ## Field reference
 
@@ -197,11 +234,27 @@ See Options at a glance and Field reference above.
           country: Belgium
 ```
 
+- Quality gate with `check_options`:
+  ```yaml
+  - job:
+      step: silver
+      topic: princess
+      item: quality_gate
+      options:
+        mode: update
+        change_data_capture: scd1
+        parents: [silver.princess_latest]
+      check_options:
+        post_run: true
+        min_rows: 1
+        max_rows: 100000
+  ```
+
 ## Related
 
 - Next steps: [Gold Step](./gold.md), [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
 - Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
-- Sample runtime: [Sample runtime](../runtime.md#sample-runtime)
+- Sample runtime: [Sample runtime](../helpers/runtime.md#sample-runtime)
 
 Special characters in column names are preserved (see `prince.special_char`).

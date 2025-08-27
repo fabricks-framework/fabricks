@@ -1,13 +1,10 @@
-# Initialize Fabricks (Cluster/Notebook Helper)
+# Initialize Fabricks
 
 This helper explains how to initialize Fabricks on a Databricks cluster or local environment by:
+
 - Installing the Fabricks library
 - Pointing Fabricks to your runtime
 - Running the armageddon script to bootstrap metadata and objects
-
-References to the core implementation:
-- armageddon: https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/scripts/armageddon.py
-- Runtime detection and configuration: https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/context/runtime.py
 
 ## 1) Install Fabricks
 
@@ -63,13 +60,6 @@ os.environ["FABRICKS_CONFIG"] = "/Workspace/Repos/your/repo/examples/runtime/fab
 # os.environ["FABRICKS_LOGLEVEL"] = "INFO"
 ```
 
-Validation snippet:
-```python
-from fabricks.context.runtime import PATH_RUNTIME, PATH_CONFIG
-print("PATH_RUNTIME:", PATH_RUNTIME)
-print("PATH_CONFIG:", PATH_CONFIG)
-```
-
 ## 3) Run armageddon
 
 armageddon performs a one-shot setup aligned with your runtime configuration (e.g., preparing databases/metadata, registering views).
@@ -86,12 +76,6 @@ armageddon(steps=["bronze", "silver", "gold"])  # multiple steps
 armageddon(steps=None)                        # default behavior, follow runtime config
 ```
 
-*Notes*:
-
-- armageddon will log progress using Fabricks DEFAULT_LOGGER. You can set logging level through FABRICKS_LOGLEVEL or tool.fabricks.loglevel.
-- Ensure your runtime conf (conf.fabricks.yml) is reachable via PATH_CONFIG and defines required path_options (udfs, parsers, extenders, views, schedules, requirements) and options (secret_scope, unity_catalog/catalog if applicable).
-- For Unity Catalog, set options.unity_catalog: true and options.catalog accordingly.
-
 ## Example: Databricks Notebook: Initialize
 
 Create a new notebook (Python) named initialize and include:
@@ -105,7 +89,7 @@ Create a new notebook (Python) named initialize and include:
 
 from fabricks.core.scripts.armageddon import armageddon
 # Run for all default steps from your runtime config:
-armageddon(steps=None)
+armageddon()
 ```
 
 Attach the Fabricks library to the cluster before running the notebook.
@@ -127,6 +111,6 @@ Attach the Fabricks library to the cluster before running the notebook.
 
 ## Related topics
 
-- Runtime configuration: ../runtime.md
+- Runtime configuration: ../helpers/runtime.md
 - Step Helper: ./step.md
 - Job Helper: ./job.md

@@ -2,6 +2,42 @@
 
 The Fabricks runtime is the folder where your Lakehouse project lives (configs, SQL, jobs, UDFs, extenders, views). This page explains how to point Fabricks to your runtime, how to structure it, and how to configure schedules and step paths.
 
+## Minimal setup and verification
+
+This quick path gets a working runtime running end-to-end using the sample included with Fabricks.
+
+1) Prepare pyproject configuration
+- Ensure your `pyproject.toml` contains a `[tool.fabricks]` block pointing to the sample runtime:
+  ```toml
+  [tool.fabricks]
+  runtime = "examples/runtime"
+  notebooks = "fabricks/api/notebooks"
+  job_config_from_yaml = true
+  loglevel = "info"
+  debugmode = false
+  config = "examples/runtime/fabricks/conf.fabricks.yml"
+  ```
+
+2) Inspect the sample runtime
+- Directory: `examples/runtime` (see structure in “Sample runtime” below).
+- It contains a minimal schedule and a Gold `hello_world.sql` full-refresh job.
+
+3) Run a schedule
+- Use your Databricks bundle/job or orchestration to run the schedule named `example` from `examples/runtime/fabricks/schedules/schedule.yml`.
+- You can also run step-by-step via the shipped notebooks referenced by `notebooks`.
+
+Expected outputs
+- Tables/views:
+  - A Gold table for the `hello_world` job (full refresh).
+  - If using memory mode jobs, temporary views are registered for downstream steps.
+- Logs:
+  - A completion line indicating job success; warnings/errors surfaced from checks/contracts if configured.
+- Data quality (if enabled):
+  - Built-in bound violations or contract `__action = 'fail'` causes a non‑zero exit and, for physical tables, an automatic rollback to the last successful version.
+  - Contract `__action = 'warning'` logs the message and the run continues.
+
+Tip: If your environment uses different storage locations or workspace setup, adjust `path_options` and `spark_options` in the runtime YAML before running.
+
 ## Pointing to your runtime
 
 Configure Fabricks in your project's `pyproject.toml`:
@@ -70,6 +106,22 @@ Key concepts:
 - path_options: shared storage/config paths
 - spark_options: default Spark SQL options applied for jobs
 - step sections (bronze/silver/gold/...): list of step instances with their runtime and storage paths
+
+## Configuration precedence
+
+Multiple layers of configuration can influence a run. When the same setting appears in several places, the following order applies (top wins):
+
+1. Job-level options in YAML (per job)
+2. Step-level defaults in runtime YAML (per step instance under bronze/silver/gold/semantic)
+3. Global options in runtime YAML (`options`, `spark_options`, `path_options`)
+4. Project-level defaults in `pyproject.toml` `[tool.fabricks]`
+5. Internal defaults (shipped with Fabricks)
+
+Notes
+- `spark_options` are merged; job-level `spark_options` override keys from step/global levels.
+- `path_options` (e.g., `storage`, `runtime`) can be set globally, then refined per step instance.
+- Some options only make sense at specific levels (e.g., `check_options` at job level).
+- For CDC and write behavior, job `options` (e.g., `mode`, `change_data_capture`) take precedence over step defaults.
 
 ## Schedules
 
@@ -155,7 +207,7 @@ How to use this sample
 
 ## Related topics
 
-- Steps: [Bronze](steps/bronze.md) • [Silver](steps/silver.md) • [Gold](steps/gold.md)
-- Data quality checks and contracts: [Checks & Data Quality](./reference/checks-data-quality.md)
-- Table properties and physical layout: [Table Options](./reference/table-options.md)
-- Custom logic integration: [Extenders, UDFs & Views](./reference/extenders-udfs-parsers.md)
+- Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
+- Data quality checks and contracts: [Checks & Data Quality](../reference/checks-data-quality.md)
+- Table properties and physical layout: [Table Options](../reference/table-options.md)
+- Custom logic integration: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)

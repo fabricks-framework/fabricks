@@ -44,6 +44,28 @@ See the CDC reference for details and examples: [Change Data Capture (CDC)](../r
 | requirements           | If true, install/resolve additional requirements for this job.                                   |
 | timeout                | Per-job timeout seconds (overrides step defaults).                                               |
 
+#### Option matrix (types • defaults • required)
+
+| Option                 | Type                                        | Default | Required | Description                                                                                          |
+|------------------------|---------------------------------------------|---------|----------|------------------------------------------------------------------------------------------------------|
+| type                   | enum: default, manual                       | default | no       | `manual` disables auto DDL/DML; you manage persistence yourself.                                     |
+| mode                   | enum: memory, append, complete, update, invoke | —     | yes      | Processing behavior.                                                                                 |
+| change_data_capture    | enum: nocdc, scd1, scd2                     | nocdc   | no       | CDC strategy applied when writing (effective in `mode: update`).                                     |
+| update_where           | string (SQL predicate)                      | —       | no       | Additional predicate to limit rows affected during merge/upsert.                                      |
+| parents                | array[string]                               | —       | no       | Upstream dependencies to enforce scheduling/order.                                                   |
+| deduplicate            | boolean                                     | false   | no       | Drop duplicate keys in the result prior to write.                                                    |
+| persist_last_timestamp | boolean                                     | false   | no       | Persist last processed timestamp for incremental loads.                                              |
+| correct_valid_from     | boolean                                     | —       | no       | Adjust SCD2 start timestamps when needed to avoid sentinel starts.                                   |
+| table                  | string                                      | —       | no       | Target table override (useful for semantic/table-copy scenarios).                                    |
+| table_options          | map                                         | —       | no       | Delta table options/metadata (identity, clustering, properties, comments).                           |
+| spark_options          | map                                         | —       | no       | Per-job Spark session/SQL options.                                                                   |
+| udfs                   | string (path)                               | —       | no       | Path to UDFs registry to load before executing the job.                                              |
+| check_options          | map                                         | —       | no       | Data quality checks (see Checks & Data Quality).                                                     |
+| notebook               | boolean                                     | —       | no       | Mark job to run as a notebook (used with `mode: invoke`).                                            |
+| invoker_options        | map                                         | —       | no       | Configure `pre_run` / `run` / `post_run` notebook execution and arguments.                           |
+| requirements           | boolean                                     | false   | no       | Resolve/install additional requirements for this job.                                                |
+| timeout                | integer (seconds)                           | —       | no       | Per-job timeout; overrides step defaults.                                                            |
+
 ## Field reference
 
 - *Core*
@@ -105,18 +127,18 @@ Gold full refresh
       mode: complete
 ```
 
-Semantic table
+Scoped merge with update_where
 ```yaml
 - job:
-    step: semantic
-    topic: fact
-    item: job_option
-    options: { mode: complete }
-    table_options:
-      properties:
-        delta.minReaderVersion: 2
-        delta.minWriterVersion: 5
+    step: gold
+    topic: scd1
+    item: scoped_update
+    options:
+      mode: update
+      change_data_capture: scd1
+      update_where: "region = 'EMEA'"   # limit merge to a subset
 ```
+
 
 Dependencies
 ```sql
@@ -453,99 +475,6 @@ Notes
 
 ---
 
-## SCD2 header-line change points with header closure (order_id × order_line_id)
-
-This example shows how to generate SCD2 change points when combining header and line SCD2 sources, including:
-- Emitting upserts at each validity start across header and lines.
-- Emitting a delete for the header-only row as soon as a corresponding line exists (to close the sentinel header row).
-- Emitting deletes at validity end for deleted intervals.
-- Joining an additional SCD2 stream (e.g., item price) to ensure change points also reflect price boundaries.
-
-```sql
-with
-  -- 1) Gather validity boundaries across header, line, and related SCD2 (price)
-  hdr_line_dates as (
-    select h.order_id, l.order_line_id, h.__valid_to, h.__valid_from, h.__is_deleted
-    from silver.order_header_scd2 h
-    left join silver.order_line_scd2 l
-      on h.order_id = l.order_id
-      and h.__valid_from between l.__valid_from and l.__valid_to
-
-    union
-
-    select order_id, order_line_id, __valid_to, __valid_from, __is_deleted
-    from silver.order_line_scd2
-
-    union
-
-    -- ensure we have entries for the latest price window intersecting current header/line
-    select h.order_id, l.order_line_id, ip.__valid_to, ip.__valid_from, false
-    from silver.order_header_scd2__current h
-    inner join silver.order_line_scd2__current l
-      on h.order_id = l.order_id
-    inner join silver.item_price_scd2 ip
-      on ip.item_id = l.item_id
-     and ip.price_list_id = h.price_list_id
-     and ip.__is_current
-  ),
-
-  -- 2) Build change points
-  change_points as (
-    -- upsert at each validity start
-    select order_id, order_line_id, __valid_from as __timestamp, 'upsert' as __operation
-    from hdr_line_dates
-
-    union
-
-    -- as soon as a line exists, close the header-only row (order_line_id is NULL sentinel)
-    select order_id, null as order_line_id, __valid_from as __timestamp, 'delete' as __operation
-    from hdr_line_dates
-    where order_line_id is not null
-
-    union
-
-    -- delete at validity end for deleted intervals
-    select order_id, order_line_id, __valid_to as __timestamp, 'delete' as __operation
-    from hdr_line_dates
-    where __is_deleted
-  )
-
--- 3) Project attributes as of each change point
-select
-  concat_ws('*', p.order_id, coalesce(p.order_line_id, -1)) as __key,
-  p.order_id,
-  p.order_line_id,
-
-  -- header attributes (examples)
-  h.customer_id,
-  h.price_list_id,
-  h.order_date,
-
-  -- line attributes (examples)
-  l.item_id,
-  l.quantity,
-  l.unit_price,
-
-  -- CDC fields
-  p.__operation,
-  p.__timestamp
-from change_points p
-left join silver.order_header_scd2 h
-  on p.order_id = h.order_id
- and p.__timestamp between h.__valid_from and h.__valid_to
-left join silver.order_line_scd2 l
-  on p.order_id = l.order_id
- and coalesce(p.order_line_id, -1) = coalesce(l.order_line_id, -1)
- and p.__timestamp between l.__valid_from and l.__valid_to
-```
-
-Notes
-- The null-sentinel header row (order_line_id = null -> coerced to -1 in __key) is closed via a 'delete' when any line appears at the same boundary.
-- Additional SCD2 inputs (e.g., item_price_scd2) can be unioned into the dates set to force change points whenever related dimensions change.
-- The output stream conforms to Gold SCD2 input fields: __key, __timestamp, __operation.
-
----
-
 - Fact options: table options, clustering, properties, and Spark options:
 
 ```yaml
@@ -709,4 +638,4 @@ Notes
 - Next steps: [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
 - Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
-- Sample runtime: [Sample runtime](../runtime.md#sample-runtime)
+- Sample runtime: [Sample runtime](../helpers/runtime.md#sample-runtime)

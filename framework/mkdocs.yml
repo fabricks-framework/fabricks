@@ -42,22 +42,25 @@ theme:
         icon: material/lightbulb-outline
         name: Switch to system preference
 nav:
-  - Introduction: 'index.md'
+  - Introduction: 
+    - Intro: 'introduction/index.md'
+    - Overview: 'introduction/overview.md'
+    - Layers: 'introduction/layers.md'
   - Steps:
     - Bronze: 'steps/bronze.md'
     - Silver: 'steps/silver.md'
     - Gold: 'steps/gold.md'
-  - Runtime: 'runtime.md'
   - Reference:
     - Change Data Capture (CDC): 'reference/cdc.md'
     - Checks & Data Quality: 'reference/checks-data-quality.md'
     - Table Options: 'reference/table-options.md'
     - Extenders, UDFs & Parsers: 'reference/extenders-udfs-parsers.md'
-    - Views: 'reference/views.md'
   - Helpers:
     - Initialize: 'helpers/init.md'
+    - Runtime: 'helpers/runtime.md'
     - Job: 'helpers/job.md'
     - Step: 'helpers/step.md'
+    - Schedule: 'helpers/schedule.md'
   - About:
     - License: license.md
     - Release Notes: release-notes.md

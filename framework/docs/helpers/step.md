@@ -1,132 +1,165 @@
 # Step Helper (Databricks Notebook)
 
-This helper describes a widget-driven approach in a Databricks notebook to manage a Fabricks step (bronze, silver, gold). It focuses on lifecycle operations driven by the core `BaseStep` implementation: creating/updating a step, discovering jobs, updating metadata (jobs/tables/views/dependencies), registering objects, and housekeeping.
-
-The behaviors documented here are grounded in the framework core:
-
-- [BaseStep](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)
-- [factory](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/get_step.py)
-- [timeouts](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/_types.py)
-
-## Overview
-
-At a high level, a step helper would:
-
-  - Present widgets to select a step (bronze/silver/gold), actions, and optional filters (topics)
-  - Optionally toggle update/cleanup behaviors and progress bars
-  - Resolve the step via `fabricks.core.steps.get_step`
-  - Execute selected actions in sequence
-  - Report progress/errors
+This helper describes a widget-driven approach in a Databricks notebook to manage a Fabricks step (bronze, silver, gold). 
 
 Core imports used:
 ```python
-from fabricks.core.steps.get_step import get_step
-from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.api import get_step
 ```
 
-## Typical usage in a Databricks notebook
+## Typical usage
 
 1) Resolve the step:
 ```python
-from fabricks.core.steps.get_step import get_step
+from fabricks.api import get_step
+
 s = get_step("gold")  # or "bronze"/"silver"
 ```
 
-2) Run actions based on widgets:
+2) Run actions:
 ```python
 # Examples:
-s.update(update_dependencies=True, progress_bar=True)
-s.register(update=True, drop=False)
-s.update_dependencies(topic=["sales", "finance"], progress_bar=False)
-s.create()
+s.update_jobs()
+s.update_dependencies(progress_bar=False)
+
 # Cleanup if required:
 # s.drop()
 ```
 
-3) To inspect jobs and dependencies:
-```python
-jobs_df = s.get_jobs()
-deps_df, errors = s.get_dependencies(progress_bar=True, topic="sales")
+## Helper Notebook
+
+``` python
+# Databricks notebook source
+import os
+from multiprocessing import Pool
+from typing import Callable, List
+
+from databricks.sdk.runtime import dbutils, spark
+
+# COMMAND ----------
+
+dbutils.widgets.text("steps", "---", label="6 - Step(s)")
+dbutils.widgets.multiselect(
+    "actions",
+    "update-configurations",
+    [
+        "update-configurations",    -- Update job configurations
+        "add-missing-jobs",         -- Create any missing jobs
+        "update-dependencies",      -- Update job dependencies
+        "update-lists",             -- Update lists of jobs/tables/views
+        "update-tables-list",       -- Update the list of tables
+        "update-views-list",        -- Update the list of views
+        "update"                    -- Update the step
+    ],
+    label="5 - Action(s)"
+)
+dbutils.widgets.dropdown("loglevel", "info", ["debug", "info", "error", "critical"], label="3 - Log Level")
+dbutils.widgets.dropdown("chdir", "False", ["True", "False"], label="1 - Change Directory")
+dbutils.widgets.dropdown("config_from_yaml", "True", ["True", "False"], label="2 - Use YAML")
+dbutils.widgets.dropdown("debugmode", "False", ["True", "False"], label="4 - Debug Mode")
+
+# COMMAND ----------
+
+if dbutils.widgets.get("chdir").lower() == "true":
+    user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()  # type: ignore
+    try:
+        os.chdir(f"/Workspace/Users/{user}/Fabricks.Runtime")
+    except FileNotFoundError:
+        os.chdir(f"/Workspace/Users/{user}/runtime")
+
+# COMMAND ----------
+
+if dbutils.widgets.get("config_from_yaml").lower() == "true":
+    os.environ["FABRICKS_IS_JOB_CONFIG_FROM_YAML"] = "1"
+else:
+    os.environ["FABRICKS_IS_JOB_CONFIG_FROM_YAML"] = "0"
+
+# COMMAND ----------
+
+if dbutils.widgets.get("debugmode").lower() == "true":
+    os.environ["FABRICKS_IS_DEBUGMODE"] = "1"
+else:
+    os.environ["FABRICKS_IS_DEBUGMODE"] = "0"
+
+# COMMAND ----------
+
+loglevel = dbutils.widgets.get("loglevel")
+if loglevel == "debug":
+    os.environ["FABRICKS_LOGLEVEL"] = "DEBUG"
+elif loglevel == "info":
+    os.environ["FABRICKS_LOGLEVEL"] = "INFO"
+elif loglevel == "error":
+    os.environ["FABRICKS_LOGLEVEL"] = "ERROR"
+elif loglevel == "critical":
+    os.environ["FABRICKS_LOGLEVEL"] = "CRITICAL"
+
+# COMMAND ----------
+
+from fabricks.api import get_step  # noqa: E402
+from fabricks.api.log import DEFAULT_LOGGER  # noqa: E402
+
+# COMMAND ----------
+
+actions = dbutils.widgets.get("actions").split(",")
+actions = [a.strip() for a in actions]
+
+# COMMAND ----------
+
+
+def do(step: str) -> None:
+    s = get_step(step=step)
+    todos: dict[str, Callable] = {}
+
+    if "update-configurations" in actions:
+        todos["update-configurations"] = s.update_jobs
+
+    if "add-missing-jobs" in actions:
+        todos["add-missing-jobs"] = s.create_jobs
+
+    if "update-views-list" in actions or "update-lists" in actions:
+        todos["update-views-list"] = s.update_views
+
+    if "update-tables-list" in actions or "update-lists" in actions:
+        todos["update-tables-list"] = s.update_tables
+
+    if "update" in actions and len(actions) == 1:
+        todos["update"] = s.update
+
+    if "update-dependencies" in actions:
+        todos["update-dependencies"] = s.update_dependencies
+
+    for key, func in todos.items():
+        func()
+
+# COMMAND ----------
+
+actions = [s.strip() for s in dbutils.widgets.get("actions").split(",")]
+steps = [s.strip() for s in dbutils.widgets.get("steps").split(",")]
+steps = [[j.strip() for j in job.split("//")] if "//" in job else job for job in steps]
+
+for step in steps:
+    DEFAULT_LOGGER.warning(", ".join(actions), extra={"step": step})
+
+# COMMAND ----------
+
+for step in steps:
+    if isinstance(step, List):
+        with Pool() as pool:
+            results = pool.map(do, step)
+    else:
+        do(step)
+
+# COMMAND ----------
+
+dbutils.notebook.exit("exit (0)")  # type: ignore
+
+# COMMAND ----------
 ```
-
-## Methods explained (from core)
-
-Below is a summary of what each step-level method does in the Fabricks core, as implemented by `BaseStep`. References indicate where behaviors are implemented.
-
-- drop() — BaseStep.drop
-    - Purpose: Remove all artifacts for a step and drop its database and metadata tables.
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.drop
-
-- create() — BaseStep.create
-    - Purpose: Initialize the step by updating resources if the runtime exists.
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.create
-
-- update(update_dependencies=True, progress_bar=False) — BaseStep.update
-    - Purpose: Synchronize all objects for the step (jobs, dependencies, tables, views).
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.update
-
-- get_dependencies(progress_bar=False, topic=None) — BaseStep.get_dependencies
-    - Purpose: Collect job dependencies across the step.
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.get_dependencies
-
-- get_jobs_iter(topic=None) — BaseStep.get_jobs_iter
-    - Purpose: Iterate YAML job definitions for the step (raw).
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.get_jobs_iter
-
-- get_jobs(topic=None) — BaseStep.get_jobs
-    - Purpose: Load step jobs into a Spark DataFrame with schema, computed `job_id`, and de-duplication.
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.get_jobs
-
-- create_jobs(retry=True) — BaseStep.create_jobs
-    - Purpose: Create missing jobs (tables/views) physically.
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.create_jobs
-
-- update_jobs(drop=False) — BaseStep.update_jobs
-    - Purpose: Refresh the SCD1 metadata table for jobs.
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.update_jobs
-
-- update_tables() — BaseStep.update_tables
-    - Purpose: Refresh the SCD1 metadata table for physical tables.
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.update_tables
-
-- update_views() — BaseStep.update_views
-    - Purpose: Refresh the SCD1 metadata table for views.
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.update_views
-
-- update_dependencies(progress_bar=False, topic=None) — BaseStep.update_dependencies
-    - Purpose: Refresh the SCD1 metadata table for dependencies.
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.update_dependencies
-
-- register(update=False, drop=False) — BaseStep.register
-    - Purpose: Ensure the step database exists and all job outputs are registered (typically views for virtual jobs or tables where required).
-    - Reference: [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep.register
-
-- Properties and configuration — BaseStep
-    - workers
-        - Resolved from step options or global runtime options; cached.
-    - timeouts: `Timeouts(job: int, step: int)`
-        - Resolved from step options or global runtime options; cached.
-    - conf / options
-        - Step configuration and its `options` loaded from global `STEPS` settings and runtime YAML structure.
-    - __str__ → step name
-
-References:
-
-- [fabricks/core/steps/base.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/base.py)::BaseStep
-- [fabricks/core/steps/get_step.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/get_step.py)::get_step
-- [fabricks/core/steps/_types.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/steps/_types.py)::Timeouts
-
-## Notes and recommendations
-
-- Ensure your runtime directory structure for the step exists before calling `create()` or `update()`. If not, the helper will log a warning.
-- Consider enabling progress bars only for development/debug runs; for production, keep logs terse.
-- When filtering by `topic`, pass a string or a list of strings; the helper will scope the updates accordingly.
-- On large repositories, job creation/registration is parallelized with a fixed default of 16 workers in the current implementation.
 
 ## Related topics
 
 - Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
-- Runtime overview and sample runtime: [Runtime](../runtime.md)
+- Runtime overview and sample runtime: [Runtime](../helpers/runtime.md)
 - Checks & Data Quality: [Checks and Data Quality](../reference/checks-data-quality.md)
 - Table options and storage layout: [Table Options](../reference/table-options.md)
 - Extenders, UDFs & Views: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)

@@ -1,38 +1,33 @@
 # Job Helper
 
-This helper describes a widget-driven approach to manage a Fabricks job. It focuses on lifecycle operations driven by the core job implementation: registering/creating a job, running it (with checks and invokers), schema evolution, and housekeeping.
+This helper describes a widget-driven approach to manage a Fabricks job.
 
-The behaviors documented here are grounded in the framework core:
-
-- [Generator](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/generator.py)
-- [Processor](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/processor.py)
-- [Checker](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/checker.py)
-- [Invoker](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/invoker.py)
-- [Gold](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/gold.py)
-- [factory](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/api/get_job.py)
-
+Core imports used:
+```python
+from fabricks.api import get_job
+```
 
 ## Typical usage
 
 1) Resolve the job:
 ```python
 from fabricks.api import get_job
+
 j = get_job(job="gold.sales.orders")  # or pass step/topic/item explicitly
 ```
 
-2) Run actions based on widgets:
+2) Run actions:
 ```python
 # Examples:
-j.check_pre_run()
-j.run(schedule="daily", invoke=True, reload=False)
-j.check_post_run()
-j.check_post_run_extra()
+j.run()
 
 # Other common operations:
 j.update_schema()
 j.overwrite_schema()
 j.register()
+
 j.create()
+
 # Cleanup if required:
 # j.truncate()
 # j.drop()
@@ -46,96 +41,170 @@ if getattr(j, "expand", None) == "gold":
 j.run()
 ```
 
-## Methods explained (from core)
+## Helper Notebook
 
-Below is a summary of what each job-level method does in the Fabricks core, as implemented by the base classes. References indicate where behaviors are implemented.
+```python
+# Databricks notebook source
+import os
+from multiprocessing import Pool
+from typing import Callable, List
 
-- drop() — Generator.drop
-    - Purpose: Remove all artifacts and CDC related to the job.
-    - Reference: [fabricks/core/jobs/base/generator.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/generator.py)::Generator.drop
+from databricks.sdk.runtime import dbutils, spark
 
-- register() — Generator.register
-    - Purpose: Register the job’s output object (table or view).
-  - Reference: [fabricks/core/jobs/base/generator.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/generator.py)::Generator.register
+# COMMAND ----------
 
-- create() — Generator.create
-    - Purpose: Create the physical table or virtual view.
-  - Reference: [fabricks/core/jobs/base/generator.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/generator.py)::Generator.create, _create_table
+dbutils.widgets.text("jobs", "---", label="6 - Job(s)")
+dbutils.widgets.multiselect(
+    "actions",
+    "run",
+    [
+        "drop",                   -- Drop the job
+        "register",               -- Register the table
+        "create",                 -- Create the job
+        "truncate",               -- Truncate the table
+        "run",                    -- Run the job 
+        "for-each-run",           -- Run the job (excluding the invoker(s) and the check(s))
+        "overwrite",              -- Overwrite the schema and run the job
+        "pre-run-invoke",         -- Run the pre-run invoker(s)
+        "pre-run-check",          -- Run the pre-run check(s)
+        "post-run-invoke",        -- Run the post-run invoker(s)
+        "post-run-check",         -- Run the post-run check(s)
+        "update-schema",          -- Update the schema
+        "overwrite-schema",       -- Overwrite the schema
+    ],
+    label="5 - Action(s)"
+)
+dbutils.widgets.dropdown("loglevel", "info", ["debug", "info", "error", "critical"], label="3 - Log Level")
+dbutils.widgets.dropdown("chdir", "False", ["True", "False"], label="1 - Change Directory")
+dbutils.widgets.dropdown("config_from_yaml", "True", ["True", "False"], label="2 - Use YAML")
+dbutils.widgets.dropdown("debugmode", "False", ["True", "False"], label="4 - Debug Mode")
 
-- truncate() — Generator.truncate
-    - Purpose: Clear data and artifacts without dropping the table definition.
-  - Reference: [fabricks/core/jobs/base/generator.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/generator.py)::Generator.truncate
+# COMMAND ----------
 
-- update-schema() — Generator.update_schema
-    - Purpose: Evolve the table schema in-place.
-  - Reference: [fabricks/core/jobs/base/generator.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/generator.py)::Generator.update_schema, _update_schema
+if dbutils.widgets.get("chdir").lower() == "true":
+    user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()  # type: ignore
+    try:
+        os.chdir(f"/Workspace/Users/{user}/Fabricks.Runtime")
+    except FileNotFoundError:
+        os.chdir(f"/Workspace/Users/{user}/runtime")
 
-- overwrite-schema() — Generator.overwrite_schema
-    - Purpose: Replace the table schema to match the computed DataFrame.
-  - Reference: [fabricks/core/jobs/base/generator.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/generator.py)::Generator.overwrite_schema, _update_schema
+# COMMAND ----------
 
-- run(...) — Processor.run
-    - Purpose: Orchestrate a full run with optional invocations, checks, and rollback semantics.
-    - Distinct exceptions:
-        - `SkipRunCheckWarning`, `PreRunCheckWarning`, `PostRunCheckWarning`
-        - `PreRunInvokeException`, `PostRunInvokeException`
-        - `PreRunCheckException`, `PostRunCheckException`
-        - plus general failures resulting in rollback for persisted jobs
-    - Reference: [fabricks/core/jobs/base/processor.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/processor.py)::Processor.run
+if dbutils.widgets.get("config_from_yaml").lower() == "true":
+    os.environ["FABRICKS_IS_JOB_CONFIG_FROM_YAML"] = "1"
+else:
+    os.environ["FABRICKS_IS_JOB_CONFIG_FROM_YAML"] = "0"
 
-- for-each-run(...) — Processor.for_each_run
-    - Purpose: Execute the core per-run logic, stream-aware.
-  - Reference: [fabricks/core/jobs/base/processor.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/processor.py)::Processor.for_each_run, _for_each_batch; error type: SchemaDriftError
+# COMMAND ----------
 
-- overwrite() — Processor.overwrite (abstract)
-    - Purpose: Replace table/view contents with new results in one operation.
-  - Reference: [fabricks/core/jobs/base/processor.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/processor.py)::Processor.overwrite
+if dbutils.widgets.get("debugmode").lower() == "true":
+    os.environ["FABRICKS_IS_DEBUGMODE"] = "1"
+else:
+    os.environ["FABRICKS_IS_DEBUGMODE"] = "0"
 
-- pre-run-invoke() — Invoker.invoke_pre_run
-    - Purpose: Execute configured invokers before the run.
-    - Behavior:
-        - Invokes both job-level and step-level invokers: `invoke_job(position="pre_run")`, `invoke_step(position="pre_run")`
-        - Failures raise `PreRunInvokeException`
-    - Reference: [fabricks/core/jobs/base/invoker.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/invoker.py)::{invoke_pre_run, invoke_job, invoke_step, invoke}
+# COMMAND ----------
 
-- post-run-invoke() — Invoker.invoke_post_run
-    - Purpose: Execute configured invokers after the run.
-    - Behavior:
-        - Invokes job-level and step-level invokers with `position="post_run"`.
-        - Failures raise `PostRunInvokeException`
-  - Reference: [fabricks/core/jobs/base/invoker.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/invoker.py)::{invoke_post_run, invoke_job, invoke_step}
+loglevel = dbutils.widgets.get("loglevel")
+if loglevel == "debug":
+    os.environ["FABRICKS_LOGLEVEL"] = "DEBUG"
+elif loglevel == "info":
+    os.environ["FABRICKS_LOGLEVEL"] = "INFO"
+elif loglevel == "error":
+    os.environ["FABRICKS_LOGLEVEL"] = "ERROR"
+elif loglevel == "critical":
+    os.environ["FABRICKS_LOGLEVEL"] = "CRITICAL"
 
-- pre-run-check() — Checker.check_pre_run
-    - Purpose: Validate pre-conditions via SQL contracts.
-    - Behavior:
-        - If enabled in options, looks for `.pre_run.sql` in the runtime path and executes it.
-        - Expects rows with columns `__action` in {'fail','warning'} and `__message`.
-        - Failures raise `PreRunCheckException`; warnings raise `PreRunCheckWarning`.
-    - Reference: [fabricks/core/jobs/base/checker.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/checker.py)::{check_pre_run, _check}
+# COMMAND ----------
 
-- post-run-check() — Checker.check_post_run (+ extras)
-    - Purpose: Validate post-conditions via SQL contracts and row constraints.
-    - Behavior:
-        - Runs `.post_run.sql` if enabled and enforces fail/warning actions like pre-run.
-        - Additionally runs `check_post_run_extra()` (min/max rows and count equality).
-        - Failures raise `PostRunCheckException`; warnings raise `PostRunCheckWarning`.
-  - Reference: [fabricks/core/jobs/base/checker.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/base/checker.py)::{check_post_run, check_post_run_extra}
+from fabricks.api import get_job  # noqa: E402
+from fabricks.api.log import DEFAULT_LOGGER  # noqa: E402
+from fabricks.core.jobs import Gold  # noqa: E402
 
-- register_udfs() — Gold.register_udfs (only for Gold jobs)
-    - Purpose: Register UDFs required by Gold transformations before running actions.
-    - Reference: [fabricks/core/jobs/gold.py](https://github.com/fabricks-framework/fabricks/tree/main/framework/fabricks/core/jobs/gold.py) (class `Gold`)
+# COMMAND ----------
 
-## Notes and recommendations
+actions = dbutils.widgets.get("actions").split(",")
+actions = [a.strip() for a in actions]
 
-- On persisted jobs, schema drift during a run can raise `SchemaDriftError`. Consider passing `reload=True` to update schema automatically when appropriate, or set `self.schema_drift=True` in configuration.
-- Use `for_each_run` for per-batch/stream processing where your concrete job implements `for_each_batch`.
-- Invokers and checks are optional and driven by configuration; enable or disable them from your job options.
-- Be explicit with `invoke` and `reload` flags on `run` to control invocations and schema handling.
+# COMMAND ----------
+
+
+def do(job: str) -> None:
+    j = get_job(job=job)
+    todos: dict[str, Callable] = {}
+
+    if j.expand == "gold":
+        assert isinstance(j, Gold)
+        j.register_udfs()
+
+    if "drop" in actions:
+        todos["drop"] = j.drop
+
+    if "register" in actions:
+        todos["register"] = j.register
+
+    if "pre-run-invoke" in actions:
+        todos["pre-run-invoke"] = j.invoke_pre_run
+
+    if "pre-run-check" in actions:
+        todos["pre-run-check"] = j.check_pre_run
+
+    if "create" in actions:
+        todos["create"] = j.create
+
+    if "update-schema" in actions:
+        todos["update-schema"] = j.update_schema
+
+    if "overwrite-schema" in actions:
+        todos["overwrite-schema"] = j.overwrite_schema
+
+    if "truncate" in actions:
+        todos["truncate"] = j.truncate
+
+    if "run" in actions:
+        todos["run"] = j.run
+
+    if "for-each-run" in actions:
+        todos["for-each-run"] = j.for_each_run
+
+    if "overwrite" in actions:
+        todos["overwrite"] = j.overwrite
+
+    if "post-run-check" in actions:
+        todos["post-run-check"] = j.check_post_run
+
+    if "post-run-invoke" in actions:
+        todos["post-run-invoke"] = j.invoke_post_run
+
+    for key, func in todos.items():
+        func()
+
+# COMMAND ----------
+
+actions = [s.strip() for s in dbutils.widgets.get("actions").split(",")]
+jobs = [s.strip() for s in dbutils.widgets.get("jobs").split(",")]
+jobs = [[j.strip() for j in job.split("//")] if "//" in job else job for job in jobs]
+
+for job in jobs:
+    DEFAULT_LOGGER.warning(", ".join(actions), extra={"job": job})
+
+# COMMAND ----------
+
+for job in jobs:
+    if isinstance(job, List):
+        with Pool() as pool:
+            results = pool.map(do, job)
+    else:
+        do(job)
+
+# COMMAND ----------
+
+dbutils.notebook.exit("exit (0)")  # type: ignore
+```
 
 ## Related topics
 
 - Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
-- Runtime overview and sample runtime: [Runtime](../runtime.md)
+- Runtime overview and sample runtime: [Runtime](../helpers/runtime.md)
 - Checks & Data Quality: [Checks and Data Quality](../reference/checks-data-quality.md)
 - Table options and storage layout: [Table Options](../reference/table-options.md)
 - Extenders, UDFs & Views: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)

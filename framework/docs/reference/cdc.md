@@ -14,13 +14,6 @@ This page explains the supported CDC strategies, required inputs, merge semantic
 | `scd1`  | Tracks current vs deleted; maintains flags `__is_current`, `__is_deleted`.                    | `{table}__current` in Silver        |
 | `scd2`  | Slowly Changing Dimension Type 2: validity windows with `__valid_from`, `__valid_to`.         | `{table}__current` in Silver        |
 
-- Silver jobs commonly produce conformed datasets with optional CDC applied.
-- Gold jobs typically consume CDC tables and may perform additional merges.
-
-See also:
-- Silver step reference: [Silver](../steps/silver.md#cdc-strategies)
-- Gold step reference: [Gold](../steps/gold.md#cdc-input-fields-for-gold-jobs)
-
 ### What is SCD1?
 - Definition: Slowly Changing Dimension Type 1 keeps only the current state of each business key. Attribute changes overwrite previous values rather than preserving history.
 - Typical columns in Fabricks: `__is_current`, `__is_deleted`. A convenience view `{table}__current` in Silver selects current non-deleted rows.
@@ -188,10 +181,14 @@ from silver.monarch_scd1__current
       - Passing `reload=True` to a Gold job run triggers a full `complete` write for that run.
 - Internals: rectification is computed in `framework/fabricks/cdc/templates/query/rectify.sql.jinja`, which computes next operations/windows around `'reload'` markers.
 
-Tip:
+!!! warning
+    In Silver `mode: latest`, `'reload'` is forbidden and will be rejected. 
+    Use `mode: update` or `mode: append` instead if you need reconciliation behavior.
 
-You generally do not need to emit `'reload'` manually in Gold SCD update jobs; it is injected for you when `__operation` is missing. 
-For explicit control, you can produce rows with `__operation = 'reload'` at the snapshot timestamp.
+
+!!! tip
+    You generally do not need to emit `'reload'` manually in Gold SCD update jobs; it is injected for you when `__operation` is missing. 
+    For explicit control, you can produce rows with `__operation = 'reload'` at the snapshot timestamp.
 
 ---
 
@@ -319,4 +316,4 @@ Gold SCD1 update with incremental timestamp
 
 - Steps: [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
 - Reference: [Table Options](./table-options.md), [Extenders, UDFs & Parsers](./extenders-udfs-parsers.md)
-- Sample runtime: [Sample runtime](../runtime.md#sample-runtime)
+- Sample runtime: [Sample runtime](../helpers/runtime.md#sample-runtime)
