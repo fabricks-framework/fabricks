@@ -41,9 +41,9 @@ theme:
       toggle:
         icon: material/lightbulb-outline
         name: Switch to system preference
-nav:
+nav:    
   - Introduction: 
-    - Intro: 'introduction/index.md'
+    - Intro: 'index.md'
     - Overview: 'introduction/overview.md'
     - Layers: 'introduction/layers.md'
   - Steps:
