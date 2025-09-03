@@ -289,6 +289,8 @@ class Table(DbObject):
 
     def update_schema(self, df: DataFrame):
         assert self.is_registered, f"{self} not registered"
+        if not self.column_mapping_enabled:
+            self.enable_column_mapping()
 
         diffs = self.get_schema_differences(df)
         diffs = [d for d in diffs if d.status in ("added", "changed")]
@@ -314,6 +316,8 @@ class Table(DbObject):
 
     def overwrite_schema(self, df: DataFrame):
         assert self.is_registered, f"{self} not registered"
+        if not self.column_mapping_enabled:
+            self.enable_column_mapping()
 
         diffs = self.get_schema_differences(df)
 
@@ -328,10 +332,13 @@ class Table(DbObject):
                 if row.status == "added":
                     assert row.new_data_type is not None, "new_data_type must be defined for added columns"
                     self.add_column(row.column, row.new_data_type)
+
                 elif row.status == "dropped":
                     self.drop_column(row.column)
+
                 elif row.status == "changed":
                     assert row.new_data_type is not None, "new_data_type must be defined for changed columns"
+                    
                     try:
                         self.change_column(row.column, row.new_data_type)
                     except AnalysisException:
