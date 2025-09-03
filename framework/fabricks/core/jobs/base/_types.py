@@ -57,7 +57,7 @@ class _InvokeOptions(TypedDict):
 
 class InvokerOptions(TypedDict):
     pre_run: Optional[List[_InvokeOptions]]
-    run: Optional[_InvokeOptions]
+    run: Optional[List[_InvokeOptions]]
     post_run: Optional[List[_InvokeOptions]]
 
 

@@ -7,7 +7,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 
 
-class Relational:
+class DbObject:
     def __init__(self, database: str, *levels: str, spark: Optional[SparkSession] = None):
         self.database = Database(database)
         self.levels = levels
@@ -57,6 +57,7 @@ class Relational:
         if self.is_view:
             DEFAULT_LOGGER.warning("drop view from metastore", extra={"job": self})
             self.spark.sql(f"drop view if exists {self}")
+
         elif self.is_table:
             DEFAULT_LOGGER.warning("drop table from metastore", extra={"job": self})
             self.spark.sql(f"drop table if exists {self}")

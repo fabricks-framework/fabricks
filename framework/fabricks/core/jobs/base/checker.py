@@ -1,7 +1,7 @@
 from typing import Literal
 
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.error import (
+from fabricks.core.jobs.base.exception import (
     PostRunCheckException,
     PostRunCheckWarning,
     PreRunCheckException,

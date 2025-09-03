@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple, Union, cast
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
 from pyspark.sql.types import Row
+from typing_extensions import deprecated
 
 from fabricks.cdc import SCD1
 from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
@@ -137,7 +138,7 @@ class BaseStep:
                 self.database.create()
 
             self.update_jobs()
-            self.create_jobs()
+            self.create_db_objects()
 
             if update_dependencies:
                 self.update_dependencies(progress_bar=progress_bar)
@@ -208,12 +209,12 @@ class BaseStep:
             DEFAULT_LOGGER.exception("failed to get jobs", extra={"step": self})
             raise e
 
-    def create_jobs(self, retry: Optional[bool] = True) -> List[str]:
-        DEFAULT_LOGGER.info("create jobs", extra={"step": self})
+    def create_db_objects(self, retry: Optional[bool] = True) -> List[str]:
+        DEFAULT_LOGGER.info("create db objects", extra={"step": self})
 
         errors = []
 
-        def _create_job(row: Row):
+        def _create_db_object(row: Row):
             job = get_job(step=self.name, job_id=row["job_id"])
             try:
                 job.create()
@@ -234,7 +235,7 @@ class BaseStep:
                 df = df.join(view_df, "job_id", how="left_anti")
 
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-            run_in_parallel(_create_job, df, workers=16, progress_bar=True)
+            run_in_parallel(_create_db_object, df, workers=16, progress_bar=True)
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
             if errors:
@@ -246,27 +247,39 @@ class BaseStep:
                     self.update_tables()
                     self.update_views()
 
-                    return self.create_jobs(retry=False)
+                    return self.create_db_objects(retry=False)
 
                 else:
                     DEFAULT_LOGGER.warning("retry failed", extra={"step": self})
 
         else:
-            DEFAULT_LOGGER.debug("no new job", extra={"step": self})
+            DEFAULT_LOGGER.debug("nothing to do", extra={"step": self})
 
         return errors
+
+    @deprecated("use create_db_objects instead")
+    def create_jobs(self, retry: Optional[bool] = True) -> List[str]:
+        return self.create_db_objects(retry=retry)
 
     def update_jobs(self, drop: Optional[bool] = False):
         df = self.get_jobs()
         if df:
             DEFAULT_LOGGER.info("update jobs", extra={"step": self})
-            if drop:
-                SCD1("fabricks", self.name, "jobs").table.drop()
 
-            SCD1("fabricks", self.name, "jobs").delete_missing(df, keys=["job_id"])
+            scd1 = SCD1("fabricks", self.name, "jobs")
+
+            if drop:
+                scd1.table.drop()
+            else:
+                diffs = scd1.get_differences_with_deltatable(df)
+                if diffs:
+                    DEFAULT_LOGGER.warning("schema drift detected", extra={"step": self})
+                    scd1.table.overwrite_schema(df=df)
+
+            scd1.delete_missing(df, keys=["job_id"])
 
         else:
-            DEFAULT_LOGGER.debug("no job", extra={"step": self})
+            DEFAULT_LOGGER.debug("nothing to do", extra={"step": self})
 
     def update_tables(self):
         df = self.database.get_tables()
@@ -276,14 +289,15 @@ class BaseStep:
             SCD1("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
 
         else:
-            DEFAULT_LOGGER.debug("no table", extra={"step": self})
+            DEFAULT_LOGGER.debug("nothing to do", extra={"step": self})
 
     def update_views(self):
         df = self.database.get_views()
 
-        DEFAULT_LOGGER.info("update views", extra={"step": self})
-        df = df.withColumn("job_id", expr("md5(view)"))
-        SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
+        if df:
+            DEFAULT_LOGGER.info("update views", extra={"step": self})
+            df = df.withColumn("job_id", expr("md5(view)"))
+            SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
 
     def update_dependencies(
         self,
@@ -314,7 +328,7 @@ class BaseStep:
                 )
 
         else:
-            DEFAULT_LOGGER.debug("no dependency", extra={"step": self})
+            DEFAULT_LOGGER.debug("nothing to do", extra={"step": self})
 
         return errors
 

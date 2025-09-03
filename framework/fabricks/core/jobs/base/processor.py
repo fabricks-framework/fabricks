@@ -1,47 +1,24 @@
 from abc import abstractmethod
 from functools import partial
-from typing import Optional, Sequence
+from typing import Optional
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 
 from fabricks.context import IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.error import (
+from fabricks.core.jobs.base.exception import (
     PostRunCheckException,
     PostRunCheckWarning,
     PostRunInvokeException,
     PreRunCheckException,
     PreRunCheckWarning,
     PreRunInvokeException,
+    SchemaDriftException,
     SkipRunCheckWarning,
 )
 from fabricks.core.jobs.base.invoker import Invoker
-from fabricks.metastore.table import SchemaDiff
 from fabricks.utils.write import write_stream
-
-
-class SchemaDriftError(Exception):
-    """Raised when a schema drift is detected."""
-
-    @staticmethod
-    def from_diffs(table_name: str, diffs: Sequence[SchemaDiff]):
-        added = [d.new_column or d.column for d in diffs if d.status == "added"]
-        diff_strs = []
-        if added:
-            diff_strs.append(f"Added columns: {', '.join(added)}")
-        removed = [d.column for d in diffs if d.status == "dropped"]
-        if removed:
-            diff_strs.append(f"Removed columns: {', '.join(removed)}")
-        modified = [f"{d.column} ({d.data_type} -> {d.new_data_type})" for d in diffs if d.status == "changed"]
-        if modified:
-            diff_strs.append(f"Modified columns: {', '.join(modified)}")
-        diff_str = "\r\n ".join(diff_strs)
-        return SchemaDriftError(f"Schema drift detected in table {table_name}:\n {diff_str}", diffs)
-
-    def __init__(self, message: str, diffs: Sequence[SchemaDiff]):
-        super().__init__(message)
-        self.diffs = diffs
 
 
 class Processor(Invoker):
@@ -102,13 +79,14 @@ class Processor(Invoker):
 
         df = self.base_transform(df)
 
-        if diffs := self.get_schema_differences(df):
+        diffs = self.get_schema_differences(df)
+        if diffs:
             if self.schema_drift or kwargs.get("reload", False):
                 DEFAULT_LOGGER.warning("schema drifted", extra={"job": self, "diffs": diffs})
                 self.update_schema(df=df)
 
             else:
-                raise SchemaDriftError.from_diffs(str(self), diffs)
+                raise SchemaDriftException.from_diffs(str(self), diffs)
 
         self.for_each_batch(df, batch, **kwargs)
 

@@ -1,4 +1,4 @@
-from fabricks.core.jobs.base.error import (
+from fabricks.core.jobs.base.exception import (
     CheckException,
     CheckWarning,
     PostRunCheckException,

@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.checker import Checker
-from fabricks.core.jobs.base.error import PostRunInvokeException, PreRunInvokeException
+from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.schedules import get_schedules
 from fabricks.utils.path import Path
 

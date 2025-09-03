@@ -10,12 +10,12 @@ from pyspark.sql.types import StructType
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore._types import AddedColumn, ChangedColumn, DroppedColumn, SchemaDiff
-from fabricks.metastore.relational import Relational
+from fabricks.metastore.dbobject import DbObject
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix
 
 
-class Table(Relational):
+class Table(DbObject):
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str, spark: Optional[SparkSession] = SPARK):
         return cls(step, topic, item, spark=spark)
