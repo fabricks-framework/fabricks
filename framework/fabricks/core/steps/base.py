@@ -261,8 +261,13 @@ class BaseStep:
     def create_jobs(self, retry: Optional[bool] = True) -> List[str]:
         return self.create_db_objects(retry=retry)
 
+    @deprecated("use update_configurations instead")
     def update_jobs(self, drop: Optional[bool] = False):
+        return self.update_configurations(drop=drop)
+
+    def update_configurations(self, drop: Optional[bool] = False):
         df = self.get_jobs()
+
         if df:
             DEFAULT_LOGGER.info("update jobs", extra={"step": self})
 
@@ -281,23 +286,31 @@ class BaseStep:
         else:
             DEFAULT_LOGGER.debug("nothing to do", extra={"step": self})
 
+    @deprecated("use update_tables_list instead")
     def update_tables(self):
+        return self.update_tables_list()
+
+    def update_tables_list(self):
         df = self.database.get_tables()
         if df:
             DEFAULT_LOGGER.info("update tables", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(table)"))
             SCD1("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
-
         else:
             DEFAULT_LOGGER.debug("nothing to do", extra={"step": self})
 
+    @deprecated("use update_views_list instead")
     def update_views(self):
-        df = self.database.get_views()
+        return self.update_views_list()
 
+    def update_views_list(self):
+        df = self.database.get_views()
         if df:
             DEFAULT_LOGGER.info("update views", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(view)"))
             SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
+        else:
+            DEFAULT_LOGGER.debug("nothing to do", extra={"step": self})
 
     def update_dependencies(
         self,
