@@ -244,8 +244,8 @@ class BaseStep:
 
                 if retry:
                     DEFAULT_LOGGER.warning("retry create jobs", extra={"step": self})
-                    self.update_tables()
-                    self.update_views()
+                    self.update_tables_list()
+                    self.update_views_list()
 
                     return self.create_db_objects(retry=False)
 
@@ -269,7 +269,7 @@ class BaseStep:
         df = self.get_jobs()
 
         if df:
-            DEFAULT_LOGGER.info("update jobs", extra={"step": self})
+            DEFAULT_LOGGER.info("update configurations", extra={"step": self})
 
             scd1 = SCD1("fabricks", self.name, "jobs")
 
@@ -293,7 +293,7 @@ class BaseStep:
     def update_tables_list(self):
         df = self.database.get_tables()
         if df:
-            DEFAULT_LOGGER.info("update tables", extra={"step": self})
+            DEFAULT_LOGGER.info("update tables list", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(table)"))
             SCD1("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
         else:
@@ -306,7 +306,7 @@ class BaseStep:
     def update_views_list(self):
         df = self.database.get_views()
         if df:
-            DEFAULT_LOGGER.info("update views", extra={"step": self})
+            DEFAULT_LOGGER.info("update views list", extra={"step": self})
             df = df.withColumn("job_id", expr("md5(view)"))
             SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
         else:
