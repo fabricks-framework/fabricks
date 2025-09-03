@@ -52,23 +52,23 @@ class SkipRunCheckWarning(CheckWarning):
 class SchemaDriftException(Exception):
     @staticmethod
     def from_diffs(table: str, diffs: Sequence[SchemaDiff]):
-        diff_strs = []
+        out = []
 
         added = [d.new_column or d.column for d in diffs if d.status == "added"]
         if added:
-            diff_strs.append(f"Added columns: {', '.join(added)}")
+            out.append("Added columns:\n" + "\n".join(f"\t{col}" for col in added))
 
         removed = [d.column for d in diffs if d.status == "dropped"]
         if removed:
-            diff_strs.append(f"Removed columns: {', '.join(removed)}")
+            out.append("Removed columns:\n" + "\n".join(f"\t{col}" for col in removed))
 
         changed = [f"{d.column} ({d.data_type} -> {d.new_data_type})" for d in diffs if d.status == "changed"]
         if changed:
-            diff_strs.append(f"Changed columns: {', '.join(changed)}")
+            out.append("Changed columns:\n" + "\n".join(f"\t{col}" for col in changed))
 
-        diff_str = "\r\n ".join(diff_strs)
+        out = "\n".join(out)
 
-        return SchemaDriftException(f"Schema drift detected in table {table}:\n {diff_str}", diffs)
+        return SchemaDriftException(f"Schema drift detected in table {table}:\n {out}", diffs)
 
     def __init__(self, message: str, diffs: Sequence[SchemaDiff]):
         super().__init__(message)
