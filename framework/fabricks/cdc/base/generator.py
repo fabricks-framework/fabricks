@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Union, Any, cast
+from typing import Any, List, Optional, Sequence, Union, cast
 
 from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
@@ -106,7 +106,8 @@ class Generator(Configurator):
             return None
 
         else:
-            from pyspark.sql.types import StructField, StructType, StringType
+            from pyspark.sql.types import StringType, StructField, StructType
+
             kwargs["mode"] = "complete"
             if "slice" in kwargs:
                 del kwargs["slice"]
@@ -114,16 +115,18 @@ class Generator(Configurator):
             df = self.get_data(src, **kwargs)
             df = self.reorder_columns(df)
             diffs = self.table.get_schema_differences(df)
-            df_diff = self.spark.createDataFrame([cast(Any,d.model_dump()) for d in diffs],
-                                                schema = StructType(
-                                                    [
-                                                        StructField("column", StringType(), False),
-                                                        StructField("data_type", StringType(), True),
-                                                        StructField("new_column", StringType(), True),
-                                                        StructField("new_data_type", StringType(), True),
-                                                        StructField("status", StringType(), True)
-                                                    ]
-                                                ))
+            df_diff = self.spark.createDataFrame(
+                [cast(Any, d.model_dump()) for d in diffs],
+                schema=StructType(
+                    [
+                        StructField("column", StringType(), False),
+                        StructField("data_type", StringType(), True),
+                        StructField("new_column", StringType(), True),
+                        StructField("new_data_type", StringType(), True),
+                        StructField("status", StringType(), True),
+                    ]
+                ),
+            )
             return df_diff
 
     def get_schema_differences(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[Sequence[SchemaDiff]]:
@@ -138,7 +141,7 @@ class Generator(Configurator):
             df = self.get_data(src, **kwargs)
             df = self.reorder_columns(df)
             return self.table.get_schema_differences(df)
-        
+
     def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
         d = self.get_schema_differences(src, **kwargs)
         if d is None:

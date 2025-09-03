@@ -635,7 +635,6 @@ dependencies = [
     { name = "azure-storage-queue" },
     { name = "databricks-sdk" },
     { name = "jinja2" },
-    { name = "mkdocs-material" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "sqlglot" },
@@ -658,8 +657,9 @@ dev = [
     { name = "yamlfix", version = "1.16.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9.1'" },
     { name = "yamlfix", version = "1.17.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9.1'" },
 ]
-doc = [
+docs = [
     { name = "mkdocs" },
+    { name = "mkdocs-material" },
 ]
 test = [
     { name = "pandas" },
@@ -675,7 +675,6 @@ requires-dist = [
     { name = "azure-storage-queue", specifier = ">=12.10.0,<13" },
     { name = "databricks-sdk", specifier = ">=0.20.0" },
     { name = "jinja2", specifier = ">=2.11.3" },
-    { name = "mkdocs-material", specifier = ">=9.6.18" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "pyyaml", specifier = ">=6.0.0" },
     { name = "sqlglot", specifier = ">=22.1.1" },
@@ -696,7 +695,10 @@ dev = [
     { name = "shandy-sqlfmt", specifier = ">=0.23.2" },
     { name = "yamlfix", specifier = ">=1.14.0" },
 ]
-doc = [{ name = "mkdocs", specifier = ">=1.6.1" }]
+docs = [
+    { name = "mkdocs", specifier = ">=1.6.1" },
+    { name = "mkdocs-material", specifier = ">=9.6.18" },
+]
 test = [
     { name = "pandas", specifier = ">=1.5.3" },
     { name = "pytest", specifier = ">=7.1.2" },

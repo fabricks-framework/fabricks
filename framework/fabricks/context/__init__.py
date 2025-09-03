@@ -3,6 +3,7 @@ from fabricks.context.runtime import (
     CATALOG,
     CONF_RUNTIME,
     FABRICKS_STORAGE,
+    FABRICKS_STORAGE_CREDENTIAL,
     GOLD,
     IS_JOB_CONFIG_FROM_YAML,
     IS_UNITY_CATALOG,
@@ -21,7 +22,6 @@ from fabricks.context.runtime import (
     SILVER,
     STEPS,
     VARIABLES,
-    FABRICKS_STORAGE_CREDENTIAL
 )
 from fabricks.context.spark_session import DBUTILS, SPARK, build_spark_session, init_spark_session
 

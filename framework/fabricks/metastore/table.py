@@ -1,5 +1,5 @@
 import re
-from typing import List, Literal, Optional, Sequence, Union, overload
+from typing import List, Optional, Sequence, Union, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
@@ -9,27 +9,11 @@ from pyspark.sql.types import StructType
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.metastore._types import AddedColumn, ChangedColumn, DroppedColumn, SchemaDiff
 from fabricks.metastore.relational import Relational
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix
-from pydantic import BaseModel
 
-class SchemaDiff(BaseModel):
-    column: str
-    data_type: Optional[str]
-    new_column: Optional[str] = None
-    new_data_type: Optional[str] = None
-    status: Literal["added", "changed", "dropped"]
-
-    def __str__(self):
-        if self.status == "added":
-            return f"Added {self.new_column} with type {self.new_data_type}"
-        elif self.status == "changed":
-            return f"Changed {self.column} from {self.data_type} to {self.new_data_type}"
-        elif self.status == "dropped":
-            return f"Dropped {self.column}"
-        else:
-            return super().__str__() # should not happen, but just in case
 
 class Table(Relational):
     @classmethod
@@ -271,18 +255,32 @@ class Table(Relational):
                 df1 = df1.drop("__identity")
 
         all_columns = set(df1.columns).union(set(df.columns))
+
         df1_dict = {name: dtype for name, dtype in df1.dtypes}
         df2_dict = {name: dtype for name, dtype in df.dtypes}
+
         diffs: list[SchemaDiff] = []
+
         for c in all_columns:
             old_datatype = df1_dict.get(c)
             new_datatype = df2_dict.get(c)
+
             if old_datatype is None and new_datatype is not None:
-                diffs.append(SchemaDiff(column=c, new_column=c, data_type=None, new_data_type=new_datatype, status="added"))
+                diffs.append(AddedColumn(new_column=c, new_data_type=new_datatype))
+
             elif old_datatype is not None and new_datatype is None:
-                diffs.append(SchemaDiff(column=c, new_column=None, data_type=old_datatype, new_data_type=None, status="dropped"))
+                diffs.append(DroppedColumn(column=c, data_type=old_datatype))
+
             elif old_datatype != new_datatype:
-                diffs.append(SchemaDiff(column=c, new_column=c, data_type=old_datatype, new_data_type=new_datatype, status="changed"))
+                assert old_datatype is not None
+                assert new_datatype is not None
+                diffs.append(
+                    ChangedColumn(
+                        column=c,
+                        data_type=old_datatype,
+                        new_data_type=new_datatype,
+                    )
+                )
 
         if diffs:
             DEFAULT_LOGGER.debug("difference(s) with delta table", extra={"job": self, "df": df})
@@ -293,7 +291,7 @@ class Table(Relational):
         assert self.is_registered, f"{self} not registered"
 
         diffs = self.get_schema_differences(df)
-        diffs = [d for d in diffs if d.status in ('added', 'changed')]
+        diffs = [d for d in diffs if d.status in ("added", "changed")]
 
         if diffs:
             DEFAULT_LOGGER.info("update schema", extra={"job": self, "df": diffs})

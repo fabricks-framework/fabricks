@@ -26,7 +26,7 @@ class SchemaDriftError(Exception):
 
     @staticmethod
     def from_diffs(table_name: str, diffs: Sequence[SchemaDiff]):
-        added = [d.new_column or d.column for d in diffs if d.status =="added"]
+        added = [d.new_column or d.column for d in diffs if d.status == "added"]
         diff_strs = []
         if added:
             diff_strs.append(f"Added columns: {', '.join(added)}")
@@ -42,6 +42,7 @@ class SchemaDriftError(Exception):
     def __init__(self, message: str, diffs: Sequence[SchemaDiff]):
         super().__init__(message)
         self.diffs = diffs
+
 
 class Processor(Invoker):
     def filter_where(self, df: DataFrame) -> DataFrame:

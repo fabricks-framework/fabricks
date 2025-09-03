@@ -1,10 +1,12 @@
 import json
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
 
 from azure.core.exceptions import ResourceExistsError
 from azure.storage.queue import QueueClient
+
 if TYPE_CHECKING:
     from azure.core.credentials import TokenCredential
+
 
 class AzureQueue:
     def __init__(
@@ -23,7 +25,11 @@ class AzureQueue:
             self.storage_account = storage_account
             self.access_key = access_key
             self.credential = credential
-            connection_string = f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net" if access_key else None
+            connection_string = (
+                f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net"
+                if access_key
+                else None
+            )
 
         assert connection_string
         self.connection_string = connection_string
@@ -35,7 +41,9 @@ class AzureQueue:
             if self.connection_string is not None:
                 self._queue_client = QueueClient.from_connection_string(self.connection_string, queue_name=self.name)
             else:
-                assert self.storage_account and (self.access_key or self.credential), "Either access_key or credential must be provided"
+                assert self.storage_account and (self.access_key or self.credential), (
+                    "Either access_key or credential must be provided"
+                )
                 self._queue_client = QueueClient(
                     account_url=f"https://{self.storage_account}.queue.core.windows.net",
                     queue_name=self.name,

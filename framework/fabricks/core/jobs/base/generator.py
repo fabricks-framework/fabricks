@@ -373,7 +373,7 @@ class Generator(Configurator):
         if d is None:
             return None
         return len(d) > 0
-    
+
     def enable_liquid_clustering(self):
         df = self.table.dataframe
         enable = False
