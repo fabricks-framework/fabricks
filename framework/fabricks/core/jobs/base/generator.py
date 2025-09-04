@@ -191,7 +191,7 @@ class Generator(Configurator):
                 powerbi = step_powerbi
 
             if powerbi:
-                properties = {
+                default_properties = {
                     "delta.enableTypeWidening": "true",
                     "delta.columnMapping.mode": "name",
                     "delta.minReaderVersion": "2",
@@ -199,7 +199,7 @@ class Generator(Configurator):
                     "fabricks.last_version": "0",
                 }
             else:
-                properties = {
+                default_properties = {
                     "delta.enableTypeWidening": "true",
                     "delta.enableDeletionVectors": "true",
                     "delta.columnMapping.mode": "name",
@@ -247,12 +247,16 @@ class Generator(Configurator):
                 if partition_by:
                     partitioning = True
 
+            properties = None
             if not powerbi:
                 # first take from job options, then from step options
                 if self.options.table.get_dict("properties"):
                     properties = self.options.table.get_dict("properties")
                 elif self.step_conf.get("table_options", {}).get("properties", {}):
                     properties = self.step_conf.get("table_options", {}).get("properties", {})
+
+            if properties is None:
+                properties = default_properties
 
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
