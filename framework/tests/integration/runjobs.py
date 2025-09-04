@@ -26,7 +26,7 @@ dbutils.widgets.dropdown("drop", "True", ["True", "False"])
 # COMMAND ----------
 
 i = dbutils.widgets.get("i")
-i = int(i) if i != "0" else None
+i = int(i) if i != "0" else 1
 
 # COMMAND ----------
 
@@ -44,6 +44,7 @@ drop = drop.lower() == "true"
 
 # COMMAND ----------
 
+
 def move_files(iter: int):
     if iter == 1:
         paths.landing.rm()
@@ -60,7 +61,9 @@ def move_files(iter: int):
 
     landing_to_raw(iter)
 
+
 # COMMAND ----------
+
 
 def do(iter: int):
     move_files(iter)
@@ -74,9 +77,10 @@ def do(iter: int):
 
         j.run()
 
+
 # COMMAND ----------
 
-for iter in range(1, i +1):
+for iter in range(1, i + 1):
     do(iter=iter)
 
 # COMMAND ----------
@@ -89,5 +93,3 @@ dbutils.notebook.exit(value="exit (0)")  # type: ignore
 # MAGIC select * from silver.princess_type_widening
 
 # COMMAND ----------
-
-
