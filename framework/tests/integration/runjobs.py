@@ -88,5 +88,3 @@ for iter in range(1, i + 1):
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
 
 # COMMAND ----------
-
-

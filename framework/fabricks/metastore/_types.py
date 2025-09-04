@@ -10,20 +10,21 @@ class SchemaDiff(BaseModel):
     new_data_type: Optional[str] = None
     status: Literal["added", "changed", "dropped"]
 
-
     @property
     def type_widening_compatible(self) -> bool:
         if self.status != "changed":
             return False
-        
-        widening_map = {
+
+        assert self.new_data_type
+        assert self.data_type
+        map = {
             "byte": {"short", "int", "long", "decimal", "double"},
             "short": {"int", "long", "decimal", "double"},
             "int": {"long", "decimal", "double"},
             "long": {"decimal"},
             "float": {"double"},
         }
-        return self.new_data_type.lower() in widening_map.get(self.data_type.lower(), set())
+        return self.new_data_type.lower() in map.get(self.data_type.lower(), set())
 
 
 class DroppedColumn(SchemaDiff):
@@ -51,7 +52,6 @@ class AddedColumn(SchemaDiff):
         return f"added {self.new_column} with type {self.new_data_type}"
 
 
-
 class ChangedColumn(SchemaDiff):
     def __init__(self, column: str, data_type: str, new_data_type: str):
         super().__init__(
@@ -63,4 +63,3 @@ class ChangedColumn(SchemaDiff):
 
     def __str__(self):
         return f"changed {self.column} from {self.data_type} to {self.new_data_type} (widening compatible: {self.type_widening_compatible})"
-

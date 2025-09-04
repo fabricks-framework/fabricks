@@ -1,3 +1,4 @@
+---
 site_name: Fabricks
 theme:
   features:
@@ -20,7 +21,7 @@ theme:
     - search.share
     - search.suggest
     - toc.follow
-  name: material  
+  name: material
   locale: en
   palette:
     - media: (prefers-color-scheme)
@@ -41,26 +42,26 @@ theme:
       toggle:
         icon: material/lightbulb-outline
         name: Switch to system preference
-nav:    
-  - Introduction: 
-    - Intro: 'index.md'
-    - Overview: 'introduction/overview.md'
-    - Layers: 'introduction/layers.md'
+nav:
+  - Introduction:
+      - Intro: index.md
+      - Overview: introduction/overview.md
+      - Layers: introduction/layers.md
   - Steps:
-    - Bronze: 'steps/bronze.md'
-    - Silver: 'steps/silver.md'
-    - Gold: 'steps/gold.md'
+      - Bronze: steps/bronze.md
+      - Silver: steps/silver.md
+      - Gold: steps/gold.md
   - Reference:
-    - Change Data Capture (CDC): 'reference/cdc.md'
-    - Checks & Data Quality: 'reference/checks-data-quality.md'
-    - Table Options: 'reference/table-options.md'
-    - Extenders, UDFs & Parsers: 'reference/extenders-udfs-parsers.md'
+      - Change Data Capture (CDC): reference/cdc.md
+      - Checks & Data Quality: reference/checks-data-quality.md
+      - Table Options: reference/table-options.md
+      - Extenders, UDFs & Parsers: reference/extenders-udfs-parsers.md
   - Helpers:
-    - Initialize: 'helpers/init.md'
-    - Runtime: 'helpers/runtime.md'
-    - Job: 'helpers/job.md'
-    - Step: 'helpers/step.md'
-    - Schedule: 'helpers/schedule.md'
+      - Initialize: helpers/init.md
+      - Runtime: helpers/runtime.md
+      - Job: helpers/job.md
+      - Step: helpers/step.md
+      - Schedule: helpers/schedule.md
 repo_url: https://github.com/fabricks-framework/fabricks
 repo_name: fabricks-framework/fabricks
 edit_uri: blob/main/framework/docs/

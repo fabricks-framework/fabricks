@@ -68,7 +68,7 @@ class SchemaDriftException(Exception):
         changed = [f"{d.column} ({d.data_type} -> {d.new_data_type})" for d in diffs if d.status == "changed"]
         if changed:
             if False in [d.type_widening_compatible for d in diffs if d.status == "changed"]:
-              type_widening_compatible = False
+                type_widening_compatible = False
 
             out.append("changed columns:\n" + "\n".join(f"\t- {col}" for col in changed))
 
