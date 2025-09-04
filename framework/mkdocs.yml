@@ -61,9 +61,6 @@ nav:
     - Job: 'helpers/job.md'
     - Step: 'helpers/step.md'
     - Schedule: 'helpers/schedule.md'
-  - About:
-    - License: license.md
-    - Release Notes: release-notes.md
 repo_url: https://github.com/fabricks-framework/fabricks
 repo_name: fabricks-framework/fabricks
 edit_uri: blob/main/framework/docs/

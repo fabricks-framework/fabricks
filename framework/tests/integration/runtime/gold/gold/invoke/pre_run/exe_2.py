@@ -27,4 +27,4 @@ print(step, topic, item)
 
 # COMMAND ----------
 
-dbutils.notebook.exit(value="exit (0)")
+dbutils.notebook.exit(value="exit (0)")  # type: ignore

@@ -338,7 +338,7 @@ class Table(DbObject):
 
                 elif row.status == "changed":
                     assert row.new_data_type is not None, "new_data_type must be defined for changed columns"
-                    
+
                     try:
                         self.change_column(row.column, row.new_data_type)
                     except AnalysisException:

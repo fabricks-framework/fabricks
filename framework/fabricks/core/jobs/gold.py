@@ -336,6 +336,7 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
         else:
+            self.register_udfs()
             super().create()
             if self.options.job.get_boolean("persist_last_timestamp"):
                 self._update_last_timestamp(create=True)
@@ -409,7 +410,3 @@ class Gold(BaseJob):
 
         self.overwrite_schema()
         self.run(reload=True)
-
-    def create():
-        self.register_udfs()
-        super().create()
