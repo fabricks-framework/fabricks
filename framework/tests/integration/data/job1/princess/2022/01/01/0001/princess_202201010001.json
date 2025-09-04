@@ -3,6 +3,8 @@
         "id": 6002,
         "name": "Astrid",
         "order_by": 1,
+        "integerField": 1,
+        "floatField": 1.1,
         "BEL_DeleteDateUtc": null,
         "BEL_RestoredDateUtc": null,
         "BEL_UpdateDateUtc": "2022-01-01 01:00:00"
@@ -10,7 +12,8 @@
     {
         "id": 6002,
         "name": "Astrid",
-        "order_by": 2,
+        "integerField": 1,
+        "floatField": 1.1,
         "BEL_DeleteDateUtc": null,
         "BEL_RestoredDateUtc": null,
         "BEL_UpdateDateUtc": "2022-01-01 01:00:00"
