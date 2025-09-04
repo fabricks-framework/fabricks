@@ -409,3 +409,7 @@ class Gold(BaseJob):
 
         self.overwrite_schema()
         self.run(reload=True)
+
+    def create():
+        self.register_udfs()
+        super().create()

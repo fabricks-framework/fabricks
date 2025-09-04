@@ -45,4 +45,5 @@ class ChangedColumn(SchemaDiff):
             status="changed",
         )
 
+    def __str__(self):
         return f"Changed {self.column} from {self.data_type} to {self.new_data_type}"

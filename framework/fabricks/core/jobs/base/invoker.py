@@ -23,6 +23,8 @@ class Invoker(Checker):
     def invoke_job(self, position: str, schedule: Optional[str] = None):
         invokers = self.options.invokers.get_list(position)
 
+        errors = []
+
         if invokers:
             for i in invokers:
                 DEFAULT_LOGGER.info(f"{position}-invoke", extra={"job": self})
@@ -44,11 +46,14 @@ class Invoker(Checker):
 
                 except Exception as e:
                     if position == "pre_run":
-                        raise PreRunInvokeException(e)
+                        errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
-                        raise PostRunInvokeException(e)
+                        errors.append(PostRunInvokeException(e))
                     else:
-                        raise e
+                        errors.append(e)
+
+        if errors:
+            raise Exception(errors)
 
     def invoke_step(self, position: str, schedule: Optional[str] = None):
         invokers = self.step_conf.get("invoker_options", {}).get(position, [])
