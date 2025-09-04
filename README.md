@@ -16,20 +16,6 @@ Although Fabricks is primarily designed to run on **Databricks**, the code using
 
 No need for magic here. It's all your Data Lakehouse/Data Warehouse code in one place. Simple and great! ✨ You don't need expensive Delta Live Tables, ETL Tools, or DBT. It's basically just writing SQL Queries and letting Fabricks do the magic 🧙‍♂️. 
 
-## Basic Terminology 📚
-- Runtime: The folder/repository where your Lakehouse lives.
-- Step: A layer in the ETL process, which should follow a specific order. The medallion architecture with `bronze`/`silver`/`gold` 🥉🥈🥇 is commonly used, but you may need additional steps such as `distribution` or `transfer` in your ETL config. 
-- Job: Often equivalent to a table, a task to be executed during a `Schedule`. 📋 
-- Schedule/Load: Executes a number of jobs, loading data into tables and potentially distributing them. ⏰🔄 
-
-You'll find more documentation in the [Framework Readme](framework/README.md), with additional information coming soon. 📖👀
-
-For basic examples, please refer to our tests:
-- [Jobs Config](framework/tests/integration/runtime/gold/gold/invoke/_config.invoke.yml) ⚙️
-  - `pre_run` is for Notebooks to be run before a job, typically used for ingestion
-  - `post_run` is for Notebooks to be run after a job, typically used for distribution
-- [Sample SQL Query for a Job](framework/tests/integration/runtime/gold/gold/fact/dependency_sql.sql) 📝
-
 ## About this repo 🕵️‍♂️
 We're just getting started with open-sourcing Fabricks! There are many areas where we want to improve:
 - Implement testing in GitHub Actions 🧪👨‍💻
@@ -40,7 +26,15 @@ We're just getting started with open-sourcing Fabricks! There are many areas whe
 - Create a contribution guide for the open-source community 🤝🌐
 
 ## More Information ℹ️
-See [Framework Readme](framework/README.md)
+See [Fabricks Documentation](https://fabricks-framework.github.io/fabricks/)
+
+### Release Notes
+
+For the latest releases and detailed changelogs, please visit the [Fabricks Releases page on GitHub](https://github.com/fabricks-framework/fabricks/releases).
+
+### Runtime Requirements
+
+`Fabricks 2.4.0` was successfully tested on Databricks Runtime `16.4 LTS`.
 
 ## Related Projects 🔗
 - We use [odbc2deltalake](https://github.com/bmsuisse/odbc2deltalake) for extensive SQL Server data ingestion in a pre_run notebook. 🔌🏊‍♂️

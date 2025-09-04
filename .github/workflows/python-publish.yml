@@ -38,3 +38,6 @@ jobs:
       working-directory: framework
     - name: Publish package to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+    - name: Deploy docs to GitHub Pages
+      run: |
+        mkdocs gh-deploy
