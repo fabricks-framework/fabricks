@@ -76,6 +76,16 @@
 - job:
     step: bronze
     topic: princess
+    item: type_widening
+    tags: [test]
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
     item: order_duplicate
     tags: [test]
     options:

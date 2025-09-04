@@ -44,35 +44,50 @@ drop = drop.lower() == "true"
 
 # COMMAND ----------
 
-if i == 1:
-    paths.landing.rm()
+def move_files(iter: int):
+    if iter == 1:
+        paths.landing.rm()
 
-    if CATALOG is not None:
-        spark.sql(f"use catalog {CATALOG}")
-        spark.sql("drop schema if exists bronze cascade")
-        spark.sql("create schema if not exists bronze")
+        if CATALOG is not None:
+            spark.sql(f"use catalog {CATALOG}")
+            spark.sql("drop schema if exists bronze cascade")
+            spark.sql("create schema if not exists bronze")
 
-    paths.raw.rm()
-    paths.out.rm()
+        paths.raw.rm()
+        paths.out.rm()
 
-    git_to_landing()
+        git_to_landing()
 
-# COMMAND ----------
-
-if i:
-    landing_to_raw(i)
+    landing_to_raw(iter)
 
 # COMMAND ----------
 
-for job in jobs:
-    j = get_job(job=job)
+def do(iter: int):
+    move_files(iter)
 
-    if drop and i == 1:
-        j.drop()
-        j.create()
+    for job in jobs:
+        j = get_job(job=job)
 
-    j.run()
+        if drop and iter == 1:
+            j.drop()
+            j.create()
+
+        j.run()
+
+# COMMAND ----------
+
+for iter in range(1, i +1):
+    do(iter=iter)
 
 # COMMAND ----------
 
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from silver.princess_type_widening
+
+# COMMAND ----------
+
+
