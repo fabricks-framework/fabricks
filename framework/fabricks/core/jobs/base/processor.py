@@ -86,7 +86,11 @@ class Processor(Invoker):
                 self.update_schema(df=df)
 
             else:
-                raise SchemaDriftException.from_diffs(str(self), diffs)
+                e = SchemaDriftException.from_diffs(str(self), diffs)
+                if e.type_widening_compatible:
+                    DEFAULT_LOGGER.warning(e, extra={"job": self, "diffs": diffs})
+                else:
+                    raise e
 
         self.for_each_batch(df, batch, **kwargs)
 

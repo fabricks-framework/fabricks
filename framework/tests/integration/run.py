@@ -58,15 +58,22 @@ gold = [
 # COMMAND ----------
 
 if i == 2:
+    bronze = bronze + [
+        {"step": "bronze", "topic": "princess", "item": "type_widening"},
+    ]
+
     silver = silver + [
         {"step": "silver", "topic": "prince", "item": "deletelog"},
         {"step": "silver", "topic": "princess", "item": "append"},
         {"step": "silver", "topic": "princess", "item": "latest"},
         {"step": "silver", "topic": "princess", "item": "schema_drift"},
         {"step": "silver", "topic": "princess", "item": "check"},
+        {"step": "silver", "topic": "princess", "item": "type_widening"},
     ]
 
     gold = gold + [
+        {"step": "gold", "topic": "type_widening", "item": "overwrite"},
+        {"step": "gold", "topic": "type_widening", "item": "merge"},
         {"step": "semantic", "topic": "fact", "item": "schema_drift"},
         {"step": "gold", "topic": "scd1", "item": "last_timestamp"},
     ]

@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=../../../job-schema.json
+- job:
+    step: gold
+    topic: type_widening
+    item: merge
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
+- job:
+    step: gold
+    topic: type_widening
+    item: overwrite
+    tags: [test]
+    options:
+      mode: complete

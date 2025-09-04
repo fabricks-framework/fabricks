@@ -89,7 +89,4 @@ dbutils.notebook.exit(value="exit (0)")  # type: ignore
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC select * from silver.princess_type_widening
 
-# COMMAND ----------

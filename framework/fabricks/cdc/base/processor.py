@@ -346,11 +346,8 @@ class Processor(Generator):
         if df:
             df = self.reorder_columns(df)
 
-            name = f"{self.database}_{'_'.join(self.levels)}__append"
-            create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
-
             DEFAULT_LOGGER.debug("append", extra={"job": self})
-            df.write.format("delta").mode("append").save(self.table.delta_path.string)
+            df.write.format("delta").mode("append").option("mergeSchema", "true").save(self.table.delta_path.string)
 
     def overwrite(
         self,
@@ -369,12 +366,11 @@ class Processor(Generator):
                 if kwargs.get("update_where"):
                     dynamic = True
 
+            writer = df.write.format("delta").mode("overwrite")
             if dynamic:
-                self.spark.sql("set spark.sql.sources.partitionOverwriteMode=dynamic")
+                writer.option("partitionOverwriteMode", "dynamic").option("mergeSchema", "true")
+            else:
+                writer.option("overwriteSchema", "true")
 
             DEFAULT_LOGGER.info("overwrite", extra={"job": self})
-
-            name = f"{self.database}_{'_'.join(self.levels)}__overwrite"
-            create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
-
-            self.spark.sql(f"insert overwrite table {self.table} by name select * from global_temp.{name}")
+            writer.save(self.table.delta_path.string)

@@ -45,3 +45,19 @@ def test_gold_scd1_last_timestamp():
     max_timestamp = SPARK.sql("select max(`__valid_from`) as __timestamp from expected.gold_scd2_job1").collect()[0][0]
     last_timestamp = SPARK.sql("select * from gold.scd1_last_timestamp__last_timestamp").collect()[0][0]
     assert max_timestamp == last_timestamp, "persisted last timestamp is not max timestamp"
+
+
+@pytest.mark.order(226)
+def test_gold_type_widening_complete():
+    j = get_job(step="gold", topic="type_widening", item="complete")
+    df = spark.sql("select __rescued_data['integerField'] :: double as field from silver.princess_type_widening group by all")
+    job._for_each_batch(df)
+    assert True
+
+
+@pytest.mark.order(227)
+def test_gold_type_widening_complete():
+    j = get_job(step="gold", topic="type_widening", item="merge")
+    df = spark.sql("select __rescued_data['integerField'] :: double as field from silver.princess_type_widening group by all")
+    job._for_each_batch(df)
+    assert True
