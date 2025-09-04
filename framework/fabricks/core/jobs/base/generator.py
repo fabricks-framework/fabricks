@@ -192,6 +192,7 @@ class Generator(Configurator):
 
             if powerbi:
                 properties = {
+                    "delta.enableTypeWidening": "true",
                     "delta.columnMapping.mode": "name",
                     "delta.minReaderVersion": "2",
                     "delta.minWriterVersion": "5",
@@ -199,6 +200,7 @@ class Generator(Configurator):
                 }
             else:
                 properties = {
+                    "delta.enableTypeWidening": "true",
                     "delta.enableDeletionVectors": "true",
                     "delta.columnMapping.mode": "name",
                     "delta.minReaderVersion": "2",
