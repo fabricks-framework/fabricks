@@ -347,7 +347,7 @@ class Processor(Generator):
             df = self.reorder_columns(df)
 
             DEFAULT_LOGGER.debug("append", extra={"job": self})
-            df.write.format("delta").mode("append").option("mergeSchema", "true").save(self.table.delta_path.string)
+            df.write.format("delta").mode("append").save(self.table.delta_path.string)
 
     def overwrite(
         self,
@@ -368,9 +368,7 @@ class Processor(Generator):
 
             writer = df.write.format("delta").mode("overwrite")
             if dynamic:
-                writer.option("partitionOverwriteMode", "dynamic").option("mergeSchema", "true")
-            else:
-                writer.option("overwriteSchema", "true")
+                writer.option("partitionOverwriteMode", "dynamic")
 
             DEFAULT_LOGGER.info("overwrite", extra={"job": self})
             writer.save(self.table.delta_path.string)

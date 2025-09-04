@@ -88,7 +88,7 @@ class Processor(Invoker):
             else:
                 e = SchemaDriftException.from_diffs(str(self), diffs)
                 if e.type_widening_compatible:
-                    DEFAULT_LOGGER.warning(e, extra={"job": self, "diffs": diffs})
+                    self.update_schema(df=df, widen_types=True)
                 else:
                     raise e
 

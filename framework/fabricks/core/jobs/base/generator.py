@@ -311,13 +311,18 @@ class Generator(Configurator):
                 if comment:
                     self.table.add_comment(comment=comment)
 
-    def _update_schema(self, df: Optional[DataFrame] = None, overwrite: Optional[bool] = False):
+    def _update_schema(
+        self,
+        df: Optional[DataFrame] = None,
+        overwrite: Optional[bool] = False,
+        widen_types: Optional[bool] = False,
+    ):
         def _update_schema(df: DataFrame, batch: Optional[int] = None):
             context = self.get_cdc_context(df, reload=True)
             if overwrite:
                 self.cdc.overwrite_schema(df, **context)
             else:
-                self.cdc.update_schema(df, **context)
+                self.cdc.update_schema(df, widen_types=widen_types, **context)
 
         if self.persist:
             if df is not None:
@@ -348,8 +353,8 @@ class Generator(Configurator):
         else:
             raise ValueError(f"{self.mode} not allowed")
 
-    def update_schema(self, df: Optional[DataFrame] = None):
-        self._update_schema(df=df, overwrite=False)
+    def update_schema(self, df: Optional[DataFrame] = None, widen_types: Optional[bool] = False):
+        self._update_schema(df=df, overwrite=False, widen_types=widen_types)
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         self._update_schema(df=df, overwrite=True)

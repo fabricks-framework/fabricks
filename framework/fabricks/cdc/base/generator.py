@@ -148,7 +148,13 @@ class Generator(Configurator):
             return None
         return len(d) > 0
 
-    def _update_schema(self, src: Union[DataFrame, Table, str], overwrite: bool = False, **kwargs):
+    def _update_schema(
+        self,
+        src: Union[DataFrame, Table, str],
+        overwrite: bool = False,
+        widen_types: bool = False,
+        **kwargs,
+    ):
         if self.is_view:
             assert not isinstance(src, (DataFrame, CDataFrame)), "dataframe not allowed"
             self.create_or_replace_view(src=src)
@@ -163,7 +169,7 @@ class Generator(Configurator):
             if overwrite:
                 self.table.overwrite_schema(df)
             else:
-                self.table.update_schema(df)
+                self.table.update_schema(df, widen_types=widen_types)
 
     def update_schema(self, src: Union[DataFrame, Table, str], **kwargs):
         self._update_schema(src=src, **kwargs)

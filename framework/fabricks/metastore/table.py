@@ -287,16 +287,21 @@ class Table(DbObject):
 
         return diffs
 
-    def update_schema(self, df: DataFrame):
+    def update_schema(self, df: DataFrame, widen_types: bool = False):
         assert self.is_registered, f"{self} not registered"
         if not self.column_mapping_enabled:
             self.enable_column_mapping()
 
         diffs = self.get_schema_differences(df)
-        diffs = [d for d in diffs if d.status in ("added", "changed")]
+        if widen_types:
+            diffs = [d for d in diffs if d.type_widening_compatible]
+            msg = "update schema (type widening only)"
+        else:
+            diffs = [d for d in diffs if d.status in ("added", "changed")]
+            msg = "update schema"
 
         if diffs:
-            DEFAULT_LOGGER.info("update schema", extra={"job": self, "df": diffs})
+            DEFAULT_LOGGER.info(msg, extra={"job": self, "df": diffs})
 
             for row in diffs:
                 DEFAULT_LOGGER.debug(
