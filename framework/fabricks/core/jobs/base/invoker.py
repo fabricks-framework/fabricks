@@ -1,5 +1,5 @@
 import json
-from typing import Optional, overload
+from typing import Optional
 
 from pyspark.sql import DataFrame
 
@@ -12,15 +12,18 @@ from fabricks.utils.path import Path
 
 
 class Invoker(Checker):
+    def invoke(self, schedule: Optional[str] = None):
+        self._invoke_job(position="run", schedule=schedule)
+
     def invoke_pre_run(self, schedule: Optional[str] = None):
-        self.invoke_job(position="pre_run", schedule=schedule)
-        self.invoke_step(position="pre_run", schedule=schedule)
+        self._invoke_job(position="pre_run", schedule=schedule)
+        self._invoke_step(position="pre_run", schedule=schedule)
 
     def invoke_post_run(self, schedule: Optional[str] = None):
-        self.invoke_job(position="post_run", schedule=schedule)
-        self.invoke_step(position="post_run", schedule=schedule)
+        self._invoke_job(position="post_run", schedule=schedule)
+        self._invoke_step(position="post_run", schedule=schedule)
 
-    def invoke_job(self, position: str, schedule: Optional[str] = None):
+    def _invoke_job(self, position: str, schedule: Optional[str] = None):
         invokers = self.options.invokers.get_list(position)
 
         errors = []
@@ -36,12 +39,11 @@ class Invoker(Checker):
                     arguments = i.get("arguments") or {}
                     timeout = i.get("timeout")
 
-                    self.invoke(
+                    self._run_notebook(
                         path=path,
                         arguments=arguments,
                         timeout=timeout,
                         schedule=schedule,
-                        position=position,
                     )
 
                 except Exception as e:
@@ -55,7 +57,7 @@ class Invoker(Checker):
         if errors:
             raise Exception(errors)
 
-    def invoke_step(self, position: str, schedule: Optional[str] = None):
+    def _invoke_step(self, position: str, schedule: Optional[str] = None):
         invokers = self.step_conf.get("invoker_options", {}).get(position, [])
 
         errors = []
@@ -71,12 +73,11 @@ class Invoker(Checker):
                     arguments = i.get("arguments", {})
                     timeout = i.get("timeout")
 
-                    self.invoke(
+                    self._run_notebook(
                         path=path,
                         arguments=arguments,
                         timeout=timeout,
                         schedule=schedule,
-                        position=position,
                     )
 
                 except Exception as e:
@@ -90,26 +91,12 @@ class Invoker(Checker):
         if errors:
             raise Exception(errors)
 
-    @overload
-    def invoke(
+    def _run_notebook(
         self,
         path: Path,
-        arguments: dict,
-        timeout: Optional[int] = None,
-        schedule: Optional[str] = None,
-        position: Optional[str] = None,
-    ): ...
-
-    @overload
-    def invoke(self, *, schedule: Optional[str] = None): ...
-
-    def invoke(
-        self,
-        path: Optional[Path] = None,
         arguments: Optional[dict] = None,
         timeout: Optional[int] = None,
         schedule: Optional[str] = None,
-        position: Optional[str] = None,
     ):
         """
         Invokes a notebook job.
@@ -124,19 +111,6 @@ class Invoker(Checker):
 
         """
         from databricks.sdk.runtime import dbutils
-
-        if position is None:
-            invokers = self.options.invokers.get_list("run")
-            assert len(invokers) == 1, "Only one run invoker is allowed"
-            invoker = invokers[0]
-
-            notebook = invoker.get("notebook")
-            path = PATH_RUNTIME.joinpath(notebook)
-
-            arguments = invoker.get("arguments", {})
-            timeout = invoker.get("timeout")
-
-        assert path is not None
 
         for file_format in [None, ".py", ".ipynb"]:
             path_with_file_format = path.append(file_format) if file_format else path
