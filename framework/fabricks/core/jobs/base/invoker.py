@@ -58,6 +58,8 @@ class Invoker(Checker):
     def invoke_step(self, position: str, schedule: Optional[str] = None):
         invokers = self.step_conf.get("invoker_options", {}).get(position, [])
 
+        errors = []
+
         if invokers:
             for i in invokers:
                 DEFAULT_LOGGER.info(f"{position}-invoke", extra={"step": self.step})
@@ -79,11 +81,14 @@ class Invoker(Checker):
 
                 except Exception as e:
                     if position == "pre_run":
-                        raise PreRunInvokeException(e)
+                        errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
-                        raise PostRunInvokeException(e)
+                        errors.append(PostRunInvokeException(e))
                     else:
-                        raise e
+                        errors.append(e)
+
+        if errors:
+            raise Exception(errors)
 
     @overload
     def invoke(
@@ -133,10 +138,10 @@ class Invoker(Checker):
 
         assert path is not None
 
-        for ext in [None, ".py", ".ipynb"]:
-            path_incl_ext = path.append(ext) if ext else path
-            if path_incl_ext.exists():
-                path = path_incl_ext
+        for file_format in [None, ".py", ".ipynb"]:
+            path_with_file_format = path.append(file_format) if file_format else path
+            if path_with_file_format.exists():
+                path = path_with_file_format
                 break
 
         if timeout is None:
