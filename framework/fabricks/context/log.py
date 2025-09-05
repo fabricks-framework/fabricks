@@ -12,6 +12,7 @@ logging.getLogger("SQLQueryContextLogger").setLevel(logging.CRITICAL)
 
 DEFAULT_LOGGER: Final[logging.Logger] = logger
 
+
 def send_message_to_channel(
     channel: str,
     title: str,

@@ -86,10 +86,8 @@ class Processor(Invoker):
                 self.update_schema(df=df)
 
             else:
-                only_type_widening_compatible = all(
-                    d.type_widening_compatible for d in diffs if d.status == "changed"
-                )
-                if only_type_widening_compatible:
+                only_type_widening_compatible = all(d.type_widening_compatible for d in diffs if d.status == "changed")
+                if only_type_widening_compatible and self.table.type_widening_enabled:
                     self.update_schema(df=df, widen_types=True)
                 else:
                     raise SchemaDriftException.from_diffs(str(self), diffs)
