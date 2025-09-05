@@ -51,17 +51,35 @@ def test_gold_scd1_last_timestamp():
 def test_gold_type_widening_complete():
     j = get_job(step="gold", topic="type_widening", item="complete")
     df = SPARK.sql(
-        "select __rescued_data['integerField'] :: double as field from silver.princess_type_widening group by all"
+        """
+        select 
+          __rescued_data['integerField'] :: double as field 
+        from 
+          silver.princess_type_widening 
+        group by 
+          all
+        """
     )
     j._for_each_batch(df)
-    assert True
+
+    data_type = j.table.get_column_data_type("field")
+    assert data_type == "double", "field is not double"
 
 
 @pytest.mark.order(227)
 def test_gold_type_widening_merge():
     j = get_job(step="gold", topic="type_widening", item="merge")
     df = SPARK.sql(
-        "select __rescued_data['integerField'] :: double as field from silver.princess_type_widening group by all"
+        """
+        select 
+          __rescued_data['integerField'] :: double as field 
+        from 
+          silver.princess_type_widening 
+        group by 
+          all
+        """
     )
     j._for_each_batch(df)
-    assert True
+
+    data_type = j.table.get_column_data_type("field")
+    assert data_type == "double", "field is not double"

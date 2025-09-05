@@ -2,7 +2,6 @@ from logging import ERROR
 
 import pytest
 
-from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 from fabricks.metastore.table import Table
@@ -64,12 +63,7 @@ def test_silver_monarch_delta():
     job = get_job(step="silver", topic="monarch", item="delta")
     compare_silver_to_expected(job=job, cdc="scd2", iter=1)
 
-    data_type = (
-        SPARK.sql("describe extended silver.monarch_delta")
-        .where("col_name == 'decimalField'")
-        .select("data_type")
-        .collect()[0][0]
-    )
+    data_type = job.table.get_column_data_type("decimalField")
     assert data_type == "double", "decimalField is not double"
 
     cols = Table("silver", "monarch", "delta").columns

@@ -480,6 +480,15 @@ class Table(DbObject):
             """
         )
 
+    def get_column_data_type(self, name: str) -> str:
+        data_type = (
+            self.spark.sql("describe extended silver.monarch_delta")
+            .where(f"col_name == '{name}'")
+            .select("data_type")
+            .collect()[0][0]
+        )
+        return data_type
+
     def get_details(self) -> DataFrame:
         assert self.is_registered, f"{self} not registered"
 
