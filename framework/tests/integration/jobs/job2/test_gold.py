@@ -48,8 +48,8 @@ def test_gold_scd1_last_timestamp():
 
 
 @pytest.mark.order(226)
-def test_gold_type_widening_complete():
-    j = get_job(step="gold", topic="type_widening", item="complete")
+def test_gold_type_widening_overwrite():
+    j = get_job(step="gold", topic="type_widening", item="overwrite")
     df = SPARK.sql(
         """
         select 
