@@ -304,19 +304,33 @@ class Table(DbObject):
             DEFAULT_LOGGER.info(msg, extra={"job": self, "df": diffs})
 
             for row in diffs:
+                if row.status == "changed":
+                    data_type = f"{row.data_type} -> {row.new_data_type}"
+                else:
+                    data_type = f"{row.new_data_type}"
+
                 DEFAULT_LOGGER.debug(
-                    f"{row.status.replace('ed', 'ing')} ({row.new_data_type})",
-                    extra={"job": self, "column": row.column},
+                    f"{row.status.replace('ed', 'ing')} {row.column} ({data_type})",
+                    extra={"job": self},
                 )
+                
                 try:
-                    update_df = df.select(row.column).where("1 == 2")
-                    (
-                        self.deltatable.alias("dt")
-                        .merge(update_df.alias("df"), "1 == 2")
-                        .whenNotMatchedInsertAll()
-                        .execute()
-                    )
-                except Exception:
+                    # https://docs.databricks.com/aws/en/delta/type-widening#widen-types-with-automatic-schema-evolution
+                    # The type change is not one of byte, short, int, or long to decimal or double. These type changes can only be applied manually using ALTER TABLE to avoid accidental promotion of integers to decimals.
+                    if row.data_type in ["byte","short", "int", "long"] and row.new_data_type in ['decimal', 'double']:
+                        self.change_column(row.column, row.new_data_type)
+
+                    else:
+                        update_df = df.select(row.column).where("1 == 2")
+                        (
+                            self.deltatable.alias("dt")
+                            .merge(update_df.alias("df"), "1 == 2")
+                            .withSchemaEvolution()
+                            .whenMatchedUpdateAll()
+                            .whenNotMatchedInsertAll()
+                            .execute()
+                        )
+                except Exception as e:
                     pass
 
     def overwrite_schema(self, df: DataFrame):
