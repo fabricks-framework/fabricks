@@ -50,15 +50,6 @@
           timeouts: 
             job: 1800
           order: 301
-      - name: core
-        path_options:
-          storage: abfss://test@$standard/core
-          runtime: gold/core
-        options:
-          timeouts: 
-            job: 1800
-          workers: 2
-          order: 302
       - name: transf
         path_options:
           storage: abfss://test@$standard/transf
