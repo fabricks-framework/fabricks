@@ -313,11 +313,14 @@ class Table(DbObject):
                     f"{row.status.replace('ed', 'ing')} {row.column} ({data_type})",
                     extra={"job": self},
                 )
-                
+
                 try:
                     # https://docs.databricks.com/aws/en/delta/type-widening#widen-types-with-automatic-schema-evolution
                     # The type change is not one of byte, short, int, or long to decimal or double. These type changes can only be applied manually using ALTER TABLE to avoid accidental promotion of integers to decimals.
-                    if row.data_type in ["byte","short", "int", "long"] and row.new_data_type in ['decimal', 'double']:
+                    if row.data_type in ["byte", "short", "int", "long"] and row.new_data_type in [
+                        "decimal",
+                        "double",
+                    ]:
                         self.change_column(row.column, row.new_data_type)
 
                     else:
@@ -325,12 +328,12 @@ class Table(DbObject):
                         (
                             self.deltatable.alias("dt")
                             .merge(update_df.alias("df"), "1 == 2")
-                            .withSchemaEvolution()
+                            .withSchemaEvolution()  # type:ignore
                             .whenMatchedUpdateAll()
                             .whenNotMatchedInsertAll()
                             .execute()
                         )
-                except Exception as e:
+                except Exception:
                     pass
 
     def overwrite_schema(self, df: DataFrame):
