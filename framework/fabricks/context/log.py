@@ -8,9 +8,9 @@ from fabricks.context.runtime import IS_DEBUGMODE, LOGLEVEL, SECRET_SCOPE
 from fabricks.utils.log import get_logger
 
 logger, _ = get_logger("logs", LOGLEVEL, table=None, debugmode=IS_DEBUGMODE)
+logging.getLogger("SQLQueryContextLogger").setLevel(logging.CRITICAL)
 
 DEFAULT_LOGGER: Final[logging.Logger] = logger
-
 
 def send_message_to_channel(
     channel: str,

@@ -275,7 +275,7 @@ class BaseStep:
 
             if drop:
                 scd1.table.drop()
-            else:
+            elif scd1.table.exists():
                 diffs = scd1.get_differences_with_deltatable(df)
                 if diffs:
                     DEFAULT_LOGGER.warning("schema drift detected", extra={"step": self})

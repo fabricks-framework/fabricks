@@ -12,8 +12,8 @@ DEFAULT_LOGGER.setLevel(ERROR)
 
 @pytest.mark.order(102)
 def test_schedule():
-    table = Table("silver", "princess", "drop")
-    table.drop()
+    t = Table("silver", "princess", "drop")
+    t.drop()
 
     try:
         run_notebook(PATH_RUNTIME.parent().joinpath("schedule"), schedule="test")
@@ -36,6 +36,7 @@ def test_no_unforced_failure():
           and l.job not in (
             "silver.princess_drop", 
             "gold.invoke_failed_pre_run", 
+            "gold.invoke_notebooks_failed_pre_run", 
             "gold.invoke_timedout",
             "gold.invoke_timedout_pre_run",
             "gold.check_fail",
