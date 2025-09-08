@@ -159,11 +159,11 @@ class Silver(BaseJob):
         parents = self.options.job.get_list("parents") or []
         if parents:
             for p in parents:
-                dependencies.append(JobDependency.from_job_id_parent_origin(self.job_id, p, "job"))
+                dependencies.append(JobDependency.from_parts(self.job_id, p, "job"))
 
         else:
             p = f"{self.parent_step}.{self.topic}_{self.item}"
-            dependencies.append(JobDependency.from_job_id_parent_origin(self.job_id, p, "parser"))
+            dependencies.append(JobDependency.from_parts(self.job_id, p, "parser"))
 
         return dependencies
 

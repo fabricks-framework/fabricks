@@ -160,10 +160,10 @@ class Gold(BaseJob):
         dependencies = list(set(dependencies))
 
         for d in dependencies:
-            data.append(JobDependency.from_job_id_parent_origin(self.job_id, d, "parser"))
+            data.append(JobDependency.from_parts(self.job_id, d, "parser"))
 
         for p in parents:
-            data.append(JobDependency.from_job_id_parent_origin(self.job_id, p, "job"))
+            data.append(JobDependency.from_parts(self.job_id, p, "job"))
         return data
 
     def _get_sql_dependencies(self) -> List[str]:

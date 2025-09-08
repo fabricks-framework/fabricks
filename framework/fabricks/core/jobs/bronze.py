@@ -75,7 +75,7 @@ class Bronze(BaseJob):
         parents = self.options.job.get_list("parents")
         if parents:
             for p in parents:
-                dependencies.append(JobDependency.from_job_id_parent_origin(self.job_id, p, "job"))
+                dependencies.append(JobDependency.from_parts(self.job_id, p, "job"))
 
         return dependencies
 

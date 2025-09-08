@@ -143,8 +143,8 @@ class BaseStep:
             if update_dependencies:
                 self.update_dependencies(progress_bar=progress_bar)
 
-            self.update_tables()
-            self.update_views()
+            self.update_tables_list()
+            self.update_views_list()
 
     def get_dependencies(
         self,

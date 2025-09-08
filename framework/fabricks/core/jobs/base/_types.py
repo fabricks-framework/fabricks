@@ -220,7 +220,7 @@ class JobDependency(BaseModel):
         return self
 
     @staticmethod
-    def from_job_id_parent_origin(job_id: str, parent: str, origin: Origins):
+    def from_parts(job_id: str, parent: str, origin: Origins):
         parent = parent.removesuffix("__current")
         return JobDependency(
             job_id=job_id,
