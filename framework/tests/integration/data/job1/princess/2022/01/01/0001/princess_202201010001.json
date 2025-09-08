@@ -12,6 +12,7 @@
     {
         "id": 6002,
         "name": "Astrid",
+        "order_by": 2,
         "integerField": 1,
         "floatField": 1.1,
         "BEL_DeleteDateUtc": null,

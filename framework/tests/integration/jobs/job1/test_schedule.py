@@ -49,3 +49,32 @@ def test_no_unforced_failure():
         """
     )
     assert df.count() == 0, "unforced failure <> 0"
+
+
+@pytest.mark.order(103)
+def test_forced_failures():
+    df = SPARK.sql(
+        """
+        select
+          *
+        from
+          fabricks.last_schedule l
+        where
+          true
+          and l.failed
+          and l.job in (
+            "silver.princess_drop", 
+            "gold.invoke_failed_pre_run", 
+            "gold.invoke_notebooks_failed_pre_run", 
+            "gold.invoke_timedout",
+            "gold.invoke_timedout_pre_run",
+            "gold.check_fail",
+            "gold.check_max_rows",
+            "gold.check_min_rows",
+            "gold.check_count_must_equal",
+            "gold.check_duplicate_key",
+            "gold.check_duplicate_identity"
+          )
+        """
+    )
+    assert df.count() == 11, "forced failures <> 11"
