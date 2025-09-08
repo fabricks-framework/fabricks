@@ -2,10 +2,11 @@ from abc import abstractmethod
 from typing import Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import expr, lit
+from pyspark.sql.functions import lit
 
 from fabricks.cdc import SCD1
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.jobs.base._types import JobDependency
 from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.table import SchemaDiff
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -15,20 +16,14 @@ class Generator(Configurator):
     def update_dependencies(self):
         DEFAULT_LOGGER.info("update dependencies", extra={"job": self})
 
-        df = self.get_dependencies()
-        if df:
+        deps = self.get_dependencies()
+        if deps:
+            df = self.spark.createDataFrame([d.model_dump() for d in deps])  # type: ignore
             scd1 = SCD1("fabricks", self.step, "dependencies")
             scd1.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
 
-    def add_dependency_details(self, df: DataFrame) -> DataFrame:
-        df = df.withColumn("__parent", expr("replace(parent, '__current', '')"))
-        df = df.withColumn("parent_id", expr("md5(__parent)"))
-        df = df.withColumn("dependency_id", expr("md5(concat_ws('*', job_id, parent))"))
-        df = df.drop("__parent")
-        return df
-
     @abstractmethod
-    def get_dependencies(self) -> DataFrame:
+    def get_dependencies(self) -> Sequence[JobDependency]:
         raise NotImplementedError()
 
     def rm(self):

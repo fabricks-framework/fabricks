@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from typing import List, Literal, Optional, TypedDict, Union
 
+from pydantic import BaseModel, ConfigDict, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
 
 from fabricks.cdc.base._types import ChangeDataCaptures
 from fabricks.context import BRONZE, GOLD, SILVER
+from fabricks.core.jobs.get_job_id import get_dependency_id, get_job_id
 from fabricks.core.parsers import ParserOptions
 from fabricks.utils.fdict import FDict
 from fabricks.utils.path import Path
@@ -27,6 +29,7 @@ Modes = Literal[BronzeModes, SilverModes, GoldModes]
 FileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "delta"]
 Operations = Literal["upsert", "reload", "delete"]
 Types = Literal["manual", "default"]
+Origins = Literal["parser", "job"]
 
 
 class SparkOptions(TypedDict):
@@ -197,6 +200,35 @@ class Options:
     spark: FDict
     invokers: FDict
     extenders: List
+
+
+class JobDependency(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    origin: Origins
+    job_id: str
+    parent: str
+    parent_id: str
+    dependency_id: str
+
+    def __str__(self) -> str:
+        return f"{self.job_id} -> {self.parent}"
+
+    @model_validator(mode="after")
+    def check_no_circular_dependency(self):
+        if self.job_id == self.parent_id:
+            raise ValueError("Circular dependency detected")
+        return self
+
+    @staticmethod
+    def from_job_id_parent_origin(job_id: str, parent: str, origin: Origins):
+        parent = parent.removesuffix("__current")
+        return JobDependency(
+            job_id=job_id,
+            origin=origin,
+            parent=parent,
+            parent_id=get_job_id(job=parent),
+            dependency_id=get_dependency_id(parent=parent, job_id=job_id),
+        )
 
 
 SchemaDependencies = StructType(

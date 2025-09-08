@@ -9,13 +9,13 @@ from typing_extensions import deprecated
 from fabricks.cdc import SCD1
 from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, TStep
+from fabricks.core.jobs.base._types import Bronzes, Golds, JobDependency, SchemaDependencies, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
-from fabricks.utils.helpers import concat_dfs, run_in_parallel
+from fabricks.utils.helpers import run_in_parallel
 from fabricks.utils.read.read_yaml import read_yaml
 from fabricks.utils.schema import get_schema_for_type
 
@@ -150,23 +150,31 @@ class BaseStep:
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
+        include_manual=False,
     ) -> Tuple[Optional[DataFrame], List[str]]:
         DEFAULT_LOGGER.debug("get dependencies", extra={"step": self})
 
         errors = []
+        dependencies: list[JobDependency] = []
 
         def _get_dependencies(row: Row):
             job = get_job(step=self.name, job_id=row["job_id"])
             try:
-                df = job.get_dependencies()
-                return df
-
+                dependencies.extend(job.get_dependencies())
             except Exception as e:
                 DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": job})
                 errors.append((job, e))
+                return []
 
         job_df = self.get_jobs()
-        if topic and job_df:
+        if not job_df:
+            DEFAULT_LOGGER.debug("nothing to do", extra={"step": self})
+            return None, []
+
+        if not include_manual:
+            job_df = job_df.where("not options.type <=> 'manual'")
+
+        if topic:
             if isinstance(topic, str):
                 topic = [topic]
 
@@ -174,16 +182,16 @@ class BaseStep:
             DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"step": self})
             job_df = job_df.where(f"topic in ({where})")
 
-        if job_df:
-            job_df = job_df.where("not options.type <=> 'manual'")
+        if not job_df:
+            DEFAULT_LOGGER.debug("nothing to do", extra={"step": self})
+            return None, []
 
-            DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-            dfs = run_in_parallel(_get_dependencies, job_df, workers=16, progress_bar=progress_bar)
-            DEFAULT_LOGGER.setLevel(LOGLEVEL)
+        DEFAULT_LOGGER.setLevel(logging.CRITICAL)
+        run_in_parallel(_get_dependencies, job_df, workers=16, progress_bar=progress_bar)
+        DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
-            return concat_dfs(dfs), errors
-
-        return None, errors
+        df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)  # type: ignore
+        return df, errors
 
     def get_jobs_iter(self, topic: Optional[str] = None):
         return read_yaml(self.runtime, root="job", prio_file_name=topic)
@@ -316,15 +324,20 @@ class BaseStep:
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
+        include_manual=False,
     ) -> List[str]:
-        df, errors = self.get_dependencies(progress_bar=progress_bar, topic=topic)
+        df, errors = self.get_dependencies(progress_bar=progress_bar, topic=topic, include_manual=include_manual)
 
         if df:
             DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
             df.cache()
 
             if topic is None:
-                SCD1("fabricks", self.name, "dependencies").delete_missing(df, keys=["dependency_id"])
+                SCD1("fabricks", self.name, "dependencies").delete_missing(
+                    df,
+                    keys=["dependency_id"],
+                    update_where=" not options.type <=> 'manual'" if not include_manual else None,
+                )
 
             else:
                 if isinstance(topic, str):
@@ -336,7 +349,8 @@ class BaseStep:
                 SCD1("fabricks", self.name, "dependencies").delete_missing(
                     df,
                     keys=["dependency_id"],
-                    update_where=f"topic in ({where})",
+                    update_where=f"topic in ({where})"
+                    + (" and not options.type <=> 'manual'" if not include_manual else ""),
                     uuid=True,
                 )
 

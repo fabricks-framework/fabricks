@@ -24,3 +24,8 @@ def get_job_id(
         job = f"{step}.{topic}_{item}"
 
     return md5(job)
+
+
+def get_dependency_id(parent: str, job_id: str) -> str:
+    base = f"{job_id}*{parent}"
+    return md5(base)

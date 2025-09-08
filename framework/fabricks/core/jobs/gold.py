@@ -1,4 +1,5 @@
 import re
+from collections.abc import Sequence
 from typing import List, Optional, Union, cast
 
 from pyspark.sql import DataFrame
@@ -7,7 +8,7 @@ from typing_extensions import deprecated
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import SchemaDependencies, TGold
+from fabricks.core.jobs.base._types import JobDependency, TGold
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -143,7 +144,7 @@ class Gold(BaseJob):
         cdc_options = self.get_cdc_context(df)
         self.cdc.create_or_replace_view(self.sql, **cdc_options)
 
-    def get_dependencies(self) -> DataFrame:
+    def get_dependencies(self) -> Sequence[JobDependency]:
         data = []
         parents = self.options.job.get_list("parents") or []
 
@@ -159,24 +160,11 @@ class Gold(BaseJob):
         dependencies = list(set(dependencies))
 
         for d in dependencies:
-            data.append(Row(self.job_id, d, "parser"))
+            data.append(JobDependency.from_job_id_parent_origin(self.job_id, d, "parser"))
 
         for p in parents:
-            data.append(Row(self.job_id, p, "job"))
-
-        if len(data) == 0:
-            DEFAULT_LOGGER.debug("no dependency found", extra={"job": self})
-            df = self.spark.createDataFrame(data, SchemaDependencies)
-
-        else:
-            df = self.spark.createDataFrame(
-                data,
-                schema=["job_id", "parent", "origin"],
-            )  # order of the fields is important !
-            df = df.transform(self.add_dependency_details)
-
-        assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
-        return df
+            data.append(JobDependency.from_job_id_parent_origin(self.job_id, p, "job"))
+        return data
 
     def _get_sql_dependencies(self) -> List[str]:
         from fabricks.core.jobs.base._types import Steps
