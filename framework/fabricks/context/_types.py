@@ -26,8 +26,9 @@ class StepTimeoutOptions(TypedDict):
 
 class RuntimeOptions(TypedDict):
     secret_scope: str
-    unity_catalog: bool
-    catalog: str
+    unity_catalog: Optional[bool]
+    type_widening: Optional[bool]
+    catalog: Optional[str]
     workers: int
     timeouts: RuntimeTimeoutOptions
     retention_days: int

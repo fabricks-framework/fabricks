@@ -2,6 +2,7 @@
 - conf:
     name: test
     options:
+      type_widening: true
       secret_scope: bmskv
       catalog: bms_dna_test
       unity_catalog: true

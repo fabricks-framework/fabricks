@@ -2,6 +2,7 @@
 - conf:
     name: test
     options:
+      type_widening: true
       secret_scope: bmskv
       timeouts:
         step: 3600

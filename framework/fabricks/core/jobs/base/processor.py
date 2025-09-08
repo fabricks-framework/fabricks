@@ -5,7 +5,7 @@ from typing import Optional
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 
-from fabricks.context import IS_UNITY_CATALOG, SECRET_SCOPE
+from fabricks.context import IS_TYPE_WIDENING, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.exception import (
     PostRunCheckException,
@@ -87,7 +87,7 @@ class Processor(Invoker):
 
             else:
                 only_type_widening_compatible = all(d.type_widening_compatible for d in diffs if d.status == "changed")
-                if only_type_widening_compatible and self.table.type_widening_enabled:
+                if only_type_widening_compatible and self.table.type_widening_enabled and IS_TYPE_WIDENING:
                     self.update_schema(df=df, widen_types=True)
                 else:
                     raise SchemaDriftException.from_diffs(str(self), diffs)

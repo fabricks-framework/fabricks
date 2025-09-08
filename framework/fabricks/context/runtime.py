@@ -140,6 +140,8 @@ try:
     assert secret_scope, "secret_scope mandatory in options"
     SECRET_SCOPE: Final[str] = secret_scope
 
+    IS_TYPE_WIDENING: Final[bool] = str(conf_options.get("type_widening", "True")).lower() in ("true", "1", "yes")
+
     path_options = CONF_RUNTIME.get("path_options", {})
     assert path_options, "options mandatory"
 
