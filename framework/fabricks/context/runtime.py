@@ -215,3 +215,63 @@ except KeyError as e:
 
 except AssertionError as e:
     raise e
+
+
+def pprint_runtime():
+    print("=" * 60)
+    print("FABRICKS RUNTIME CONFIGURATION")
+    print("=" * 60)
+
+    # Core Paths Section
+    print("\n📁 CORE PATHS:")
+    print(f"   Runtime:    {PATH_RUNTIME.string}")
+    print(f"   Notebooks:  {PATH_NOTEBOOKS.string}")
+    print(f"   Config:     {PATH_CONFIG.string}")
+
+    # Runtime Settings Section
+    print("\n⚙️  RUNTIME SETTINGS:")
+    print(f"   Log Level:             {logging.getLevelName(LOGLEVEL)}")
+    print(f"   Debug Mode:            {'✓' if IS_DEBUGMODE else '✗'}")
+    print(f"   Job Config from YAML:  {'✓' if IS_JOB_CONFIG_FROM_YAML else '✗'}")
+    print(f"   Type Widening:         {'✓' if IS_TYPE_WIDENING else '✗'}")
+
+    # Storage Configuration Section
+    print("\n💾 STORAGE CONFIGURATION:")
+    print(f"   Storage URI:      {FABRICKS_STORAGE.string}")
+    print(f"   Storage Credential: {FABRICKS_STORAGE_CREDENTIAL or 'Not configured'}")
+
+    # Unity Catalog Section
+    print("\n🏛️  UNITY CATALOG:")
+    print(f"   Enabled:  {'✓' if IS_UNITY_CATALOG else '✗'}")
+    if IS_UNITY_CATALOG and CATALOG:
+        print(f"   Catalog:  {CATALOG}")
+
+    # Security Section
+    print("\n🔐 SECURITY:")
+    print(f"   Secret Scope: {SECRET_SCOPE}")
+
+    # Component Paths Section
+    print("\n🛠️  COMPONENT PATHS:")
+    components = [
+        ("UDFs", PATH_UDFS),
+        ("Parsers", PATH_PARSERS),
+        ("Extenders", PATH_EXTENDERS),
+        ("Views", PATH_VIEWS),
+        ("Schedules", PATH_SCHEDULES),
+        ("Requirements", PATH_REQUIREMENTS),
+    ]
+
+    for name, path in components:
+        print(f"   {name:<12}: {path.string}")
+
+    # Storage Paths Section
+    print("\n📦 STORAGE PATHS:")
+    for name, path in sorted(PATHS_STORAGE.items()):
+        icon = "🏭" if name == "fabricks" else "📊"
+        print(f"   {icon} {name:<12}: {path.string}")
+
+    # Runtime Paths Section
+    if PATHS_RUNTIME:
+        print("\n⚡ RUNTIME PATHS:")
+        for name, path in sorted(PATHS_RUNTIME.items()):
+            print(f"   📂 {name:<12}: {path.string}")
