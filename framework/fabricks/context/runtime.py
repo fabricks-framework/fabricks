@@ -235,6 +235,22 @@ def pprint_runtime():
     print(f"   Job Config from YAML: {'✓' if IS_JOB_CONFIG_FROM_YAML else '✗'}")
     print(f"   Type Widening: {'✓' if IS_TYPE_WIDENING else '✗'}")
 
+    print("\n🔄 PIPELINE STEPS:")
+    
+    def _print_steps(steps_list, layer_name, icon):
+        if steps_list and any(step for step in steps_list if step):
+            print(f"   {icon} {layer_name}:")
+            for step in steps_list:
+                if step:
+                    step_name = step.get('name', 'Unnamed')
+                    print(f"      • {step_name}")
+        else:
+            print(f"   {icon} {layer_name}: No steps")
+
+    _print_steps(BRONZE, "Bronze", "🥉")
+    _print_steps(SILVER, "Silver", "🥈") 
+    _print_steps(GOLD, "Gold", "🥇")
+
     # Storage Configuration Section
     print("\n💾 STORAGE CONFIGURATION:")
     print(f"   Storage URI: {FABRICKS_STORAGE.string}")
