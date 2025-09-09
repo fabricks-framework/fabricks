@@ -119,7 +119,7 @@ class Configurator(ABC):
             raise ValueError(f"{src} not allowed")
 
         return df
-    
+
     def has_data(self, src: Union[DataFrame, Table, str], **kwargs) -> bool:
         df = self.get_src(src=src)
         return df.count() > 0
