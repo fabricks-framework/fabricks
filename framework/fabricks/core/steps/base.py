@@ -1,5 +1,5 @@
 import logging
-from typing import Iterable, List, Optional, Tuple, Union, cast
+from typing import Iterable, List, Literal, Optional, Tuple, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
@@ -150,7 +150,8 @@ class BaseStep:
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
-        include_manual: bool = False,
+        include_manual: Optional[bool] = False,
+        loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
     ) -> Tuple[DataFrame, List[str]]:
         DEFAULT_LOGGER.debug("get dependencies", extra={"step": self})
 
@@ -183,7 +184,10 @@ class BaseStep:
 
         DEFAULT_LOGGER.setLevel(logging.CRITICAL)
         run_in_parallel(_get_dependencies, df, workers=16, progress_bar=progress_bar)
-        DEFAULT_LOGGER.setLevel(LOGLEVEL)
+        if loglevel:
+            DEFAULT_LOGGER.setLevel(loglevel)
+        else:
+            DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
         df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)  # type: ignore
         return df, errors
@@ -301,12 +305,18 @@ class BaseStep:
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
-        include_manual=False,
+        include_manual: Optional[bool] = False,
+        loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
     ) -> List[str]:
-        df, errors = self.get_dependencies(progress_bar=progress_bar, topic=topic, include_manual=include_manual)
+        df, errors = self.get_dependencies(
+            progress_bar=progress_bar,
+            topic=topic,
+            include_manual=include_manual,
+            loglevel=loglevel,
+        )
+        df.cache()
 
         DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
-        df.cache()
 
         update_where = None
 
