@@ -8,11 +8,11 @@ from fabricks.core.jobs.get_job_id import get_job_id
 
 
 @overload
-def get_job(step: str, *, job_id: str) -> BaseJob: ...
+def get_job(*, step: str, job_id: str) -> BaseJob: ...
 
 
 @overload
-def get_job(step: str, topic: str, item: str) -> BaseJob: ...
+def get_job(*, step: str, topic: str, item: str) -> BaseJob: ...
 
 
 @overload
