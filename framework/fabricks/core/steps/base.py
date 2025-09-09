@@ -165,10 +165,10 @@ class BaseStep:
                 DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": job})
                 errors.append((job, e))
 
-        job_df = self.get_jobs()
+        df = self.get_jobs()
 
         if not include_manual:
-            job_df = job_df.where("not options.type <=> 'manual'")
+            df = df.where("not options.type <=> 'manual'")
 
         if topic:
             if isinstance(topic, str):
@@ -176,13 +176,13 @@ class BaseStep:
 
             where = ", ".join([f"'{t}'" for t in topic])
             DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"step": self})
-            job_df = job_df.where(f"topic in ({where})")
+            df = df.where(f"topic in ({where})")
 
-        if not job_df:
+        if not df:
             raise ValueError("no jobs found")
 
         DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-        run_in_parallel(_get_dependencies, job_df, workers=16, progress_bar=progress_bar)
+        run_in_parallel(_get_dependencies, df, workers=16, progress_bar=progress_bar)
         DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
         df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)  # type: ignore
@@ -308,9 +308,15 @@ class BaseStep:
         DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
         df.cache()
 
-        update_where = None if not include_manual else " not options.type <=> 'manual'"
+        update_where = None
 
         if topic is None:
+            if not include_manual:
+                update_where = f"job_id not in (select job_id from fabricks.{self.name}_jobs where not options.type <=> 'manual')"
+
+            if update_where:
+                DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
+
             SCD1("fabricks", self.name, "dependencies").delete_missing(
                 df,
                 keys=["dependency_id"],
@@ -319,12 +325,15 @@ class BaseStep:
 
         else:
             if isinstance(topic, str):
-                topic = [topic]
+                topic = [topic] 
 
-            where = ", ".join([f"'{t}'" for t in topic])
-            update_where = f"topic in ({where})" + (f" and {update_where}" if update_where else "")
+            where_topic = f"topic in ('{ "', '".join(topic) }')"
+            where_not_manual = "-- manual job(s) included"
+            if not include_manual:
+                where_not_manual = f"and not options.type <=> 'manual'"
 
-            DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"step": self})
+            update_where = f"job_id in (select job_id from fabricks.{self.name}_jobs where {where_topic} {where_not_manual})"
+            DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
 
             SCD1("fabricks", self.name, "dependencies").delete_missing(
                 df,
