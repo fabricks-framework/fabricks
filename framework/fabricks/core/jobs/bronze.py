@@ -368,7 +368,7 @@ class Bronze(BaseJob):
         elif self.mode == "register":
             self.optimize_external_table(vacuum, analyze)
         else:
-            super().optimize()
+            super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)
 
     def overwrite(self):
         self.truncate()

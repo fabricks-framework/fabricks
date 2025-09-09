@@ -371,4 +371,4 @@ class Silver(BaseJob):
         if self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
         else:
-            super().optimize()
+            super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)
