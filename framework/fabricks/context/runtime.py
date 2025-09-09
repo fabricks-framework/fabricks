@@ -237,8 +237,8 @@ def pprint_runtime():
 
     # Storage Configuration Section
     print("\n💾 STORAGE CONFIGURATION:")
-    print(f"   Storage URI:      {FABRICKS_STORAGE.string}")
-    print(f"   Storage Credential: {FABRICKS_STORAGE_CREDENTIAL or 'Not configured'}")
+    print(f"   Storage URI:         {FABRICKS_STORAGE.string}")
+    print(f"   Storage Credential:  {FABRICKS_STORAGE_CREDENTIAL or 'Not configured'}")
 
     # Unity Catalog Section
     print("\n🏛️  UNITY CATALOG:")
