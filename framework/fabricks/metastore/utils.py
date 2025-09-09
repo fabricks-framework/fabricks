@@ -12,12 +12,12 @@ def get_tables(schema: str) -> DataFrame:
         df = SPARK.sql(
             """
             select 
-                database,
-                concat_ws('.', database, tableName) as table,
-                md5(table) as job_id
+              database,
+              concat_ws('.', database, tableName) as table,
+              md5(table) as job_id
             from 
-                {tables} 
-                left anti join {views} on tableName = viewName
+              {tables} 
+              left anti join {views} on tableName = viewName
             """,
             tables=table_df,
             views=view_df,
@@ -35,11 +35,13 @@ def get_views(schema: str) -> DataFrame:
         df = SPARK.sql(
             """
             select 
-                namespace as database,
-                concat_ws('.', namespace, viewName) as view,
-                md5(view) as job_id
+              namespace as database,
+              concat_ws('.', namespace, viewName) as view,
+              md5(view) as job_id
             from 
                 {views}
+            where
+              not isTemporary
             """,
             views=view_df,
         )
