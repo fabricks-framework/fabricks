@@ -40,6 +40,11 @@ def test_step_transf():
 
     SPARK.sql("drop view if exists transf.fact_memory")
     step.update_views_list()
-    
+
     df = SPARK.sql("select * from fabricks.transf_views")
     assert df.count() == 0, f"{df.count()} view(s) <> 0"
+
+    step.create_db_objects()
+
+    df = SPARK.sql("select * from fabricks.transf_views")
+    assert df.count() == 1, f"{df.count()} view(s) <> 1"

@@ -343,11 +343,10 @@ class Processor(Generator):
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
-        if df:
-            df = self.reorder_columns(df)
+        df = self.reorder_columns(df)
 
-            DEFAULT_LOGGER.debug("append", extra={"job": self})
-            df.write.format("delta").mode("append").save(self.table.delta_path.string)
+        DEFAULT_LOGGER.debug("append", extra={"job": self})
+        df.write.format("delta").mode("append").save(self.table.delta_path.string)
 
     def overwrite(
         self,
@@ -359,16 +358,15 @@ class Processor(Generator):
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
-        if df:
-            df = self.reorder_columns(df)
+        df = self.reorder_columns(df)
 
-            if not dynamic:
-                if kwargs.get("update_where"):
-                    dynamic = True
+        if not dynamic:
+            if kwargs.get("update_where"):
+                dynamic = True
 
-            writer = df.write.format("delta").mode("overwrite")
-            if dynamic:
-                writer.option("partitionOverwriteMode", "dynamic")
+        writer = df.write.format("delta").mode("overwrite")
+        if dynamic:
+            writer.option("partitionOverwriteMode", "dynamic")
 
-            DEFAULT_LOGGER.info("overwrite", extra={"job": self})
-            writer.save(self.table.delta_path.string)
+        DEFAULT_LOGGER.info("overwrite", extra={"job": self})
+        writer.save(self.table.delta_path.string)

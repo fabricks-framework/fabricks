@@ -240,12 +240,12 @@ class BaseStep:
             run_in_parallel(_create_db_object, df, workers=16, progress_bar=True)
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
+        self.update_tables_list()
+        self.update_views_list()
+
         if errors:
             if retry:
                 DEFAULT_LOGGER.warning("retry create jobs", extra={"step": self})
-                self.update_tables_list()
-                self.update_views_list()
-
                 return self.create_db_objects(retry=False)
 
         return errors
