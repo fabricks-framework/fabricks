@@ -312,7 +312,9 @@ class BaseStep:
 
         if topic is None:
             if not include_manual:
-                update_where = f"job_id not in (select job_id from fabricks.{self.name}_jobs where not options.type <=> 'manual')"
+                update_where = (
+                    f"job_id not in (select job_id from fabricks.{self.name}_jobs where not options.type <=> 'manual')"
+                )
 
             if update_where:
                 DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
@@ -325,14 +327,16 @@ class BaseStep:
 
         else:
             if isinstance(topic, str):
-                topic = [topic] 
+                topic = [topic]
 
-            where_topic = f"topic in ('{ "', '".join(topic) }')"
+            where_topic = f"""topic in ('{"', '".join(topic)}')"""
             where_not_manual = "-- manual job(s) included"
             if not include_manual:
-                where_not_manual = f"and not options.type <=> 'manual'"
+                where_not_manual = "and not options.type <=> 'manual'"
 
-            update_where = f"job_id in (select job_id from fabricks.{self.name}_jobs where {where_topic} {where_not_manual})"
+            update_where = (
+                f"""job_id in (select job_id from fabricks.{self.name}_jobs where {where_topic} {where_not_manual})"""
+            )
             DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
 
             SCD1("fabricks", self.name, "dependencies").delete_missing(
@@ -354,7 +358,7 @@ class BaseStep:
             SPARK.sql(f"create database {self.name}")
 
         if update:
-            self.update_jobs()
+            self.update_configurations()
 
         df = self.get_jobs()
         if df:

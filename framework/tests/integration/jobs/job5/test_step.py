@@ -2,6 +2,7 @@ from logging import ERROR
 
 import pytest
 
+from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_step
 
@@ -17,7 +18,7 @@ def test_step_get_dependencies():
     assert len(error) == 0, f"{error} error(s)"
 
     step.update_dependencies()
-    df = spark.sql("select * from fabricks.gold_dependencies")
+    df = SPARK.sql("select * from fabricks.gold_dependencies")
     assert df.count() == 29, f"{df.count()} dependencies <> 29"
 
     deps, error = step.get_dependencies(topic="scd1")
@@ -25,10 +26,9 @@ def test_step_get_dependencies():
     assert len(error) == 0, f"{error} error(s)"
 
     step.update_dependencies(topic="scd1")
-    df = spark.sql("select * from fabricks.gold_dependencies")
+    df = SPARK.sql("select * from fabricks.gold_dependencies")
     assert df.count() == 29, f"{df.count()} dependencies <> 29"
 
     step.update_dependencies(topic="itdoesnotexist")
-    df = spark.sql("select * from fabricks.gold_dependencies")
+    df = SPARK.sql("select * from fabricks.gold_dependencies")
     assert df.count() == 29, f"{df.count()} dependencies <> 29"
-
