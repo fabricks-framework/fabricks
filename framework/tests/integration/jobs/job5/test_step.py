@@ -10,7 +10,7 @@ DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(501)
-def test_step_get_dependencies():
+def test_step_gold():
     step = get_step("gold")
 
     deps, error = step.get_dependencies()
@@ -32,3 +32,14 @@ def test_step_get_dependencies():
     step.update_dependencies(topic="itdoesnotexist")
     df = SPARK.sql("select * from fabricks.gold_dependencies")
     assert df.count() == 29, f"{df.count()} dependencies <> 29"
+
+
+@pytest.mark.order(502)
+def test_step_transf():
+    step = get_step("transf")
+
+    SPARK.sql("drop view if exists transf.fact_memory")
+    step.update_views_list()
+    
+    df = SPARK.sql("select * from fabricks.transf_views")
+    assert df.count() == 0, f"{df.count()} view(s) <> 0"
