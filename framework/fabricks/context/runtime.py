@@ -262,16 +262,16 @@ def pprint_runtime():
     ]
 
     for name, path in components:
-        print(f"   {name:<12}: {path.string}")
+        print(f"   {name}: {path.string}")
 
     # Storage Paths Section
     print("\n📦 STORAGE PATHS:")
     for name, path in sorted(PATHS_STORAGE.items()):
         icon = "🏭" if name == "fabricks" else "📊"
-        print(f"   {icon} {name:<12}: {path.string}")
+        print(f"   {icon} {name}: {path.string}")
 
     # Runtime Paths Section
     if PATHS_RUNTIME:
         print("\n⚡ RUNTIME PATHS:")
         for name, path in sorted(PATHS_RUNTIME.items()):
-            print(f"   📂 {name:<12}: {path.string}")
+            print(f"   📂 {name}: {path.string}")
