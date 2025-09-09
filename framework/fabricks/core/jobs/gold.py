@@ -210,9 +210,10 @@ class Gold(BaseJob):
             None,
         )  # assume no reload in gold (to improve performance)
         correct_valid_from = self.options.job.get_boolean("correct_valid_from", True)
+        add_metadata = self.step_conf.get("options", {}).get("metadata", False)
 
         context = {
-            "add_metadata": True,
+            "add_metadata": add_metadata,
             "soft_delete": True if self.slowly_changing_dimension else None,
             "deduplicate_key": None,
             "deduplicate_hash": True if self.slowly_changing_dimension else None,

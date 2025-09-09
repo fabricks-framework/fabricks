@@ -71,6 +71,7 @@ class SilverOptions(StepOptions):
 
 class GoldOptions(StepOptions):
     schema_drift: Optional[bool]
+    metadata: Optional[bool]
 
 
 class Step(TypedDict):

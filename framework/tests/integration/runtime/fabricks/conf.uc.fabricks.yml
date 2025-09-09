@@ -70,6 +70,7 @@
           storage: abfss://test@$standard/semantic
           runtime: semantic
         options:
+          metadata: true
           timeouts: 
             job: 1800
           workers: 2
