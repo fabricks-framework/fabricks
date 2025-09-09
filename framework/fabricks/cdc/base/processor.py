@@ -36,6 +36,8 @@ class Processor(Generator):
         columns = self.get_columns(src, backtick=False)
         fields = [c for c in columns if not c.startswith("__")]
 
+        has_data = self.has_data(src)
+
         keys = kwargs.get("keys", None)
         mode = kwargs.get("mode", "complete")
 
@@ -240,6 +242,7 @@ class Processor(Generator):
             "deduplicate_key": deduplicate_key,
             "deduplicate_hash": deduplicate_hash,
             # has
+            "has_data": has_data,
             "has_rows": has_rows,
             "has_source": has_source,
             "has_metadata": has_metadata,
@@ -306,7 +309,6 @@ class Processor(Generator):
             DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "context": context})
             raise e
 
-        print(sql)
         row = self.spark.sql(sql).collect()[0]
         assert row.slices, "no slices found"
 
