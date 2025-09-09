@@ -229,7 +229,7 @@ def pprint_runtime():
     print(f"   Config:     {PATH_CONFIG.string}")
 
     # Runtime Settings Section
-    print("\n⚙️  RUNTIME SETTINGS:")
+    print("\n⚙️ RUNTIME SETTINGS:")
     print(f"   Log Level:             {logging.getLevelName(LOGLEVEL)}")
     print(f"   Debug Mode:            {'✓' if IS_DEBUGMODE else '✗'}")
     print(f"   Job Config from YAML:  {'✓' if IS_JOB_CONFIG_FROM_YAML else '✗'}")
@@ -241,7 +241,7 @@ def pprint_runtime():
     print(f"   Storage Credential:  {FABRICKS_STORAGE_CREDENTIAL or 'Not configured'}")
 
     # Unity Catalog Section
-    print("\n🏛️  UNITY CATALOG:")
+    print("\n🏛️ UNITY CATALOG:")
     print(f"   Enabled:  {'✓' if IS_UNITY_CATALOG else '✗'}")
     if IS_UNITY_CATALOG and CATALOG:
         print(f"   Catalog:  {CATALOG}")
@@ -251,7 +251,7 @@ def pprint_runtime():
     print(f"   Secret Scope: {SECRET_SCOPE}")
 
     # Component Paths Section
-    print("\n🛠️  COMPONENT PATHS:")
+    print("\n🛠️ COMPONENT PATHS:")
     components = [
         ("UDFs", PATH_UDFS),
         ("Parsers", PATH_PARSERS),
