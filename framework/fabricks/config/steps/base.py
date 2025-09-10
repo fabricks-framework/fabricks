@@ -35,9 +35,9 @@ class TableOptions(ModelBase):
 
 
 class DefaultOptions(ModelBase):
-    order: int
+    order: Optional[int] = None
     workers: Optional[int] = None
-    timeouts: StepTimeoutOptions
+    timeouts: Optional[StepTimeoutOptions] = None
     extenders: Optional[List[str]] = None
     pre_run: Optional[InvokeOptions] = None
     post_run: Optional[InvokeOptions] = None

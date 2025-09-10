@@ -7,8 +7,8 @@ BronzeModes = Literal["memory", "append", "register"]
 
 
 class ParserOptions(ModelBase):
-    file_format: Optional[str]
-    read_options: Optional[dict[str, str]]
+    file_format: Optional[str] = None
+    read_options: Optional[dict[str, str]] = None
 
 
 class BronzeOptions(DefaultOptions):
@@ -32,7 +32,6 @@ class BronzeOptions(DefaultOptions):
 
 class BronzeJobConfig(BaseJobConfig):
     extend: Literal["bronze"] = "bronze"
-    step: Literal["bronze"]
 
-    options: Optional[BronzeOptions] = None
+    options: BronzeOptions
     parser_options: Optional[ParserOptions] = None

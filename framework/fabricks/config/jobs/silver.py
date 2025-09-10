@@ -17,6 +17,5 @@ class SilverOptions(DefaultOptions):
 
 class SilverJobConfig(BaseJobConfig):
     extend: Literal["silver"] = "silver"
-    step: Literal["silver"]
 
-    options: Optional[SilverOptions] = None
+    options: SilverOptions

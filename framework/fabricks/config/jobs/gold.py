@@ -22,6 +22,5 @@ class GoldOptions(DefaultOptions):
 
 class GoldJobConfig(BaseJobConfig):
     extend: Literal["gold"] = "gold"
-    step: Literal["gold"]
 
-    options: Optional[GoldOptions] = None
+    options: GoldOptions

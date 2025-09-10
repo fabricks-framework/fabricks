@@ -51,20 +51,21 @@ class BaseConfig(ModelBase):
     def resolve_runtime_path(self) -> Path:
         runtime = self.runtime
 
+        if self.root is not None:
+            if runtime is not None:
+                return self.root.joinpath(runtime)
+
+            return self.root
+
         # Use environment/explicit setting if available
         if runtime is not None:
             return Path(runtime)
-
-        # Fall back to pyproject.toml location
-        if self.root is not None:
-            return self.root
 
         # Final fallback
         raise ValueError("No pyproject.toml nor FABRICKS_RUNTIME")
 
     def resolve_notebooks_path(self) -> Path:
         notebooks = self.notebooks
-        runtime = self.resolve_runtime_path()
 
         if notebooks is not None:
             if self.root is not None and not Path(notebooks).is_absolute():
@@ -73,11 +74,11 @@ class BaseConfig(ModelBase):
             return Path(notebooks)
 
         # Default to runtime/notebooks
+        runtime = self.resolve_runtime_path()
         return runtime.joinpath("notebooks")
 
     def resolve_config_path(self, cluster_id: Optional[str] = None) -> Path:
         config = self.config
-        runtime = self.resolve_runtime_path()
 
         if config is not None:
             if self.root is not None and not Path(config).is_absolute():
@@ -87,4 +88,5 @@ class BaseConfig(ModelBase):
 
         # default to fabricks/conf.yml
         assert cluster_id is not None
+        runtime = self.resolve_runtime_path()
         return runtime.joinpath(f"fabricks/conf.{cluster_id}.yml")

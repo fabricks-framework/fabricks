@@ -29,14 +29,14 @@ class RuntimeOptions(ModelBase):
     unity_catalog: Optional[bool] = None
     type_widening: Optional[bool] = None
     catalog: Optional[str] = None
-    workers: int
+    workers: Optional[int] = None
     timeouts: RuntimeTimeoutOptions
-    retention_days: int
+    retention_days: Optional[int] = None
 
 
 class SparkOptions(ModelBase):
-    sql: Dict[str, Any]
-    conf: Dict[str, Any]
+    sql: Optional[Dict[str, Any]] = None
+    conf: Optional[Dict[str, Any]] = None
 
 
 class PowerBI(ModelBase):
@@ -57,11 +57,11 @@ class RuntimeConfig(ModelBase):
     options: RuntimeOptions
     path_options: RuntimePathOptions
     extender_options: Optional[ExtenderOptions] = None
-    spark_options: SparkOptions
+    spark_options: Optional[SparkOptions] = None
     bronze: Optional[List[BronzeStepConfig]] = None
     silver: Optional[List[SilverStepConfig]] = None
     gold: Optional[List[GoldStepConfig]] = None
     powerbi: Optional[List[PowerBI]] = None
     databases: Optional[List[Database]] = None
-    variables: Optional[List[Dict[str, Any]]] = None
-    credentials: Optional[List[Dict[str, Any]]] = None
+    variables: Optional[Dict[str, Any]] = None
+    credentials: Optional[Dict[str, Any]] = None

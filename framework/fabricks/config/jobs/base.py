@@ -1,4 +1,6 @@
-from typing import List, Literal, Optional
+from typing import Any, List, Literal, Optional
+
+from pydantic import computed_field
 
 from fabricks.config.base import ModelBase
 
@@ -26,8 +28,8 @@ Steps = Literal["bronze", "silver", "gold"]
 
 
 class SparkOptions(ModelBase):
-    sql: Optional[dict[str, str]] = None
-    conf: Optional[dict[str, str]] = None
+    sql: Optional[dict[str, Any]] = None
+    conf: Optional[dict[str, Any]] = None
 
 
 class TableOptions(ModelBase):
@@ -38,17 +40,17 @@ class TableOptions(ModelBase):
     cluster_by: Optional[List[str]] = None
     powerbi: Optional[bool] = None
     bloomfilter_by: Optional[List[str]] = None
-    constraints: Optional[dict[str, str]] = None
-    properties: Optional[dict[str, str]] = None
+    constraints: Optional[dict[str, Any]] = None
+    properties: Optional[dict[str, Any]] = None
     comment: Optional[str] = None
-    calculated_columns: Optional[dict[str, str]] = None
+    calculated_columns: Optional[dict[str, Any]] = None
     retention_days: Optional[int] = None
 
 
 class InvokeOptions(ModelBase):
     notebook: str
-    timeout: int
-    arguments: Optional[dict[str, str]] = None
+    timeout: Optional[int] = None
+    arguments: Optional[dict[str, Any]] = None
 
 
 class InvokerOptions(ModelBase):
@@ -59,7 +61,7 @@ class InvokerOptions(ModelBase):
 
 class ExtenderOptions(ModelBase):
     extender: str
-    arguments: Optional[dict[str, str]] = None
+    arguments: Optional[dict[str, Any]] = None
 
 
 class CheckOptions(ModelBase):
@@ -72,9 +74,12 @@ class CheckOptions(ModelBase):
 
 
 class DefaultOptions(ModelBase):
-    type: Optional[Types] = None
     mode: Modes
-    change_data_capture: Optional[ChangeDataCaptures]
+
+    # preferred
+    change_data_capture: Optional[ChangeDataCaptures] = None
+    type: Optional[Types] = None
+
     # extra
     parents: Optional[List[str]] = None
     filter_where: Optional[str] = None
@@ -82,15 +87,13 @@ class DefaultOptions(ModelBase):
 
 
 class BaseJobConfig(ModelBase):
-    job_id: str
-
     extend: Steps
-    step: Steps
 
+    step: str
     topic: str
     item: str
 
-    options: Optional[DefaultOptions] = None
+    options: DefaultOptions
     table_options: Optional[TableOptions] = None
     check_options: Optional[CheckOptions] = None
     spark_options: Optional[SparkOptions] = None
@@ -99,3 +102,15 @@ class BaseJobConfig(ModelBase):
 
     tags: Optional[List[str]] = None
     comment: Optional[str] = None
+
+    @computed_field
+    @property
+    def job_id(self) -> str:
+        from hashlib import md5
+
+        md5 = md5(self.job.encode())
+        return md5.hexdigest()
+
+    @computed_field
+    def job(self) -> str:
+        return f"{self.step}.{self.topic}_{self.item}"
