@@ -1,4 +1,4 @@
-from typing import Optional, Union, cast
+from typing import Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit, md5
@@ -7,7 +7,7 @@ from pyspark.sql.types import Row
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import SchemaDependencies, TBronze
+from fabricks.core.jobs.base._types import JobDependency, TBronze
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers import BaseParser
 from fabricks.core.parsers.get_parser import get_parser
@@ -69,25 +69,15 @@ class Bronze(BaseJob):
         path = Path.from_uri(uri, regex=VARIABLES)
         return path
 
-    def get_dependencies(self, df: Optional[DataFrame] = None) -> DataFrame:
+    def get_dependencies(self, *s) -> Sequence[JobDependency]:
         dependencies = []
 
         parents = self.options.job.get_list("parents")
         if parents:
             for p in parents:
-                dependencies.append(Row(self.job_id, p, "job"))
+                dependencies.append(JobDependency.from_parts(self.job_id, p, "job"))
 
-        if len(dependencies) == 0:
-            DEFAULT_LOGGER.debug("no dependency found", extra={"job": self})
-            df = self.spark.createDataFrame(dependencies, schema=SchemaDependencies)
-
-        else:
-            df = self.spark.createDataFrame(
-                dependencies, schema=["job_id", "parent", "origin"]
-            )  # order of the fields is important !
-            df = df.transform(self.add_dependency_details)
-
-        return df
+        return dependencies
 
     def register_external_table(self):
         options = self.conf.parser_options  # type: ignore
@@ -378,7 +368,7 @@ class Bronze(BaseJob):
         elif self.mode == "register":
             self.optimize_external_table(vacuum, analyze)
         else:
-            super().optimize()
+            super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)
 
     def overwrite(self):
         self.truncate()

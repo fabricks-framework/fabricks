@@ -15,6 +15,10 @@ from fabricks.utils.helpers import run_notebook
 
 # COMMAND ----------
 
+TESTS = ["job1", "job2", "job3", "job4", "job5"]
+
+# COMMAND ----------
+
 DEFAULT_LOGGER.setLevel(INFO)
 
 # COMMAND ----------
@@ -31,7 +35,7 @@ send_message_to_channel(
 dbutils.widgets.dropdown("initialize", "True", ["True", "False"])
 dbutils.widgets.dropdown("armageddon", "True", ["True", "False"])
 dbutils.widgets.dropdown("reset", "False", ["True", "False"])
-dbutils.widgets.multiselect("tests", "*", ["*", "job1", "job2", "job3", "job4"])
+dbutils.widgets.multiselect("tests", "*", ["*"] + TESTS)
 
 # COMMAND ----------
 
@@ -40,7 +44,7 @@ initialize = dbutils.widgets.get("initialize").lower() == "true"
 reset = dbutils.widgets.get("reset").lower() == "true"
 tests = [t for t in dbutils.widgets.get("tests").split(",")]
 if "*" in tests:
-    tests = ["job1", "job2", "job3", "job4"]
+    tests = TESTS
 
 # COMMAND ----------
 

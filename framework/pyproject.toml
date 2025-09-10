@@ -1,6 +1,6 @@
 [project]
 name = "fabricks"
-version = "2.3.0"
+version = "3.0.0"
 description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },
@@ -88,13 +88,17 @@ dev = [
     "shandy-sqlfmt >=0.23.2",
     "yamlfix >=1.14.0",
 ]
+docs = [
+    "mkdocs-material>=9.6.18",
+    "mkdocs>=1.6.1",
+]
 
 [tool.fabricks]
 runtime = "tests/integration/runtime"
 notebooks = "fabricks/api/notebooks"
 job_config_from_yaml = true
-loglevel = "info"
-debugmode = false
+loglevel = "debug"
+debugmode = true
 config = "tests/integration/runtime/fabricks/conf.uc.fabricks.yml"
 
 [tool.pytest.ini_options]

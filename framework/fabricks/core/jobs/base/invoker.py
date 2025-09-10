@@ -1,27 +1,32 @@
 import json
-from typing import Optional, overload
+from typing import Optional
 
 from pyspark.sql import DataFrame
 
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.checker import Checker
-from fabricks.core.jobs.base.error import PostRunInvokeException, PreRunInvokeException
+from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.schedules import get_schedules
 from fabricks.utils.path import Path
 
 
 class Invoker(Checker):
+    def invoke(self, schedule: Optional[str] = None):
+        self._invoke_job(position="run", schedule=schedule)
+
     def invoke_pre_run(self, schedule: Optional[str] = None):
-        self.invoke_job(position="pre_run", schedule=schedule)
-        self.invoke_step(position="pre_run", schedule=schedule)
+        self._invoke_job(position="pre_run", schedule=schedule)
+        self._invoke_step(position="pre_run", schedule=schedule)
 
     def invoke_post_run(self, schedule: Optional[str] = None):
-        self.invoke_job(position="post_run", schedule=schedule)
-        self.invoke_step(position="post_run", schedule=schedule)
+        self._invoke_job(position="post_run", schedule=schedule)
+        self._invoke_step(position="post_run", schedule=schedule)
 
-    def invoke_job(self, position: str, schedule: Optional[str] = None):
+    def _invoke_job(self, position: str, schedule: Optional[str] = None):
         invokers = self.options.invokers.get_list(position)
+
+        errors = []
 
         if invokers:
             for i in invokers:
@@ -34,24 +39,28 @@ class Invoker(Checker):
                     arguments = i.get("arguments") or {}
                     timeout = i.get("timeout")
 
-                    self.invoke(
+                    self._run_notebook(
                         path=path,
                         arguments=arguments,
                         timeout=timeout,
                         schedule=schedule,
-                        position=position,
                     )
 
                 except Exception as e:
                     if position == "pre_run":
-                        raise PreRunInvokeException(e)
+                        errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
-                        raise PostRunInvokeException(e)
+                        errors.append(PostRunInvokeException(e))
                     else:
-                        raise e
+                        errors.append(e)
 
-    def invoke_step(self, position: str, schedule: Optional[str] = None):
+        if errors:
+            raise Exception(errors)
+
+    def _invoke_step(self, position: str, schedule: Optional[str] = None):
         invokers = self.step_conf.get("invoker_options", {}).get(position, [])
+
+        errors = []
 
         if invokers:
             for i in invokers:
@@ -64,42 +73,30 @@ class Invoker(Checker):
                     arguments = i.get("arguments", {})
                     timeout = i.get("timeout")
 
-                    self.invoke(
+                    self._run_notebook(
                         path=path,
                         arguments=arguments,
                         timeout=timeout,
                         schedule=schedule,
-                        position=position,
                     )
 
                 except Exception as e:
                     if position == "pre_run":
-                        raise PreRunInvokeException(e)
+                        errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
-                        raise PostRunInvokeException(e)
+                        errors.append(PostRunInvokeException(e))
                     else:
-                        raise e
+                        errors.append(e)
 
-    @overload
-    def invoke(
+        if errors:
+            raise Exception(errors)
+
+    def _run_notebook(
         self,
         path: Path,
-        arguments: dict,
-        timeout: Optional[int] = None,
-        schedule: Optional[str] = None,
-        position: Optional[str] = None,
-    ): ...
-
-    @overload
-    def invoke(self, *, schedule: Optional[str] = None): ...
-
-    def invoke(
-        self,
-        path: Optional[Path] = None,
         arguments: Optional[dict] = None,
         timeout: Optional[int] = None,
         schedule: Optional[str] = None,
-        position: Optional[str] = None,
     ):
         """
         Invokes a notebook job.
@@ -115,23 +112,10 @@ class Invoker(Checker):
         """
         from databricks.sdk.runtime import dbutils
 
-        if position is None:
-            invokers = self.options.invokers.get_list("run")
-            assert len(invokers) == 1, "Only one run invoker is allowed"
-            invoker = invokers[0]
-
-            notebook = invoker.get("notebook")
-            path = PATH_RUNTIME.joinpath(notebook)
-
-            arguments = invoker.get("arguments", {})
-            timeout = invoker.get("timeout")
-
-        assert path is not None
-
-        for ext in [None, ".py", ".ipynb"]:
-            path_incl_ext = path.append(ext) if ext else path
-            if path_incl_ext.exists():
-                path = path_incl_ext
+        for file_format in [None, ".py", ".ipynb"]:
+            path_with_file_format = path.append(file_format) if file_format else path
+            if path_with_file_format.exists():
+                path = path_with_file_format
                 break
 
         if timeout is None:

@@ -1,5 +1,5 @@
 import time
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from azure.data.tables import TableClient, TableServiceClient
 from pyspark.sql import DataFrame
@@ -8,6 +8,8 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 if TYPE_CHECKING:
     from azure.core.credentials import TokenCredential
+
+
 class AzureTable:
     def __init__(
         self,
@@ -27,7 +29,11 @@ class AzureTable:
             self.credential = credential
             self.storage_account = storage_account
 
-            connection_string = f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net" if access_key else None
+            connection_string = (
+                f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net"
+                if access_key
+                else None
+            )
 
         assert connection_string
         self.connection_string = connection_string

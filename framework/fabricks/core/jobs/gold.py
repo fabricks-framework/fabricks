@@ -1,4 +1,5 @@
 import re
+from collections.abc import Sequence
 from typing import List, Optional, Union, cast
 
 from pyspark.sql import DataFrame
@@ -7,7 +8,7 @@ from typing_extensions import deprecated
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import SchemaDependencies, TGold
+from fabricks.core.jobs.base._types import JobDependency, TGold
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -143,7 +144,7 @@ class Gold(BaseJob):
         cdc_options = self.get_cdc_context(df)
         self.cdc.create_or_replace_view(self.sql, **cdc_options)
 
-    def get_dependencies(self) -> DataFrame:
+    def get_dependencies(self) -> Sequence[JobDependency]:
         data = []
         parents = self.options.job.get_list("parents") or []
 
@@ -159,24 +160,11 @@ class Gold(BaseJob):
         dependencies = list(set(dependencies))
 
         for d in dependencies:
-            data.append(Row(self.job_id, d, "parser"))
+            data.append(JobDependency.from_parts(self.job_id, d, "parser"))
 
         for p in parents:
-            data.append(Row(self.job_id, p, "job"))
-
-        if len(data) == 0:
-            DEFAULT_LOGGER.debug("no dependency found", extra={"job": self})
-            df = self.spark.createDataFrame(data, SchemaDependencies)
-
-        else:
-            df = self.spark.createDataFrame(
-                data,
-                schema=["job_id", "parent", "origin"],
-            )  # order of the fields is important !
-            df = df.transform(self.add_dependency_details)
-
-        assert df.where("job_id == parent_id").count() == 0, "circular dependency found"
-        return df
+            data.append(JobDependency.from_parts(self.job_id, p, "job"))
+        return data
 
     def _get_sql_dependencies(self) -> List[str]:
         from fabricks.core.jobs.base._types import Steps
@@ -222,9 +210,10 @@ class Gold(BaseJob):
             None,
         )  # assume no reload in gold (to improve performance)
         correct_valid_from = self.options.job.get_boolean("correct_valid_from", True)
+        add_metadata = self.step_conf.get("options", {}).get("metadata", False)
 
         context = {
-            "add_metadata": True,
+            "add_metadata": add_metadata,
             "soft_delete": True if self.slowly_changing_dimension else None,
             "deduplicate_key": None,
             "deduplicate_hash": True if self.slowly_changing_dimension else None,
@@ -336,6 +325,7 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
         else:
+            self.register_udfs()
             super().create()
             if self.options.job.get_boolean("persist_last_timestamp"):
                 self._update_last_timestamp(create=True)
@@ -364,7 +354,7 @@ class Gold(BaseJob):
         if self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
         else:
-            super().optimize()
+            super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)
 
     @property
     def cdc_last_timestamp(self) -> NoCDC:

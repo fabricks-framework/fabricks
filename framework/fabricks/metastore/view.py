@@ -7,10 +7,10 @@ from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.metastore.relational import Relational
+from fabricks.metastore.dbobject import DbObject
 
 
-class View(Relational):
+class View(DbObject):
     @staticmethod
     def create_or_replace(
         df: Union[DataFrame, pd.DataFrame],

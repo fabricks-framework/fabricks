@@ -3,7 +3,9 @@
 __current as (
     select
         {% for field in fields %} {{ field }}, {% endfor %}
-        'current' as __operation,
+        {% if has_data %} 'current'
+        {% else %} 'delete'
+        {% endif %} as __operation,
         {% if has_timestamp %}
             {% if cdc == "nocdc" %} __timestamp as __timestamp, {% endif %}
             {% if cdc == "scd1" %} __timestamp as __timestamp, {% endif %}

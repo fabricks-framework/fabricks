@@ -2,6 +2,7 @@
 - conf:
     name: test
     options:
+      type_widening: true
       secret_scope: bmskv
       catalog: bms_dna_test
       unity_catalog: true
@@ -10,7 +11,7 @@
         job: 3600
         pre_run: 3600
         post_run: 3600
-      workers: 16
+      workers: 8
     path_options:
       storage: abfss://test@$standard
       udfs: fabricks/udfs
@@ -50,15 +51,6 @@
           timeouts: 
             job: 1800
           order: 301
-      - name: core
-        path_options:
-          storage: abfss://test@$standard/core
-          runtime: gold/core
-        options:
-          timeouts: 
-            job: 1800
-          workers: 2
-          order: 302
       - name: transf
         path_options:
           storage: abfss://test@$standard/transf
@@ -78,6 +70,7 @@
           storage: abfss://test@$standard/semantic
           runtime: semantic
         options:
+          metadata: true
           timeouts: 
             job: 1800
           workers: 2

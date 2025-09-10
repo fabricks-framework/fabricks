@@ -3,17 +3,17 @@
 
 👀🏁
 {%- if format %}
-🗹 format: {{format}}{% endif %}
+☐ format: {{format}}{% endif %}
 {%- if tgt %}
-🗹 tgt: {{tgt}}{% endif %}
+☐ tgt: {{tgt}}{% endif %}
 {%- if cdc %}
-🗹 cdc: {{cdc}}{% endif %}
+☐ cdc: {{cdc}}{% endif %}
 {%- if mode %}
-🗹 mode: {{mode}}{% endif %}
+☐ mode: {{mode}}{% endif %}
 {%- if slice %}
 🗹 slice: {{slice}}{% endif %}
 {%- if slices %}
-🗹 slices: {{slices}}{% endif %}
+☐ slices: {{slices}}{% endif %}
 {%- if rectify %}
 🗹 rectify: {{rectify}}{% endif %}
 {%- if deduplicate %}
@@ -26,6 +26,8 @@
 🗹 soft_delete: {{soft_delete}}{% endif %}
 {%- if correct_valid_from %}
 🗹 correct_valid_from: {{correct_valid_from}}{% endif %}
+{%- if has_data %}
+🗹 has_data: {{has_data}}{% else %}☒ has_data: {{has_data}}{% endif %}
 {%- if has_rows %}
 🗹 has_rows: {{has_rows}}{% endif %}
 {%- if has_source %}
@@ -55,44 +57,44 @@
 {%- if add_hash %}
 🗹 add_hash: {{add_hash}}{% endif %}
 {%- if add_operation %}
-🗹 add_operation: {{add_operation}}{% endif %}
+☐ add_operation: {{add_operation}}{% endif %}
 {%- if add_source %}
-🗹 add_source: {{add_source}}{% endif %}
+☐ add_source: {{add_source}}{% endif %}
 {%- if add_calculated_columns %}
-🗹 add_calculated_columns: {{add_calculated_columns}}{% endif %}
+☐ add_calculated_columns: {{add_calculated_columns}}{% endif %}
 {%- if order_duplicate_by %}
 🗹 order_duplicate_by: {{order_duplicate_by}}{% endif %}
 {%- if all_except %}
-🗹 all_except: {{all_except}}{% endif %}
+☐ all_except: {{all_except}}{% endif %}
 {%- if all_overwrite %}
-🗹 all_overwrite: {{all_overwrite}}{% endif %}
+☐ all_overwrite: {{all_overwrite}}{% endif %}
 {%- if filter_where %}
-🗹 filter_where: {{filter_where}}{% endif %}
+☐ filter_where: {{filter_where}}{% endif %}
 {%- if update_where %}
-🗹 update_where: {{update_where}}{% endif %}
+☐ update_where: {{update_where}}{% endif %}
 {%- if parent_slice %}
-🗹 parent_slice: {{parent_slice}}{% endif %}
+☐ parent_slice: {{parent_slice}}{% endif %}
 {%- if parent_rectify %}
-🗹 parent_rectify: {{parent_rectify}}{% endif %}
+☐ parent_rectify: {{parent_rectify}}{% endif %}
 {%- if parent_deduplicate_key %}
-🗹 parent_deduplicate_key: {{parent_deduplicate_key}}{% endif %}
+☐ parent_deduplicate_key: {{parent_deduplicate_key}}{% endif %}
 {%- if parent_deduplicate_hash %}
-🗹 parent_deduplicate_hash: {{parent_deduplicate_hash}}{% endif %}
+☐ parent_deduplicate_hash: {{parent_deduplicate_hash}}{% endif %}
 {%- if parent_cdc %}
-🗹 parent_cdc: {{parent_cdc}}{% endif %}
+☐ parent_cdc: {{parent_cdc}}{% endif %}
 {%- if parent_final %}
-🗹 parent_final: {{parent_final}}{% endif %}
+☐ parent_final: {{parent_final}}{% endif %}
 👀🏳️
 
 👁️🏁
 {%- if src %}
-🗸 src: {{src}}{% endif %}
+☐ src: {{src}}{% endif %}
 {%- if fields %}
-🗸 fields: {{fields}}{% endif %}
+☐ fields: {{fields}}{% endif %}
 {%- if keys %}
-🗸 keys: {{keys}}{% endif %}
+☐ keys: {{keys}}{% endif %}
 {%- if hashes %}
-🗸 hashes: {{hashes}}{% endif %}
+☐ hashes: {{hashes}}{% endif %}
 👁️🏳️
 
 */

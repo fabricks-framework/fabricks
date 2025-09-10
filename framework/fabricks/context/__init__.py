@@ -3,8 +3,10 @@ from fabricks.context.runtime import (
     CATALOG,
     CONF_RUNTIME,
     FABRICKS_STORAGE,
+    FABRICKS_STORAGE_CREDENTIAL,
     GOLD,
     IS_JOB_CONFIG_FROM_YAML,
+    IS_TYPE_WIDENING,
     IS_UNITY_CATALOG,
     LOGLEVEL,
     PATH_CONFIG,
@@ -21,7 +23,6 @@ from fabricks.context.runtime import (
     SILVER,
     STEPS,
     VARIABLES,
-    FABRICKS_STORAGE_CREDENTIAL
 )
 from fabricks.context.spark_session import DBUTILS, SPARK, build_spark_session, init_spark_session
 
@@ -31,11 +32,12 @@ __all__ = [
     "CATALOG",
     "CONF_RUNTIME",
     "DBUTILS",
-    "FABRICKS_STORAGE",
     "FABRICKS_STORAGE_CREDENTIAL",
+    "FABRICKS_STORAGE",
     "GOLD",
     "init_spark_session",
     "IS_JOB_CONFIG_FROM_YAML",
+    "IS_TYPE_WIDENING",
     "IS_UNITY_CATALOG",
     "LOGLEVEL",
     "PATH_CONFIG",

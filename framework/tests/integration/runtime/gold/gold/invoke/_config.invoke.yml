@@ -48,11 +48,30 @@
       mode: invoke
     invoker_options:
       run:
-        notebook: gold/gold/invoke/notebook
-        arguments:
-          arg1: 1
-          arg2: 2
-          arg3: 3
+        - notebook: gold/gold/invoke/notebook
+          arguments:
+            arg1: 1
+            arg2: 2
+            arg3: 3
+- job:
+    step: gold
+    topic: invoke
+    item: notebooks
+    tags: [test]
+    options:
+      mode: invoke
+    invoker_options:
+      run:
+        - notebook: gold/gold/invoke/notebooks
+          arguments:
+            arg1: 1
+            arg2: 2
+            arg3: 3
+        - notebook: gold/gold/invoke/notebooks
+          arguments:
+            arg1: 1
+            arg2: 2
+            arg3: 3
 - job:
     step: gold
     topic: invoke
@@ -62,7 +81,7 @@
       mode: invoke
     invoker_options:
       run:
-        notebook: gold/gold/invoke/notebook_without_argument
+        - notebook: gold/gold/invoke/notebook_without_argument
 - job:
     step: gold
     topic: invoke
@@ -73,4 +92,21 @@
       timeout: 10
     invoker_options:
       run:
-        notebook: gold/gold/invoke/timedout
+        - notebook: gold/gold/invoke/timedout
+- job:
+    step: gold
+    topic: invoke
+    item: notebooks_failed_pre_run
+    tags: [test]
+    options:
+      mode: memory
+    invoker_options:
+      pre_run:
+        - notebook: gold/gold/invoke/pre_run/exe
+          arguments:
+            arg1: 1
+        - notebook: gold/gold/invoke/pre_run/exe_2
+          arguments:
+            arg1: 1
+            arg2: 2
+            arg3: 3

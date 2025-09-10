@@ -1,5 +1,5 @@
 import re
-from typing import List, Literal, Optional, Sequence, Union, overload
+from typing import List, Optional, Sequence, Union, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
@@ -9,29 +9,13 @@ from pyspark.sql.types import StructType
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.metastore.relational import Relational
+from fabricks.metastore._types import AddedColumn, ChangedColumn, DroppedColumn, SchemaDiff
+from fabricks.metastore.dbobject import DbObject
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix
-from pydantic import BaseModel
 
-class SchemaDiff(BaseModel):
-    column: str
-    data_type: Optional[str]
-    new_column: Optional[str] = None
-    new_data_type: Optional[str] = None
-    status: Literal["added", "changed", "dropped"]
 
-    def __str__(self):
-        if self.status == "added":
-            return f"Added {self.new_column} with type {self.new_data_type}"
-        elif self.status == "changed":
-            return f"Changed {self.column} from {self.data_type} to {self.new_data_type}"
-        elif self.status == "dropped":
-            return f"Dropped {self.column}"
-        else:
-            return super().__str__() # should not happen, but just in case
-
-class Table(Relational):
+class Table(DbObject):
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str, spark: Optional[SparkSession] = SPARK):
         return cls(step, topic, item, spark=spark)
@@ -83,6 +67,12 @@ class Table(Relational):
         assert self.is_registered, f"{self} not registered"
 
         return self.get_property("delta.feature.identityColumns") == "supported"
+
+    @property
+    def type_widening_enabled(self) -> bool:
+        assert self.is_registered, f"{self} not registered"
+
+        return self.get_property("delta.enableTypeWidening") == "true"
 
     def drop(self):
         super().drop()
@@ -271,51 +261,92 @@ class Table(Relational):
                 df1 = df1.drop("__identity")
 
         all_columns = set(df1.columns).union(set(df.columns))
+
         df1_dict = {name: dtype for name, dtype in df1.dtypes}
         df2_dict = {name: dtype for name, dtype in df.dtypes}
+
         diffs: list[SchemaDiff] = []
+
         for c in all_columns:
             old_datatype = df1_dict.get(c)
             new_datatype = df2_dict.get(c)
+
             if old_datatype is None and new_datatype is not None:
-                diffs.append(SchemaDiff(column=c, new_column=c, data_type=None, new_data_type=new_datatype, status="added"))
+                diffs.append(AddedColumn(new_column=c, new_data_type=new_datatype))
+
             elif old_datatype is not None and new_datatype is None:
-                diffs.append(SchemaDiff(column=c, new_column=None, data_type=old_datatype, new_data_type=None, status="dropped"))
+                diffs.append(DroppedColumn(column=c, data_type=old_datatype))
+
             elif old_datatype != new_datatype:
-                diffs.append(SchemaDiff(column=c, new_column=c, data_type=old_datatype, new_data_type=new_datatype, status="changed"))
+                assert old_datatype is not None
+                assert new_datatype is not None
+                diffs.append(
+                    ChangedColumn(
+                        column=c,
+                        data_type=old_datatype,
+                        new_data_type=new_datatype,
+                    )
+                )
 
         if diffs:
             DEFAULT_LOGGER.debug("difference(s) with delta table", extra={"job": self, "df": df})
 
         return diffs
 
-    def update_schema(self, df: DataFrame):
+    def update_schema(self, df: DataFrame, widen_types: bool = False):
         assert self.is_registered, f"{self} not registered"
+        if not self.column_mapping_enabled:
+            self.enable_column_mapping()
 
         diffs = self.get_schema_differences(df)
-        diffs = [d for d in diffs if d.status in ('added', 'changed')]
+        if widen_types:
+            diffs = [d for d in diffs if d.type_widening_compatible]
+            msg = "update schema (type widening only)"
+        else:
+            diffs = [d for d in diffs if d.status in ("added", "changed")]
+            msg = "update schema"
 
         if diffs:
-            DEFAULT_LOGGER.info("update schema", extra={"job": self, "df": diffs})
+            DEFAULT_LOGGER.info(msg, extra={"job": self, "df": diffs})
 
             for row in diffs:
+                if row.status == "changed":
+                    data_type = f"{row.data_type} -> {row.new_data_type}"
+                else:
+                    data_type = f"{row.new_data_type}"
+
                 DEFAULT_LOGGER.debug(
-                    f"{row.status.replace('ed', 'ing')} ({row.new_data_type})",
-                    extra={"job": self, "column": row.column},
+                    f"{row.status.replace('ed', 'ing')} {row.column} ({data_type})",
+                    extra={"job": self},
                 )
+
                 try:
-                    update_df = df.select(row.column).where("1 == 2")
-                    (
-                        self.deltatable.alias("dt")
-                        .merge(update_df.alias("df"), "1 == 2")
-                        .whenNotMatchedInsertAll()
-                        .execute()
-                    )
+                    # https://docs.databricks.com/aws/en/delta/type-widening#widen-types-with-automatic-schema-evolution
+                    # The type change is not one of byte, short, int, or long to decimal or double.
+                    # These type changes can only be applied manually using ALTER TABLE to avoid accidental promotion of integers to decimals.
+                    if row.data_type in ["byte", "short", "int", "long"] and row.new_data_type in [
+                        "decimal",
+                        "double",
+                    ]:
+                        self.change_column(row.column, row.new_data_type)
+
+                    else:
+                        update_df = df.select(row.column).where("1 == 2")
+                        (
+                            self.deltatable.alias("dt")
+                            .merge(update_df.alias("df"), "1 == 2")
+                            .withSchemaEvolution()  # type: ignore
+                            .whenMatchedUpdateAll()
+                            .whenNotMatchedInsertAll()
+                            .execute()
+                        )
                 except Exception:
                     pass
 
     def overwrite_schema(self, df: DataFrame):
         assert self.is_registered, f"{self} not registered"
+        if not self.column_mapping_enabled:
+            self.enable_column_mapping()
 
         diffs = self.get_schema_differences(df)
 
@@ -330,10 +361,13 @@ class Table(Relational):
                 if row.status == "added":
                     assert row.new_data_type is not None, "new_data_type must be defined for added columns"
                     self.add_column(row.column, row.new_data_type)
+
                 elif row.status == "dropped":
                     self.drop_column(row.column)
+
                 elif row.status == "changed":
                     assert row.new_data_type is not None, "new_data_type must be defined for changed columns"
+
                     try:
                         self.change_column(row.column, row.new_data_type)
                     except AnalysisException:
@@ -445,6 +479,10 @@ class Table(Relational):
             rename column `{old}` to `{new}`
             """
         )
+
+    def get_column_data_type(self, name: str) -> str:
+        data_type = self.get_description().where(f"col_name == '{name}'").select("data_type").collect()[0][0]
+        return data_type
 
     def get_details(self) -> DataFrame:
         assert self.is_registered, f"{self} not registered"

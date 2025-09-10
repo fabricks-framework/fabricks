@@ -140,13 +140,15 @@ try:
     assert secret_scope, "secret_scope mandatory in options"
     SECRET_SCOPE: Final[str] = secret_scope
 
+    IS_TYPE_WIDENING: Final[bool] = str(conf_options.get("type_widening", "True")).lower() in ("true", "1", "yes")
+
     path_options = CONF_RUNTIME.get("path_options", {})
     assert path_options, "options mandatory"
 
     fabricks_uri = path_options.get("storage")
     assert fabricks_uri, "storage mandatory in path options"
     FABRICKS_STORAGE: Final[Path] = Path.from_uri(fabricks_uri, regex=variables)
-    
+
     FABRICKS_STORAGE_CREDENTIAL: Final[Optional[str]] = path_options.get("storage_credential")
 
     path_udfs = path_options.get("udfs")
@@ -213,3 +215,79 @@ except KeyError as e:
 
 except AssertionError as e:
     raise e
+
+
+def pprint_runtime():
+    print("=" * 60)
+    print("FABRICKS RUNTIME CONFIGURATION")
+    print("=" * 60)
+
+    # Core Paths Section
+    print("\n📁 CORE PATHS:")
+    print(f"   Runtime: {PATH_RUNTIME.string}")
+    print(f"   Notebooks: {PATH_NOTEBOOKS.string}")
+    print(f"   Config: {PATH_CONFIG.string}")
+
+    # Runtime Settings Section
+    print("\n⚙️ RUNTIME SETTINGS:")
+    print(f"   Log Level: {logging.getLevelName(LOGLEVEL)}")
+    print(f"   Debug Mode: {'✓' if IS_DEBUGMODE else '✗'}")
+    print(f"   Job Config from YAML: {'✓' if IS_JOB_CONFIG_FROM_YAML else '✗'}")
+    print(f"   Type Widening: {'✓' if IS_TYPE_WIDENING else '✗'}")
+
+    print("\n🔄 PIPELINE STEPS:")
+
+    def _print_steps(steps_list, layer_name, icon):
+        if steps_list and any(step for step in steps_list if step):
+            print(f"   {icon} {layer_name}:")
+            for step in steps_list:
+                if step:
+                    step_name = step.get("name", "Unnamed")
+                    print(f"      • {step_name}")
+        else:
+            print(f"   {icon} {layer_name}: No steps")
+
+    _print_steps(BRONZE, "Bronze", "🥉")
+    _print_steps(SILVER, "Silver", "🥈")
+    _print_steps(GOLD, "Gold", "🥇")
+
+    # Storage Configuration Section
+    print("\n💾 STORAGE CONFIGURATION:")
+    print(f"   Storage URI: {FABRICKS_STORAGE.string}")
+    print(f"   Storage Credential: {FABRICKS_STORAGE_CREDENTIAL or 'Not configured'}")
+
+    # Unity Catalog Section
+    print("\n🏛️ UNITY CATALOG:")
+    print(f"   Enabled:  {'✓' if IS_UNITY_CATALOG else '✗'}")
+    if IS_UNITY_CATALOG and CATALOG:
+        print(f"   Catalog: {CATALOG}")
+
+    # Security Section
+    print("\n🔐 SECURITY:")
+    print(f"   Secret Scope: {SECRET_SCOPE}")
+
+    # Component Paths Section
+    print("\n🛠️ COMPONENT PATHS:")
+    components = [
+        ("UDFs", PATH_UDFS),
+        ("Parsers", PATH_PARSERS),
+        ("Extenders", PATH_EXTENDERS),
+        ("Views", PATH_VIEWS),
+        ("Schedules", PATH_SCHEDULES),
+        ("Requirements", PATH_REQUIREMENTS),
+    ]
+
+    for name, path in components:
+        print(f"   {name}: {path.string}")
+
+    # Storage Paths Section
+    print("\n📦 STORAGE PATHS:")
+    for name, path in sorted(PATHS_STORAGE.items()):
+        icon = "🏭" if name == "fabricks" else "📊"
+        print(f"   {icon} {name}: {path.string}")
+
+    # Runtime Paths Section
+    if PATHS_RUNTIME:
+        print("\n⚡ RUNTIME PATHS:")
+        for name, path in sorted(PATHS_RUNTIME.items()):
+            print(f"   📂 {name}: {path.string}")
