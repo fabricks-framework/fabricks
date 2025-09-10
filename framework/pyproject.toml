@@ -1,6 +1,6 @@
 [project]
 name = "fabricks"
-version = "2.4.0"
+version = "3.0.0"
 description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },
