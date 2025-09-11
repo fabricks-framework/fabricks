@@ -75,9 +75,9 @@ class CheckOptions(ModelBase):
 
 class DefaultOptions(ModelBase):
     mode: Modes
+    change_data_capture: ChangeDataCaptures = "none"
 
     # preferred
-    change_data_capture: Optional[ChangeDataCaptures] = None
     type: Optional[Types] = None
 
     # extra

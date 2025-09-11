@@ -14,7 +14,6 @@ class ParserOptions(ModelBase):
 class BronzeOptions(DefaultOptions):
     # default
     mode: BronzeModes
-    change_data_capture: ChangeDataCaptures = "none"
 
     # mandatory
     uri: str
