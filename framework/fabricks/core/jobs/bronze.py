@@ -318,9 +318,9 @@ class Bronze(BaseJob):
 
     def for_each_run(self, **kwargs):
         if self.mode == "register":
-            DEFAULT_LOGGER.info("register (no run)", extra={"job": self})
+            DEFAULT_LOGGER.debug("register (no run)", extra={"job": self})
         elif self.mode == "memory":
-            DEFAULT_LOGGER.info("memory (no run)", extra={"job": self})
+            DEFAULT_LOGGER.debug("memory (no run)", extra={"job": self})
         else:
             super().for_each_run(**kwargs)
 
