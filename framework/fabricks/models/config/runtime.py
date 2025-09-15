@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from fabricks.config.steps.base import ExtenderOptions, ModelBase
-from fabricks.config.steps.bronze import BronzeStepConfig
-from fabricks.config.steps.gold import GoldStepConfig
-from fabricks.config.steps.silver import SilverStepConfig
+from fabricks.models.config.steps.base import ExtenderOptions, ModelBase
+from fabricks.models.config.steps.bronze import BronzeStepConfig
+from fabricks.models.config.steps.gold import GoldStepConfig
+from fabricks.models.config.steps.silver import SilverStepConfig
 
 
 class RuntimePathOptions(ModelBase):

@@ -2,7 +2,7 @@ from typing import Any, List, Literal, Optional
 
 from pydantic import computed_field
 
-from fabricks.config.base import ModelBase
+from fabricks.models.config.base import ModelBase
 
 FileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "delta"]
 Operations = Literal["upsert", "reload", "delete"]

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fabricks.config.steps.base import BaseStepConfig, DefaultOptions
+from fabricks.models.config.steps.base import BaseStepConfig, DefaultOptions
 
 
 class SilverOptions(DefaultOptions):

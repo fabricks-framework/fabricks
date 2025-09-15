@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from fabricks.config.base import ModelBase
+from fabricks.models.config.base import ModelBase
 
 
 class PathOptions(ModelBase):

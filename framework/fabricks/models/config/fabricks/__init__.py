@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pydantic_settings import BaseSettings
 
-from fabricks.config.fabricks.base import BaseConfig
-from fabricks.config.fabricks.environment import EnvironmentConfig
-from fabricks.config.fabricks.pyproject import PyprojectConfig
+from fabricks.models.config.fabricks.base import BaseConfig
+from fabricks.models.config.fabricks.environment import EnvironmentConfig
+from fabricks.models.config.fabricks.pyproject import PyprojectConfig
 
 
 class FabricksConfig(BaseConfig, BaseSettings):

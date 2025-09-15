@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 
-from fabricks.config.jobs.base import BaseJobConfig, DefaultOptions
+from fabricks.models.config.jobs.base import BaseJobConfig, DefaultOptions
 
 GoldModes = Literal["memory", "append", "complete", "update", "invoke"]
 

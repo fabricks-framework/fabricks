@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import Field, field_validator
 
-from fabricks.config.base import ModelBase
+from fabricks.models.config.base import ModelBase
 
 
 class BaseConfig(ModelBase):
@@ -57,11 +57,9 @@ class BaseConfig(ModelBase):
 
             return self.root
 
-        # Use environment/explicit setting if available
         if runtime is not None:
             return Path(runtime)
 
-        # Final fallback
         raise ValueError("No pyproject.toml nor FABRICKS_RUNTIME")
 
     def resolve_notebooks_path(self) -> Path:
@@ -73,7 +71,6 @@ class BaseConfig(ModelBase):
 
             return Path(notebooks)
 
-        # Default to runtime/notebooks
         runtime = self.resolve_runtime_path()
         return runtime.joinpath("notebooks")
 
@@ -86,7 +83,6 @@ class BaseConfig(ModelBase):
 
             return Path(config)
 
-        # default to fabricks/conf.yml
         assert cluster_id is not None
         runtime = self.resolve_runtime_path()
         return runtime.joinpath(f"fabricks/conf.{cluster_id}.yml")

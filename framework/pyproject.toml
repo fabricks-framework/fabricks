@@ -8,10 +8,12 @@ authors = [
 # Attention: You may never specify newer dependencies than latests Databricks LTS Runtime
 # Eg, PyYaml is at 6.0 there
 dependencies = [
+    "adlfs>=2025.8.0",
     "azure-data-tables >=12.5.0,<13",
     "azure-identity >=1.10.0",
     "azure-storage-blob >=12.14.1",
     "azure-storage-queue >=12.10.0,<13",
+    "cloudpathlib>=0.22.0",
     "databricks-sdk >=0.20.0",
     "jinja2 >=2.11.3",
     "pydantic>=1.10.21",
@@ -23,6 +25,7 @@ dependencies = [
     "tenacity>=9.1.2",
     "tomli>=2.2.1;python_version<\"3.11\"",
     "tqdm>=4.67.1",
+    "universal-pathlib>=0.2.6",
 ]
 requires-python = ">=3.9,<4"
 
