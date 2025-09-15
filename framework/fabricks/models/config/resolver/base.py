@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Any, Optional
 
 from pydantic import BaseModel
@@ -87,5 +88,16 @@ class BaseConfigResolver(BaseModel):
         return path
 
     @classmethod
-    def resolve(cls, step: str, topic: str, item: str) -> "BaseConfigResolver":
+    @abstractmethod
+    def from_file(cls, step: str, topic: str, item: str) -> "BaseConfigResolver":
         raise NotImplementedError()
+
+    @classmethod
+    def from_parts(
+        cls,
+        fabricks: FabricksConfig,
+        runtime: RuntimeConfig,
+        step: BaseStepConfig,
+        job: BaseJobConfig,
+    ) -> "BaseConfigResolver":
+        return cls(fabricks=fabricks, runtime=runtime, step=step, job=job)
