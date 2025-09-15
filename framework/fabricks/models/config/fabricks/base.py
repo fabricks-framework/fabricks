@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import Field, field_validator
 
-from fabricks.models.config.base import ModelBase
+from fabricks.models.base import ModelBase
 
 
 class BaseConfig(ModelBase):

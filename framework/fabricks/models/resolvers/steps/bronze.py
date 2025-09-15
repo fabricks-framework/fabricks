@@ -1,18 +1,19 @@
 from typing import Generator, List
 
 from fabricks.models.config.fabricks import FabricksConfig
-from fabricks.models.config.jobs.bronze import BronzeJobConfig
-from fabricks.models.config.resolver.base import BaseConfigResolver
 from fabricks.models.config.runtime import RuntimeConfig
 from fabricks.models.config.steps.bronze import BronzeStepConfig
+from fabricks.models.resolvers.steps.base import BaseStepConfigResolver
 
 
-class BronzeConfigResolver(BaseConfigResolver):
+class BronzeStepConfigResolver(BaseStepConfigResolver):
     step: BronzeStepConfig
-    job: BronzeJobConfig
+    jobs: List[BronzeStepConfig]
 
     @classmethod
-    def from_file(cls, step: str, topic: str, item: str) -> "BronzeConfigResolver":
+    def from_file(cls, step: str) -> "BronzeStepConfigResolver":
+        _fabricks = FabricksConfig.load()
+
         _fabricks = FabricksConfig.load()
 
         runtime_path = _fabricks.resolve_config_path()
@@ -26,11 +27,10 @@ class BronzeConfigResolver(BaseConfigResolver):
         _step: BronzeStepConfig = list(filter(lambda s: s.name == step, steps))[0]
 
         jobs_path = _fabricks.resolve_runtime_path() / _step.path_options.runtime
-        jobs_generator: Generator[BronzeJobConfig, None, None] = BronzeJobConfig.from_files(jobs_path, root="job")
-        jobs: List[BronzeJobConfig] = list(jobs_generator)
-        job: BronzeJobConfig = list(filter(lambda j: j.topic == topic and j.item == item, jobs))[0]
+        jobs_generator: Generator[BronzeStepConfig, None, None] = BronzeStepConfig.from_files(jobs_path, root="job")
+        jobs: List[BronzeStepConfig] = list(jobs_generator)
 
-        return cls(fabricks=_fabricks, runtime=runtime, step=_step, job=job)
+        return cls(fabricks=_fabricks, runtime=runtime, step=_step, jobs=jobs)
 
     @classmethod
     def from_parts(
@@ -38,6 +38,6 @@ class BronzeConfigResolver(BaseConfigResolver):
         fabricks: FabricksConfig,
         runtime: RuntimeConfig,
         step: BronzeStepConfig,
-        job: BronzeJobConfig,
-    ) -> "BronzeConfigResolver":
-        return cls(fabricks=fabricks, runtime=runtime, step=step, job=job)
+        jobs: List[BronzeStepConfig],
+    ) -> "BronzeStepConfigResolver":
+        return cls(fabricks=fabricks, runtime=runtime, step=step, jobs=jobs)

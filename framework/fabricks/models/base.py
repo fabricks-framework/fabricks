@@ -31,9 +31,20 @@ class ModelBase(BaseModel):
                     yield from (cls(**cast(dict, c), file=path) for c in content)
 
     @classmethod
-    def from_files(cls: type[T], path: Path, root: Optional[str] = None) -> Generator[T, None, None]:
+    def from_files(
+        cls: type[T], path: Path, root: Optional[str] = None, preferred_file_name: Optional[str] = None
+    ) -> Generator[T, None, None]:
+        found = False
+
         for child in path.iterdir():
-            if child.suffix == ".yaml" or child.suffix == ".yml":
-                yield from cls.from_file(child, root=root)
-            elif child.is_dir():
-                yield from cls.from_files(child, root=root)
+            if child.suffix not in [".yaml", ".yml"]:
+                continue
+            elif preferred_file_name is not None and preferred_file_name not in child.name:
+                continue
+            else:
+                found = True
+
+            yield from cls.from_file(child, root=root)
+
+        if preferred_file_name is not None and not found:
+            yield from cls.from_files(child, root=root, preferred_file_name=None)

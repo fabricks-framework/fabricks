@@ -1,18 +1,19 @@
 from typing import Generator, List
 
 from fabricks.models.config.fabricks import FabricksConfig
-from fabricks.models.config.jobs.gold import GoldJobConfig
-from fabricks.models.config.resolver.base import BaseConfigResolver
 from fabricks.models.config.runtime import RuntimeConfig
 from fabricks.models.config.steps.gold import GoldStepConfig
+from fabricks.models.resolvers.steps.base import BaseStepConfigResolver
 
 
-class GoldConfigResolver(BaseConfigResolver):
+class GoldStepConfigResolver(BaseStepConfigResolver):
     step: GoldStepConfig
-    job: GoldJobConfig
+    jobs: List[GoldStepConfig]
 
     @classmethod
-    def from_file(cls, step: str, topic: str, item: str) -> "GoldConfigResolver":
+    def from_file(cls, step: str) -> "GoldStepConfigResolver":
+        _fabricks = FabricksConfig.load()
+
         _fabricks = FabricksConfig.load()
 
         runtime_path = _fabricks.resolve_config_path()
@@ -26,11 +27,10 @@ class GoldConfigResolver(BaseConfigResolver):
         _step: GoldStepConfig = list(filter(lambda s: s.name == step, steps))[0]
 
         jobs_path = _fabricks.resolve_runtime_path() / _step.path_options.runtime
-        jobs_generator: Generator[GoldJobConfig, None, None] = GoldJobConfig.from_files(jobs_path, root="job")
-        jobs: List[GoldJobConfig] = list(jobs_generator)
-        job: GoldJobConfig = list(filter(lambda j: j.topic == topic and j.item == item, jobs))[0]
+        jobs_generator: Generator[GoldStepConfig, None, None] = GoldStepConfig.from_files(jobs_path, root="job")
+        jobs: List[GoldStepConfig] = list(jobs_generator)
 
-        return cls(fabricks=_fabricks, runtime=runtime, step=_step, job=job)
+        return cls(fabricks=_fabricks, runtime=runtime, step=_step, jobs=jobs)
 
     @classmethod
     def from_parts(
@@ -38,6 +38,6 @@ class GoldConfigResolver(BaseConfigResolver):
         fabricks: FabricksConfig,
         runtime: RuntimeConfig,
         step: GoldStepConfig,
-        job: GoldJobConfig,
-    ) -> "GoldConfigResolver":
-        return cls(fabricks=fabricks, runtime=runtime, step=step, job=job)
+        jobs: List[GoldStepConfig],
+    ) -> "GoldStepConfigResolver":
+        return cls(fabricks=fabricks, runtime=runtime, step=step, jobs=jobs)

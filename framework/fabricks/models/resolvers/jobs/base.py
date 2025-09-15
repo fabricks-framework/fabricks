@@ -9,7 +9,7 @@ from fabricks.models.config.runtime import RuntimeConfig
 from fabricks.models.config.steps.base import BaseStepConfig
 
 
-class BaseConfigResolver(BaseModel):
+class BaseJobConfigResolver(BaseModel):
     fabricks: FabricksConfig
     runtime: RuntimeConfig
     step: BaseStepConfig
@@ -89,7 +89,7 @@ class BaseConfigResolver(BaseModel):
 
     @classmethod
     @abstractmethod
-    def from_file(cls, step: str, topic: str, item: str) -> "BaseConfigResolver":
+    def from_file(cls, step: str, topic: str, item: str) -> "BaseJobConfigResolver":
         raise NotImplementedError()
 
     @classmethod
@@ -99,5 +99,5 @@ class BaseConfigResolver(BaseModel):
         runtime: RuntimeConfig,
         step: BaseStepConfig,
         job: BaseJobConfig,
-    ) -> "BaseConfigResolver":
+    ) -> "BaseJobConfigResolver":
         return cls(fabricks=fabricks, runtime=runtime, step=step, job=job)

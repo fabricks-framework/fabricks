@@ -3,7 +3,7 @@ from typing import List, Literal, Optional
 from pydantic import model_validator
 from typing_extensions import Self
 
-from fabricks.models.config.base import ModelBase
+from fabricks.models.base import ModelBase
 from fabricks.models.config.jobs.base import BaseJobConfig, DefaultOptions, Operations
 
 BronzeModes = Literal["memory", "append", "register"]
