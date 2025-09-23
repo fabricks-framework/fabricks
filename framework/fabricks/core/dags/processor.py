@@ -4,7 +4,7 @@ import time
 from multiprocessing import Process
 from typing import Any, List, Union
 
-from azure.core.exceptions import ServiceRequestError
+from azure.core.exceptions import AzureError
 from databricks.sdk.runtime import dbutils, spark
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
@@ -49,7 +49,7 @@ class DagProcessor(BaseDags):
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type((Exception, ServiceRequestError)),
+        retry=retry_if_exception_type((Exception, AzureError)),
         reraise=True,
     )
     def query(self, data: Any) -> List[dict]:
@@ -58,7 +58,7 @@ class DagProcessor(BaseDags):
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type((Exception, ServiceRequestError)),
+        retry=retry_if_exception_type((Exception, AzureError)),
         reraise=True,
     )
     def upsert(self, data: Any) -> None:
@@ -67,7 +67,7 @@ class DagProcessor(BaseDags):
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type((Exception, ServiceRequestError)),
+        retry=retry_if_exception_type((Exception, AzureError)),
         reraise=True,
     )
     def delete(self, data: Any) -> None:
