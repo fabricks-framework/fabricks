@@ -351,7 +351,7 @@ class Processor(Generator):
         create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
 
         DEFAULT_LOGGER.debug("append", extra={"job": self})
-        self.spark.sql(f"insert table {self.table} by name select * from global_temp.{name}")
+        self.spark.sql(f"insert into table {self.table} by name select * from global_temp.{name}")
 
     def overwrite(
         self,
