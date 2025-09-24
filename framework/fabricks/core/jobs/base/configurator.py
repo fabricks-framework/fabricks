@@ -301,9 +301,8 @@ class Configurator(ABC):
         """
         if self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
-        else:
-            assert self.table.exists()
 
+        else:
             if vacuum:
                 self.vacuum()
             if optimize:
@@ -312,19 +311,23 @@ class Configurator(ABC):
                 self.table.compute_statistics()
 
     def vacuum(self):
-        job = self.options.table.get("retention_days")
-        step = self.step_conf.get("table_options", {}).get("retention_days", None)
-        runtime = CONF_RUNTIME.get("options", {}).get("retention_days")
+        if self.mode == "memory":
+            DEFAULT_LOGGER.debug("memory (no vacuum)", extra={"job": self})
 
-        if job is not None:
-            retention_days = job
-        elif step:
-            retention_days = step
         else:
-            assert runtime
-            retention_days = runtime
+            job = self.options.table.get("retention_days")
+            step = self.step_conf.get("table_options", {}).get("retention_days", None)
+            runtime = CONF_RUNTIME.get("options", {}).get("retention_days")
 
-        self.table.vacuum(retention_days=retention_days)
+            if job is not None:
+                retention_days = job
+            elif step:
+                retention_days = step
+            else:
+                assert runtime
+                retention_days = runtime
+
+            self.table.vacuum(retention_days=retention_days)
 
     def __str__(self):
         return f"{self.step}.{self.topic}_{self.item}"

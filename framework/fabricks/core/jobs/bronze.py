@@ -103,6 +103,21 @@ class Bronze(BaseJob):
         DEFAULT_LOGGER.debug("drop external table", extra={"job": self})
         self.spark.sql(f"drop table if exists {self.qualified_name}")
 
+    def analyze_external_table(self):
+        DEFAULT_LOGGER.debug("analyze external table", extra={"job": self})
+        self.spark.sql(f"analyze table {self.qualified_name} compute statistics")
+
+    def vacuum_external_table(self, retention_hours: Optional[int] = 168):
+        from delta import DeltaTable
+
+        DEFAULT_LOGGER.debug("vacuum external table", extra={"job": self})
+        try:
+            dt = DeltaTable.forPath(self.spark, self.data_path.string)
+            self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
+            dt.vacuum(retention_hours)
+        finally:
+            self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
+
     def optimize_external_table(
         self,
         vacuum: Optional[bool] = True,
@@ -110,20 +125,10 @@ class Bronze(BaseJob):
     ):
         DEFAULT_LOGGER.debug("optimize external table", extra={"job": self})
         if vacuum:
-            from delta import DeltaTable
-
-            dt = DeltaTable.forPath(self.spark, self.data_path.string)
-            retention_days = 7
-            DEFAULT_LOGGER.debug(f"{self.data_path} - vacuum table (removing files older than {retention_days} days)")
-            try:
-                self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
-                dt.vacuum(retention_days * 24)
-            finally:
-                self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
+            self.vacuum_external_table()
 
         if analyze:
-            DEFAULT_LOGGER.debug(f"{self.data_path} - compute delta statistics")
-            self.spark.sql(f"analyze table delta.`{self.data_path}` compute delta statistics")
+            self.analyze_external_table()
 
     @property
     def parser(self) -> BaseParser:
@@ -369,6 +374,14 @@ class Bronze(BaseJob):
             self.optimize_external_table(vacuum, analyze)
         else:
             super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)
+
+    def vacuum(self):
+        if self.mode == "memory":
+            DEFAULT_LOGGER.info("memory (no vacuum)", extra={"job": self})
+        elif self.mode == "register":
+            self.vacuum_external_table()
+        else:
+            super().vacuum()
 
     def overwrite(self):
         self.truncate()

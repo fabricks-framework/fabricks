@@ -433,7 +433,11 @@ class Table(DbObject):
         cols = [
             f"`{name}`"
             for name, dtype in self.dataframe.dtypes
-            if not dtype.startswith("struct") and not dtype.startswith("array") and name not in ["__metadata"]
+            if not dtype.startswith("struct")
+            and not dtype.startswith("array")
+            and not dtype.startswith("variant")
+            and not dtype.startswith("map")
+            and name not in ["__metadata"]
         ]
         cols = ", ".join(sorted(cols))
         self.spark.sql(f"analyze table {self.qualified_name} compute statistics for columns {cols}")
