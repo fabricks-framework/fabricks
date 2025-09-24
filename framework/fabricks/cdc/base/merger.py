@@ -101,7 +101,7 @@ class Merger(Processor):
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
-        global_temp_view = f"{self.database}_{'_'.join(self.levels)}__merge"
+        global_temp_view = f"{self.qualified_name}__merge"
         view = create_or_replace_global_temp_view(global_temp_view, df, uuid=kwargs.get("uuid", False))
 
         merge = self.get_merge_query(view, **kwargs)

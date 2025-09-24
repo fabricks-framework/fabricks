@@ -16,7 +16,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 class Processor(Generator):
     def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
         if isinstance(src, (DataFrame, CDataFrame)):
-            name = f"{self.database}_{'_'.join(self.levels)}__data"
+            name = f"{self.qualified_name}__data"
             global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False))
             src = f"select * from {global_temp_view}"
 
@@ -347,8 +347,11 @@ class Processor(Generator):
         df = self.get_data(src, **kwargs)
         df = self.reorder_columns(df)
 
+        name = f"{self.qualified_name}__append"
+        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
+
         DEFAULT_LOGGER.debug("append", extra={"job": self})
-        df.write.format("delta").mode("append").save(self.table.delta_path.string)
+        self.spark.sql(f"insert into table {self.table} by name select * from global_temp.{name}")
 
     def overwrite(
         self,
@@ -366,9 +369,11 @@ class Processor(Generator):
             if kwargs.get("update_where"):
                 dynamic = True
 
-        writer = df.write.format("delta").mode("overwrite")
         if dynamic:
-            writer.option("partitionOverwriteMode", "dynamic")
+            self.spark.sql("set spark.sql.sources.partitionOverwriteMode = dynamic")
 
-        DEFAULT_LOGGER.info("overwrite", extra={"job": self})
-        writer.save(self.table.delta_path.string)
+        name = f"{self.qualified_name}__overwrite"
+        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
+
+        DEFAULT_LOGGER.debug("overwrite", extra={"job": self})
+        self.spark.sql(f"insert overwrite table {self.table} by name select * from global_temp.{name}")

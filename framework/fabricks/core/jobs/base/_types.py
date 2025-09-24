@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Literal, Optional, TypedDict, Union
+from typing import List, Literal, Optional, TypedDict, Union
 
 from pydantic import BaseModel, ConfigDict, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
@@ -33,8 +33,8 @@ Origins = Literal["parser", "job"]
 
 
 class SparkOptions(TypedDict):
-    sql: Optional[dict[Any, Any]]
-    conf: Optional[dict[Any, Any]]
+    sql: Optional[dict[str, str]]
+    conf: Optional[dict[str, str]]
 
 
 class TableOptions(TypedDict):
@@ -45,17 +45,17 @@ class TableOptions(TypedDict):
     cluster_by: Optional[List[str]]
     powerbi: Optional[bool]
     bloomfilter_by: Optional[List[str]]
-    constraints: Optional[dict[Any, Any]]
-    properties: Optional[dict[Any, Any]]
+    constraints: Optional[dict[str, str]]
+    properties: Optional[dict[str, str]]
     comment: Optional[str]
-    calculated_columns: Optional[dict[Any, Any]]
+    calculated_columns: Optional[dict[str, str]]
     retention_days: Optional[int]
 
 
 class _InvokeOptions(TypedDict):
     notebook: str
     timeout: int
-    arguments: Optional[dict[Any, Any]]
+    arguments: Optional[dict[str, str]]
 
 
 class InvokerOptions(TypedDict):
@@ -66,7 +66,7 @@ class InvokerOptions(TypedDict):
 
 class ExtenderOptions(TypedDict):
     extender: str
-    arguments: Optional[dict[Any, Any]]
+    arguments: Optional[dict[str, str]]
 
 
 class CheckOptions(TypedDict):
@@ -90,7 +90,7 @@ class BronzeOptions(TypedDict):
     filter_where: Optional[str]
     # extra
     encrypted_columns: Optional[List[str]]
-    calculated_columns: Optional[dict[Any, Any]]
+    calculated_columns: Optional[dict[str, str]]
     operation: Optional[Operations]
     timeout: Optional[int]
 
@@ -106,7 +106,7 @@ class SilverOptions(TypedDict):
     deduplicate: Optional[bool]
     stream: Optional[bool]
     # else
-    order_duplicate_by: Optional[dict[Any, Any]]
+    order_duplicate_by: Optional[dict[str, str]]
     timeout: Optional[int]
 
 
@@ -141,7 +141,7 @@ class BaseJobConf:
 
 @dataclass
 class JobConfBronze(BaseJobConf):
-    step: str
+    step: TBronze
     options: BronzeOptions
     table_options: Optional[TableOptions] = None
     parser_options: Optional[ParserOptions] = None
@@ -155,7 +155,7 @@ class JobConfBronze(BaseJobConf):
 
 @dataclass
 class JobConfSilver(BaseJobConf):
-    step: str
+    step: TSilver
     options: SilverOptions
     table_options: Optional[TableOptions] = None
     check_options: Optional[CheckOptions] = None
@@ -168,7 +168,7 @@ class JobConfSilver(BaseJobConf):
 
 @dataclass
 class JobConfGold(BaseJobConf):
-    step: str
+    step: TGold
     options: Optional[GoldOptions]
     table_options: Optional[TableOptions] = None
     check_options: Optional[CheckOptions] = None
