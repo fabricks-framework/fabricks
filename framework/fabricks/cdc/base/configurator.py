@@ -37,6 +37,10 @@ class Configurator(ABC):
     def is_registered(self):
         return self.table.is_registered
 
+    @property
+    def qualified_name(self):
+        return f"{self.database}_{'_'.join(self.levels)}"
+
     @abstractmethod
     def get_query(self, src: Union[DataFrame, Table, str], **kwargs):
         raise NotImplementedError()
