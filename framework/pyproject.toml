@@ -13,6 +13,7 @@ dependencies = [
     "azure-storage-blob >=12.14.1",
     "azure-storage-queue >=12.10.0,<13",
     "databricks-sdk >=0.20.0",
+    "importlib-metadata>=8.6.1",
     "jinja2 >=2.11.3",
     "pydantic>=1.10.21",
     "pydantic-settings",
