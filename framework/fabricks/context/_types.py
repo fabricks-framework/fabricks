@@ -77,13 +77,9 @@ class GoldOptions(StepOptions):
 class Step(TypedDict):
     name: str
 
-
-LiquidClusterings = Literal["auto", True, False]
-
-
 class TableOptions(TypedDict):
     powerbi: Optional[bool]
-    liquid_clustering: Optional[LiquidClusterings]
+    liquid_clustering: Optional[bool]
     properties: Optional[dict[str, str]]
     retention_days: Optional[int]
 

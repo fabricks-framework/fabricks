@@ -34,10 +34,8 @@ class Generator(Configurator):
 
         df = self.get_data(src, **kwargs)
 
-        if liquid_clustering:
-            assert cluster_by, "clustering column not found"
-        elif partitioning:
-            assert partition_by, "partitioning column not found"
+        if partitioning is True:
+            assert partition_by, "partitioning column(s) not found"
 
         df = self.reorder_columns(df)
 
