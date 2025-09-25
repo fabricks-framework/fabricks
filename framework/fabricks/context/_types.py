@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional, TypedDict
+from typing import List, Optional, TypedDict
 
 
 class RuntimePathOptions(TypedDict):
@@ -76,6 +76,7 @@ class GoldOptions(StepOptions):
 
 class Step(TypedDict):
     name: str
+
 
 class TableOptions(TypedDict):
     powerbi: Optional[bool]
