@@ -84,22 +84,14 @@ class Generator(Configurator):
             DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "sql": sql})
 
     def optimize_table(self):
-        liquid_clustering = self.table.get_property("delta.feature.liquid") == "supported"
+        columns = None
 
-        if liquid_clustering:
-            self.table.optimize()
-        else:
-            columns = None
+        if self.change_data_capture == "scd1":
+            columns = ["__key"]
+        elif self.change_data_capture == "scd2":
+            columns = ["__key", "__valid_from"]
 
-            if self.change_data_capture == "scd1":
-                columns = ["__key"]
-            elif self.change_data_capture == "scd2":
-                columns = ["__key", "__valid_from"]
-
-            vorder = self.table.get_property("delta.parquet.vorder.enabled") or "false"
-            vorder = vorder.lower() == "true"
-
-            self.table.optimize(columns=columns, vorder=vorder)
+        self.table.optimize(columns=columns)
 
     def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[DataFrame]:
         if self.is_view:

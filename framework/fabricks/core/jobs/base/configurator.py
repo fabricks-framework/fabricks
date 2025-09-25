@@ -54,7 +54,6 @@ class Configurator(ABC):
     _cdc: Optional[Union[NoCDC, SCD1, SCD2]] = None
     _change_data_capture: Optional[ChangeDataCaptures] = None
     _mode: Optional[Modes] = None
-    _liquid_clustering: Optional[bool] = False
 
     @property
     @abstractmethod

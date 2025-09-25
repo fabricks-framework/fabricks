@@ -1,4 +1,4 @@
-from typing import List, Optional, TypedDict
+from typing import List, Literal, Optional, TypedDict
 
 
 class RuntimePathOptions(TypedDict):
@@ -78,9 +78,12 @@ class Step(TypedDict):
     name: str
 
 
+LiquidClusterings = Literal["auto", True, False]
+
+
 class TableOptions(TypedDict):
     powerbi: Optional[bool]
-    liquid_clustering: Optional[bool]
+    liquid_clustering: Optional[LiquidClusterings]
     properties: Optional[dict[str, str]]
     retention_days: Optional[int]
 

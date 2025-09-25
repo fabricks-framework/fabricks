@@ -128,6 +128,14 @@ def test_gold_fact_option():
 
 
 @pytest.mark.order(129)
+def test_gold_fact_option_b():
+    j = get_job(step="gold", topic="fact", item="option_b")
+
+    auto_liquid_clustering = j.table.auto_liquid_clustering_enabled
+    assert auto_liquid_clustering, "auto_liquid_clustering not enabled"
+
+
+@pytest.mark.order(129)
 def test_gold_scd1_last_timestamp():
     last_timestamp = SPARK.sql("select * from gold.scd1_last_timestamp__last_timestamp").collect()[0][0]
     assert last_timestamp is None

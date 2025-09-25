@@ -209,33 +209,38 @@ class Generator(Configurator):
                 identity = self.options.table.get_boolean("identity", False)
 
             # first take from job options, then from step options
-            liquid_clustering_job = self.options.table.get_boolean("liquid_clustering", None)
+            liquid_clustering_job = self.options.table.get("liquid_clustering", None)
             liquid_clustering_step = self.step_conf.get("table_options", {}).get("liquid_clustering", None)
             if liquid_clustering_job is not None:
                 liquid_clustering = liquid_clustering_job
             elif liquid_clustering_step:
                 liquid_clustering = liquid_clustering_step
 
-            if liquid_clustering:
-                cluster_by = self.options.table.get_list("cluster_by") or []
-                if not cluster_by:
-                    if "__source" in df.columns:
-                        cluster_by.append("__source")
-                    if "__is_current" in df.columns:
-                        cluster_by.append("__is_current")
-                    if "__key" in df.columns:
-                        cluster_by.append("__key")
-                    elif "__hash" in df.columns:
-                        cluster_by.append("__hash")
+            if liquid_clustering is not None:
+                if liquid_clustering == "auto":
+                    liquid_clustering = True
+                    cluster_by = []
 
-                if not cluster_by:
-                    DEFAULT_LOGGER.warning(
-                        "liquid clustering disabled (no clustering columns found)", extra={"job": self}
-                    )
-                    liquid_clustering = False
-                    cluster_by = None
+                else:
+                    cluster_by = self.options.table.get_list("cluster_by") or []
+                    if not cluster_by:
+                        if "__source" in df.columns:
+                            cluster_by.append("__source")
+                        if "__is_current" in df.columns:
+                            cluster_by.append("__is_current")
+                        if "__key" in df.columns:
+                            cluster_by.append("__key")
+                        elif "__hash" in df.columns:
+                            cluster_by.append("__hash")
 
-            if not liquid_clustering:
+                    if not cluster_by:
+                        DEFAULT_LOGGER.warning(
+                            "liquid clustering disabled (no clustering columns found)", extra={"job": self}
+                        )
+                        liquid_clustering = False
+                        cluster_by = None
+
+            if liquid_clustering is None:
                 cluster_by = None
                 partition_by = self.options.table.get_list("partition_by")
                 if partition_by:
@@ -404,11 +409,8 @@ class Generator(Configurator):
                     cluster_by.append("__hash")
 
                 if len(cluster_by) > 0:
-                    self.table.enable_liquid_clustering(cluster_by)
+                    self.table.enable_liquid_clustering(cluster_by, auto=False)
                 else:
-                    DEFAULT_LOGGER.warning(
-                        "liquid clustering not enabled (no clustering column found)", extra={"job": self}
-                    )
-
+                    self.table.enable_liquid_clustering(auto=True)
         else:
             DEFAULT_LOGGER.debug("liquid clustering not enabled", extra={"job": self})

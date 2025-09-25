@@ -64,6 +64,14 @@
 - job:
     step: gold
     topic: fact
+    item: option_b
+    options:
+      mode: complete
+    table_options:
+      liquid_clustering: true
+- job:
+    step: gold
+    topic: fact
     item: order_duplicate
     tags: [test]
     options:

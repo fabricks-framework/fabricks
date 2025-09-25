@@ -30,6 +30,7 @@ FileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "delta"]
 Operations = Literal["upsert", "reload", "delete"]
 Types = Literal["manual", "default"]
 Origins = Literal["parser", "job"]
+LiquidClusterings = Literal["auto", True, False]
 
 
 class SparkOptions(TypedDict):
@@ -39,7 +40,7 @@ class SparkOptions(TypedDict):
 
 class TableOptions(TypedDict):
     identity: Optional[bool]
-    liquid_clustering: Optional[bool]
+    liquid_clustering: Optional[LiquidClusterings]
     partition_by: Optional[List[str]]
     zorder_by: Optional[List[str]]
     cluster_by: Optional[List[str]]
