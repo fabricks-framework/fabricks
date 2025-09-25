@@ -65,14 +65,27 @@ class Table(DbObject):
     @property
     def identity_enabled(self) -> bool:
         assert self.is_registered, f"{self} not registered"
-
         return self.get_property("delta.feature.identityColumns") == "supported"
 
     @property
     def type_widening_enabled(self) -> bool:
         assert self.is_registered, f"{self} not registered"
-
         return self.get_property("delta.enableTypeWidening") == "true"
+
+    @property
+    def liquid_clustering_enabled(self) -> bool:
+        assert self.is_registered, f"{self} not registered"
+        return self.get_property("delta.feature.clustering") == "supported"
+
+    @property
+    def auto_liquid_clustering_enabled(self) -> bool:
+        assert self.is_registered, f"{self} not registered"
+        return self.get_property("delta.clusterByAuto") == "true"
+
+    @property
+    def vorder_enabled(self) -> bool:
+        assert self.is_registered, f"{self} not registered"
+        return self.get_property("delta.parquet.vorder.enabled") == "true"
 
     def drop(self):
         super().drop()
@@ -160,11 +173,14 @@ class Table(DbObject):
         ddl_tblproperties = "-- not tblproperties"
 
         if liquid_clustering:
-            assert cluster_by
-            if isinstance(cluster_by, str):
-                cluster_by = [cluster_by]
-            cluster_by = [f"`{c}`" for c in cluster_by]
-            ddl_cluster_by = "cluster by (" + ", ".join(cluster_by) + ")"
+            if cluster_by:
+                if isinstance(cluster_by, str):
+                    cluster_by = [cluster_by]
+                cluster_by = [f"`{c}`" for c in cluster_by]
+                ddl_cluster_by = "cluster by (" + ", ".join(cluster_by) + ")"
+
+            else:
+                ddl_cluster_by = "cluster by auto"
 
         if partitioning:
             assert partition_by
@@ -388,36 +404,37 @@ class Table(DbObject):
             pass
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
 
-    def optimize(
-        self,
-        columns: Optional[Union[str, List[str]]] = None,
-        vorder: Optional[bool] = False,
-    ):
+    def optimize(self, columns: Optional[Union[str, List[str]]] = None):
         assert self.is_registered, f"{self} not registered"
 
         DEFAULT_LOGGER.info("optimize", extra={"job": self})
 
-        zorder_by = columns is not None
-        if zorder_by:
+        if self.liquid_clustering_enabled:
+            self.spark.sql(f"optimize {self.qualified_name}")
+
+        elif self.auto_liquid_clustering_enabled:
+            self.spark.sql(f"optimize {self.qualified_name}")
+
+        elif columns is None:
+            if self.vorder_enabled:
+                DEFAULT_LOGGER.debug("vorder", extra={"job": self})
+                self.spark.sql(f"optimize {self.qualified_name} vorder")
+            else:
+                self.spark.sql(f"optimize {self.qualified_name}")
+
+        else:
             if isinstance(columns, str):
                 columns = [columns]
             columns = [f"`{c}`" for c in columns]
             cols = ", ".join(columns)
 
-            if vorder:
+            if self.vorder_enabled:
                 DEFAULT_LOGGER.debug(f"zorder by {cols} vorder", extra={"job": self})
                 self.spark.sql(f"optimize {self.qualified_name} zorder by ({cols}) vorder")
+
             else:
                 DEFAULT_LOGGER.debug(f"zorder by {cols}", extra={"job": self})
                 self.spark.sql(f"optimize {self.qualified_name} zorder by ({cols})")
-
-        elif vorder:
-            DEFAULT_LOGGER.debug("vorder", extra={"job": self})
-            self.spark.sql(f"optimize {self.qualified_name} vorder")
-
-        else:
-            DEFAULT_LOGGER.debug("optimize", extra={"job": self})
-            self.spark.sql(f"optimize {self.qualified_name}")
 
     def analyze(self):
         assert self.is_registered, f"{self} not registered"
@@ -658,18 +675,25 @@ class Table(DbObject):
         df = self.spark.sql(f"describe history {self.qualified_name}")
         return df
 
-    def enable_liquid_clustering(self, columns: Union[str, List[str]]):
+    def enable_liquid_clustering(self, columns: Optional[Union[str, List[str]]] = None, auto: Optional[bool] = False):
         assert self.is_registered, f"{self} not registered"
 
-        if isinstance(columns, str):
-            columns = [columns]
-        columns = [f"`{c}`" for c in columns]
-        cols = ", ".join(columns)
-        DEFAULT_LOGGER.info(f"cluster by {cols}", extra={"job": self})
+        if auto:
+            DEFAULT_LOGGER.info("cluster by auto", extra={"job": self})
+            self.spark.sql(f"alter table {self.qualified_name} cluster by automatic")
 
-        self.spark.sql(
-            f"""
-            alter table {self.qualified_name}
-            cluster by ({cols})
-            """
-        )
+        else:
+            assert columns, "at least one clustering column must be specified"
+
+            if isinstance(columns, str):
+                columns = [columns]
+            columns = [f"`{c}`" for c in columns]
+            cols = ", ".join(columns)
+
+            DEFAULT_LOGGER.info(f"cluster by {cols}", extra={"job": self})
+            self.spark.sql(
+                f"""
+                alter table {self.qualified_name}
+                cluster by ({cols})
+                """
+            )
