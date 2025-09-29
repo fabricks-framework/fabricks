@@ -106,7 +106,7 @@ class Gold(BaseJob):
         df = df.transform(self.extend)
         return df
 
-    def get_data(self, stream=False, transform: Optional[bool] = False) -> DataFrame:
+    def get_data(self, stream: bool = False, transform: Optional[bool] = False, schema_only: Optional[bool] = False) -> DataFrame:
         if self.options.job.get_boolean("requirements"):
             import sys
 
@@ -121,7 +121,12 @@ class Gold(BaseJob):
             DEFAULT_LOGGER.debug("run notebook", extra={"job": self})
             path = self.paths.runtime.get_notebook_path()
 
-            global_temp_view = dbutils.notebook.run(path, self.timeout, arguments={})  # type: ignore
+            if schema_only:
+                args = {"schema_only": True}
+            else:
+                args = {}
+
+            global_temp_view = dbutils.notebook.run(path, self.timeout, arguments=args)  # type: ignore
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
 
         elif self.options.job.get("table"):
@@ -135,6 +140,10 @@ class Gold(BaseJob):
 
         if transform:
             df = self.base_transform(df)
+
+        if schema_only:
+            df = df.where("1 == 2")
+
         return df
 
     def create_or_replace_view(self):

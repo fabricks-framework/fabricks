@@ -95,7 +95,7 @@ class Silver(BaseJob):
             )
         return df
 
-    def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> DataFrame:
+    def get_data(self, stream: bool = False, transform: Optional[bool] = False, schema_only: Optional[bool] = False) -> DataFrame:
         deps = self.get_dependencies()
         assert deps, "not dependency found"
 
@@ -150,6 +150,9 @@ class Silver(BaseJob):
         df = self.encrypt(df)
         if transform:
             df = self.base_transform(df)
+
+        if schema_only:
+            df = df.where("1 == 2")
 
         return df
 

@@ -193,11 +193,12 @@ class Processor(Generator):
         parent_final = "__final"
 
         if add_key:
-            keys = keys if keys is not None else fields
+            keys = keys if keys is not None else [f for f in fields]
             if isinstance(keys, str):
                 keys = [keys]
             if has_source:
                 keys.append("__source")
+
             keys = [f"cast(`{k}` as string)" for k in keys]
 
         hashes = None
@@ -212,6 +213,7 @@ class Processor(Generator):
                     fields.append("__order_duplicate_by_desc")
                 elif "__order_duplicate_by_asc asc" in order_duplicate_by:
                     fields.append("__order_duplicate_by_asc")
+                    
             fields = [f"`{f}`" for f in fields]
 
         if self.change_data_capture == "nocdc":

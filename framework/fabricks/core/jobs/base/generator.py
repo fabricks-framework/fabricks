@@ -274,7 +274,7 @@ class Generator(Configurator):
             )
 
         if not self.table.exists():
-            df = self.get_data(self.stream)
+            df = self.get_data(self.stream, schema_only=True)
             if df:
                 if self.stream:
                     # add dummy stream to be sure that the writeStream will start
@@ -328,7 +328,7 @@ class Generator(Configurator):
                 _update_schema(df)
 
             else:
-                df = self.get_data(self.stream)
+                df = self.get_data(self.stream, schema_only=True)
                 assert df is not None
                 df = self.base_transform(df)
 

@@ -179,13 +179,16 @@ class Bronze(BaseJob):
 
         return df
 
-    def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> Optional[DataFrame]:
+    def get_data(self, stream: bool = False, transform: Optional[bool] = False, schema_only: Optional[bool] = False) -> Optional[DataFrame]:
         df = self.parse(stream)
         df = self.filter_where(df)
         df = self.encrypt(df)
 
         if transform:
             df = self.base_transform(df)
+
+        if schema_only:
+            df = df.where("1 == 2")
 
         return df
 
