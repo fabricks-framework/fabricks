@@ -239,7 +239,9 @@ class Configurator(ABC):
         return self._mode
 
     @abstractmethod
-    def get_data(self, stream: bool = False, transform: Optional[bool] = False, schema_only: Optional[bool] = False) -> Optional[DataFrame]:
+    def get_data(
+        self, stream: bool = False, transform: Optional[bool] = False, schema_only: Optional[bool] = False
+    ) -> Optional[DataFrame]:
         """
         Retrieves the data for the job.
 

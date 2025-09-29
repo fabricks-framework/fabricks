@@ -213,7 +213,7 @@ class Processor(Generator):
                     fields.append("__order_duplicate_by_desc")
                 elif "__order_duplicate_by_asc asc" in order_duplicate_by:
                     fields.append("__order_duplicate_by_asc")
-                    
+
             fields = [f"`{f}`" for f in fields]
 
         if self.change_data_capture == "nocdc":
