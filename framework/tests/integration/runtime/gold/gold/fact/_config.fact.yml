@@ -100,7 +100,7 @@
       optimize: true
       vacuum: true
 - job:
-    step: transf
+    step: gold
     topic: fact
     item: no_drop
     tags: [test]
