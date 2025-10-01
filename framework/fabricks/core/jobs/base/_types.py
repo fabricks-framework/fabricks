@@ -88,6 +88,9 @@ class BronzeOptions(TypedDict):
     # default
     parents: Optional[List[str]]
     filter_where: Optional[str]
+    optimize: Optional[bool]
+    vacuum: Optional[bool]
+    no_drop: Optional[bool]
     # extra
     encrypted_columns: Optional[List[str]]
     calculated_columns: Optional[dict[str, str]]
@@ -102,6 +105,9 @@ class SilverOptions(TypedDict):
     # default
     parents: Optional[List[str]]
     filter_where: Optional[str]
+    optimize: Optional[bool]
+    vacuum: Optional[bool]
+    no_drop: Optional[bool]
     # extra
     deduplicate: Optional[bool]
     stream: Optional[bool]
@@ -117,6 +123,9 @@ class GoldOptions(TypedDict):
     update_where: Optional[str]
     # default
     parents: Optional[List[str]]
+    optimize: Optional[bool]
+    vacuum: Optional[bool]
+    no_drop: Optional[bool]
     # extra
     deduplicate: Optional[bool]  # remove duplicates on the keys and on the hash
     rectify_as_upserts: Optional[bool]  # convert reloads into upserts and deletes

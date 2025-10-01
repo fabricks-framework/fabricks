@@ -90,3 +90,12 @@
     tags: [test]
     options:
       mode: append
+- job:
+    step: gold
+    topic: fact
+    item: optimize_vacuum
+    tags: [test]
+    options:
+      mode: complete
+      optimize: true
+      vacuum: true

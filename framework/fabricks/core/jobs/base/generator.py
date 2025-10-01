@@ -92,6 +92,9 @@ class Generator(Configurator):
         Returns:
                 None
         """
+        if self.options.job.get("no_drop"):
+            raise ValueError("no_drop is set, cannot drop the job")
+
         try:
             row = self.spark.sql(
                 f"""

@@ -5,7 +5,11 @@
 {% if mode == "update" %} {% if has_rows %} {% include 'query/current.sql.jinja' %} {% endif %} {% endif %}
 {% if rectify %} {% include 'query/rectify.sql.jinja' %} {% endif %}
 {% if deduplicate_hash %} {% include 'query/deduplicate_hash.sql.jinja' %} {% endif %}
-{% if cdc == "nocdc" %} {% include 'query/nocdc.sql.jinja' %} {% endif %}
+{% if cdc == "nocdc" %}
+    {% if mode == "update" %} {% include 'query/nocdc/update.sql.jinja' %}
+    {% else %} {% include 'query/nocdc/complete.sql.jinja' %}
+    {% endif %}
+{% endif %}
 {% if cdc == "scd1" %} {% include 'query/scd1.sql.jinja' %} {% endif %}
 {% if cdc == "scd2" %} {% include 'query/scd2.sql.jinja' %} {% endif %}
 {% include 'query/final.sql.jinja' %}

@@ -190,6 +190,12 @@ class Processor(Invoker):
             if invoke:
                 self.invoke_post_run(schedule=schedule)
 
+            if self.options.job.get("optimize"):
+                self.optimize()
+
+            if self.options.job.get("vacuum"):
+                self.vacuum()
+
             if exception:
                 raise exception
 
