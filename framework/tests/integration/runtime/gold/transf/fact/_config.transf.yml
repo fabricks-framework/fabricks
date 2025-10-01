@@ -7,11 +7,3 @@
     tags: [test]
     options:
       mode: memory
-- job:
-    step: transf
-    topic: fact
-    item: memory
-    tags: [test]
-    options:
-      mode: memory
-      no_drop: true

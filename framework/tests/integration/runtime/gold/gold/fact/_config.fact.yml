@@ -99,3 +99,11 @@
       mode: complete
       optimize: true
       vacuum: true
+- job:
+    step: transf
+    topic: fact
+    item: no_drop
+    tags: [test]
+    options:
+      mode: memory
+      no_drop: true
