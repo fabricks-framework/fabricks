@@ -129,8 +129,9 @@ class GoldOptions(TypedDict):
     # extra
     deduplicate: Optional[bool]  # remove duplicates on the keys and on the hash
     rectify_as_upserts: Optional[bool]  # convert reloads into upserts and deletes
-    correct_valid_from: Optional[bool]
-    persist_last_timestamp: Optional[bool]
+    correct_valid_from: Optional[bool]  # update valid_from to '1900-01-01' for the first timestamp
+    persist_last_timestamp: Optional[bool]  # persist the last timestamp to be used as a watermark for the next run
+    delete_missing: Optional[bool]  # delete missing records on update
     # else
     table: Optional[str]
     notebook: Optional[bool]

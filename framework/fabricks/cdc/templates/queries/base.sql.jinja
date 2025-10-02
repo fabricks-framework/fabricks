@@ -1,4 +1,4 @@
-{% import 'query/hash.sql.jinja' as h -%}
+{% import 'queries/hash.sql.jinja' as h -%}
 
 with
     {% if format == "query" %} __query as ({{ src }}), {% endif %}

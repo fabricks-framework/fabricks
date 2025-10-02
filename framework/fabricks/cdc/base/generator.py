@@ -118,7 +118,7 @@ class Generator(Configurator):
                     ]
                 ),
             )
-            
+
             return df_diff
 
     def get_schema_differences(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[Sequence[SchemaDiff]]:

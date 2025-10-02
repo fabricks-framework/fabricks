@@ -17,7 +17,7 @@ class NoCDC(BaseCDC):
 
     def complete(self, src: Union[DataFrame, Table, str], **kwargs):
         self.overwrite(src=src, **kwargs)
-        
+
     def update(self, src: Union[DataFrame, Table, str], **kwargs):
         kwargs["mode"] = "update"
         self.merge(src, **kwargs)

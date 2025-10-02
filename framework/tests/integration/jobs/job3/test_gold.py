@@ -50,6 +50,7 @@ def test_gold_scd2_memory():
     j = get_job(step="gold", topic="scd2", item="memory")
     compare_gold_to_expected(j, "scd2", 11)
 
+
 @pytest.mark.order(327)
 def test_gold_nocdc_update():
     j = get_job(step="gold", topic="nocdc", item="update")

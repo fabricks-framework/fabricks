@@ -73,6 +73,7 @@ class Processor(Generator):
         except Exception:
             has_rows = None
 
+        delete_missing = kwargs.get("delete_missing", None)
         slice = kwargs.get("slice", None)
         rectify = kwargs.get("rectify", None)
         deduplicate = kwargs.get("deduplicate", None)
@@ -238,6 +239,7 @@ class Processor(Generator):
             "keys": keys,
             "hashes": hashes,
             # options
+            "delete_missing": delete_missing,
             "slice": slice,
             "rectify": rectify,
             "deduplicate": deduplicate,

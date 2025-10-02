@@ -5,18 +5,17 @@
         left anti join
             __current c on s.__key == c.__key and s.__hash == c.__hash
             {% if has_source %} and s.__source = c.__source {% endif %}
-        union all
-        select c.__key as __merge_key, 'delete' as __merge_condition, c.*
-        from __current c
-        left anti join
-            {{ parent_cdc }} s on s.__key == c.__key and s.__hash == c.__hash
-            {% if has_source %} and s.__source = c.__source {% endif %}
+        {% if delete_missing %}
+            union all
+            select c.__key as __merge_key, 'delete' as __merge_condition, c.*
+            from __current c
+            left anti join
+                {{ parent_cdc }} s on s.__key == c.__key and s.__hash == c.__hash
+                {% if has_source %} and s.__source = c.__source {% endif %}
+        {% endif %}
     ),
 {% else %}
-    __merge_condition as (
-        select s.__key as __merge_key, 'upsert' as __merge_condition, s.*
-        from {{ parent_cdc }} s
-    ),
+    __merge_condition as (select s.__key as __merge_key, 'upsert' as __merge_condition, s.* from {{ parent_cdc }} s),
 {% endif %}
 __final as (
     select *
