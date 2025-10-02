@@ -27,27 +27,19 @@ __scd2 as (
 {% if mode == "complete" %}
     __complete as (select s.* from __scd2 s where true and not __operation <=> 'delete'),
     {% if correct_valid_from %}
-    __correct_valid_from as (
-        select 
-          * except(__valid_from), 
-          if(
+        __correct_valid_from as (
+            select
+                * except (__valid_from),
+                if(
                     __valid_from == min(__valid_from) over (partition by null),
                     cast('1900-01-01' as timestamp),
                     __valid_from
                 ) as __valid_from
-        from __complete
-    ),
+            from __complete
+        ),
     {% endif %}
-    __final as (
-        select
-        {% for output in outputs %} {{ output }}, {% endfor %}
-        {% endif %}
-        {% if correct_valid_from %}
-        from __correct_valid_from
-        {% else %}
-        from __complete
-        {% endif %}
-    )
+    __final as (select {% for output in outputs %} {{ output }}, {% endfor %}
+{% endif %} {% if correct_valid_from %} from __correct_valid_from {% else %} from __complete {% endif %})
 {% else %}
     {% if has_rows %}
         __scd2_no_fake_update as (
@@ -82,25 +74,21 @@ __scd2 as (
         where (s.__scd2_rn == 1 and o.__merge_condition in ('update', 'delete')) or o.__merge_condition == 'insert'
     ),
     {% if correct_valid_from %}
-    __correct_valid_from as (
-        select 
-          * except(__valid_from), 
-          if(
+        __correct_valid_from as (
+            select
+                * except (__valid_from),
+                if(
                     __valid_from == min(__valid_from) over (partition by null),
                     cast('1900-01-01' as timestamp),
                     __valid_from
                 ) as __valid_from
-        from __merge_condition
-    ),
+            from __merge_condition
+        ),
     {% endif %}
     __final as (
-        select
-        {% for output in outputs %} {{ output }}, {% endfor %}
-        {% endif %}
-        {% if correct_valid_from %}
-        from __correct_valid_from
-        {% else %}
-        from __merge_condition
+        select {% for output in outputs %} {{ output }}, {% endfor %}
+        {% if correct_valid_from %} from __correct_valid_from
+        {% else %} from __merge_condition
         {% endif %}
     )
 {% endif %}

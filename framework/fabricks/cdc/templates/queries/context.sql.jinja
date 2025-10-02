@@ -1,111 +1,181 @@
 /*
-⛷️🧀🍫🏔️
 
-👀🏁
-{%- if format %}
-☐ format: {{format}}{% endif %}
-{%- if tgt %}
-☐ tgt: {{tgt}}{% endif %}
+⚙️ BASE CONFIGURATION
 {%- if cdc %}
-☐ cdc: {{cdc}}{% endif %}
+☐ cdc: {{ cdc }}
+{%- endif %}
 {%- if mode %}
-☐ mode: {{mode}}{% endif %}
-{%- if delete_missing %}
-🗹 delete_missing: {{delete_missing}}{% endif %}
-{%- if slice %}
-🗹 slice: {{slice}}{% endif %}
-{%- if slices %}
-☐ slices: {{slices}}{% endif %}
-{%- if rectify %}
-🗹 rectify: {{rectify}}{% endif %}
-{%- if deduplicate %}
-🗹 deduplicate: {{deduplicate}}{% endif %}
-{%- if deduplicate_key %}
-🗹 deduplicate_key: {{deduplicate_key}}{% endif %}
-{%- if deduplicate_hash %}
-🗹 deduplicate_hash: {{deduplicate_hash}}{% endif %}
-{%- if soft_delete %}
-🗹 soft_delete: {{soft_delete}}{% endif %}
-{%- if correct_valid_from %}
-🗹 correct_valid_from: {{correct_valid_from}}{% endif %}
-{%- if has_data %}
-🗹 has_data: {{has_data}}{% else %}☒ has_data: {{has_data}}{% endif %}
-{%- if has_rows %}
-🗹 has_rows: {{has_rows}}{% endif %}
-{%- if has_source %}
-🗹 has_source: {{has_source}}{% endif %}
-{%- if sources %}
-🗹 sources: {{sources}}{% endif %}
-{%- if has_metadata %}
-🗹 has_metadata: {{has_metadata}}{% endif %}
-{%- if has_timestamp %}
-🗹 has_timestamp: {{has_timestamp}}{% endif %}
-{%- if has_identity %}
-🗹 has_identity: {{has_identity}}{% endif %}
-{%- if has_key %}
-🗹 has_key: {{has_key}}{% endif %}
-{%- if has_hash %}
-🗹 has_hash: {{has_hash}}{% endif %}
-{%- if has_operation %}
-🗹 has_operation: {{has_operation}}{% endif %}
-{%- if has_order_by %}
-🗹 has_order_by: {{has_order_by}}{% endif %}
-{%- if has_rescued_data %}
-🗹 has_rescued_data: {{has_rescued_data}}{% endif %} 
-{%- if add_metadata %}
-🗹 add_metadata: {{add_metadata}}{% endif %}
-{%- if add_timestamp %}
-🗹 add_timestamp: {{add_timestamp}}{% endif %}
-{%- if add_key %}
-🗹 add_key: {{add_key}}{% endif %}
-{%- if add_hash %}
-🗹 add_hash: {{add_hash}}{% endif %}
-{%- if add_operation %}
-☐ add_operation: {{add_operation}}{% endif %}
-{%- if add_source %}
-☐ add_source: {{add_source}}{% endif %}
-{%- if add_calculated_columns %}
-☐ add_calculated_columns: {{add_calculated_columns}}{% endif %}
-{%- if order_duplicate_by %}
-🗹 order_duplicate_by: {{order_duplicate_by}}{% endif %}
-{%- if all_except %}
-☐ all_except: {{all_except}}{% endif %}
-{%- if all_overwrite %}
-☐ all_overwrite: {{all_overwrite}}{% endif %}
-{%- if filter_where %}
-☐ filter_where: {{filter_where}}{% endif %}
-{%- if update_where %}
-☐ update_where: {{update_where}}{% endif %}
-{%- if parent_slice %}
-☐ parent_slice: {{parent_slice}}{% endif %}
-{%- if parent_rectify %}
-☐ parent_rectify: {{parent_rectify}}{% endif %}
-{%- if parent_deduplicate_key %}
-☐ parent_deduplicate_key: {{parent_deduplicate_key}}{% endif %}
-{%- if parent_deduplicate_hash %}
-☐ parent_deduplicate_hash: {{parent_deduplicate_hash}}{% endif %}
-{%- if parent_cdc %}
-☐ parent_cdc: {{parent_cdc}}{% endif %}
-{%- if parent_final %}
-☐ parent_final: {{parent_final}}{% endif %}
-👀🏳️
+☐ mode: {{ mode }}
+{%- endif %}
+{%- if format %}
 
-👁️🏁
+🎯 Source & Target
+☐ format: {{ format }}
+{%- endif %}
 {%- if src %}
-☐ src: {{src}}{% endif %}
+☐ src: {{ src }}
+{%- endif %}
+{%- if tgt %}
+☐ tgt: {{ tgt }}
+{%- endif %}
+
+📊 CTE's
+{%- if slice %}
+🗹 slice: {{ slice }}
+{%- endif %}
+{%- if deduplicate %}
+🗹 deduplicate: {{ deduplicate }}
+{%- endif %}
+{%- if deduplicate_key %}
+🗹 deduplicate_key: {{ deduplicate_key }}
+{%- endif %}
+{%- if deduplicate_hash %}
+🗹 deduplicate_hash: {{ deduplicate_hash }}
+{%- endif %}
+{%- if order_duplicate_by %}
+🗹 order_duplicate_by: {{ order_duplicate_by }}
+{%- endif %}
+{%- if rectify %}
+🗹 rectify: {{ rectify }}
+{%- endif %}
+{%- if correct_valid_from %}
+🗹 correct_valid_from: {{ correct_valid_from }}
+{%- endif %}
+
+🔪 FILTERING
+{%- if filter_where %}
+☐ filter_where: {{ filter_where }}
+{%- endif %}
+{%- if update_where %}
+☐ update_where: {{ update_where }}
+{%- endif %}
+{%- if slices %}
+☐ slices: {{ slices }}
+{%- endif %}
+{%- if sources %}
+☐ sources: {{ sources }}
+{%- endif %}
+
+🗑️ DELETES
+{%- if delete_missing %}
+🗹 delete_missing: {{ delete_missing }}
+{%- endif %}
+{%- if soft_delete %}
+🗹 soft_delete: {{ soft_delete }}
+{%- endif %}
+
+✅ DATA VALIDATION
+{%- if has_data %}
+🗹 has_data: {{ has_data }}
+{%- else %}
+☒ has_data: {{ has_data }}
+{%- endif %}
+{%- if has_rows %}
+🗹 has_rows: {{ has_rows }}
+{%- endif %}
+{%- if has_source %}
+🗹 has_source: {{ has_source }}
+{%- endif %}
+
+🏷️ HAS FIELDS
+{%- if has_metadata %}
+🗹 has_metadata: {{ has_metadata }}
+{%- endif %}
+{%- if has_timestamp %}
+🗹 has_timestamp: {{ has_timestamp }}
+{%- endif %}
+{%- if has_identity %}
+🗹 has_identity: {{ has_identity }}
+{%- endif %}
+{%- if has_key %}
+🗹 has_key: {{ has_key }}
+{%- endif %}
+{%- if has_hash %}
+🗹 has_hash: {{ has_hash }}
+{%- endif %}
+{%- if has_operation %}
+🗹 has_operation: {{ has_operation }}
+{%- endif %}
+{%- if has_order_by %}
+🗹 has_order_by: {{ has_order_by }}
+{%- endif %}
+{%- if has_rescued_data %}
+🗹 has_rescued_data: {{ has_rescued_data }}
+{%- endif %}
+
+➕ ADD COLUMNS
+{%- if add_metadata %}
+🗹 add_metadata: {{ add_metadata }}
+{%- endif %}
+{%- if add_timestamp %}
+🗹 add_timestamp: {{ add_timestamp }}
+{%- endif %}
+{%- if add_key %}
+🗹 add_key: {{ add_key }}
+{%- endif %}
+{%- if add_hash %}
+🗹 add_hash: {{ add_hash }}
+{%- endif %}
+{%- if add_operation %}
+☐ add_operation: {{ add_operation }}
+{%- endif %}
+{%- if add_source %}
+☐ add_source: {{ add_source }}
+{%- endif %}
+{%- if add_calculated_columns %}
+☐ add_calculated_columns: {{ add_calculated_columns }}
+{%- endif %}
+
+🔄 EXTRA COLUMN OPERATIONs
+{%- if all_except %}
+☐ all_except: {{ all_except }}
+{%- endif %}
+{%- if all_overwrite %}
+☐ all_overwrite: {{ all_overwrite }}
+{%- endif %}
+{%- if overwrite %}
+☐ overwrite: {{ overwrite }}
+{%- endif %}
+
+👨‍👩‍👧 PARENTS
+{%- if parent_slice %}
+☐ parent_slice: {{ parent_slice }}
+{%- endif %}
+{%- if parent_rectify %}
+☐ parent_rectify: {{ parent_rectify }}
+{%- endif %}
+{%- if parent_deduplicate_key %}
+☐ parent_deduplicate_key: {{ parent_deduplicate_key }}
+{%- endif %}
+{%- if parent_deduplicate_hash %}
+☐ parent_deduplicate_hash: {{ parent_deduplicate_hash }}
+{%- endif %}
+{%- if parent_cdc %}
+☐ parent_cdc: {{ parent_cdc }}
+{%- endif %}
+{%- if parent_final %}
+☐ parent_final: {{ parent_final }}
+{%- endif %}
+
+📦 LAYOUT
 {%- if columns %}
-☐ columns: {{columns}}{% endif %}
+☐ columns: {{ columns }}
+{%- endif %}
 {%- if inputs %}
-☐ inputs: {{inputs}}{% endif %}
+☐ inputs: {{ inputs }}
+{%- endif %}
 {%- if outputs %}
-☐ outputs: {{outputs}}{% endif %}
+☐ outputs: {{ outputs }}
+{%- endif %}
 {%- if fields %}
-☐ fields: {{fields}}{% endif %}
+☐ fields: {{ fields }}
+{%- endif %}
 {%- if keys %}
-☐ keys: {{keys}}{% endif %}
+☐ keys: {{ keys }}
+{%- endif %}
 {%- if hashes %}
-☐ hashes: {{hashes}}{% endif %}
-👁️🏳️
+☐ hashes: {{ hashes }}
+{%- endif %}
 
 */
 

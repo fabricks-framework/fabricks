@@ -95,7 +95,7 @@ class Processor(Generator):
 
         soft_delete = kwargs.get("soft_delete", None)
         if soft_delete:
-            outputs.append("__is_current", "__is_deleted")
+            outputs += ["__is_current", "__is_deleted"]
         elif self.change_data_capture == "scd2":
             outputs.append("__is_current")
 

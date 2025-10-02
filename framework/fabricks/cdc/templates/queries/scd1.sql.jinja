@@ -49,9 +49,7 @@ __scd1 as (
 ),
 {% if mode == "complete" %}
     __final as (
-        select
-            {% for output in outputs %} {{ output }},
-            {% endfor %}
+        select {% for output in outputs %} {{ output }}, {% endfor %}
         from __scd1 s
         where true {% if not soft_delete %} and s.__is_current {% endif %}
     )
@@ -79,11 +77,7 @@ __scd1 as (
         ),
     {% endif %}
     __final as (
-        select
-            __merge_key,
-            __merge_condition,
-            {% for output in outputs %} {{ output }},
-            {% endfor %}
+        select __merge_key, __merge_condition, {% for output in outputs %} {{ output }}, {% endfor %}
         {% if has_rows %} from __scd1_no_fake_update m
         {% else %} from __merge_condition m
         {% endif %}
