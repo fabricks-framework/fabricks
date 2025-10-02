@@ -204,13 +204,13 @@ class Processor(Generator):
             if has_source:
                 keys.append("__source")
 
-            keys = [f"cast(`{k}` as string)" for k in keys]
+            keys = [f"`{k}` :: string" for k in keys]
 
         hashes = None
         if add_hash:
-            hashes = [f"cast(`{f}` as string)" for f in fields]
+            hashes = [f"`{f}` :: string" for f in fields]
             if "__operation" in columns or add_operation:
-                hashes.append("cast(`__operation` <=> 'delete' as string)")
+                hashes.append("`__operation` <=> 'delete' :: string")
 
         if fields:
             if has_order_by:

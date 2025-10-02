@@ -1,3 +1,3 @@
 {% macro hash(fields) -%}
-    md5(array_join(array({% for f in fields %}`{{ f }}`::string, {% endfor %}), '*', '-1'))
+    md5(array_join(array({% for f in fields %}{{ f }}, {% endfor %}), '*', '-1'))
 {%- endmacro %}
