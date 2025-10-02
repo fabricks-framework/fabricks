@@ -18,7 +18,7 @@
     __merge_condition as (select s.__key as __merge_key, 'upsert' as __merge_condition, s.* from {{ parent_cdc }} s),
 {% endif %}
 __final as (
-    select *
+    select __merge_key, __merge_condition, {% for output in outputs %} {{ output }}, {% endfor %}
     from __merge_condition
     {% if filter %}
         where

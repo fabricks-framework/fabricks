@@ -93,13 +93,18 @@ class Processor(Generator):
         if has_rescued_data:
             outputs.append("__rescued_data")
 
+        soft_delete = kwargs.get("soft_delete", None)
+        if soft_delete:
+            outputs.append("__is_current", "__is_deleted")
+        elif self.change_data_capture == "scd2":
+            outputs.append("__is_current")
+
         delete_missing = kwargs.get("delete_missing", None)
         slice = kwargs.get("slice", None)
         rectify = kwargs.get("rectify", None)
         deduplicate = kwargs.get("deduplicate", None)
         deduplicate_key = kwargs.get("deduplicate_key", None)
         deduplicate_hash = kwargs.get("deduplicate_hash", None)
-        soft_delete = kwargs.get("soft_delete", None)
         correct_valid_from = kwargs.get("correct_valid_from", None)
 
         if slice is None:
@@ -222,17 +227,10 @@ class Processor(Generator):
             if "__operation" in inputs or add_operation:
                 hashes.append("`__operation` <=> 'delete' :: string")
 
-        if fields:
-            if has_order_by:
-                if "__order_duplicate_by_desc desc" in order_duplicate_by:
-                    fields.append("__order_duplicate_by_desc")
-                elif "__order_duplicate_by_asc asc" in order_duplicate_by:
-                    fields.append("__order_duplicate_by_asc")
-
-            fields = [f"`{f}`" for f in fields]
-
         if delete_missing is not None:
             raise ValueError("delete_missing is not yet supported")
+
+        outputs = self.sort_columns(outputs)
 
         return {
             "src": src,

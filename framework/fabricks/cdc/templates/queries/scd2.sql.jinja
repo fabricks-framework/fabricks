@@ -26,27 +26,27 @@ __scd2 as (
 ),
 {% if mode == "complete" %}
     __complete as (select s.* from __scd2 s where true and not __operation <=> 'delete'),
-    __final as (
-        select
-            {% for field in fields %} {{ field }}, {% endfor %},
-            {% if has_identity %} __identity, {% endif %}
-            __key,
-            {% if correct_valid_from %}
-                if(
+    {% if correct_valid_from %}
+    __correct_valid_from as (
+        select 
+          * except(__valid_from), 
+          if(
                     __valid_from == min(__valid_from) over (partition by null),
                     cast('1900-01-01' as timestamp),
                     __valid_from
-                ) as __valid_from,
-            {% else %} __valid_from,
-            {% endif %}
-            __valid_to,
-            __is_current,
-            {% if soft_delete %} __is_deleted, {% endif %}
-            __hash,
-            {% if has_source %} __source, {% endif %}
-            {% if has_metadata %} __metadata, {% endif %}
-            {% if has_rescued_data %} __rescued_data, {% endif %}
+                ) as __valid_from
         from __complete
+    ),
+    {% endif %}
+    __final as (
+        select
+        {% for output in outputs %} {{ output }}, {% endfor %}
+        {% endif %}
+        {% if correct_valid_from %}
+        from __correct_valid_from
+        {% else %}
+        from __complete
+        {% endif %}
     )
 {% else %}
     {% if has_rows %}
@@ -81,37 +81,26 @@ __scd2 as (
         -- only the first record can be an update or a delete
         where (s.__scd2_rn == 1 and o.__merge_condition in ('update', 'delete')) or o.__merge_condition == 'insert'
     ),
+    {% if correct_valid_from %}
+    __correct_valid_from as (
+        select 
+          * except(__valid_from), 
+          if(
+                    __valid_from == min(__valid_from) over (partition by null),
+                    cast('1900-01-01' as timestamp),
+                    __valid_from
+                ) as __valid_from
+        from __merge_condition
+    ),
+    {% endif %}
     __final as (
         select
-            __merge_key,
-            __merge_condition,
-            {% for field in fields %} {{ field }},
-            {% endfor %},
-            {% if has_identity %} __identity,
-            {% endif %}
-            __key,
-            {% if correct_valid_from %}
-                {% if not has_rows %}
-                    if(
-                        __valid_from == min(__valid_from) over (partition by null),
-                        cast('1900-01-01' as timestamp),
-                        __valid_from
-                    ) as __valid_from,
-                {% else %} __valid_from,
-                {% endif %}
-            {% else %} __valid_from,
-            {% endif %}
-            __valid_to,
-            __is_current and __merge_condition == 'insert' as __is_current,
-            {% if soft_delete %} __is_deleted,
-            {% endif %}
-            __hash,
-            {% if has_source %} __source,
-            {% endif %}
-            {% if has_metadata %} __metadata,
-            {% endif %}
-            {% if has_rescued_data %} __rescued_data,
-            {% endif %}
-        from __merge_condition m
+        {% for output in outputs %} {{ output }}, {% endfor %}
+        {% endif %}
+        {% if correct_valid_from %}
+        from __correct_valid_from
+        {% else %}
+        from __merge_condition
+        {% endif %}
     )
 {% endif %}
