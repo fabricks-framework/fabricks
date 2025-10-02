@@ -60,6 +60,7 @@ class Processor(Generator):
         add_timestamp = kwargs.get("add_timestamp", None)
         add_metadata = kwargs.get("add_metadata", None)
 
+        has_operation = add_operation or "__operation" in columns
         has_metadata = add_metadata or "__metadata" in columns
         has_source = add_source or "__source" in columns
         has_timestamp = add_timestamp or "__timestamp" in columns
@@ -115,12 +116,19 @@ class Processor(Generator):
         if add_operation and "__operation" in columns:
             all_overwrite.append("__operation")
         # add operation if not provided and not found in df BUT remove from output
-        elif (transformed or self.slowly_changing_dimension) and not add_operation and "__operation" not in columns:
+        elif transformed and self.slowly_changing_dimension and not add_operation and "__operation" not in columns:
             add_operation = "upsert"
-            if self.change_data_capture == "nocdc":
-                all_except.append("__operation")
+            all_except.append("__operation")
 
-        # override key if provided and found in df
+        # override timestamp if provided and found in df
+        if add_timestamp and "__timestamp" in columns:
+            all_overwrite.append("__timestamp")
+        # add timestamp if not provided and not found in df BUT remove from output
+        elif transformed and self.slowly_changing_dimension and not add_timestamp and "__timestamp" not in columns:
+            add_timestamp = True
+            all_except.append("__timestamp")
+
+        # override key if provided and found in df (key needed for merge)
         if add_key and "__key" in columns:
             all_overwrite.append("__key")
         # add key if not provided and not found in df BUT remove from output
@@ -128,21 +136,13 @@ class Processor(Generator):
             add_key = True
             all_except.append("__key")
 
-        # override hash if provided and found in df
+        # override hash if provided and found in df (hash needed to indentitfy fake updates)
         if add_hash and "__hash" in columns:
             all_overwrite.append("__hash")
         # add hash if not provided and not found in df BUT remove from output
         elif (transformed or self.slowly_changing_dimension) and not add_hash and "__hash" not in columns:
             add_hash = True
             all_except.append("__hash")
-
-        # override timestamp if provided and found in df
-        if add_timestamp and "__timestamp" in columns:
-            all_overwrite.append("__timestamp")
-        # add timestamp if not provided and not found in df BUT remove from output
-        elif (transformed or self.slowly_changing_dimension) and not add_timestamp and "__timestamp" not in columns:
-            add_timestamp = True
-            all_except.append("__timestamp")
 
         # override metadata if provided and found in df
         if add_metadata and "__metadata" in columns:
@@ -255,6 +255,7 @@ class Processor(Generator):
             "has_source": has_source,
             "has_metadata": has_metadata,
             "has_timestamp": has_timestamp,
+            "has_operation": has_operation,
             "has_identity": has_identity,
             "has_key": has_key,
             "has_hash": has_hash,
