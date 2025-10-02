@@ -1,12 +1,11 @@
-from typing import Optional, Union
+from typing import Optional
 
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import SparkSession
 
-from fabricks.cdc.base import BaseCDC
-from fabricks.metastore.table import Table
+from fabricks.cdc.scd import SCD
 
 
-class NoCDC(BaseCDC):
+class NoCDC(SCD):
     def __init__(
         self,
         database: str,
@@ -15,9 +14,5 @@ class NoCDC(BaseCDC):
     ):
         super().__init__(database, *levels, change_data_capture="nocdc", spark=spark)
 
-    def complete(self, src: Union[DataFrame, Table, str], **kwargs):
-        self.overwrite(src=src, **kwargs)
-
-    def update(self, src: Union[DataFrame, Table, str], **kwargs):
-        kwargs["mode"] = "update"
-        self.merge(src, **kwargs)
+    def delete_missing(self, src, **kwargs):
+        raise NotImplementedError("NoCDC does not support delete_missing")

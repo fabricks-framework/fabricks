@@ -207,8 +207,8 @@ class Gold(BaseJob):
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         # assume no duplicate in gold (to improve performance)
         deduplicate = self.options.job.get_boolean("deduplicate", None)
-         # assume no reload in gold (to improve performance)
-        rectify = self.options.job.get_boolean("rectify_as_upserts", None) 
+        # assume no reload in gold (to improve performance)
+        rectify = self.options.job.get_boolean("rectify_as_upserts", None)
         add_metadata = self.step_conf.get("options", {}).get("metadata", False)
 
         context = {
@@ -246,7 +246,7 @@ class Gold(BaseJob):
 
         if self.slowly_changing_dimension:
             if "__operation" not in df.columns:
-                 # assume no duplicate hash
+                # assume no duplicate hash
                 if deduplicate is None:
                     context["deduplicate_hash"] = None
 
