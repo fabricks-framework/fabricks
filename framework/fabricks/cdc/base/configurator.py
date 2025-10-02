@@ -129,7 +129,10 @@ class Configurator(ABC):
         return df.count() > 0
 
     def get_columns(
-        self, src: Union[DataFrame, Table, str], backtick: Optional[bool] = True, sort: Optional[bool] = True
+        self,
+        src: Union[DataFrame, Table, str],
+        backtick: Optional[bool] = True,
+        sort: Optional[bool] = True,
     ) -> List[str]:
         if backtick:
             backtick = True

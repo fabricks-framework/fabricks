@@ -5,7 +5,7 @@ with
     __base as (
         select
             *
-            {% if all_overwrite %} except ({% for o in all_overwrite %}{{ o }}, {% endfor %}),
+            {% if overwrite %} except ({% for o in overwrite %}{{ o }}, {% endfor %}),
             {% else %},
             {% endif %}
             {% if add_calculated_columns %} {% for c in add_calculated_columns %} {{ c }}, {% endfor %} {% endif %}

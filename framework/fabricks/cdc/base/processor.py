@@ -33,8 +33,9 @@ class Processor(Generator):
         else:
             raise ValueError(f"{src} not allowed")
 
-        columns = self.get_columns(src, backtick=False, sort=True)
-        fields = [c for c in columns if not c.startswith("__")]
+        inputs = self.get_columns(src, backtick=False, sort=False)
+        fields = [c for c in inputs if not c.startswith("__")]
+        outputs = [f for f in fields]
 
         has_data = self.has_data(src)
 
@@ -43,7 +44,7 @@ class Processor(Generator):
 
         if mode == "update":
             tgt = str(self.table)
-        elif mode == "append" and "__timestamp" in columns:
+        elif mode == "append" and "__timestamp" in inputs:
             tgt = str(self.table)
         else:
             tgt = None
@@ -60,19 +61,37 @@ class Processor(Generator):
         add_timestamp = kwargs.get("add_timestamp", None)
         add_metadata = kwargs.get("add_metadata", None)
 
-        has_operation = add_operation or "__operation" in columns
-        has_metadata = add_metadata or "__metadata" in columns
-        has_source = add_source or "__source" in columns
-        has_timestamp = add_timestamp or "__timestamp" in columns
-        has_key = add_key or "__key" in columns
-        has_hash = add_hash or "__hash" in columns
-        has_identity = "__identity" in columns
-        has_rescued_data = "__rescued_data" in columns
         has_order_by = None if not order_duplicate_by else True
         try:
             has_rows = self.table.rows > 0
         except Exception:
             has_rows = None
+
+        # determine which special columns are present or need to be added to the output
+        has_operation = add_operation or "__operation" in inputs
+        if has_operation:
+            outputs.append("__operation")
+        has_metadata = add_metadata or "__metadata" in inputs
+        if has_metadata:
+            outputs.append("__metadata")
+        has_source = add_source or "__source" in inputs
+        if has_source:
+            outputs.append("__source")
+        has_timestamp = add_timestamp or "__timestamp" in inputs
+        if has_timestamp:
+            outputs.append("__timestamp")
+        has_key = add_key or "__key" in inputs
+        if has_key:
+            outputs.append("__key")
+        has_hash = add_hash or "__hash" in inputs
+        if has_hash:
+            outputs.append("__hash")
+        has_identity = "__identity" in inputs
+        if has_identity:
+            outputs.append("__identity")
+        has_rescued_data = "__rescued_data" in inputs
+        if has_rescued_data:
+            outputs.append("__rescued_data")
 
         delete_missing = kwargs.get("delete_missing", None)
         slice = kwargs.get("slice", None)
@@ -109,44 +128,39 @@ class Processor(Generator):
             deduplicate_key = True
             deduplicate_hash = True
 
-        all_except = kwargs.get("except", []) or []
-        all_overwrite = []
+        overwrite = []
 
         # override operation if provided and found in df
-        if add_operation and "__operation" in columns:
-            all_overwrite.append("__operation")
-        # add operation if not provided and not found in df BUT remove from output
-        elif transformed and self.slowly_changing_dimension and not add_operation and "__operation" not in columns:
+        if add_operation and "__operation" in inputs:
+            overwrite.append("__operation")
+        # add operation if not provided and not found in df
+        elif transformed and self.slowly_changing_dimension and not add_operation and "__operation" not in inputs:
             add_operation = "upsert"
-            all_except.append("__operation")
 
         # override timestamp if provided and found in df
-        if add_timestamp and "__timestamp" in columns:
-            all_overwrite.append("__timestamp")
-        # add timestamp if not provided and not found in df BUT remove from output
-        elif transformed and self.slowly_changing_dimension and not add_timestamp and "__timestamp" not in columns:
+        if add_timestamp and "__timestamp" in inputs:
+            overwrite.append("__timestamp")
+        # add timestamp if not provided and not found in df
+        elif transformed and self.slowly_changing_dimension and not add_timestamp and "__timestamp" not in inputs:
             add_timestamp = True
-            all_except.append("__timestamp")
 
         # override key if provided and found in df (key needed for merge)
-        if add_key and "__key" in columns:
-            all_overwrite.append("__key")
-        # add key if not provided and not found in df BUT remove from output
-        elif (transformed or keys or self.slowly_changing_dimension) and not add_key and "__key" not in columns:
+        if add_key and "__key" in inputs:
+            overwrite.append("__key")
+        # add key if not provided and not found in df
+        elif (transformed or keys or self.slowly_changing_dimension) and not add_key and "__key" not in inputs:
             add_key = True
-            all_except.append("__key")
 
-        # override hash if provided and found in df (hash needed to indentitfy fake updates)
-        if add_hash and "__hash" in columns:
-            all_overwrite.append("__hash")
-        # add hash if not provided and not found in df BUT remove from output
-        elif (transformed or self.slowly_changing_dimension) and not add_hash and "__hash" not in columns:
+        # override hash if provided and found in df (hash needed to identify fake updates)
+        if add_hash and "__hash" in inputs:
+            overwrite.append("__hash")
+        # add hash if not provided and not found in df
+        elif (transformed or self.slowly_changing_dimension) and not add_hash and "__hash" not in inputs:
             add_hash = True
-            all_except.append("__hash")
 
         # override metadata if provided and found in df
-        if add_metadata and "__metadata" in columns:
-            all_overwrite.append("__metadata")
+        if add_metadata and "__metadata" in inputs:
+            overwrite.append("__metadata")
 
         parent_slice = None
         if slice:
@@ -205,7 +219,7 @@ class Processor(Generator):
         hashes = None
         if add_hash:
             hashes = [f"`{f}` :: string" for f in fields]
-            if "__operation" in columns or add_operation:
+            if "__operation" in inputs or add_operation:
                 hashes.append("`__operation` <=> 'delete' :: string")
 
         if fields:
@@ -217,16 +231,6 @@ class Processor(Generator):
 
             fields = [f"`{f}`" for f in fields]
 
-        if self.change_data_capture == "nocdc":
-            __not_allowed_columns = [
-                c
-                for c in columns
-                if c.startswith("__")
-                and c not in self.allowed_leading_columns
-                and c not in self.allowed_trailing_columns
-            ]
-            all_except = all_except + __not_allowed_columns
-
         if delete_missing is not None:
             raise ValueError("delete_missing is not yet supported")
 
@@ -237,7 +241,8 @@ class Processor(Generator):
             "cdc": self.change_data_capture,
             "mode": mode,
             # fields
-            "columns": columns,
+            "inputs": inputs,
+            "outputs": outputs,
             "fields": fields,
             "keys": keys,
             "hashes": hashes,
@@ -274,9 +279,8 @@ class Processor(Generator):
             "order_duplicate_by": order_duplicate_by,
             "soft_delete": soft_delete,
             "correct_valid_from": correct_valid_from,
-            # except
-            "all_except": all_except,
-            "all_overwrite": all_overwrite,
+            # overwrite
+            "overwrite": overwrite,
             # filter
             "slices": None,
             "sources": None,

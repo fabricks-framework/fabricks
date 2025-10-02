@@ -1,7 +1,7 @@
 __sliced as (
     select
         {% for field in fields %} {{ field }}, {% endfor %}
-        s.__operation,
+        {% if has_operation %} s.__operation, {% endif %}
         s.__timestamp,
         s.__hash,
         s.__key,
