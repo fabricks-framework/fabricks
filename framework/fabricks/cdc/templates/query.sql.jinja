@@ -1,15 +1,15 @@
-{% include 'query/context.sql.jinja' %}
-{% include 'query/base.sql.jinja' %}
-{% if slice %} {% include 'query/slice.sql.jinja' %} {% endif %}
-{% if deduplicate_key %} {% include 'query/deduplicate_key.sql.jinja' %} {% endif %}
-{% if mode == "update" %} {% if has_rows %} {% include 'query/current.sql.jinja' %} {% endif %} {% endif %}
-{% if rectify %} {% include 'query/rectify.sql.jinja' %} {% endif %}
-{% if deduplicate_hash %} {% include 'query/deduplicate_hash.sql.jinja' %} {% endif %}
+{% include 'queries/context.sql.jinja' %}
+{% include 'queries/base.sql.jinja' %}
+{% if slice %} {% include 'queries/slice.sql.jinja' %} {% endif %}
+{% if deduplicate_key %} {% include 'queries/deduplicate_key.sql.jinja' %} {% endif %}
+{% if mode == "update" %} {% if has_rows %} {% include 'queries/current.sql.jinja' %} {% endif %} {% endif %}
+{% if rectify %} {% include 'queries/rectify.sql.jinja' %} {% endif %}
+{% if deduplicate_hash %} {% include 'queries/deduplicate_hash.sql.jinja' %} {% endif %}
 {% if cdc == "nocdc" %}
-    {% if mode == "update" %} {% include 'query/nocdc/update.sql.jinja' %}
-    {% else %} {% include 'query/nocdc/complete.sql.jinja' %}
+    {% if mode == "update" %} {% include 'queries/nocdc/update.sql.jinja' %}
+    {% else %} {% include 'queries/nocdc/complete.sql.jinja' %}
     {% endif %}
 {% endif %}
-{% if cdc == "scd1" %} {% include 'query/scd1.sql.jinja' %} {% endif %}
-{% if cdc == "scd2" %} {% include 'query/scd2.sql.jinja' %} {% endif %}
-{% include 'query/final.sql.jinja' %}
+{% if cdc == "scd1" %} {% include 'queries/scd1.sql.jinja' %} {% endif %}
+{% if cdc == "scd2" %} {% include 'queries/scd2.sql.jinja' %} {% endif %}
+{% include 'queries/final.sql.jinja' %}
