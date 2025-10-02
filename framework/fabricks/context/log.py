@@ -4,10 +4,16 @@ from typing import Final, Literal, Optional
 
 import requests
 
-from fabricks.context.runtime import IS_DEBUGMODE, LOGLEVEL, SECRET_SCOPE
+from fabricks.context.runtime import IS_DEBUGMODE, LOGLEVEL, SECRET_SCOPE, TIMEZONE
 from fabricks.utils.log import get_logger
 
-logger, _ = get_logger("logs", LOGLEVEL, table=None, debugmode=IS_DEBUGMODE)
+logger, _ = get_logger(
+    "logs",
+    LOGLEVEL,
+    table=None,
+    debugmode=IS_DEBUGMODE,
+    timezone=TIMEZONE,
+)
 logging.getLogger("SQLQueryContextLogger").setLevel(logging.CRITICAL)
 
 DEFAULT_LOGGER: Final[logging.Logger] = logger

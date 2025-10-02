@@ -32,6 +32,7 @@ class RuntimeOptions(TypedDict):
     workers: int
     timeouts: RuntimeTimeoutOptions
     retention_days: int
+    timezone: Optional[str]
 
 
 class SparkOptions(TypedDict):

@@ -3,7 +3,9 @@ import json
 import logging
 import sys
 from datetime import datetime
+from datetime import timezone as tz
 from typing import Optional, Tuple
+from zoneinfo import ZoneInfo
 
 from pyspark.sql import DataFrame
 
@@ -11,12 +13,11 @@ from fabricks.utils.azure_table import AzureTable
 
 
 class LogFormatter(logging.Formatter):
-    def __init__(self, debugmode: Optional[bool] = False):
+    def __init__(self, debugmode: Optional[bool] = False, timezone: Optional[str] = None):
         super().__init__(fmt="%(levelname)s%(prefix)s%(message)s [%(timestamp)s]%(extra)s")
 
-        if debugmode is None:
-            debugmode = False
-        self.debugmode = debugmode
+        self.debugmode = False if debugmode is None else debugmode
+        self.timezone = ZoneInfo(timezone) if timezone else tz.utc
 
     COLORS = {
         logging.DEBUG: "\033[36m",
@@ -37,8 +38,8 @@ class LogFormatter(logging.Formatter):
         "CRITICAL": "",
     }
 
-    def formatTime(self, record):
-        ct = datetime.fromtimestamp(record.created)
+    def formatTime(self, record) -> str:
+        ct = datetime.fromtimestamp(record.created, tz=tz.utc).astimezone(self.timezone)
         s = ct.strftime("%d/%m/%y %H:%M:%S")
         return f"{self.COLORS[logging.DEBUG]}{s}{self.RESET}"
 
@@ -82,15 +83,19 @@ class LogFormatter(logging.Formatter):
 
 
 class AzureTableLogHandler(logging.Handler):
-    def __init__(self, table: AzureTable, debugmode: Optional[bool] = False):
+    def __init__(self, table: AzureTable, debugmode: Optional[bool] = False, timezone: Optional[str] = None):
         super().__init__()
 
         self.buffer = []
         self.table = table
 
-        if debugmode is None:
-            debugmode = False
-        self.debugmode = debugmode
+        self.debugmode = False if debugmode is None else debugmode
+        self.timezone = ZoneInfo(timezone) if timezone else tz.utc
+
+    def formatTime(self, record) -> str:
+        ct = datetime.fromtimestamp(record.created, tz=tz.utc).astimezone(self.timezone)
+        s = ct.strftime("%d/%m/%y %H:%M:%S")
+        return s
 
     def emit(self, record):
         if hasattr(record, "target"):
@@ -111,9 +116,7 @@ class AzureTableLogHandler(logging.Handler):
                 level = "INFO"
 
             r = {
-                "Created": str(
-                    datetime.fromtimestamp(record.created).strftime("%d/%m/%y %H:%M:%S")
-                ),  # timestamp not present when querying Azure Table
+                "Created": self.formatTime(record),  # timestamp not present when querying Azure Table
                 "Level": level,
                 "Message": record.message,
             }
@@ -181,7 +184,8 @@ class AzureTableLogHandler(logging.Handler):
 class CustomConsoleHandler(logging.StreamHandler):
     def __init__(self, stream=None, debugmode: Optional[bool] = False):
         super().__init__(stream or sys.stderr)
-        self.debugmode = debugmode if debugmode is not None else False
+
+        self.debugmode = False if debugmode is None else debugmode
 
     def emit(self, record):
         if hasattr(record, "sql"):
@@ -196,6 +200,7 @@ def get_logger(
     level: int,
     table: Optional[AzureTable] = None,
     debugmode: Optional[bool] = False,
+    timezone: Optional[str] = None,
 ) -> Tuple[logging.Logger, Optional[AzureTableLogHandler]]:
     logger = logging.getLogger(name)
     if logger.hasHandlers():
@@ -211,12 +216,12 @@ def get_logger(
     # Console handler
     console_handler = CustomConsoleHandler(debugmode=debugmode)
     console_handler.setLevel(level)
-    console_format = LogFormatter(debugmode=debugmode)
+    console_format = LogFormatter(debugmode=debugmode, timezone=timezone)
     console_handler.setFormatter(console_format)
 
     if table is not None:
         # Azure Table handler
-        azure_table_handler = AzureTableLogHandler(table=table, debugmode=debugmode)
+        azure_table_handler = AzureTableLogHandler(table=table, debugmode=debugmode, timezone=timezone)
         azure_table_handler.setLevel(level)
     else:
         azure_table_handler = None
