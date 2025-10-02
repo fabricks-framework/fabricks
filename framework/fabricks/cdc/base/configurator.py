@@ -128,7 +128,9 @@ class Configurator(ABC):
         df = self.get_src(src=src)
         return df.count() > 0
 
-    def get_columns(self, src: Union[DataFrame, Table, str], backtick: Optional[bool] = True, sort: Optional[bool] = True) -> List[str]:
+    def get_columns(
+        self, src: Union[DataFrame, Table, str], backtick: Optional[bool] = True, sort: Optional[bool] = True
+    ) -> List[str]:
         if backtick:
             backtick = True
 
@@ -150,7 +152,7 @@ class Configurator(ABC):
         trailing = self.allowed_trailing_columns
 
         # move __hash to the front of the table to ensure statistics are present
-        if "__key" not in columns and "__hash" in columns:  
+        if "__key" not in columns and "__hash" in columns:
             leading = ["__hash" if c == "__key" else c for c in leading]
             trailing = [c for c in trailing if c != "__hash"]
 

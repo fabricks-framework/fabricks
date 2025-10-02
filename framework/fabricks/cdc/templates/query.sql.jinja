@@ -1,9 +1,9 @@
 {% include 'queries/context.sql.jinja' %}
-{% include 'queries/base.sql.jinja' %}
-{% if slice %} {% include 'queries/slice.sql.jinja' %} {% endif %}
-{% if deduplicate_key %} {% include 'queries/deduplicate_key.sql.jinja' %} {% endif %}
-{% if mode == "update" %} {% if has_rows %} {% include 'queries/current.sql.jinja' %} {% endif %} {% endif %}
-{% if rectify %} {% include 'queries/rectify.sql.jinja' %} {% endif %}
+{% include 'ctes/base.sql.jinja' %}
+{% if slice %} {% include 'ctes/slice.sql.jinja' %} {% endif %}
+{% if deduplicate_key %} {% include 'ctes/deduplicate_key.sql.jinja' %} {% endif %}
+{% if mode == "update" %} {% if has_rows %} {% include 'ctes/current.sql.jinja' %} {% endif %} {% endif %}
+{% if rectify %} {% include 'ctes/rectify.sql.jinja' %} {% endif %}
 {% if deduplicate_hash %} {% include 'queries/deduplicate_hash.sql.jinja' %} {% endif %}
 {% if cdc == "nocdc" %}
     {% if mode == "update" %} {% include 'queries/nocdc/update.sql.jinja' %}

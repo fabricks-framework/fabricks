@@ -1,7 +1,5 @@
 __final as (
-    select
-      {% for column in columns %} {{ column }},
-      {% endfor %},
+    select {% for column in columns %} {{ column }}, {% endfor %},
     from {{ parent_cdc }}
     {% if filter %}
         where
