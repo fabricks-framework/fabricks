@@ -231,6 +231,9 @@ class Processor(Generator):
             ]
             all_except = all_except + __not_allowed_columns
 
+        if delete_missing is not None:
+            raise ValueError("delete_missing is not yet supported")
+
         return {
             "src": src,
             "format": format,
