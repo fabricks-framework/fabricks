@@ -104,6 +104,7 @@ class Generator(Configurator):
 
             df = self.get_data(src, **kwargs)
             df = self.reorder_columns(df)
+
             diffs = self.table.get_schema_differences(df)
             df_diff = self.spark.createDataFrame(
                 [cast(Any, d.model_dump()) for d in diffs],
@@ -117,6 +118,7 @@ class Generator(Configurator):
                     ]
                 ),
             )
+            
             return df_diff
 
     def get_schema_differences(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[Sequence[SchemaDiff]]:
@@ -130,6 +132,7 @@ class Generator(Configurator):
 
             df = self.get_data(src, **kwargs)
             df = self.reorder_columns(df)
+
             return self.table.get_schema_differences(df)
 
     def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:

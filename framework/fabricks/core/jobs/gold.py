@@ -242,6 +242,12 @@ class Gold(BaseJob):
         if rectify is not None:
             context["rectify"] = rectify
 
+        if self.mode == "update" and self.change_data_capture == "nocdc":
+            if "__key" not in df.columns:
+                context["add_key"] = True
+            if "__hash" not in df.columns:
+                context["add_hash"] = True
+
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
                 context["add_key"] = True
@@ -301,7 +307,6 @@ class Gold(BaseJob):
             self.cdc.complete(sql, **context)
 
         elif self.mode == "update":
-            assert not isinstance(self.cdc, NoCDC), "nocdc update not allowed"
             self.cdc.update(sql, **context)
 
         elif self.mode == "append":

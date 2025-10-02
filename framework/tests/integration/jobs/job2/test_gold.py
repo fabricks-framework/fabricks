@@ -83,3 +83,8 @@ def test_gold_type_widening_merge():
 
     data_type = j.table.get_column_data_type("field")
     assert data_type == "double", "field is not double"
+
+@pytest.mark.order(228)
+def test_gold_nocdc_update():
+    j = get_job(step="gold", topic="nocdc", item="update")
+    compare_gold_to_expected(j, "scd1", 2, where="__is_current")

@@ -65,6 +65,9 @@ class LogFormatter(logging.Formatter):
             if hasattr(record, "content"):
                 extra += f"\n---\n{record.__dict__.get('content')}\n---"
 
+            if hasattr(record, "context"):
+                extra += f"\n---\n{json.dumps(record.__dict__.get('context'), indent=2, default=str)}\n---"
+
             if hasattr(record, "df"):
                 df = record.__dict__.get("df")
                 if isinstance(df, DataFrame):

@@ -233,6 +233,7 @@ class Processor(Generator):
             "cdc": self.change_data_capture,
             "mode": mode,
             # fields
+            "columns": columns,
             "fields": fields,
             "keys": keys,
             "hashes": hashes,
@@ -289,6 +290,7 @@ class Processor(Generator):
             sql = sql.replace("{src}", "src")
             sql = fix_sql(sql)
             sql = sql.replace("`src`", "{src}")
+
             DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql, "target": "buffer"})
             return sql
 
@@ -307,7 +309,7 @@ class Processor(Generator):
             else:
                 DEFAULT_LOGGER.debug("fix context", extra={"job": self, "sql": sql})
 
-        except Exception as e:
+        except (Exception, TypeError) as e:
             DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "context": context})
             raise e
 
@@ -325,18 +327,20 @@ class Processor(Generator):
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
-        if context.get("slice"):
-            context = self.fix_context(context, fix=fix, **kwargs)
-
-        template = environment.get_template("query.sql.jinja")
         try:
+            if context.get("slice"):
+                context = self.fix_context(context, fix=fix, **kwargs)
+
+            template = environment.get_template("query.sql.jinja")
+
             sql = template.render(**context)
             if fix:
                 sql = self.fix_sql(sql)
             else:
                 DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql})
 
-        except Exception as e:
+        except (Exception, TypeError) as e:
+            DEFAULT_LOGGER.debug("context", extra={"job": self, "context": context})
             DEFAULT_LOGGER.exception("could not generate sql query", extra={"job": self, "context": context})
             raise e
 

@@ -20,18 +20,9 @@
   and __merge_condition == 'upsert' then
   update
   set
-{% for f in fields %}
-    {{ f }} = s.{{f}},
+{% for c in columns %}
+    {{ c }} = s.{{c}},
 {% endfor %}
-{% if has_timestamp %}
-    __timestamp = s.__timestamp,
-{% endif %}
-{% if has_metadata %}
-    __metadata.updated = cast(current_timestamp() as timestamp),    
-{% endif %}
-{% if has_hash %}
-    __hash = s.__hash,
-{% endif %}
 -- delete
   when matched
   and __merge_condition == 'delete' then
