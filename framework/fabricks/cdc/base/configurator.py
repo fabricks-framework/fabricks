@@ -128,34 +128,40 @@ class Configurator(ABC):
         df = self.get_src(src=src)
         return df.count() > 0
 
-    def get_columns(self, src: Union[DataFrame, Table, str], backtick: Optional[bool] = True) -> List[str]:
+    def get_columns(self, src: Union[DataFrame, Table, str], backtick: Optional[bool] = True, sort: Optional[bool] = True) -> List[str]:
         if backtick:
             backtick = True
 
         df = self.get_src(src=src)
         columns = df.columns
 
+        if sort:
+            columns = self.sort_columns(columns)
+
         if backtick:
             return [f"`{c}`" for c in columns]
         else:
             return columns
 
-    def reorder_columns(self, df: DataFrame) -> DataFrame:
-        fields = [f"`{c}`" for c in df.columns if not c.startswith("__")]
+    def sort_columns(self, columns: List[str]) -> List[str]:
+        fields = [c for c in columns if not c.startswith("__")]
 
         leading = self.allowed_leading_columns
         trailing = self.allowed_trailing_columns
-        if (
-            "__key" not in df.columns and "__hash" in df.columns
-        ):  # move __hash to the front of the table to ensure statistics are present
+
+        # move __hash to the front of the table to ensure statistics are present
+        if "__key" not in columns and "__hash" in columns:  
             leading = ["__hash" if c == "__key" else c for c in leading]
             trailing = [c for c in trailing if c != "__hash"]
 
-        __leading = [c for c in leading if c in df.columns]
-        __trailing = [c for c in trailing if c in df.columns]
+        __leading = [c for c in leading if c in columns]
+        __trailing = [c for c in trailing if c in columns]
 
-        columns = __leading + fields + __trailing
+        return __leading + fields + __trailing
 
+    def reorder_dataframe(self, df: DataFrame) -> DataFrame:
+        columns = self.sort_columns(df.columns)
+        columns = [f"`{c}`" for c in columns]
         return df.select(columns)
 
     @abstractmethod

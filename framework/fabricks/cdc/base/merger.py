@@ -17,15 +17,15 @@ class Merger(Processor):
     def get_merge_context(self, src: Union[DataFrame, str], **kwargs) -> dict:
         if isinstance(src, (DataFrame, CDataFrame)):
             format = "dataframe"
-            columns = self.get_columns(src, backtick=False)
+            columns = self.get_columns(src, backtick=False, sort=False)
         elif isinstance(src, str):
             format = "view"
-            columns = self.get_columns(f"select * from {src}", backtick=False)
+            columns = self.get_columns(f"select * from {src}", backtick=False, sort=False)
         else:
             raise ValueError(f"{src} not allowed")
 
-        assert "__merge_key" in columns
-        assert "__merge_condition" in columns
+        assert "__merge_key" in columns, "__merge_key not found"
+        assert "__merge_condition" in columns, "__merge_condition not found"
 
         keys = kwargs.get("keys")
         if isinstance(keys, str):

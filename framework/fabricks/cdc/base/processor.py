@@ -33,8 +33,12 @@ class Processor(Generator):
         else:
             raise ValueError(f"{src} not allowed")
 
-        columns = self.get_columns(src, backtick=False)
-        fields = [c for c in columns if not c.startswith("__")]
+        columns = self.get_columns(src, backtick=False, sort=True)
+
+        if self.change_data_capture == "nocdc":
+            fields = [c for c in columns if c not in ["__key", "__metadata", "__hash"]] # remove columns from hash
+        else:
+            fields = [c for c in columns if not c.startswith("__")]
 
         has_data = self.has_data(src)
 
@@ -353,7 +357,7 @@ class Processor(Generator):
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
-        df = self.reorder_columns(df)
+        df = self.reorder_dataframe(df)
 
         name = f"{self.qualified_name}__append"
         create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
@@ -371,7 +375,7 @@ class Processor(Generator):
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
-        df = self.reorder_columns(df)
+        df = self.reorder_dataframe(df)
 
         if not dynamic:
             if kwargs.get("update_where"):

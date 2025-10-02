@@ -37,7 +37,7 @@ class Generator(Configurator):
         if partitioning is True:
             assert partition_by, "partitioning column(s) not found"
 
-        df = self.reorder_columns(df)
+        df = self.reorder_dataframe(df)
 
         identity = False if identity is None else identity
         liquid_clustering = False if liquid_clustering is None else liquid_clustering
@@ -59,7 +59,7 @@ class Generator(Configurator):
         sql = self.get_query(src, **kwargs)
 
         df = self.spark.sql(sql)
-        df = self.reorder_columns(df)
+        df = self.reorder_dataframe(df)
         columns = [f"`{c}`" for c in df.columns]
 
         sql = f"""
@@ -103,7 +103,7 @@ class Generator(Configurator):
                 del kwargs["slice"]
 
             df = self.get_data(src, **kwargs)
-            df = self.reorder_columns(df)
+            df = self.reorder_dataframe(df)
 
             diffs = self.table.get_schema_differences(df)
             df_diff = self.spark.createDataFrame(
@@ -131,7 +131,7 @@ class Generator(Configurator):
                 del kwargs["slice"]
 
             df = self.get_data(src, **kwargs)
-            df = self.reorder_columns(df)
+            df = self.reorder_dataframe(df)
 
             return self.table.get_schema_differences(df)
 
@@ -158,7 +158,7 @@ class Generator(Configurator):
                 del kwargs["slice"]
 
             df = self.get_data(src, **kwargs)
-            df = self.reorder_columns(df)
+            df = self.reorder_dataframe(df)
             if overwrite:
                 self.table.overwrite_schema(df)
             else:
