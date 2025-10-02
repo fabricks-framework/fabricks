@@ -34,11 +34,7 @@ class Processor(Generator):
             raise ValueError(f"{src} not allowed")
 
         columns = self.get_columns(src, backtick=False, sort=True)
-
-        if self.change_data_capture == "nocdc":
-            fields = [c for c in columns if c not in ["__key", "__metadata", "__hash"]]  # remove columns from hash
-        else:
-            fields = [c for c in columns if not c.startswith("__")]
+        fields = [c for c in columns if not c.startswith("__")]
 
         has_data = self.has_data(src)
 

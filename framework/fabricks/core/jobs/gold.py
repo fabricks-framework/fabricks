@@ -205,23 +205,10 @@ class Gold(BaseJob):
         return dependencies
 
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
-        if "__order_duplicate_by_asc" in df.columns:
-            order_duplicate_by = {"__order_duplicate_by_asc": "asc"}
-        elif "__order_duplicate_by_desc" in df.columns:
-            order_duplicate_by = {"__order_duplicate_by_desc": "desc"}
-        else:
-            order_duplicate_by = None
-
-        delete_missing = self.options.job.get_boolean("delete_missing", None)
-        deduplicate = self.options.job.get_boolean(
-            "deduplicate",
-            None,
-        )  # assume no duplicate in gold (to improve performance)
-        rectify = self.options.job.get_boolean(
-            "rectify_as_upserts",
-            None,
-        )  # assume no reload in gold (to improve performance)
-        correct_valid_from = self.options.job.get_boolean("correct_valid_from", True)
+        # assume no duplicate in gold (to improve performance)
+        deduplicate = self.options.job.get_boolean("deduplicate", None)
+         # assume no reload in gold (to improve performance)
+        rectify = self.options.job.get_boolean("rectify_as_upserts", None) 
         add_metadata = self.step_conf.get("options", {}).get("metadata", False)
 
         context = {
@@ -231,33 +218,37 @@ class Gold(BaseJob):
             "deduplicate_hash": True if self.slowly_changing_dimension else None,
             "deduplicate": False,
             "rectify": False,
-            "order_duplicate_by": order_duplicate_by,
-            "correct_valid_from": correct_valid_from,
         }
 
+        # force deduplicate
         if deduplicate is not None:
             context["deduplicate"] = deduplicate
             context["deduplicate_key"] = deduplicate
             context["deduplicate_hash"] = deduplicate
 
+        # force rectify
         if rectify is not None:
             context["rectify"] = rectify
 
+        # add key and hash when needed
         if self.mode == "update" and self.change_data_capture == "nocdc":
             if "__key" not in df.columns:
                 context["add_key"] = True
             if "__hash" not in df.columns:
                 context["add_hash"] = True
 
+        # add key and hash when needed
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
                 context["add_key"] = True
             if "__hash" not in df.columns:
                 context["add_hash"] = True
 
+        if self.slowly_changing_dimension:
             if "__operation" not in df.columns:
+                 # assume no duplicate hash
                 if deduplicate is None:
-                    context["deduplicate_hash"] = None  # assume no duplicate hash
+                    context["deduplicate_hash"] = None
 
                 if self.mode == "update":
                     context["add_operation"] = "reload"
@@ -267,6 +258,7 @@ class Gold(BaseJob):
                 else:
                     context["add_operation"] = "upsert"
 
+        # filter to get latest data
         if not reload:
             if self.mode == "update" and self.change_data_capture == "scd2":
                 context["slice"] = "update"
@@ -280,12 +272,11 @@ class Gold(BaseJob):
         if self.mode == "memory":
             context["mode"] = "complete"
 
-        if self.mode != "update" and self.change_data_capture != "nocdc":
-            assert delete_missing is None
+        # correct __valid_from
+        if self.change_data_capture == "scd2":
+            context["correct_valid_from"] = self.options.job.get_boolean("correct_valid_from", True)
 
-        if delete_missing is not None:
-            context["delete_missing"] = delete_missing
-
+        # add __timestamp
         if self.options.job.get_boolean("persist_last_timestamp"):
             if self.change_data_capture == "scd1":
                 if "__timestamp" not in df.columns:
@@ -293,6 +284,11 @@ class Gold(BaseJob):
             if self.change_data_capture == "scd2":
                 if "__valid_from" not in df.columns:
                     context["add_timestamp"] = True
+
+        if "__order_duplicate_by_asc" in df.columns:
+            context["order_duplicate_by"] = {"__order_duplicate_by_asc": "asc"}
+        elif "__order_duplicate_by_desc" in df.columns:
+            context["order_duplicate_by"] = {"__order_duplicate_by_desc": "desc"}
 
         return context
 
