@@ -3,15 +3,15 @@
 __current as (
     select
         {% for field in fields %} {{ field }}, {% endfor %}
-        {% if has_timestamp %}
-            {% if cdc == "scd2" %} __valid_from as __timestamp, 
-            {% else %} __timestamp,
-            {% endif %}
-        {% elif add_timestamp %}
-            cast('0001-01-01' as timestamp) as __timestamp, 
+        {% if has_timestamp %} {% if cdc == "scd2" %} __valid_from as __timestamp, {% else %} __timestamp, {% endif %}
+        {% elif add_timestamp %} cast('0001-01-01' as timestamp) as __timestamp,
         {% endif %}
-        {% if has_hash %} __hash, {% else %} {{ h.hash(fields=hashes) }} as __hash, {% endif %}
-        {% if has_key %} __key {% else %} {{ h.hash(fields=keys) }} as __key, {% endif %}
+        {% if has_hash %} __hash,
+        {% else %} {{ h.hash(fields=hashes) }} as __hash,
+        {% endif %}
+        {% if has_key %} __key
+        {% else %} {{ h.hash(fields=keys) }} as __key,
+        {% endif %}
         {% if has_operation or add_operation %}
             {% if has_data %} 'current' as __operation, {% else %} 'delete' as __operation, {% endif %}
         {% endif %}
