@@ -218,8 +218,6 @@ class Processor(Generator):
 
         outputs = [f for f in fields]
 
-        if has_operation:
-            outputs.append("__operation")
         if has_metadata:
             outputs.append("__metadata")
         if has_source:
