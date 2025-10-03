@@ -224,7 +224,9 @@ class Processor(Generator):
         if add_hash:
             hashes = [f"`{f}` :: string" for f in fields]
             if "__operation" in inputs or add_operation:
-                hashes.append("cast(`__operation` <=> 'delete' as string)") # reload and upsert should have the same hash, not a delete
+                hashes.append(
+                    "cast(`__operation` <=> 'delete' as string)"
+                )  # reload and upsert should have the same hash, not a delete
 
         outputs = [f for f in fields]
 

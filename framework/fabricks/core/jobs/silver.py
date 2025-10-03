@@ -305,7 +305,7 @@ class Silver(BaseJob):
 
         if "__operation" in df.columns:
             context["exclude"] = ["__operation"]
-        if nocdc: # operation is passed from the bronze layer
+        if nocdc:  # operation is passed from the bronze layer
             context["exclude"] = ["__operation"]
 
         return context
