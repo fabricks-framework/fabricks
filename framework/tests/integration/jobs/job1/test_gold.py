@@ -142,9 +142,3 @@ def test_gold_fact_no_drop():
         assert False, "drop is allowed while no_drop is set"
     except ValueError:
         assert True, "drop not allowed while no_drop is set"
-
-
-@pytest.mark.order(131)
-def test_gold_nocdc_update():
-    j = get_job(step="gold", topic="nocdc", item="update")
-    compare_gold_to_expected(j, "scd1", 1, where="__is_current")

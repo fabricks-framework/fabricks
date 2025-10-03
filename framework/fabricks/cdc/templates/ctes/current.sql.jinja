@@ -4,9 +4,8 @@ __current as (
     select
         *
         {% if overwrite %}
-            except (
-                {% for o in overwrite %}{{ o }},  -- overwritten below {% endfor %}
-            )
+            -- will be overwritten below
+            except ({% for o in overwrite %}{{ o }}, {% endfor %})
         {% endif %},
         --
         {% if has_operation or add_operation %}

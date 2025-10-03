@@ -6,7 +6,7 @@ with
         select
             *
             {% if overwrite %}
-                -- overwritten below
+                -- will be overwritten below
                 except ({% for o in overwrite %}{{ o }}, {% endfor %})
             {% endif %},
             {% if add_calculated_columns %} {% for c in add_calculated_columns %} {{ c }}, {% endfor %} {% endif %}
