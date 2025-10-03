@@ -188,7 +188,7 @@ class Generator(Configurator):
             elif step_powerbi is not None:
                 powerbi = step_powerbi
 
-            maximum_compatibility = self.options.table.get("maximum_compatibility", False)
+            maximum_compatibility = self.options.table.get_boolean("maximum_compatibility", False)
 
             if maximum_compatibility:
                 default_properties = {
