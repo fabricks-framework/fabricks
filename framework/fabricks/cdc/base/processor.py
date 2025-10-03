@@ -239,6 +239,10 @@ class Processor(Generator):
 
         outputs = self.sort_columns(outputs)
 
+        outputs = [f"`{o}`" for o in outputs]
+        inputs = [f"`{i}`" for i in inputs]
+        fields = [f"`{f}`" for f in fields]
+
         return {
             "src": src,
             "format": format,
