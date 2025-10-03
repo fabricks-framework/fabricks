@@ -35,7 +35,7 @@ class Merger(Processor):
         fields = [c for c in columns if not c.startswith("__")]
         where = kwargs.get("update_where") if self.table.rows > 0 else None
         soft_delete = "__is_deleted" in columns
-        
+
         has_source = "__source" in columns
         has_key = "__key" in columns
         has_metadata = "__metadata" in columns

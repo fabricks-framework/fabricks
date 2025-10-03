@@ -1,8 +1,7 @@
 {% import 'macros/hash.sql.jinja' as h -%}
 
 __current_base as (
-    select
-        {% for input in inputs %} {{ input }}, {% endfor %}
+    select {% for input in inputs %} {{ input }}, {% endfor %}
     from {{ tgt }} t
     where
         true
@@ -14,27 +13,22 @@ __current_base as (
 __current as (
     select
         *
-        {% if overwrite %}except ({% for o in overwrite %}{{ o }},  -- overwritten below {% endfor %}){% endif %},
-        --
-        {%if has_operation or add_operation %}
-            {% if has_data %} 'current' as __operation,
-            {% else %} 'delete' as __operation,
-            {% endif %}
-        {% endif %}
-        {% if has_timestamp %}
-            {% if cdc == "nocdc" %} __timestamp as __timestamp, 
-            {% endif %}
-            {% if cdc == "scd1" %} __timestamp as __timestamp, 
-            {% endif %}
-            {% if cdc == "scd2" %} __valid_from as __timestamp, 
-            {% endif %}
-        {% endif %}
-        {% if add_timestamp %} cast('0001-01-01' as timestamp) as __timestamp,
-        {% endif %}
-        --
-        {% if not has_hash %} {{ h.hash(fields=hashes) }} as __hash,
-        {% endif %}
-        {% if not has_key %} {{ h.hash(fields=keys) }} as __key,
-        {% endif %}
-    from __current_base
-),
+        {% if overwrite %}
+            except (
+            {% for o in overwrite %}
+                    {{ o }},  -- overwritten below {% endfor %}){% endif %},
+                    --
+                    {% if has_operation or add_operation %}
+                        {% if has_data %} 'current' as __operation, {% else %} 'delete' as __operation, {% endif %}
+                    {% endif %}
+                    {% if has_timestamp %}
+                        {% if cdc == "nocdc" %} __timestamp as __timestamp, {% endif %}
+                        {% if cdc == "scd1" %} __timestamp as __timestamp, {% endif %}
+                        {% if cdc == "scd2" %} __valid_from as __timestamp, {% endif %}
+                    {% endif %}
+                    {% if add_timestamp %} cast('0001-01-01' as timestamp) as __timestamp, {% endif %}
+                    --
+                    {% if not has_hash %} {{ h.hash(fields=hashes) }} as __hash, {% endif %}
+                    {% if not has_key %} {{ h.hash(fields=keys) }} as __key, {% endif %}
+                    from __current_base
+                ),

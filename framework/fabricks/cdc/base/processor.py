@@ -51,7 +51,7 @@ class Processor(Generator):
 
         add_source = kwargs.get("add_source", None)
         add_calculated_columns = kwargs.get("add_calculated_columns", [])
-        if add_calculated_columns: 
+        if add_calculated_columns:
             raise ValueError("add_calculated_columns is not yet supported")
         add_operation = kwargs.get("add_operation", None)
         add_key = kwargs.get("add_key", None)
@@ -65,7 +65,7 @@ class Processor(Generator):
         except Exception:
             has_rows = None
         has_data = self.has_data(src)
-        
+
         # determine which special columns are present or need to be added to the output
         has_operation = add_operation or "__operation" in inputs
         has_metadata = add_metadata or "__metadata" in inputs
@@ -75,7 +75,7 @@ class Processor(Generator):
         has_hash = add_hash or "__hash" in inputs
         has_identity = "__identity" in inputs
         has_rescued_data = "__rescued_data" in inputs
-        
+
         soft_delete = kwargs.get("soft_delete", None)
         delete_missing = kwargs.get("delete_missing", None)
         slice = kwargs.get("slice", None)
@@ -217,19 +217,19 @@ class Processor(Generator):
         outputs = [f for f in fields]
 
         if has_operation:
-            outputs.append("__operation") 
+            outputs.append("__operation")
         if has_metadata:
-            outputs.append("__metadata") 
+            outputs.append("__metadata")
         if has_source:
-            outputs.append("__source")  
+            outputs.append("__source")
         if has_timestamp:
-            outputs.append("__timestamp") 
+            outputs.append("__timestamp")
         if has_key:
-            outputs.append("__key")      
+            outputs.append("__key")
         if has_hash:
-            outputs.append("__hash")   
+            outputs.append("__hash")
         if has_identity:
-            outputs.append("__identity")   
+            outputs.append("__identity")
         if has_rescued_data:
             outputs.append("__rescued_data")
         if soft_delete:

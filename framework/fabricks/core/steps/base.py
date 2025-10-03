@@ -273,6 +273,7 @@ class BaseStep:
             cdc.table.drop()
         elif cdc.table.exists():
             diffs = cdc.get_differences_with_deltatable(df)
+            assert isinstance(diffs, DataFrame)
             if diffs.count() > 0:
                 DEFAULT_LOGGER.warning("schema drift detected", extra={"step": self})
                 cdc.table.overwrite_schema(df=df)
