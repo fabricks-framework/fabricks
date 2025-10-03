@@ -6,7 +6,7 @@ from pyspark.sql.functions import expr, md5
 from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
-from fabricks.cdc import SCD1
+from fabricks.cdc import NoCDC
 from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import Bronzes, Golds, JobDependency, SchemaDependencies, Silvers, TStep
@@ -267,17 +267,17 @@ class BaseStep:
 
         DEFAULT_LOGGER.info("update configurations", extra={"step": self})
 
-        scd1 = SCD1("fabricks", self.name, "jobs")
+        cdc = NoCDC("fabricks", self.name, "jobs")
 
         if drop:
-            scd1.table.drop()
-        elif scd1.table.exists():
-            diffs = scd1.get_differences_with_deltatable(df)
-            if diffs:
+            cdc.table.drop()
+        elif cdc.table.exists():
+            diffs = cdc.get_differences_with_deltatable(df)
+            if diffs.count() > 0:
                 DEFAULT_LOGGER.warning("schema drift detected", extra={"step": self})
-                scd1.table.overwrite_schema(df=df)
+                cdc.table.overwrite_schema(df=df)
 
-        scd1.delete_missing(df, keys=["job_id"])
+        cdc.delete_missing(df, keys=["job_id"])
 
     @deprecated("use update_tables_list instead")
     def update_tables(self):
@@ -288,7 +288,7 @@ class BaseStep:
         df = df.withColumn("job_id", expr("md5(table)"))
 
         DEFAULT_LOGGER.info("update tables list", extra={"step": self})
-        SCD1("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
+        NoCDC("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
 
     @deprecated("use update_views_list instead")
     def update_views(self):
@@ -299,7 +299,7 @@ class BaseStep:
         df = df.withColumn("job_id", expr("md5(view)"))
 
         DEFAULT_LOGGER.info("update views list", extra={"step": self})
-        SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
+        NoCDC("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
 
     def update_dependencies(
         self,
@@ -329,7 +329,7 @@ class BaseStep:
             if update_where:
                 DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
 
-            SCD1("fabricks", self.name, "dependencies").delete_missing(
+            NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
                 keys=["dependency_id"],
                 update_where=update_where,
@@ -349,7 +349,7 @@ class BaseStep:
             )
             DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
 
-            SCD1("fabricks", self.name, "dependencies").delete_missing(
+            NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
                 keys=["dependency_id"],
                 update_where=update_where,

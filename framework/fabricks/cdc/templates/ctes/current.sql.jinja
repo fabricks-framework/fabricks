@@ -1,25 +1,8 @@
 {% import 'macros/hash.sql.jinja' as h -%}
 
-__current as (
+__current_base as (
     select
-        {% for field in fields %} {{ field }}, {% endfor %}
-        {% if has_operation %} {% if has_data %} 'current' {% else %} 'delete' {% endif %} as __operation, {% endif %}
-        {% if has_timestamp %}
-            {% if cdc == "nocdc" %} __timestamp as __timestamp, {% endif %}
-            {% if cdc == "scd1" %} __timestamp as __timestamp, {% endif %}
-            {% if cdc == "scd2" %} __valid_from as __timestamp, {% endif %}
-        {% else %} cast('0001-01-01' as timestamp) as __timestamp,
-        {% endif %}
-        {% if has_hash %} __hash,
-        {% else %} {{ h.hash(fields=hashes) }} as __hash,
-        {% endif %}
-        {% if has_identity %} __identity, {% endif %}
-        {% if has_key %} __key,
-        {% else %} {{ h.hash(fields=keys) }} as __key,
-        {% endif %}
-        {% if has_source %} __source, {% endif %}
-        {% if has_metadata %} __metadata, {% endif %}
-        {% if has_rescued_data %} __rescued_data, {% endif %}
+        {% for input in inputs %} {{ input }}, {% endfor %}
     from {{ tgt }} t
     where
         true
@@ -27,4 +10,31 @@ __current as (
         {% if cdc == "scd1" %} {% if soft_delete %} and __is_current {% endif %} {% endif %}
         {% if sources %} and ({{ sources }}) {% endif %}
         {% if update_where %} and {{ update_where }} {% endif %}
+),
+__current as (
+    select
+        *
+        {% if overwrite %}except ({% for o in overwrite %}{{ o }},  -- overwritten below {% endfor %}){% endif %},
+        --
+        {%if has_operation or add_operation %}
+            {% if has_data %} 'current' as __operation,
+            {% else %} 'delete' as __operation,
+            {% endif %}
+        {% endif %}
+        {% if has_timestamp %}
+            {% if cdc == "nocdc" %} __timestamp as __timestamp, 
+            {% endif %}
+            {% if cdc == "scd1" %} __timestamp as __timestamp, 
+            {% endif %}
+            {% if cdc == "scd2" %} __valid_from as __timestamp, 
+            {% endif %}
+        {% endif %}
+        {% if add_timestamp %} cast('0001-01-01' as timestamp) as __timestamp,
+        {% endif %}
+        --
+        {% if not has_hash %} {{ h.hash(fields=hashes) }} as __hash,
+        {% endif %}
+        {% if not has_key %} {{ h.hash(fields=keys) }} as __key,
+        {% endif %}
+    from __current_base
 ),

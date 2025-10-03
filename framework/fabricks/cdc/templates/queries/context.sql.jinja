@@ -21,25 +21,25 @@
 
 📊 CTE's
 {%- if slice %}
-🗹 slice: {{ slice }}
+🗹 slice
 {%- endif %}
 {%- if deduplicate %}
-🗹 deduplicate: {{ deduplicate }}
+🗹 deduplicate
 {%- endif %}
 {%- if deduplicate_key %}
-🗹 deduplicate_key: {{ deduplicate_key }}
+🗹 deduplicate_key
 {%- endif %}
 {%- if deduplicate_hash %}
-🗹 deduplicate_hash: {{ deduplicate_hash }}
+🗹 deduplicate_hash
 {%- endif %}
 {%- if order_duplicate_by %}
-🗹 order_duplicate_by: {{ order_duplicate_by }}
+🗹 order_duplicate_by
 {%- endif %}
 {%- if rectify %}
-🗹 rectify: {{ rectify }}
+🗹 rectify
 {%- endif %}
 {%- if correct_valid_from %}
-🗹 correct_valid_from: {{ correct_valid_from }}
+🗹 correct_valid_from
 {%- endif %}
 
 🔪 FILTERING
@@ -58,63 +58,65 @@
 
 🗑️ DELETES
 {%- if delete_missing %}
-🗹 delete_missing: {{ delete_missing }}
+🗹 delete_missing
 {%- endif %}
 {%- if soft_delete %}
-🗹 soft_delete: {{ soft_delete }}
+🗹 soft_delete
 {%- endif %}
 
 ✅ DATA VALIDATION
 {%- if has_data %}
-🗹 has_data: {{ has_data }}
+🗹 has_data
 {%- else %}
-☒ has_data: {{ has_data }}
+☒ has_data
 {%- endif %}
 {%- if has_rows %}
-🗹 has_rows: {{ has_rows }}
+🗹 has_rows
+{%- else %}
+☒ has_rows
 {%- endif %}
 {%- if has_source %}
-🗹 has_source: {{ has_source }}
+🗹 has_source
 {%- endif %}
 
 🏷️ HAS FIELDS
 {%- if has_metadata %}
-🗹 has_metadata: {{ has_metadata }}
+🗹 has_metadata
 {%- endif %}
 {%- if has_timestamp %}
-🗹 has_timestamp: {{ has_timestamp }}
+🗹 has_timestamp
 {%- endif %}
 {%- if has_identity %}
-🗹 has_identity: {{ has_identity }}
+🗹 has_identity
 {%- endif %}
 {%- if has_key %}
-🗹 has_key: {{ has_key }}
+🗹 has_key
 {%- endif %}
 {%- if has_hash %}
-🗹 has_hash: {{ has_hash }}
+🗹 has_hash
 {%- endif %}
 {%- if has_operation %}
-🗹 has_operation: {{ has_operation }}
+🗹 has_operation
 {%- endif %}
 {%- if has_order_by %}
-🗹 has_order_by: {{ has_order_by }}
+🗹 has_order_by
 {%- endif %}
 {%- if has_rescued_data %}
-🗹 has_rescued_data: {{ has_rescued_data }}
+🗹 has_rescued_data
 {%- endif %}
 
 ➕ ADD COLUMNS
 {%- if add_metadata %}
-🗹 add_metadata: {{ add_metadata }}
+🗹 add_metadata
 {%- endif %}
 {%- if add_timestamp %}
-🗹 add_timestamp: {{ add_timestamp }}
+🗹 add_timestamp
 {%- endif %}
 {%- if add_key %}
-🗹 add_key: {{ add_key }}
+🗹 add_key
 {%- endif %}
 {%- if add_hash %}
-🗹 add_hash: {{ add_hash }}
+🗹 add_hash
 {%- endif %}
 {%- if add_operation %}
 ☐ add_operation: {{ add_operation }}

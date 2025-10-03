@@ -7,9 +7,8 @@ with
             *
             {% if overwrite %}
                 except (
-                    {% for o in overwrite %}{{ o }},  -- overwritten below {% endfor %}),
-                    {% else %},
-                    {% endif %}
+                    {% for o in overwrite %}{{ o }},  -- overwritten below {% endfor %})
+                    {% endif %},
                     {% if add_calculated_columns %}
                         {% for c in add_calculated_columns %} {{ c }}, {% endfor %}
                     {% endif %}

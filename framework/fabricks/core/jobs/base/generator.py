@@ -4,7 +4,7 @@ from typing import Optional, Sequence, Union, cast
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
 
-from fabricks.cdc import SCD1
+from fabricks.cdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import JobDependency
 from fabricks.core.jobs.base.configurator import Configurator
@@ -19,8 +19,8 @@ class Generator(Configurator):
         deps = self.get_dependencies()
         if deps:
             df = self.spark.createDataFrame([d.model_dump() for d in deps])  # type: ignore
-            scd1 = SCD1("fabricks", self.step, "dependencies")
-            scd1.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
+            cdc = NoCDC("fabricks", self.step, "dependencies")
+            cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
 
     @abstractmethod
     def get_dependencies(self) -> Sequence[JobDependency]:

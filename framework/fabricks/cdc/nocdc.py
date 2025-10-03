@@ -15,4 +15,6 @@ class NoCDC(SCD):
         super().__init__(database, *levels, change_data_capture="nocdc", spark=spark)
 
     def delete_missing(self, src, **kwargs):
-        raise NotImplementedError("NoCDC does not support delete_missing")
+        kwargs["delete_missing"] = True
+        kwargs["mode"] = "update"
+        self.merge(src, **kwargs)

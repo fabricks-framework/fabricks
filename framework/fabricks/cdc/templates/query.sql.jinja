@@ -4,7 +4,7 @@
 {% if deduplicate_key %} {% include 'ctes/deduplicate_key.sql.jinja' %} {% endif %}
 {% if mode == "update" %} {% if has_rows %} {% include 'ctes/current.sql.jinja' %} {% endif %} {% endif %}
 {% if rectify %} {% include 'ctes/rectify.sql.jinja' %} {% endif %}
-{% if deduplicate_hash %} {% include 'queries/deduplicate_hash.sql.jinja' %} {% endif %}
+{% if deduplicate_hash %} {% include 'ctes/deduplicate_hash.sql.jinja' %} {% endif %}
 {% if cdc == "nocdc" %}
     {% if mode == "update" %} {% include 'queries/nocdc/update.sql.jinja' %}
     {% else %} {% include 'queries/nocdc/complete.sql.jinja' %}
