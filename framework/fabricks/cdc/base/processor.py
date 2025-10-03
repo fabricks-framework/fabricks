@@ -237,9 +237,9 @@ class Processor(Generator):
             outputs += ["__is_current", "__is_deleted"]
 
         if self.change_data_capture == "scd2":
-            outputs += ["__valid_from", "__valid_to"]
+            outputs += ["__is_current", "__valid_from", "__valid_to"]
             outputs = list(set(outputs))
-
+            
         outputs = self.sort_columns(outputs)
 
         outputs = [f"`{o}`" for o in outputs]
