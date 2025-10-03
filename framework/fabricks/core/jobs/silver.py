@@ -284,28 +284,29 @@ class Silver(BaseJob):
             "order_duplicate_by": order_duplicate_by,
         }
 
+        if self.mode == "memory":
+            context["mode"] = "complete"
+
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
                 context["add_key"] = True
 
-        if self.mode == "memory":
-            context["mode"] = "complete"
+        if nocdc and self.mode == "memory":
+            if "__operation" not in df.columns:
+                context["add_operation"] = "upsert"
+
         if self.mode == "latest":
             context["slice"] = "latest"
+        if not self.stream and self.mode == "update":
+            context["slice"] = "update"
 
         if self.change_data_capture == "scd2":
             context["correct_valid_from"] = True
 
-        if nocdc:
-            if "__operation" in df.columns:
-                context["except"] = ["__operation"]
-        if nocdc and self.mode == "memory":
-            if "__operation" not in df.columns:
-                context["add_operation"] = "upsert"
-                context["except"] = ["__operation"]
-
-        if not self.stream and self.mode == "update":
-            context["slice"] = "update"
+        if "__operation" in df.columns:
+            context["exclude"] = ["__operation"]
+        if nocdc: # operation is passed from the bronze layer
+            context["exclude"] = ["__operation"]
 
         return context
 

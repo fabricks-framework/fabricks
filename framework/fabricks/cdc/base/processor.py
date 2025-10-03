@@ -89,7 +89,7 @@ class Processor(Generator):
             if mode == "update" and has_timestamp and has_rows:
                 slice = "update"
 
-        # override slice if update and table is empty
+        # override slice to full load if update and table is empty
         if slice == "update" and not has_rows:
             slice = None
 
@@ -110,6 +110,7 @@ class Processor(Generator):
             deduplicate_hash = True
 
         overwrite = []
+        exclude = kwargs.get("exclude", [])
 
         # override operation if provided and found in df
         if add_operation and "__operation" in inputs:
@@ -134,27 +135,36 @@ class Processor(Generator):
         advanced_ctes = rectify or deduplicate or deduplicate_key or deduplicate_hash
 
         if self.slowly_changing_dimension or advanced_ctes:
-            # add operation if not provided and not found in df
+            # add operation if not provided and not found in df but exclude from ouput
             if not add_operation and "__operation" not in inputs:
                 add_operation = "upsert"
+                exclude.append("__operation")
 
-            # add timestamp if not provided and not found in df
+            # add timestamp if not provided and not found in df but exclude from ouput
             if not add_timestamp and "__timestamp" not in inputs:
                 add_timestamp = True
+                exclude.append("__timestamp")
 
-            # add key if not provided and not found in df
+            # add key if not provided and not found in df but exclude from ouput
             if not add_key and "__key" not in inputs:
                 add_key = True
+                exclude.append("__key")
 
+            # add hash if not provided and not found in df but exclude from ouput
             if not add_hash and "__hash" not in inputs:
                 add_hash = True
+                exclude.append("__hash")
 
         elif mode == "update":
+            # add key if not provided and not found in df but exclude from ouput
             if not add_key and "__key" not in inputs:
                 add_key = True
+                exclude.append("__key")
 
+            # add hash if not provided and not found in df but exclude from ouput
             if not add_hash and "__hash" not in inputs:
                 add_hash = True
+                exclude.append("__hash")
 
         parent_slice = None
         if slice:
@@ -214,10 +224,12 @@ class Processor(Generator):
         if add_hash:
             hashes = [f"`{f}` :: string" for f in fields]
             if "__operation" in inputs or add_operation:
-                hashes.append("cast(`__operation` <=> 'delete' as string)")
+                hashes.append("cast(`__operation` <=> 'delete' as string)") # reload and upsert should have the same hash, not a delete
 
         outputs = [f for f in fields]
 
+        if has_operation:
+            outputs.append("__operation")
         if has_metadata:
             outputs.append("__metadata")
         if has_source:
@@ -240,6 +252,7 @@ class Processor(Generator):
             outputs += ["__is_current", "__valid_from", "__valid_to"]
             outputs = list(set(outputs))
 
+        outputs = [o for o in outputs if o not in exclude]
         outputs = self.sort_columns(outputs)
 
         outputs = [f"`{o}`" for o in outputs]
