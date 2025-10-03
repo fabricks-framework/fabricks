@@ -91,13 +91,23 @@ class Generator(Configurator):
 
         self.table.optimize(columns=columns)
 
-    def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[DataFrame]:
+    def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
+        from pyspark.sql.types import StringType, StructField, StructType
+
+        schema = StructType(
+            [
+                StructField("column", StringType(), False),
+                StructField("data_type", StringType(), True),
+                StructField("new_column", StringType(), True),
+                StructField("new_data_type", StringType(), True),
+                StructField("status", StringType(), True),
+            ]
+        )
+
         if self.is_view:
-            return None
+            return self.spark.createDataFrame([], schema=schema)
 
         else:
-            from pyspark.sql.types import StringType, StructField, StructType
-
             kwargs["mode"] = "complete"
             if "slice" in kwargs:
                 del kwargs["slice"]
@@ -106,20 +116,7 @@ class Generator(Configurator):
             df = self.reorder_dataframe(df)
 
             diffs = self.table.get_schema_differences(df)
-            df_diff = self.spark.createDataFrame(
-                [cast(Any, d.model_dump()) for d in diffs],
-                schema=StructType(
-                    [
-                        StructField("column", StringType(), False),
-                        StructField("data_type", StringType(), True),
-                        StructField("new_column", StringType(), True),
-                        StructField("new_data_type", StringType(), True),
-                        StructField("status", StringType(), True),
-                    ]
-                ),
-            )
-
-            return df_diff
+            return self.spark.createDataFrame([cast(Any, d.model_dump()) for d in diffs], schema=schema)
 
     def get_schema_differences(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[Sequence[SchemaDiff]]:
         if self.is_view:
