@@ -188,12 +188,19 @@ class Generator(Configurator):
             elif step_powerbi is not None:
                 powerbi = step_powerbi
 
-            if powerbi:
+            maximum_compatibility = self.options.table.get("maximum_compatibility", False)
+
+            if maximum_compatibility:
+                default_properties = {
+                    "delta.minReaderVersion": "1",
+                    "delta.minWriterVersion": "7",
+                    "delta.columnMapping.mode": "none",
+                }
+            elif powerbi:
                 default_properties = {
                     "delta.columnMapping.mode": "name",
                     "delta.minReaderVersion": "2",
                     "delta.minWriterVersion": "5",
-                    "fabricks.last_version": "0",
                 }
             else:
                 default_properties = {
@@ -203,8 +210,9 @@ class Generator(Configurator):
                     "delta.minReaderVersion": "2",
                     "delta.minWriterVersion": "5",
                     "delta.feature.timestampNtz": "supported",
-                    "fabricks.last_version": "0",
                 }
+
+            default_properties["fabricks.last_version"] = "0"
 
             if "__identity" in df.columns:
                 identity = False

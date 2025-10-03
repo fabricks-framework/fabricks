@@ -44,6 +44,7 @@ class TableOptions(TypedDict):
     zorder_by: Optional[List[str]]
     cluster_by: Optional[List[str]]
     powerbi: Optional[bool]
+    maximum_compatibility: Optional[bool]
     bloomfilter_by: Optional[List[str]]
     constraints: Optional[dict[str, str]]
     properties: Optional[dict[str, str]]
