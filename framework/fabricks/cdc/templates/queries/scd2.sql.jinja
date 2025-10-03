@@ -39,7 +39,8 @@ __scd2 as (
         ),
     {% endif %}
     __final as (
-        select {% for output in outputs %} {{ output }}, {% endfor %}
+        select
+            {% for output in outputs %} {{ output }}, {% endfor %}
         {% if correct_valid_from %} from __correct_valid_from
         {% else %} from __complete
         {% endif %}
@@ -90,7 +91,10 @@ __scd2 as (
         ),
     {% endif %}
     __final as (
-        select {% for output in outputs %} {{ output }}, {% endfor %}
+        select 
+            __merge_key,
+            __merge_condition,
+            {% for output in outputs %} {{ output }}, {% endfor %}
         {% if correct_valid_from %} from __correct_valid_from
         {% else %} from __merge_condition
         {% endif %}
