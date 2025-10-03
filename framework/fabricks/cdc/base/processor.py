@@ -131,7 +131,9 @@ class Processor(Generator):
         if add_metadata and "__metadata" in inputs:
             overwrite.append("__metadata")
 
-        if self.slowly_changing_dimension:
+        advanced_ctes = rectify or deduplicate or deduplicate_key or deduplicate_hash
+
+        if self.slowly_changing_dimension or advanced_ctes:
             # add operation if not provided and not found in df
             if not add_operation and "__operation" not in inputs:
                 add_operation = "upsert"
