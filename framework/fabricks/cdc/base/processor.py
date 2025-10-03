@@ -232,11 +232,14 @@ class Processor(Generator):
             outputs.append("__identity")
         if has_rescued_data:
             outputs.append("__rescued_data")
+
         if soft_delete:
             outputs += ["__is_current", "__is_deleted"]
-        elif self.change_data_capture == "scd2":
-            outputs.append("__is_current")
 
+        if self.change_data_capture == "scd2":
+            outputs += ["__is_current", "__valid_from", "__valid_to"]
+            outputs = list(set(outputs))
+            
         outputs = self.sort_columns(outputs)
 
         outputs = [f"`{o}`" for o in outputs]
