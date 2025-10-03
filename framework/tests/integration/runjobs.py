@@ -22,6 +22,7 @@ DEFAULT_LOGGER.setLevel(logging.DEBUG)
 dbutils.widgets.dropdown("i", "1", [str(i) for i in list(range(0, 13))])
 dbutils.widgets.text("jobs", "---")
 dbutils.widgets.dropdown("drop", "True", ["True", "False"])
+dbutils.widgets.dropdown("move_files", "True", ["True", "False"])
 
 # COMMAND ----------
 
@@ -41,11 +42,13 @@ jobs = [job.strip() for job in jobs.split(",")]
 
 drop = dbutils.widgets.get("drop")
 drop = drop.lower() == "true"
+move_files = dbutils.widgets.get("move_files")
+move_files = move_files.lower() == "true"
 
 # COMMAND ----------
 
 
-def move_files(iter: int):
+def _move_files(iter: int):
     if iter == 1:
         paths.landing.rm()
 
@@ -66,7 +69,8 @@ def move_files(iter: int):
 
 
 def do(iter: int):
-    move_files(iter)
+    if move_files:
+        _move_files(iter)
 
     for job in jobs:
         j = get_job(job=job)
@@ -88,3 +92,5 @@ for iter in range(1, i + 1):
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
 
 # COMMAND ----------
+
+
