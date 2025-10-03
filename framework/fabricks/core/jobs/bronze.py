@@ -388,6 +388,6 @@ class Bronze(BaseJob):
         else:
             super().vacuum()
 
-    def overwrite(self):
+    def overwrite(self, schedule: Optional[str] = None):
         self.truncate()
-        self.run()
+        self.run(schedule=schedule)

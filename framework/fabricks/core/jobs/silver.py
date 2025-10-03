@@ -233,9 +233,9 @@ class Silver(BaseJob):
         except Py4JJavaError:
             DEFAULT_LOGGER.exception("could not create or replace view", extra={"job": self})
 
-    def overwrite(self):
+    def overwrite(self, schedule: Optional[str] = None):
         self.truncate()
-        self.run()
+        self.run(schedule=schedule)
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"job": self})

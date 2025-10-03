@@ -231,7 +231,7 @@ class Processor(Invoker):
 
             else:
                 DEFAULT_LOGGER.warning("retry to run", extra={"job": self})
-                self.run(retry=False, schedule_id=schedule_id)
+                self.run(retry=False, schedule_id=schedule_id, schedule=schedule)
 
     @abstractmethod
     def overwrite(self):
