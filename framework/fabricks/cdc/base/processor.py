@@ -226,10 +226,6 @@ class Processor(Generator):
                 hashes.append("__operation")
 
         intermediates = [f for f in fields]
-        intermediates += ["__key", "__hash"]  # needed for deduplication and/or rectification
-        if advanced_ctes:
-            intermediates += ["__operation", "__timestamp"]
-
         outputs = [f for f in fields]
 
         if has_operation:
@@ -259,6 +255,10 @@ class Processor(Generator):
 
         if self.change_data_capture == "scd2":
             outputs += ["__is_current", "__valid_from", "__valid_to"]
+
+        if advanced_ctes:
+            intermediates += ["__operation", "__timestamp"]
+        intermediates += ["__key", "__hash"]  # needed for deduplication and/or rectification (might need __operation or __source)
 
         outputs = [o for o in outputs if o not in exclude]
         outputs = self.sort_columns(outputs)
