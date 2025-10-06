@@ -35,8 +35,8 @@ class Processor(Generator):
 
         inputs = self.get_columns(src, backtick=False, sort=False)
         fields = [c for c in inputs if not c.startswith("__")]
-
         keys = kwargs.get("keys", None)
+
         mode = kwargs.get("mode", "complete")
         if mode == "update":
             tgt = str(self.table)
@@ -44,6 +44,9 @@ class Processor(Generator):
             tgt = str(self.table)
         else:
             tgt = None
+
+        overwrite = []
+        exclude = kwargs.get("exclude", [])
 
         order_duplicate_by = kwargs.get("order_duplicate_by", None)
         if order_duplicate_by:
@@ -85,32 +88,39 @@ class Processor(Generator):
         deduplicate_hash = kwargs.get("deduplicate_hash", None)
         correct_valid_from = kwargs.get("correct_valid_from", None)
 
-        if slice is None:
-            if mode == "update" and has_timestamp and has_rows:
-                slice = "update"
-
-        # override slice to full load if update and table is empty
-        if slice == "update" and not has_rows:
-            slice = None
-
+        # always deduplicate if not provided for slowly changing dimensions
         if self.slowly_changing_dimension:
             if deduplicate is None:
                 deduplicate = True
-            if rectify is None:
-                rectify = True
 
+        # order duplicates by implies key deduplication
         if order_duplicate_by:
             deduplicate_key = True
-
-        if self.slowly_changing_dimension and mode == "update":
-            correct_valid_from = correct_valid_from and self.table.rows == 0
 
         if deduplicate:
             deduplicate_key = True
             deduplicate_hash = True
 
-        overwrite = []
-        exclude = kwargs.get("exclude", [])
+        # if any deduplication is requested, deduplicate all
+        deduplicate = deduplicate or deduplicate_key or deduplicate_hash
+
+        # always rectify if not provided
+        if self.slowly_changing_dimension:
+            if rectify is None:
+                rectify = True
+
+        # only correct valid_from on first load
+        if self.slowly_changing_dimension and mode == "update":
+            correct_valid_from = correct_valid_from and self.table.rows == 0
+
+        # override slice to update for incremental loads if timestamp and rows are present
+        if slice is None:
+            if mode == "update" and has_timestamp and has_rows:
+                slice = "update"
+
+        # override slice to none for full load if update and table is empty
+        if slice == "update" and not has_rows:
+            slice = None
 
         # override operation if provided and found in df
         if add_operation and "__operation" in inputs:
@@ -132,8 +142,8 @@ class Processor(Generator):
         if add_metadata and "__metadata" in inputs:
             overwrite.append("__metadata")
 
-        advanced_ctes = (rectify or deduplicate or deduplicate_key or deduplicate_hash) and self.slowly_changing_dimension
-        advanced_deduplication = advanced_ctes and (deduplicate or deduplicate_key or deduplicate_hash)
+        advanced_ctes = (rectify or deduplicate) and self.slowly_changing_dimension
+        advanced_deduplication = advanced_ctes and deduplicate
 
         if advanced_ctes:
             # add operation if not provided and not found in df but exclude from output
@@ -165,7 +175,7 @@ class Processor(Generator):
             # add hash if not provided and not found in df but exclude from output
             if not add_hash and "__hash" not in inputs:
                 add_hash = True
-                exclude.append("__hash")            
+                exclude.append("__hash")
 
         parent_slice = None
         if slice:
@@ -224,9 +234,9 @@ class Processor(Generator):
             hashes = [f for f in fields]
             if "__operation" in inputs or add_operation:
                 hashes.append("__operation")
-        
+
         intermediates = [f for f in fields]
-        intermediates += ["__key", "__hash"] # always needed
+        intermediates += ["__key", "__hash"]  # always needed
         if advanced_ctes:
             intermediates += ["__operation", "__timestamp"]
 
@@ -278,7 +288,7 @@ class Processor(Generator):
             "hashes": hashes,
             # Options
             "delete_missing": delete_missing,
-            "advanced_deduplication", advanced_deduplication,
+            "advanced_deduplication": advanced_deduplication,
             # cte's
             "slice": slice,
             "rectify": rectify,
