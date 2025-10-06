@@ -10,10 +10,10 @@
 
 🎯 SOURCE & TARTGET
 {%- if format %}
-☐ format: {{ format| truncate(25) }}
+☐ format: {{ format }}
 {%- endif %}
 {%- if src %}
-☐ src: {{ src }}
+☐ src: {{ src | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if tgt %}
 ☐ tgt: {{ tgt }}
@@ -133,13 +133,13 @@
 
 🔄 EXTRA COLUMN OPERATIONs
 {%- if all_except %}
-☐ all_except: {{ all_except }}
+☐ all_except: {{ all_except | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if all_overwrite %}
-☐ all_overwrite: {{ all_overwrite }}
+☐ all_overwrite: {{ all_overwrite | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if overwrite %}
-☐ overwrite: {{ overwrite }}
+☐ overwrite: {{ overwrite | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 
 👨‍👩‍👧 PARENTS
@@ -164,22 +164,22 @@
 
 📦 LAYOUT
 {%- if columns %}
-☐ columns: {{ columns| truncate(25) }}
+☐ columns: {{ columns | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if inputs %}
-☐ inputs: {{ inputs| truncate(25) }}
+☐ inputs: {{ inputs | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if intermediates %}
-☐ intermediates: {{ intermediates| truncate(25) }}
+☐ intermediates: {{ intermediates | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if outputs %}
-☐ outputs: {{ outputs| truncate(25) }}
+☐ outputs: {{ outputs | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if keys %}
-☐ keys: {{ keys| truncate(25) }}
+☐ keys: {{ keys | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if hashes %}
-☐ hashes: {{ hashes| truncate(25) }}
+☐ hashes: {{ hashes | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 
 */
