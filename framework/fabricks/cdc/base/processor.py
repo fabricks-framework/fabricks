@@ -135,33 +135,33 @@ class Processor(Generator):
         advanced_ctes = rectify or deduplicate or deduplicate_key or deduplicate_hash
 
         if self.slowly_changing_dimension or advanced_ctes:
-            # add operation if not provided and not found in df but exclude from ouput
+            # add operation if not provided and not found in df but exclude from output
             if not add_operation and "__operation" not in inputs:
                 add_operation = "upsert"
                 exclude.append("__operation")
 
-            # add timestamp if not provided and not found in df but exclude from ouput
+            # add timestamp if not provided and not found in df but exclude from output
             if not add_timestamp and "__timestamp" not in inputs:
                 add_timestamp = True
                 exclude.append("__timestamp")
 
-            # add key if not provided and not found in df but exclude from ouput
+            # add key if not provided and not found in df but exclude from output
             if not add_key and "__key" not in inputs:
                 add_key = True
                 exclude.append("__key")
 
-            # add hash if not provided and not found in df but exclude from ouput
+            # add hash if not provided and not found in df but exclude from output
             if not add_hash and "__hash" not in inputs:
                 add_hash = True
                 exclude.append("__hash")
 
         elif mode == "update":
-            # add key if not provided and not found in df but exclude from ouput
+            # add key if not provided and not found in df but exclude from output
             if not add_key and "__key" not in inputs:
                 add_key = True
                 exclude.append("__key")
 
-            # add hash if not provided and not found in df but exclude from ouput
+            # add hash if not provided and not found in df but exclude from output
             if not add_hash and "__hash" not in inputs:
                 add_hash = True
                 exclude.append("__hash")
@@ -224,42 +224,45 @@ class Processor(Generator):
         if add_hash:
             hashes = [f"`{f}` :: string" for f in fields]
             if "__operation" in inputs or add_operation:
-                hashes.append(
-                    "cast(`__operation` <=> 'delete' as string)"
-                )  # reload and upsert should have the same hash, not a delete
+                hashes.append("__operation")
 
         outputs = [f for f in fields]
+        intermediates = [f for f in fields]
+
+        if advanced_ctes:
+            intermediates += ["__key", "__hash", "__operation", "__timestamp"]
 
         if has_operation:
             outputs.append("__operation")
-        if has_metadata:
-            outputs.append("__metadata")
-        if has_source:
-            outputs.append("__source")
         if has_timestamp:
             outputs.append("__timestamp")
         if has_key:
             outputs.append("__key")
         if has_hash:
             outputs.append("__hash")
+
+        if has_metadata:
+            outputs.append("__metadata")
+            intermediates.append("__metadata")
+        if has_source:
+            outputs.append("__source")
+            intermediates.append("__source")
         if has_identity:
             outputs.append("__identity")
+            intermediates.append("__identity")
         if has_rescued_data:
             outputs.append("__rescued_data")
+            intermediates.append("__rescued_data")
 
         if soft_delete:
             outputs += ["__is_current", "__is_deleted"]
 
         if self.change_data_capture == "scd2":
             outputs += ["__is_current", "__valid_from", "__valid_to"]
-            outputs = list(set(outputs))
 
+        outputs = list(set(outputs))
         outputs = [o for o in outputs if o not in exclude]
         outputs = self.sort_columns(outputs)
-
-        outputs = [f"`{o}`" for o in outputs]
-        inputs = [f"`{i}`" for i in inputs]
-        fields = [f"`{f}`" for f in fields]
 
         return {
             "src": src,
@@ -269,6 +272,7 @@ class Processor(Generator):
             "mode": mode,
             # fields
             "inputs": inputs,
+            "intermediates": intermediates,
             "outputs": outputs,
             "fields": fields,
             "keys": keys,

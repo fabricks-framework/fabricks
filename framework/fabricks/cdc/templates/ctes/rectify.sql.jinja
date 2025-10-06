@@ -1,34 +1,16 @@
-{% import 'macros/hash.sql.jinja' as h -%}
-
 {% if mode == "update" %}
     __rectified_base as (
         select
-            {% for field in fields %} {{ field }}, {% endfor %}
-            __operation,
-            __operation as __original_operation,
-            __timestamp,
+            {% for i in intermediates %} `{{ i }}`, {% endfor %}
             __timestamp as __original_timestamp,
-            __hash,
-            __key,
-            {% if has_identity %} __identity, {% endif %}
-            {% if has_source %} __source, {% endif %}
-            {% if has_metadata %} __metadata, {% endif %}
-            {% if has_rescued_data %} __rescued_data, {% endif %}
+            __operation as __original_operation,
         from {{ parent_rectify }}
         {% if has_rows %}
             union all
             select
-                {% for field in fields %} {{ field }}, {% endfor %}
-                __operation,
-                __operation as __original_operation,
-                __timestamp,
+                {% for i in intermediates %} `{{ i }}`, {% endfor %}
                 __timestamp as __original_timestamp,
-                __hash,
-                __key,
-                {% if has_identity %} __identity, {% endif %}
-                {% if has_source %} __source, {% endif %}
-                {% if has_metadata %} __metadata, {% endif %}
-                {% if has_rescued_data %} __rescued_data, {% endif %}
+                __operation as __original_operation,
             from __current
         {% endif %}
     ),

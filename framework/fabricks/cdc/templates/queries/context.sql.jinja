@@ -10,7 +10,7 @@
 {%- if format %}
 
 🎯 SOURCE & TARTGET
-☐ format: {{ format }}
+☐ format: {{ format| truncate(25) }}
 {%- endif %}
 {%- if src %}
 ☐ src: {{ src }}
@@ -161,19 +161,22 @@
 
 📦 LAYOUT
 {%- if columns %}
-☐ columns: {{ columns }}
+☐ columns: {{ columns| truncate(25) }}
 {%- endif %}
 {%- if inputs %}
-☐ inputs: {{ inputs }}
+☐ inputs: {{ inputs| truncate(25) }}
+{%- endif %}
+{%- if intermediates %}
+☐ intermediates: {{ intermediates| truncate(25) }}
 {%- endif %}
 {%- if outputs %}
-☐ outputs: {{ outputs }}
+☐ outputs: {{ outputs| truncate(25) }}
 {%- endif %}
 {%- if keys %}
-☐ keys: {{ keys }}
+☐ keys: {{ keys| truncate(25) }}
 {%- endif %}
 {%- if hashes %}
-☐ hashes: {{ hashes }}
+☐ hashes: {{ hashes| truncate(25) }}
 {%- endif %}
 
 */
