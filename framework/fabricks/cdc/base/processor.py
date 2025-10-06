@@ -218,11 +218,9 @@ class Processor(Generator):
             if has_source:
                 keys.append("__source")
 
-            keys = [f"`{k}` :: string" for k in keys]
-
         hashes = None
         if add_hash:
-            hashes = [f"`{f}` :: string" for f in fields]
+            hashes = [f for f in fields]
             if "__operation" in inputs or add_operation:
                 hashes.append("__operation")
 
