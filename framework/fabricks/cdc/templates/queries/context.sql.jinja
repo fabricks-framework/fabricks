@@ -7,9 +7,9 @@
 {%- if mode %}
 ☐ mode: {{ mode }}
 {%- endif %}
-{%- if format %}
 
 🎯 SOURCE & TARTGET
+{%- if format %}
 ☐ format: {{ format| truncate(25) }}
 {%- endif %}
 {%- if src %}
@@ -21,33 +21,36 @@
 
 📊 CTE's
 {%- if slice %}
-🗹 slice
+🗹 slice?
+{%- endif %}
+{%- if advanced_deduplication %}
+🗹 advanced deduplication?
 {%- endif %}
 {%- if deduplicate %}
-🗹 deduplicate
+🗹 deduplicate?
 {%- endif %}
 {%- if deduplicate_key %}
-🗹 deduplicate_key
+🗹 deduplicate key?
 {%- endif %}
 {%- if deduplicate_hash %}
-🗹 deduplicate_hash
+🗹 deduplicate hash?
 {%- endif %}
 {%- if order_duplicate_by %}
-🗹 order_duplicate_by
+🗹 order duplicate by?
 {%- endif %}
 {%- if rectify %}
-🗹 rectify
+🗹 rectify?
 {%- endif %}
 {%- if correct_valid_from %}
-🗹 correct_valid_from
+🗹 correct valid from?
 {%- endif %}
 
 🔪 FILTERING
 {%- if filter_where %}
-☐ filter_where: {{ filter_where }}
+☐ filter where: {{ filter_where }}
 {%- endif %}
 {%- if update_where %}
-☐ update_where: {{ update_where }}
+☐ update where: {{ update_where }}
 {%- endif %}
 {%- if slices %}
 ☐ slices: {{ slices }}
@@ -58,65 +61,65 @@
 
 🗑️ DELETES
 {%- if delete_missing %}
-🗹 delete_missing
+🗹 delete missing?
 {%- endif %}
 {%- if soft_delete %}
-🗹 soft_delete
+🗹 soft delete?
 {%- endif %}
 
 ✅ DATA VALIDATION
 {%- if has_data %}
-🗹 has_data
+🗹 has data?
 {%- else %}
-☒ has_data
+☒ has_data?
 {%- endif %}
 {%- if has_rows %}
-🗹 has_rows
+🗹 has rows?
 {%- else %}
-☒ has_rows
+☒ has rows?
 {%- endif %}
 {%- if has_source %}
-🗹 has_source
+🗹 has source?
 {%- endif %}
 
 🏷️ HAS FIELDS
 {%- if has_metadata %}
-🗹 has_metadata
+🗹 has metadata?
 {%- endif %}
 {%- if has_timestamp %}
-🗹 has_timestamp
+🗹 has timestamp?
 {%- endif %}
 {%- if has_identity %}
-🗹 has_identity
+🗹 has identity?
 {%- endif %}
 {%- if has_key %}
-🗹 has_key
+🗹 has key?
 {%- endif %}
 {%- if has_hash %}
-🗹 has_hash
+🗹 has hash?
 {%- endif %}
 {%- if has_operation %}
-🗹 has_operation
+🗹 has operation?
 {%- endif %}
 {%- if has_order_by %}
-🗹 has_order_by
+🗹 has order by?
 {%- endif %}
 {%- if has_rescued_data %}
-🗹 has_rescued_data
+🗹 has rescued data?
 {%- endif %}
 
 ➕ ADD COLUMNS
 {%- if add_metadata %}
-🗹 add_metadata
+🗹 add metadata?
 {%- endif %}
 {%- if add_timestamp %}
-🗹 add_timestamp
+🗹 add timestamp?
 {%- endif %}
 {%- if add_key %}
-🗹 add_key
+🗹 add key?
 {%- endif %}
 {%- if add_hash %}
-🗹 add_hash
+🗹 add hash?
 {%- endif %}
 {%- if add_operation %}
 ☐ add_operation: {{ add_operation }}

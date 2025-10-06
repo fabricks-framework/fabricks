@@ -132,9 +132,10 @@ class Processor(Generator):
         if add_metadata and "__metadata" in inputs:
             overwrite.append("__metadata")
 
-        advanced_ctes = rectify or deduplicate or deduplicate_key or deduplicate_hash
+        advanced_ctes = (rectify or deduplicate or deduplicate_key or deduplicate_hash) and self.slowly_changing_dimension
+        advanced_deduplication = advanced_ctes and (deduplicate or deduplicate_key or deduplicate_hash)
 
-        if self.slowly_changing_dimension or advanced_ctes:
+        if advanced_ctes:
             # add operation if not provided and not found in df but exclude from output
             if not add_operation and "__operation" not in inputs:
                 add_operation = "upsert"
@@ -164,7 +165,7 @@ class Processor(Generator):
             # add hash if not provided and not found in df but exclude from output
             if not add_hash and "__hash" not in inputs:
                 add_hash = True
-                exclude.append("__hash")
+                exclude.append("__hash")            
 
         parent_slice = None
         if slice:
@@ -223,12 +224,13 @@ class Processor(Generator):
             hashes = [f for f in fields]
             if "__operation" in inputs or add_operation:
                 hashes.append("__operation")
+        
+        intermediates = [f for f in fields]
+        intermediates += ["__key", "__hash"] # always needed
+        if advanced_ctes:
+            intermediates += ["__operation", "__timestamp"]
 
         outputs = [f for f in fields]
-        intermediates = [f for f in fields]
-
-        if advanced_ctes:
-            intermediates += ["__key", "__hash", "__operation", "__timestamp"]
 
         if has_operation:
             outputs.append("__operation")
@@ -258,7 +260,6 @@ class Processor(Generator):
         if self.change_data_capture == "scd2":
             outputs += ["__is_current", "__valid_from", "__valid_to"]
 
-        outputs = list(set(outputs))
         outputs = [o for o in outputs if o not in exclude]
         outputs = self.sort_columns(outputs)
 
@@ -275,12 +276,13 @@ class Processor(Generator):
             "fields": fields,
             "keys": keys,
             "hashes": hashes,
-            # options
+            # Options
             "delete_missing": delete_missing,
+            "advanced_deduplication", advanced_deduplication,
+            # cte's
             "slice": slice,
             "rectify": rectify,
             "deduplicate": deduplicate,
-            # extra
             "deduplicate_key": deduplicate_key,
             "deduplicate_hash": deduplicate_hash,
             # has

@@ -1,3 +1,4 @@
+{%if advanced_deduplication %}
 __deduplicate_hash as (
     select
         *,
@@ -19,3 +20,14 @@ __deduplicated_hash as (
             __hash <=> __deduplicate_hash_previous__hash and __operation <=> __deduplicate_hash_previous_operation
         )
 ),
+{% else %}
+__deduplicated_hash as (
+    select *
+    from {{ parent_deduplicate_hash }}
+    where
+        true
+    qualify lag(__hash) over (
+            partition by {% if has_source %} __source, {% endif %} __key order by null
+        ) <> __hash
+),
+{% endif %}

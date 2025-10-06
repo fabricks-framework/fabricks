@@ -3,7 +3,7 @@
         select
             s.__key as __merge_key,
             'upsert' as __merge_condition,
-            {% for output in outputs %} s.{{ output }}, {% endfor %}
+            {% for output in outputs %} s.`{{ output }}`, {% endfor %}
         from {{ parent_cdc }} s
         left anti join
             __current c on s.__key == c.__key and s.__hash == c.__hash
@@ -13,7 +13,7 @@
             select
                 c.__key as __merge_key,
                 'delete' as __merge_condition,
-                {% for output in outputs %} c.{{ output }}, {% endfor %}
+                {% for output in outputs %} c.`{{ output }}`, {% endfor %}
             from __current c
             left anti join
                 {{ parent_cdc }} s on s.__key == c.__key and s.__hash == c.__hash
@@ -24,7 +24,7 @@
     __merge_condition as (select s.__key as __merge_key, 'upsert' as __merge_condition, s.* from {{ parent_cdc }} s),
 {% endif %}
 __final as (
-    select __merge_key, __merge_condition, {% for output in outputs %} {{ output }}, {% endfor %}
+    select __merge_key, __merge_condition, {% for output in outputs %} `{{ output }}`, {% endfor %}
     from __merge_condition
     {% if filter %}
         where

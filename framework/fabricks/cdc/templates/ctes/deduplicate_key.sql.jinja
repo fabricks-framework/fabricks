@@ -1,3 +1,4 @@
+{%if advanced_deduplication %}
 __deduplicate_key as (
     select
         *,
@@ -12,3 +13,16 @@ __deduplicate_key as (
     where true
 ),
 __deduplicated_key as (select *, from __deduplicate_key where __deduplicate_key_rn == 1),
+{% else %}
+__deduplicated_key as (
+    select *
+    from {{ parent_deduplicate_key }}
+    where
+        true
+    qualify row_number() over (
+            partition by {% if has_source %} __source, {% endif %} __key
+            order by
+                {% if has_order_by %} {% for o in order_duplicate_by %} {{ o }}, {% endfor %} {% else %} null {% endif %}
+        )
+),
+{% endif %}

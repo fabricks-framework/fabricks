@@ -41,3 +41,11 @@
     options:
       change_data_capture: scd1
       mode: update
+- job:
+    step: gold
+    topic: scd1
+    item: special_char
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
