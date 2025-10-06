@@ -147,7 +147,7 @@ class Processor(Generator):
 
         # add key and hash if not added nor found in df but exclude from output
         # needed for merge
-        if mode == "update" or advanced_ctes:
+        if mode == "update" or advanced_ctes or deduplicate:
             if not add_key and "__key" not in inputs:
                 add_key = True
                 exclude.append("__key")
