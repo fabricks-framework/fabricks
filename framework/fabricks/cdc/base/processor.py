@@ -88,7 +88,7 @@ class Processor(Generator):
         deduplicate_hash = kwargs.get("deduplicate_hash", None)
         correct_valid_from = kwargs.get("correct_valid_from", None)
 
-        # always deduplicate if not provided for slowly changing dimensions
+        # always deduplicate if not set for slowly changing dimensions
         if self.slowly_changing_dimension:
             if deduplicate is None:
                 deduplicate = True
@@ -104,7 +104,7 @@ class Processor(Generator):
         # if any deduplication is requested, deduplicate all
         deduplicate = deduplicate or deduplicate_key or deduplicate_hash
 
-        # always rectify if not provided
+        # always rectify if not set
         if self.slowly_changing_dimension:
             if rectify is None:
                 rectify = True
@@ -113,69 +113,59 @@ class Processor(Generator):
         if self.slowly_changing_dimension and mode == "update":
             correct_valid_from = correct_valid_from and self.table.rows == 0
 
-        # override slice to update for incremental loads if timestamp and rows are present
+        # override slice for incremental load if timestamp and rows are present
         if slice is None:
             if mode == "update" and has_timestamp and has_rows:
                 slice = "update"
 
-        # override slice to none for full load if update and table is empty
+        # override slice for full load if update and table is empty
         if slice == "update" and not has_rows:
             slice = None
 
-        # override operation if provided and found in df
+        # override operation if added and found in df
         if add_operation and "__operation" in inputs:
             overwrite.append("__operation")
 
-        # override timestamp if provided and found in df
+        # override timestamp if added and found in df
         if add_timestamp and "__timestamp" in inputs:
             overwrite.append("__timestamp")
 
-        # override key if provided and found in df (key needed for merge)
+        # override key if added and found in df (key needed for merge)
         if add_key and "__key" in inputs:
             overwrite.append("__key")
 
-        # override hash if provided and found in df (hash needed to identify fake updates)
+        # override hash if added and found in df (hash needed to identify fake updates)
         if add_hash and "__hash" in inputs:
             overwrite.append("__hash")
 
-        # override metadata if provided and found in df
+        # override metadata if added and found in df
         if add_metadata and "__metadata" in inputs:
             overwrite.append("__metadata")
 
-        advanced_ctes = (rectify or deduplicate) and self.slowly_changing_dimension
+        advanced_ctes = ((rectify or deduplicate) and self.slowly_changing_dimension) or self.slowly_changing_dimension
         advanced_deduplication = advanced_ctes and deduplicate
 
+        # add key and hash if not added nor found in df but exclude from output 
+        # needed for merge
+        if mode == "update" or advanced_ctes:
+            if not add_key and "__key" not in inputs:
+                add_key = True
+                exclude.append("__key")
+
+            if not add_hash and "__hash" not in inputs:
+                add_hash = True
+                exclude.append("__hash")
+        
+        # add operation and timestamp if not added nor found in df but exclude from output 
+        # needed for deduplication and/or rectification
         if advanced_ctes:
-            # add operation if not provided and not found in df but exclude from output
             if not add_operation and "__operation" not in inputs:
                 add_operation = "upsert"
                 exclude.append("__operation")
 
-            # add timestamp if not provided and not found in df but exclude from output
             if not add_timestamp and "__timestamp" not in inputs:
                 add_timestamp = True
                 exclude.append("__timestamp")
-
-            # add key if not provided and not found in df but exclude from output
-            if not add_key and "__key" not in inputs:
-                add_key = True
-                exclude.append("__key")
-
-            # add hash if not provided and not found in df but exclude from output
-            if not add_hash and "__hash" not in inputs:
-                add_hash = True
-                exclude.append("__hash")
-
-        elif mode == "update":
-            # add key if not provided and not found in df but exclude from output
-            if not add_key and "__key" not in inputs:
-                add_key = True
-                exclude.append("__key")
-
-            # add hash if not provided and not found in df but exclude from output
-            if not add_hash and "__hash" not in inputs:
-                add_hash = True
-                exclude.append("__hash")
 
         parent_slice = None
         if slice:
@@ -236,7 +226,7 @@ class Processor(Generator):
                 hashes.append("__operation")
 
         intermediates = [f for f in fields]
-        intermediates += ["__key", "__hash"]  # always needed
+        intermediates += ["__key", "__hash"]  # needed for deduplication and/or rectification
         if advanced_ctes:
             intermediates += ["__operation", "__timestamp"]
 
@@ -286,7 +276,7 @@ class Processor(Generator):
             "fields": fields,
             "keys": keys,
             "hashes": hashes,
-            # Options
+            # options
             "delete_missing": delete_missing,
             "advanced_deduplication": advanced_deduplication,
             # cte's
