@@ -145,7 +145,7 @@ class Processor(Generator):
         advanced_ctes = ((rectify or deduplicate) and self.slowly_changing_dimension) or self.slowly_changing_dimension
         advanced_deduplication = advanced_ctes and deduplicate
 
-        # add key and hash if not added nor found in df but exclude from output 
+        # add key and hash if not added nor found in df but exclude from output
         # needed for merge
         if mode == "update" or advanced_ctes:
             if not add_key and "__key" not in inputs:
@@ -155,8 +155,8 @@ class Processor(Generator):
             if not add_hash and "__hash" not in inputs:
                 add_hash = True
                 exclude.append("__hash")
-        
-        # add operation and timestamp if not added nor found in df but exclude from output 
+
+        # add operation and timestamp if not added nor found in df but exclude from output
         # needed for deduplication and/or rectification
         if advanced_ctes:
             if not add_operation and "__operation" not in inputs:
