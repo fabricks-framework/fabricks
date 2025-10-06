@@ -46,7 +46,7 @@ class Processor(Generator):
             tgt = None
 
         overwrite = []
-        exclude = kwargs.get("exclude", [])
+        exclude = kwargs.get("exclude", [])  # used by silver to exclude __operation from output if not update
 
         order_duplicate_by = kwargs.get("order_duplicate_by", None)
         if order_duplicate_by:
@@ -167,51 +167,6 @@ class Processor(Generator):
                 add_timestamp = True
                 exclude.append("__timestamp")
 
-        parent_slice = None
-        if slice:
-            parent_slice = "__base"
-
-        parent_deduplicate_key = None
-        if deduplicate_key:
-            if slice:
-                parent_deduplicate_key = "__sliced"
-            else:
-                parent_deduplicate_key = "__base"
-
-        parent_rectify = None
-        if rectify:
-            if deduplicate_key:
-                parent_rectify = "__deduplicated_key"
-            elif slice:
-                parent_rectify = "__sliced"
-            else:
-                parent_rectify = "__base"
-
-        parent_deduplicate_hash = None
-        if deduplicate_hash:
-            if rectify:
-                parent_deduplicate_hash = "__rectified"
-            elif deduplicate_key:
-                parent_deduplicate_hash = "__deduplicated_key"
-            elif slice:
-                parent_deduplicate_hash = "__sliced"
-            else:
-                parent_deduplicate_hash = "__base"
-
-        parent_cdc = None
-        if deduplicate_hash:
-            parent_cdc = "__deduplicated_hash"
-        elif rectify:
-            parent_cdc = "__rectified"
-        elif deduplicate_key:
-            parent_cdc = "__deduplicated_key"
-        elif slice:
-            parent_cdc = "__sliced"
-        else:
-            parent_cdc = "__base"
-
-        parent_final = "__final"
-
         if add_key:
             keys = keys if keys is not None else [f for f in fields]
             if isinstance(keys, str):
@@ -258,10 +213,56 @@ class Processor(Generator):
 
         if advanced_ctes:
             intermediates += ["__operation", "__timestamp"]
-        intermediates += ["__key", "__hash"]  # needed for deduplication and/or rectification (might need __operation or __source)
+        # needed for deduplication and/or rectification (might need __operation or __source)
+        intermediates += ["__key", "__hash"]
 
         outputs = [o for o in outputs if o not in exclude]
         outputs = self.sort_columns(outputs)
+
+        parent_slice = None
+        if slice:
+            parent_slice = "__base"
+
+        parent_deduplicate_key = None
+        if deduplicate_key:
+            if slice:
+                parent_deduplicate_key = "__sliced"
+            else:
+                parent_deduplicate_key = "__base"
+
+        parent_rectify = None
+        if rectify:
+            if deduplicate_key:
+                parent_rectify = "__deduplicated_key"
+            elif slice:
+                parent_rectify = "__sliced"
+            else:
+                parent_rectify = "__base"
+
+        parent_deduplicate_hash = None
+        if deduplicate_hash:
+            if rectify:
+                parent_deduplicate_hash = "__rectified"
+            elif deduplicate_key:
+                parent_deduplicate_hash = "__deduplicated_key"
+            elif slice:
+                parent_deduplicate_hash = "__sliced"
+            else:
+                parent_deduplicate_hash = "__base"
+
+        parent_cdc = None
+        if deduplicate_hash:
+            parent_cdc = "__deduplicated_hash"
+        elif rectify:
+            parent_cdc = "__rectified"
+        elif deduplicate_key:
+            parent_cdc = "__deduplicated_key"
+        elif slice:
+            parent_cdc = "__sliced"
+        else:
+            parent_cdc = "__base"
+
+        parent_final = "__final"
 
         return {
             "src": src,
