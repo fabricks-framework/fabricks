@@ -52,6 +52,8 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):
     order_by = "id" if "id" in df.columns else "id"
     if "__valid_from" in df.columns:
         order_by = f"concat_ws('|', {order_by}, __valid_from, __valid_to)"
+    elif "valid_from" in df.columns:
+        order_by = f"concat_ws('|', {order_by}, valid_from, valid_to)"
 
     def _transform(df_: DataFrame):
         df_ = df_.withColumn("order_by", expr(order_by)).orderBy("order_by").select(cols)
