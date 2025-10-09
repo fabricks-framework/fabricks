@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from uuid import uuid4
 
 import pandas as pd
@@ -35,11 +35,18 @@ class View(DbObject):
         return uuid
 
 
-def create_or_replace_global_temp_view(name: str, df: DataFrame, uuid: Optional[bool] = False) -> str:
+def create_or_replace_global_temp_view(
+    name: str,
+    df: DataFrame,
+    uuid: Optional[bool] = False,
+    job: Optional[Any] = None,
+) -> str:
     if uuid:
         name = f"{name}__{str(uuid4().hex)}"
 
-    job = name.split("__")[0]
+    if job is None:
+        job = name.split("__")[0]
+
     DEFAULT_LOGGER.debug(f"create global temp view {name}", extra={"job": job})
     df.createOrReplaceGlobalTempView(name)
 

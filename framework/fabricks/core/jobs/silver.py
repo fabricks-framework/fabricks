@@ -243,7 +243,7 @@ class Silver(BaseJob):
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
-        global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
+        global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
 
         not_append = not self.mode == "append"
         nocdc = self.change_data_capture == "nocdc"
@@ -319,7 +319,7 @@ class Silver(BaseJob):
         name = f"{self.step}_{self.topic}_{self.item}"
         if batch is not None:
             name = f"{name}__{batch}"
-        global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
+        global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
 
         check_df = self.spark.sql(sql)

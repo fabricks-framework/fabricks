@@ -17,11 +17,11 @@ class Processor(Generator):
     def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
         if isinstance(src, (DataFrame, CDataFrame)):
             name = f"{self.qualified_name}__data"
-            global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False))
+            global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False), job=self)
             src = f"select * from {global_temp_view}"
-        
+
         sql = self.get_query(src, fix=True, **kwargs)
-        DEFAULT_LOGGER.debug(f"run query", extra={"job": self, "sql": sql})
+        DEFAULT_LOGGER.debug("run query", extra={"job": self, "sql": sql})
         return self.spark.sql(sql)
 
     def get_query_context(self, src: Union[DataFrame, Table, str], **kwargs) -> dict:
@@ -235,14 +235,14 @@ class Processor(Generator):
                 outputs.append("__valid_to")
             if "__is_current" not in outputs:
                 outputs.append("__is_current")
-                
+
         if advanced_ctes:
             if "__operation" not in intermediates:
                 intermediates.append("__operation")
             if "__timestamp" not in intermediates:
                 intermediates.append("__timestamp")
 
-        # needed for deduplication and/or rectification 
+        # needed for deduplication and/or rectification
         # might need __operation or __source
         if "__key" not in intermediates:
             intermediates.append("__key")
@@ -429,7 +429,7 @@ class Processor(Generator):
         df = self.reorder_dataframe(df)
 
         name = f"{self.qualified_name}__append"
-        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
+        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
 
         DEFAULT_LOGGER.debug("append", extra={"job": self})
         self.spark.sql(f"insert into table {self.table} by name select * from global_temp.{name}")
@@ -454,7 +454,7 @@ class Processor(Generator):
             self.spark.sql("set spark.sql.sources.partitionOverwriteMode = dynamic")
 
         name = f"{self.qualified_name}__overwrite"
-        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
+        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
 
         DEFAULT_LOGGER.debug("overwrite", extra={"job": self})
         self.spark.sql(f"insert overwrite table {self.table} by name select * from global_temp.{name}")

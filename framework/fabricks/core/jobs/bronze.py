@@ -314,7 +314,7 @@ class Bronze(BaseJob):
 
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__{batch}"
-        global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
+        global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
 
         check_df = self.spark.sql(sql)

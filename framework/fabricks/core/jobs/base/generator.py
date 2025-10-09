@@ -270,7 +270,7 @@ class Generator(Configurator):
 
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
-            global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 == 2"))
+            global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 == 2"), job=self)
             sql = f"select * from {global_temp_view}"
 
             self.cdc.create_table(

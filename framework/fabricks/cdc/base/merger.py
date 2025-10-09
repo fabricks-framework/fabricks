@@ -103,7 +103,7 @@ class Merger(Processor):
 
         df = self.get_data(src, **kwargs)
         global_temp_view = f"{self.qualified_name}__merge"
-        view = create_or_replace_global_temp_view(global_temp_view, df, uuid=kwargs.get("uuid", False))
+        view = create_or_replace_global_temp_view(global_temp_view, df, uuid=kwargs.get("uuid", False), job=self)
 
         merge = self.get_merge_query(view, **kwargs)
         self.spark.sql(merge, src=view)
