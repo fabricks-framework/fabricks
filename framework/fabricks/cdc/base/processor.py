@@ -86,6 +86,18 @@ class Processor(Generator):
         deduplicate_hash = kwargs.get("deduplicate_hash", None)
         correct_valid_from = kwargs.get("correct_valid_from", None)
 
+        try:
+            has_rows = self.table.rows > 0
+        except Exception:
+            has_rows = None
+
+        # only needed when comparing to current
+        # delete all records in current if there is no new data
+        if mode == "update" and delete_missing and self.change_data_capture in ["scd1", "scd2"]:
+            has_no_data = not self.has_data(src)
+        else:
+            has_no_data = None
+
         # always deduplicate if not set for slowly changing dimensions
         if self.slowly_changing_dimension:
             if deduplicate is None:
@@ -294,16 +306,6 @@ class Processor(Generator):
 
         parent_final = "__final"
 
-        try:
-            has_rows = self.table.rows > 0
-        except Exception:
-            has_rows = None
-
-        if mode == "update" and advanced_ctes:
-            has_data = self.has_data(src)
-        else:
-            has_data = None
-
         return {
             "src": src,
             "format": format,
@@ -327,7 +329,7 @@ class Processor(Generator):
             "deduplicate_key": deduplicate_key,
             "deduplicate_hash": deduplicate_hash,
             # has
-            "has_data": has_data,
+            "has_no_data": has_no_data,
             "has_rows": has_rows,
             "has_source": has_source,
             "has_metadata": has_metadata,
@@ -438,7 +440,7 @@ class Processor(Generator):
         name = f"{self.qualified_name}__append"
         create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
         append = f"insert into table {self.table} by name select * from global_temp.{name}"
-        
+
         DEFAULT_LOGGER.debug("exec append", extra={"job": self, "sql": append})
         self.spark.sql(append)
 
@@ -467,5 +469,3 @@ class Processor(Generator):
 
         DEFAULT_LOGGER.debug("excec overwrite", extra={"job": self, "sql": overwrite})
         self.spark.sql(overwrite)
-
-    def create_table(self, src: Union[DataFrame, Table, str], **kwargs)

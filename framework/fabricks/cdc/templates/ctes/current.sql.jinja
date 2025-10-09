@@ -10,7 +10,7 @@ __current as (
                 {% elif cdc == "scd2" %} __valid_from as __timestamp,
                 {% endif %}
             {% elif i == "__operation" %}
-                {% if has_data %} 'current' as __operation, {% else %} 'delete' as __operation, {% endif %}
+                {% if has_no_data %} 'delete' as __operation, {% else %} 'current' as __operation, {% endif %}
             {% elif i == "__hash" %}
                 {% if add_hash %} {{ h.add_hash(fields=hashes) }} as __hash, {% else %} __hash, {% endif %}
             {% elif i == "__key" %}
