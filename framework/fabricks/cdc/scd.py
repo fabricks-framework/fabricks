@@ -9,6 +9,7 @@ from fabricks.metastore.table import Table
 class SCD(BaseCDC):
     def delete_missing(self, src: Union[DataFrame, Table, str], **kwargs):
         kwargs["add_operation"] = "reload"
+        kwargs["delete_missing"] = True
         kwargs["mode"] = "update"
         self.merge(src, **kwargs)
 

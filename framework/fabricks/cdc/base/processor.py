@@ -36,8 +36,6 @@ class Processor(Generator):
         columns = self.get_columns(src, backtick=False)
         fields = [c for c in columns if not c.startswith("__")]
 
-        has_data = self.has_data(src)
-
         keys = kwargs.get("keys", None)
         mode = kwargs.get("mode", "complete")
 
@@ -80,6 +78,12 @@ class Processor(Generator):
         deduplicate_hash = kwargs.get("deduplicate_hash", None)
         soft_delete = kwargs.get("soft_delete", None)
         correct_valid_from = kwargs.get("correct_valid_from", None)
+        delete_missing = kwargs.get("delete_missing", None)
+
+        if mode == "update" and delete_missing:
+            has_data = self.has_data(src)
+        else:
+            has_data = True
 
         if slice is None:
             if mode == "update" and has_timestamp and has_rows:
