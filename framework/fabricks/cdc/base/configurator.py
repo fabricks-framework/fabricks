@@ -7,6 +7,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.context import SPARK
+from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 
@@ -125,6 +126,7 @@ class Configurator(ABC):
         return df
 
     def has_data(self, src: Union[DataFrame, Table, str], **kwargs) -> bool:
+        DEFAULT_LOGGER.debug("check if has data", extra={"job": self})
         df = self.get_src(src=src)
         return df.count() > 0
 

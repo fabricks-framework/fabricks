@@ -92,8 +92,6 @@ class Merger(Processor):
             except Exception as e:
                 DEFAULT_LOGGER.exception("could not clean sql query", extra={"job": self, "sql": sql})
                 raise e
-        else:
-            DEFAULT_LOGGER.debug("merge", extra={"job": self, "sql": sql})
 
         return sql
 
@@ -106,4 +104,5 @@ class Merger(Processor):
         view = create_or_replace_global_temp_view(global_temp_view, df, uuid=kwargs.get("uuid", False), job=self)
 
         merge = self.get_merge_query(view, **kwargs)
+        DEFAULT_LOGGER.debug("exec merge", extra={"job": self, "sql": merge})
         self.spark.sql(merge, src=view)

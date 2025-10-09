@@ -21,10 +21,12 @@ class Processor(Generator):
             src = f"select * from {global_temp_view}"
 
         sql = self.get_query(src, fix=True, **kwargs)
-        DEFAULT_LOGGER.debug("run query", extra={"job": self, "sql": sql})
+        DEFAULT_LOGGER.debug("exec query", extra={"job": self, "sql": sql})
         return self.spark.sql(sql)
 
     def get_query_context(self, src: Union[DataFrame, Table, str], **kwargs) -> dict:
+        DEFAULT_LOGGER.debug("deduce query context", extra={"job": self})
+
         if isinstance(src, (DataFrame, CDataFrame)):
             format = "dataframe"
         elif isinstance(src, Table):
@@ -64,11 +66,6 @@ class Processor(Generator):
         add_metadata = kwargs.get("add_metadata", None)
 
         has_order_by = None if not order_duplicate_by else True
-        try:
-            has_rows = self.table.rows > 0
-        except Exception:
-            has_rows = None
-        has_data = self.has_data(src)
 
         # determine which special columns are present or need to be added to the output
         has_operation = add_operation or "__operation" in inputs
@@ -297,6 +294,16 @@ class Processor(Generator):
 
         parent_final = "__final"
 
+        try:
+            has_rows = self.table.rows > 0
+        except Exception:
+            has_rows = None
+
+        if mode == "update" and advanced_ctes:
+            has_data = self.has_data(src)
+        else:
+            has_data = None
+
         return {
             "src": src,
             "format": format,
@@ -430,9 +437,10 @@ class Processor(Generator):
 
         name = f"{self.qualified_name}__append"
         create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
-
-        DEFAULT_LOGGER.debug("append", extra={"job": self})
-        self.spark.sql(f"insert into table {self.table} by name select * from global_temp.{name}")
+        append = f"insert into table {self.table} by name select * from global_temp.{name}"
+        
+        DEFAULT_LOGGER.debug("exec append", extra={"job": self, "sql": append})
+        self.spark.sql(append)
 
     def overwrite(
         self,
@@ -455,6 +463,9 @@ class Processor(Generator):
 
         name = f"{self.qualified_name}__overwrite"
         create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
+        overwrite = f"insert overwrite table {self.table} by name select * from global_temp.{name}"
 
-        DEFAULT_LOGGER.debug("overwrite", extra={"job": self})
-        self.spark.sql(f"insert overwrite table {self.table} by name select * from global_temp.{name}")
+        DEFAULT_LOGGER.debug("excec overwrite", extra={"job": self, "sql": overwrite})
+        self.spark.sql(overwrite)
+
+    def create_table(self, src: Union[DataFrame, Table, str], **kwargs)
