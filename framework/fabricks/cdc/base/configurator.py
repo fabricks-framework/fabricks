@@ -149,7 +149,6 @@ class Configurator(ABC):
             return columns
 
     def sort_columns(self, columns: List[str]) -> List[str]:
-        columns = list(set(columns))
         fields = [c for c in columns if not c.startswith("__")]
 
         leading = self.allowed_leading_columns

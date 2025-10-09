@@ -271,6 +271,8 @@ class Table(DbObject):
     def get_schema_differences(self, df: DataFrame) -> Sequence[SchemaDiff]:
         assert self.is_registered, f"{self} not registered"
 
+        DEFAULT_LOGGER.debug("get schema differences", extra={"job": self, "df": df})
+
         df1 = self.dataframe
         if self.identity_enabled:
             if "__identity" in df1.columns:
@@ -305,7 +307,7 @@ class Table(DbObject):
                 )
 
         if diffs:
-            DEFAULT_LOGGER.debug("difference(s) with delta table", extra={"job": self, "df": df})
+            DEFAULT_LOGGER.warning("difference(s) with delta table", extra={"job": self, "df": df})
 
         return diffs
 

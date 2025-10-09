@@ -19,8 +19,9 @@ class Processor(Generator):
             name = f"{self.qualified_name}__data"
             global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False))
             src = f"select * from {global_temp_view}"
-
+        
         sql = self.get_query(src, fix=True, **kwargs)
+        DEFAULT_LOGGER.debug(f"run query", extra={"job": self, "sql": sql})
         return self.spark.sql(sql)
 
     def get_query_context(self, src: Union[DataFrame, Table, str], **kwargs) -> dict:
@@ -180,41 +181,73 @@ class Processor(Generator):
             if "__operation" in inputs or add_operation:
                 hashes.append("__operation")
 
-        intermediates = [f for f in fields]
-        outputs = [f for f in fields]
+        if self.change_data_capture == "nocdc":
+            intermediates = [i for i in inputs]
+            outputs = [i for i in inputs]
+        else:
+            intermediates = [f for f in fields]
+            outputs = [f for f in fields]
 
         if has_operation:
-            outputs.append("__operation")
+            if "__operation" not in outputs:
+                outputs.append("__operation")
         if has_timestamp:
-            outputs.append("__timestamp")
+            if "__timestamp" not in outputs:
+                outputs.append("__timestamp")
         if has_key:
-            outputs.append("__key")
+            if "__key" not in outputs:
+                outputs.append("__key")
         if has_hash:
-            outputs.append("__hash")
+            if "__hash" not in outputs:
+                outputs.append("__hash")
 
         if has_metadata:
-            outputs.append("__metadata")
-            intermediates.append("__metadata")
+            if "__metadata" not in outputs:
+                outputs.append("__metadata")
+            if "__metadata" not in intermediates:
+                intermediates.append("__metadata")
         if has_source:
-            outputs.append("__source")
-            intermediates.append("__source")
+            if "__source" not in outputs:
+                outputs.append("__source")
+            if "__source" not in intermediates:
+                intermediates.append("__source")
         if has_identity:
-            outputs.append("__identity")
-            intermediates.append("__identity")
+            if "__identity" not in outputs:
+                outputs.append("__identity")
+            if "__identity" not in intermediates:
+                intermediates.append("__identity")
         if has_rescued_data:
-            outputs.append("__rescued_data")
-            intermediates.append("__rescued_data")
+            if "__rescued_data" not in outputs:
+                outputs.append("__rescued_data")
+            if "__rescued_data" not in intermediates:
+                intermediates.append("__rescued_data")
 
         if soft_delete:
-            outputs += ["__is_current", "__is_deleted"]
+            if "__is_deleted" not in outputs:
+                outputs.append("__is_deleted")
+            if "__is_current" not in outputs:
+                outputs.append("__is_current")
 
         if self.change_data_capture == "scd2":
-            outputs += ["__is_current", "__valid_from", "__valid_to"]
-
+            if "__valid_from" not in outputs:
+                outputs.append("__valid_from")
+            if "__valid_to" not in outputs:
+                outputs.append("__valid_to")
+            if "__is_current" not in outputs:
+                outputs.append("__is_current")
+                
         if advanced_ctes:
-            intermediates += ["__operation", "__timestamp"]
-        # needed for deduplication and/or rectification (might need __operation or __source)
-        intermediates += ["__key", "__hash"]
+            if "__operation" not in intermediates:
+                intermediates.append("__operation")
+            if "__timestamp" not in intermediates:
+                intermediates.append("__timestamp")
+
+        # needed for deduplication and/or rectification 
+        # might need __operation or __source
+        if "__key" not in intermediates:
+            intermediates.append("__key")
+        if "__hash" not in intermediates:
+            intermediates.append("__hash")
 
         outputs = [o for o in outputs if o not in exclude]
         outputs = self.sort_columns(outputs)
