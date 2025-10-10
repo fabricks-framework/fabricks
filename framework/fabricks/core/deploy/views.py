@@ -288,8 +288,14 @@ def create_or_replace_logs_pivot_view():
         not done and not failed and not skipped and array_contains(statuses, 'running') as timed_out,
         not array_contains(statuses, 'running') as cancelled,
         max(l.notebook_id) as notebook_id,
-        max(l.timestamp) filter(where l.status = 'running') as start_time,
+        max(l.timestamp) filter (where l.status = 'scheduled' ) as scheduled_time,
+        max(l.timestamp) filter (where l.status = 'waiting' ) as waiting_time,
+        max(l.timestamp) filter (where l.status = 'running') as start_time,
+        max(l.timestamp) filter (where l.status = 'running' ) as running_time,
+        max(l.timestamp) filter (where l.status = 'done' ) as done_time,
+        max(l.timestamp) filter (where l.status = 'failed' ) as failed_time,
         max(l.timestamp) filter(where l.status = 'ok') as end_time,
+        max(l.timestamp) filter(where l.status = 'ok') as ok_time,
         max(l.exception) as exception
       from
         fabricks.logs l
@@ -313,6 +319,12 @@ def create_or_replace_logs_pivot_view():
       g.notebook_id,
       g.start_time,
       g.end_time,
+      g.scheduled_time,
+      g.waiting_time,
+      g.running_time,
+      g.done_time,
+      g.failed_time,
+      g.ok_time,
       if(g.timed_out, null, date_diff(SECOND, start_time, end_time)) as duration,
       g.exception
     from
