@@ -4,6 +4,7 @@ from typing import Optional, Union, cast
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
+from typing_extensions import deprecated
 
 from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
@@ -276,39 +277,34 @@ class Configurator(ABC):
     ):
         raise NotImplementedError()
 
+    @deprecated("use maintain instead")
     def optimize(
         self,
         vacuum: Optional[bool] = True,
         optimize: Optional[bool] = True,
         analyze: Optional[bool] = True,
     ):
-        """
-        Optimize the table by performing vacuum, optimizing CDC, and analyzing the table.
+        return self.maintain(
+            vacuum=vacuum,
+            optimize=optimize,
+            compute_statistics=analyze,
+        )
 
-        If the mode is set to 'memory', no optimization is performed.
-
-        The retention days for optimization are determined in the following order:
-        1. If 'retention_days' is specified in the job options table, it is used.
-        2. If 'retention_days' is specified in the step configuration table options, it is used.
-        3. If 'retention_days' is specified in the CONF_RUNTIME options, it is used.
-
-        After determining the retention days, the table is vacuumed with the specified retention days,
-        CDC is optimized for the table, and the table is analyzed.
-
-        Note: This method assumes that either 'runtime' or 'step' or 'job' is specified.
-
-        Returns:
-            None
-        """
+    def maintain(
+        self,
+        vacuum: Optional[bool] = True,
+        optimize: Optional[bool] = True,
+        compute_statistics: Optional[bool] = True,
+    ):
         if self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
+            DEFAULT_LOGGER.debug("memory (no maintain)", extra={"job": self})
 
         else:
             if vacuum:
                 self.vacuum()
             if optimize:
                 self.cdc.optimize_table()
-            if analyze:
+            if compute_statistics:
                 self.table.compute_statistics()
 
     def vacuum(self):

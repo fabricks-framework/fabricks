@@ -188,6 +188,14 @@ class Generator(Configurator):
             elif step_powerbi is not None:
                 powerbi = step_powerbi
 
+            # first take from job options, then from step options
+            job_masks = self.options.table.get("masks", None)
+            step_masks = self.step_conf.get("table_options", {}).get("masks", None)
+            if job_masks is not None:
+                masks = job_masks
+            elif step_masks is not None:
+                masks = step_masks
+
             maximum_compatibility = self.options.table.get_boolean("maximum_compatibility", False)
 
             if maximum_compatibility:
@@ -281,6 +289,7 @@ class Generator(Configurator):
                 partitioning=partitioning,
                 partition_by=partition_by,
                 properties=properties,
+                masks=masks,
                 **cdc_options,
             )
 

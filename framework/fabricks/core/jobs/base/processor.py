@@ -137,6 +137,9 @@ class Processor(Invoker):
         schedule_id: Optional[str] = None,
         invoke: Optional[bool] = True,
         reload: Optional[bool] = None,
+        vacuum: Optional[bool] = None,
+        optimize: Optional[bool] = None,
+        compute_statistics: Optional[bool] = None,
     ):
         """
         Run the processor.
@@ -190,14 +193,18 @@ class Processor(Invoker):
             if invoke:
                 self.invoke_post_run(schedule=schedule)
 
-            if self.options.job.get("optimize"):
-                self.optimize()
-
-            if self.options.job.get("vacuum"):
-                self.vacuum()
-
             if exception:
                 raise exception
+
+            if vacuum is None:
+                vacuum = self.options.job.get("vacuum", False)
+            if optimize is None:
+                optimize = self.options.job.get("optimize", False)
+            if compute_statistics is None:
+                compute_statistics = self.options.job.get("compute_statistics", False)
+
+            if vacuum or optimize or compute_statistics:
+                self.maintain(compute_statistics=compute_statistics, optimize=optimize, vacuum=vacuum)
 
             DEFAULT_LOGGER.info("run ends", extra={"job": self})
 

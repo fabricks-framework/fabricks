@@ -25,6 +25,7 @@ class Generator(Configurator):
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
+        masks: Optional[dict[str, str]] = None,
         **kwargs,
     ):
         kwargs["mode"] = "complete"
@@ -50,6 +51,7 @@ class Generator(Configurator):
             liquid_clustering=liquid_clustering,
             cluster_by=cluster_by,
             properties=properties,
+            masks=masks,
         )
 
     def create_or_replace_view(self, src: Union[Table, str], schema_evolution: bool = True, **kwargs):

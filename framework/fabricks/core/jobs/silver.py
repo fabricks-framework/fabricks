@@ -367,14 +367,3 @@ class Silver(BaseJob):
         super().drop()
         DEFAULT_LOGGER.debug("drop current view", extra={"job": self})
         self.spark.sql(f"drop view if exists {self.qualified_name}__current")
-
-    def optimize(
-        self,
-        vacuum: Optional[bool] = True,
-        optimize: Optional[bool] = True,
-        analyze: Optional[bool] = True,
-    ):
-        if self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
-        else:
-            super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)

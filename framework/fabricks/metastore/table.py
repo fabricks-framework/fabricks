@@ -104,6 +104,7 @@ class Table(DbObject):
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
+        masks: Optional[dict[str, str]] = None,
     ): ...
 
     @overload
@@ -117,6 +118,7 @@ class Table(DbObject):
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
+        masks: Optional[dict[str, str]] = None,
     ): ...
 
     def create(
@@ -129,6 +131,7 @@ class Table(DbObject):
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
+        masks: Optional[dict[str, str]] = None,
     ):
         self._create(
             df=df,
@@ -139,7 +142,34 @@ class Table(DbObject):
             liquid_clustering=liquid_clustering,
             cluster_by=cluster_by,
             properties=properties,
+            masks=masks,
         )
+
+    def _get_ddl_columns(self, df: DataFrame, masks: Optional[dict[str, str]]) -> List[str]:
+        def _backtick(name: str, dtype: str) -> str:
+            j = df.schema[name].jsonValue()
+            r = re.compile(r"(?<='name': ')[^']+(?=',)")
+
+            names = re.findall(r, str(j))
+            for n in names:
+                escaped = re.escape(n)
+                dtype = re.sub(f"(?<=,){escaped}(?=:)|(?<=<){escaped}(?=:)", f"`{n}`", dtype)
+
+            return dtype
+
+        out = []
+
+        for name, dtype in df.dtypes:
+            col = [f"`{name}`"]
+
+            if masks and name in masks:
+                col.append(f"mask {masks[name]}")
+
+            col.append(_backtick(name, dtype))
+
+            out.append(" ".join(col))
+
+        return out
 
     def _create(
         self,
@@ -151,22 +181,14 @@ class Table(DbObject):
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
+        masks: Optional[dict[str, str]] = None,
     ):
         DEFAULT_LOGGER.info("create table", extra={"job": self})
         if not df:
             assert schema is not None
             df = self.spark.createDataFrame([], schema)
 
-        def _backtick(name: str, dtype: str) -> str:
-            j = df.schema[name].jsonValue()
-            r = re.compile(r"(?<='name': ')[^']+(?=',)")
-            names = re.findall(r, str(j))
-            for n in names:
-                escaped = re.escape(n)
-                dtype = re.sub(f"(?<=,){escaped}(?=:)|(?<=<){escaped}(?=:)", f"`{n}`", dtype)
-            return dtype
-
-        ddl_columns = ",\n\t".join([f"`{name}` {_backtick(name, dtype)}" for name, dtype in df.dtypes])
+        ddl_columns = ",\n\t".join(self._get_ddl_columns(df, masks))
         ddl_identity = "-- no identity" if "__identity" not in df.columns else ""
         ddl_cluster_by = "-- no cluster by"
         ddl_partition_by = "-- no partitioned by"

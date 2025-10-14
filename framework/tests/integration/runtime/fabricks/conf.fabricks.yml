@@ -20,6 +20,7 @@
       schedules: fabricks/schedules
       views: fabricks/views
       requirements: fabricks/requirements.txt
+      masks: fabricks/masks
     spark_options:
       sql:
         spark.sql.files.ignoreMissingFiles: true

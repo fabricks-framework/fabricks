@@ -100,17 +100,17 @@ class Bronze(BaseJob):
         )
 
     def drop_external_table(self):
-        DEFAULT_LOGGER.debug("drop external table", extra={"job": self})
+        DEFAULT_LOGGER.warning("remove external table from metastore", extra={"job": self})
         self.spark.sql(f"drop table if exists {self.qualified_name}")
 
-    def analyze_external_table(self):
-        DEFAULT_LOGGER.debug("analyze external table", extra={"job": self})
+    def compute_statistics_external_table(self):
+        DEFAULT_LOGGER.debug("compute statistics (external table)", extra={"job": self})
         self.spark.sql(f"analyze table {self.qualified_name} compute statistics")
 
     def vacuum_external_table(self, retention_hours: Optional[int] = 168):
         from delta import DeltaTable
 
-        DEFAULT_LOGGER.debug("vacuum external table", extra={"job": self})
+        DEFAULT_LOGGER.debug("vacuum (external table)", extra={"job": self})
         try:
             dt = DeltaTable.forPath(self.spark, self.data_path.string)
             self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
@@ -118,17 +118,17 @@ class Bronze(BaseJob):
         finally:
             self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
 
-    def optimize_external_table(
+    def maintain_external_table(
         self,
         vacuum: Optional[bool] = True,
-        analyze: Optional[bool] = True,
+        compute_statistics: Optional[bool] = True,
     ):
-        DEFAULT_LOGGER.debug("optimize external table", extra={"job": self})
+        DEFAULT_LOGGER.debug("maintain (external table)", extra={"job": self})
         if vacuum:
             self.vacuum_external_table()
 
-        if analyze:
-            self.analyze_external_table()
+        if compute_statistics:
+            self.compute_statistics_external_table()
 
     @property
     def parser(self) -> BaseParser:
@@ -367,18 +367,16 @@ class Bronze(BaseJob):
             self.drop_external_table()
         super().drop()
 
-    def optimize(
+    def maintain(
         self,
         vacuum: Optional[bool] = True,
         optimize: Optional[bool] = True,
-        analyze: Optional[bool] = True,
+        compute_statistics: Optional[bool] = True,
     ):
-        if self.mode == "memory":
-            DEFAULT_LOGGER.info("memory (no optimize)", extra={"job": self})
-        elif self.mode == "register":
-            self.optimize_external_table(vacuum, analyze)
+        if self.mode == "register":
+            self.maintain_external_table(vacuum=vacuum, compute_statistics=compute_statistics)
         else:
-            super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)
+            super().maintain(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
 
     def vacuum(self):
         if self.mode == "memory":

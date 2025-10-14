@@ -154,29 +154,33 @@ try:
 
     FABRICKS_STORAGE_CREDENTIAL: Final[Optional[str]] = path_options.get("storage_credential")
 
-    path_udfs = path_options.get("udfs")
-    assert path_udfs, "udfs mandatory in path options"
+    path_udfs = path_options.get("udfs", "fabricks/udfs")
+    assert path_udfs, "path to udfs mandatory"
     PATH_UDFS: Final[Path] = PATH_RUNTIME.joinpath(path_udfs)
 
-    path_parsers = path_options.get("parsers")
-    assert path_parsers, "parsers mandatory in path options"
+    path_parsers = path_options.get("parsers", "fabricks/parsers")
+    assert path_parsers, "path to parsers mandatory"
     PATH_PARSERS: Final[Path] = PATH_RUNTIME.joinpath(path_parsers)
 
-    path_extenders = path_options.get("extenders")
-    assert path_extenders, "extenders mandatory in path options"
+    path_extenders = path_options.get("extenders", "fabricks/extenders")
+    assert path_extenders, "path to extenders mandatory"
     PATH_EXTENDERS: Final[Path] = PATH_RUNTIME.joinpath(path_extenders)
 
-    path_views = path_options.get("views")
-    assert path_views, "views mandatory in path options"
+    path_views = path_options.get("views", "fabricks/views")
+    assert path_views, "path to views mandatory"
     PATH_VIEWS: Final[Path] = PATH_RUNTIME.joinpath(path_views)
 
-    path_schedules = path_options.get("schedules")
-    assert path_schedules, "schedules mandatory in path options"
+    path_schedules = path_options.get("schedules", "fabricks/schedules")
+    assert path_schedules, "path to schedules mandatory"
     PATH_SCHEDULES: Final[Path] = PATH_RUNTIME.joinpath(path_schedules)
 
-    path_requirements = path_options.get("requirements")
-    assert path_requirements, "requirements mandatory in path options"
+    path_requirements = path_options.get("requirements", "fabricks/requirements")
+    assert path_requirements, "path to requirements mandatory"
     PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.joinpath(path_requirements)
+
+    path_masks = path_options.get("masks", "fabricks/masks")
+    assert path_masks, "path to masks mandatory"
+    PATH_MASKS: Final[Path] = PATH_RUNTIME.joinpath(path_masks)
 
     def _get_storage_paths(objects: List[dict]) -> dict:
         d = {}

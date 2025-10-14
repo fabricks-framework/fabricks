@@ -367,17 +367,6 @@ class Gold(BaseJob):
 
         super().drop()
 
-    def optimize(
-        self,
-        vacuum: Optional[bool] = True,
-        optimize: Optional[bool] = True,
-        analyze: Optional[bool] = True,
-    ):
-        if self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
-        else:
-            super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)
-
     @property
     def cdc_last_timestamp(self) -> NoCDC:
         assert self.mode == "update", "persist_last_timestamp only allowed in update"

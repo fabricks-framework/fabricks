@@ -50,6 +50,7 @@ class TableOptions(TypedDict):
     properties: Optional[dict[str, str]]
     comment: Optional[str]
     calculated_columns: Optional[dict[str, str]]
+    masks: Optional[dict[str, str]]
     retention_days: Optional[int]
 
 
@@ -90,6 +91,7 @@ class BronzeOptions(TypedDict):
     parents: Optional[List[str]]
     filter_where: Optional[str]
     optimize: Optional[bool]
+    compute_statistics: Optional[bool]
     vacuum: Optional[bool]
     no_drop: Optional[bool]
     # extra
@@ -107,6 +109,7 @@ class SilverOptions(TypedDict):
     parents: Optional[List[str]]
     filter_where: Optional[str]
     optimize: Optional[bool]
+    compute_statistics: Optional[bool]
     vacuum: Optional[bool]
     no_drop: Optional[bool]
     # extra
@@ -125,6 +128,7 @@ class GoldOptions(TypedDict):
     # default
     parents: Optional[List[str]]
     optimize: Optional[bool]
+    compute_statistics: Optional[bool]
     vacuum: Optional[bool]
     no_drop: Optional[bool]
     # extra

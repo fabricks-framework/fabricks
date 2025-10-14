@@ -107,3 +107,13 @@
     options:
       mode: memory
       no_drop: true
+- job:
+    step: gold
+    topic: fact
+    item: mask
+    tags: [test]
+    options:
+      mode: complete
+    table_options:
+      masks:
+        dummy: "mask_dummy"

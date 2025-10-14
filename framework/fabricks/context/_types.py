@@ -84,6 +84,7 @@ class TableOptions(TypedDict):
     liquid_clustering: Optional[bool]
     properties: Optional[dict[str, str]]
     retention_days: Optional[int]
+    masks: Optional[dict[str, str]]
 
 
 class Bronze(Step):
