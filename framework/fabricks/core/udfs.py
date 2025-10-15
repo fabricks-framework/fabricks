@@ -11,7 +11,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 UDFS: dict[str, Callable] = {}
 
 
-def register_all_udfs():
+def register_all_udfs(extension: Optional[str] = None):
     """
     Register all user-defined functions (UDFs).
 
@@ -23,7 +23,7 @@ def register_all_udfs():
     Returns:
         None
     """
-    for udf in get_udfs():
+    for udf in get_udfs(extension=extension):
         split = udf.split(".")
         try:
             register_udf(udf=split[0], extension=split[1])
@@ -31,9 +31,11 @@ def register_all_udfs():
             DEFAULT_LOGGER.exception(f"udf {udf} not registered")
 
 
-def get_udfs() -> List[str]:
+def get_udfs(extension: Optional[str] = None) -> List[str]:
     files = [os.path.basename(f) for f in PATH_UDFS.walk()]
     udfs = [f for f in files if not str(f).endswith("__init__.py") and not str(f).endswith(".requirements.txt")]
+    if extension:
+        udfs = [f for f in udfs if f.endswith(f".{extension}")]
     return udfs
 
 

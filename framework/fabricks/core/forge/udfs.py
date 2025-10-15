@@ -1,11 +1,13 @@
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.udfs import register_all_udfs
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
 def deploy_udfs():
     DEFAULT_LOGGER.info("🌟 (create or replace udfs)")
 
+    register_all_udfs(extension="sql")
     create_or_replace_udf_job_id()
 
 
