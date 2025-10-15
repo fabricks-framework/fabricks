@@ -26,3 +26,7 @@ def get_job_schema() -> str:
 
     j = json.dumps(sc, indent=4)
     return j
+
+
+def print_job_schema():
+    print(get_job_schema())
