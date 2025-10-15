@@ -114,9 +114,7 @@ class Configurator(ABC):
             "__rescued_data",
         ]
 
-        if self.change_data_capture == "scd1":
-            cols.remove("__operation")
-        elif self.change_data_capture == "scd2":
+        if self.slowly_changing_dimension:
             cols.remove("__operation")
 
         return cols
