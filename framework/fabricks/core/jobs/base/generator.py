@@ -195,6 +195,8 @@ class Generator(Configurator):
                 masks = job_masks
             elif step_masks is not None:
                 masks = step_masks
+            else:
+                masks = None
 
             maximum_compatibility = self.options.table.get_boolean("maximum_compatibility", False)
 
@@ -274,7 +276,7 @@ class Generator(Configurator):
             if properties is None:
                 properties = default_properties
 
-            primary_keys = self.options.table.get_dict("primary_keys")
+            primary_key = self.options.table.get_dict("primary_key")
             foreign_keys = self.options.table.get_dict("foreign_keys")
             comments = self.options.table.get_dict("comments")
 
@@ -292,7 +294,7 @@ class Generator(Configurator):
                 partition_by=partition_by,
                 properties=properties,
                 masks=masks,
-                primary_keys=primary_keys,
+                primary_key=primary_key,
                 foreign_keys=foreign_keys,
                 comments=comments,
                 **cdc_options,

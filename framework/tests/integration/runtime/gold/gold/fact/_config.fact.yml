@@ -115,27 +115,30 @@
       masks:
         dummy: "mask_dummy"
       comments:
-        dummy: "This is a dummy mask"
-        less_dummy: "This is a less dummy mask"
-        dummier: "This is a dummier mask"
+        dummy: "This is a dummy comment"
+        less_dummy: "This is a less dummy comment"
+        dummier: "This is a dummier comment"
+- job:
+    step: gold
+    topic: fact
+    item: foreign_keys
+    options:
+      mode: complete
+    table_options:
+      primary_key:
+        pk_foreign_keys: 
+          keys: [dummy]
+      foreign_keys:
+        fk_dummy: 
+          keys: [dummy, less_dummy, dummier]
+          reference: gold.fact_primary_key
 - job:
     step: gold
     topic: fact
     item: primary_key
     options:
       mode: complete
-      primary_keys:
-        pk_dummy: [dummy, less_dummy, dummier]
-- job:
-    step: gold
-    topic: fact
-    item: foreign_key
-    options:
-      mode: complete
     table_options:
-      primary_keys:
-        pk_dummy: [dummy]
-      foreign_keys:
-        fk_dummy: 
+      primary_key:
+        pk_primary_key: 
           keys: [dummy, less_dummy, dummier]
-          parent: gold.fact_primary_key

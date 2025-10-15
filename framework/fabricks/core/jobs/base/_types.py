@@ -31,15 +31,33 @@ Operations = Literal["upsert", "reload", "delete"]
 Types = Literal["manual", "default"]
 Origins = Literal["parser", "job"]
 
+ConstraintOptions = Literal["not enforced", "deferrable", "initially deferred", "norely", "rely"]
+ForeignKeyOptions = Literal["match full", "on update no action", "on delete no action"]
+
 
 class SparkOptions(TypedDict):
     sql: Optional[dict[str, str]]
     conf: Optional[dict[str, str]]
 
 
+class ForeignKeyOptions(TypedDict):
+    foreign_key: Optional[ForeignKeyOptions]
+    constraint: Optional[ConstraintOptions]
+
+
+class PrimaryKeyOptions(TypedDict):
+    constraint: Optional[ConstraintOptions]
+
+
 class ForeignKey(TypedDict):
     keys: List[str]
-    parent: str
+    reference: str
+    options: Optional[ForeignKeyOptions]
+
+
+class PrimaryKey(TypedDict):
+    keys: List[str]
+    options: Optional[PrimaryKeyOptions]
 
 
 class TableOptions(TypedDict):
@@ -58,7 +76,7 @@ class TableOptions(TypedDict):
     masks: Optional[dict[str, str]]
     comments: Optional[dict[str, str]]
     retention_days: Optional[int]
-    primary_keys: Optional[dict[str, List[str]]]
+    primary_key: Optional[dict[str, PrimaryKey]]
     foreign_keys: Optional[dict[str, ForeignKey]]
 
 
