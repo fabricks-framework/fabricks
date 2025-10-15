@@ -107,7 +107,7 @@ class Processor(Invoker):
             self.create_or_replace_view()
 
         elif self.persist:
-            assert self.table.exists(), "delta table not found"
+            assert self.table.registered, f"{self} is not registered"
 
             df = self.get_data(self.stream)
             assert df is not None, "no data"

@@ -253,9 +253,7 @@ class Generator(Configurator):
                             cluster_by.append("__hash")
 
                     if not cluster_by:
-                        DEFAULT_LOGGER.warning(
-                            "liquid clustering disabled (no clustering columns found)", extra={"job": self}
-                        )
+                        DEFAULT_LOGGER.debug("no clustering column found", extra={"job": self})
                         liquid_clustering = False
                         cluster_by = None
 
