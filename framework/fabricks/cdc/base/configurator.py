@@ -73,7 +73,19 @@ class Configurator(ABC):
         raise NotImplementedError()
 
     @property
-    def allowed_leading_columns(self):
+    def allowed_input__columns(self) -> List[str]:
+        cols = self.allowed_leading__columns + self.allowed_trailing__columns
+
+        if self.slowly_changing_dimension:
+            cols.remove("__valid_from")
+            cols.remove("__valid_to")
+            cols.remove("__is_current")
+            cols.remove("__is_deleted")
+
+        return cols
+
+    @property
+    def allowed_leading__columns(self) -> List[str]:
         cols = [
             "__identity",
             "__source",
@@ -94,7 +106,7 @@ class Configurator(ABC):
         return cols
 
     @property
-    def allowed_trailing_columns(self):
+    def allowed_trailing__columns(self) -> List[str]:
         cols = [
             "__operation",
             "__metadata",
@@ -108,6 +120,25 @@ class Configurator(ABC):
             cols.remove("__operation")
 
         return cols
+
+    @property
+    def __columns(self) -> List[str]:
+        return [
+            # Leading
+            "__identity",
+            "__source",
+            "__key",
+            "__timestamp",
+            "__valid_from",
+            "__valid_to",
+            "__is_current",
+            "__is_deleted",
+            # Trailing
+            "__operation",
+            "__metadata",
+            "__hash",
+            "__rescued_data",
+        ]
 
     @property
     def slowly_changing_dimension(self) -> bool:
@@ -142,6 +173,11 @@ class Configurator(ABC):
         df = self.get_src(src=src)
         columns = df.columns
 
+        for c in columns:
+            # avoid duplicate column issue in merge
+            if c.startswith("__") and c in self.__columns:
+                assert c in self.allowed_input__columns, f"{c} is not allowed"
+
         if sort:
             columns = self.sort_columns(columns)
 
@@ -153,8 +189,8 @@ class Configurator(ABC):
     def sort_columns(self, columns: List[str]) -> List[str]:
         fields = [c for c in columns if not c.startswith("__")]
 
-        leading = self.allowed_leading_columns
-        trailing = self.allowed_trailing_columns
+        leading = self.allowed_leading__columns
+        trailing = self.allowed_trailing__columns
 
         # move __hash to the front of the table to ensure statistics are present
         if "__key" not in columns and "__hash" in columns:
