@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Sequence, Union, overload, Any
+from typing import Any, List, Optional, Sequence, Union, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
@@ -105,8 +105,8 @@ class Table(DbObject):
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
         masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, List[str]]] = None,
-        foreign_keys: Optional[dict[str, dict[List[str], str]]] = None,
+        primary_key: Optional[dict[str, Any]] = None,
+        foreign_keys: Optional[dict[str, Any]] = None,
         comments: Optional[dict[str, str]] = None,
     ): ...
 
@@ -122,8 +122,8 @@ class Table(DbObject):
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
         masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, List[str]]] = None,
-        foreign_keys: Optional[dict[str, dict[List[str], str]]] = None,
+        primary_key: Optional[dict[str, Any]] = None,
+        foreign_keys: Optional[dict[str, Any]] = None,
         comments: Optional[dict[str, str]] = None,
     ): ...
 
@@ -138,8 +138,8 @@ class Table(DbObject):
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
         masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, List[str]]] = None,
-        foreign_keys: Optional[dict[str, dict[List[str], str]]] = None,
+        primary_key: Optional[dict[str, Any]] = None,
+        foreign_keys: Optional[dict[str, Any]] = None,
         comments: Optional[dict[str, str]] = None,
     ):
         self._create(

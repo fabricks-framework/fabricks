@@ -10,7 +10,7 @@ from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
-from fabricks.core.jobs.base._types import Modes, Options, Paths, TStep
+from fabricks.core.jobs.base._types import AllowedModes, Options, Paths, TStep
 from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.core.jobs.get_job_id import get_job_id
 from fabricks.metastore.table import Table
@@ -54,7 +54,7 @@ class Configurator(ABC):
 
     _cdc: Optional[Union[NoCDC, SCD1, SCD2]] = None
     _change_data_capture: Optional[ChangeDataCaptures] = None
-    _mode: Optional[Modes] = None
+    _mode: Optional[AllowedModes] = None
 
     @property
     @abstractmethod
@@ -232,11 +232,11 @@ class Configurator(ABC):
             return cdc_df
 
     @property
-    def mode(self) -> Modes:
+    def mode(self) -> AllowedModes:
         if not self._mode:
             _mode = self.options.job.get("mode")
             assert _mode is not None
-            self._mode = cast(Modes, _mode)
+            self._mode = cast(AllowedModes, _mode)
         return self._mode
 
     @abstractmethod

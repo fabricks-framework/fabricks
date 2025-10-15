@@ -26,8 +26,8 @@ class Generator(Configurator):
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
         masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, List[str]]] = None,
-        foreign_keys: Optional[dict[str, dict[List[str], str]]] = None,
+        primary_key: Optional[dict[str, Any]] = None,
+        foreign_keys: Optional[dict[str, Any]] = None,
         comments: Optional[dict[str, str]] = None,
         **kwargs,
     ):

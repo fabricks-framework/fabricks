@@ -21,18 +21,18 @@ Silvers: List[TSilver] = [s.get("name") for s in SILVER]
 Golds: List[TGold] = [g.get("name") for g in GOLD]
 Steps: List[TStep] = Bronzes + Silvers + Golds
 
-BronzeModes = Literal["memory", "append", "register"]
-SilverModes = Literal["memory", "append", "latest", "update", "combine"]
-GoldModes = Literal["memory", "append", "complete", "update", "invoke"]
-Modes = Literal[BronzeModes, SilverModes, GoldModes]
+AllowedModesBronze = Literal["memory", "append", "register"]
+AllowedModesSilver = Literal["memory", "append", "latest", "update", "combine"]
+AllowedModesGold = Literal["memory", "append", "complete", "update", "invoke"]
+AllowedModes = Literal[AllowedModesBronze, AllowedModesSilver, AllowedModesGold]
 
-FileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "delta"]
-Operations = Literal["upsert", "reload", "delete"]
-Types = Literal["manual", "default"]
-Origins = Literal["parser", "job"]
+AllowedFileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "delta"]
+AllowedOperations = Literal["upsert", "reload", "delete"]
+AllowedTypes = Literal["manual", "default"]
+AllowedOrigins = Literal["parser", "job"]
 
-ConstraintOptions = Literal["not enforced", "deferrable", "initially deferred", "norely", "rely"]
-ForeignKeyOptions = Literal["match full", "on update no action", "on delete no action"]
+AllowedConstraintOptions = Literal["not enforced", "deferrable", "initially deferred", "norely", "rely"]
+AllowedForeignKeyOptions = Literal["match full", "on update no action", "on delete no action"]
 
 
 class SparkOptions(TypedDict):
@@ -41,12 +41,12 @@ class SparkOptions(TypedDict):
 
 
 class ForeignKeyOptions(TypedDict):
-    foreign_key: Optional[ForeignKeyOptions]
-    constraint: Optional[ConstraintOptions]
+    foreign_key: Optional[AllowedForeignKeyOptions]
+    constraint: Optional[AllowedConstraintOptions]
 
 
 class PrimaryKeyOptions(TypedDict):
-    constraint: Optional[ConstraintOptions]
+    constraint: Optional[AllowedConstraintOptions]
 
 
 class ForeignKey(TypedDict):
@@ -107,8 +107,8 @@ class CheckOptions(TypedDict):
 
 
 class BronzeOptions(TypedDict):
-    type: Optional[Types]
-    mode: BronzeModes
+    type: Optional[AllowedTypes]
+    mode: AllowedModesBronze
     uri: str
     parser: str
     source: str
@@ -123,13 +123,13 @@ class BronzeOptions(TypedDict):
     # extra
     encrypted_columns: Optional[List[str]]
     calculated_columns: Optional[dict[str, str]]
-    operation: Optional[Operations]
+    operation: Optional[AllowedOperations]
     timeout: Optional[int]
 
 
 class SilverOptions(TypedDict):
-    type: Optional[Types]
-    mode: SilverModes
+    type: Optional[AllowedTypes]
+    mode: AllowedModesSilver
     change_data_capture: ChangeDataCaptures
     # default
     parents: Optional[List[str]]
@@ -147,8 +147,8 @@ class SilverOptions(TypedDict):
 
 
 class GoldOptions(TypedDict):
-    type: Optional[Types]
-    mode: GoldModes
+    type: Optional[AllowedTypes]
+    mode: AllowedModesGold
     change_data_capture: ChangeDataCaptures
     update_where: Optional[str]
     # default
@@ -245,7 +245,7 @@ class Options:
 
 class JobDependency(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
-    origin: Origins
+    origin: AllowedOrigins
     job_id: str
     parent: str
     parent_id: str
@@ -261,7 +261,7 @@ class JobDependency(BaseModel):
         return self
 
     @staticmethod
-    def from_parts(job_id: str, parent: str, origin: Origins):
+    def from_parts(job_id: str, parent: str, origin: AllowedOrigins):
         parent = parent.removesuffix("__current")
         return JobDependency(
             job_id=job_id,
