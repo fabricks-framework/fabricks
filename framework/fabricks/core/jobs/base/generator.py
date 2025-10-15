@@ -274,6 +274,10 @@ class Generator(Configurator):
             if properties is None:
                 properties = default_properties
 
+            primary_keys = self.options.table.get_dict("primary_keys")
+            foreign_keys = self.options.table.get_dict("foreign_keys")
+            comments = self.options.table.get_dict("comments")
+
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
             global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 == 2"), job=self)
@@ -288,6 +292,9 @@ class Generator(Configurator):
                 partition_by=partition_by,
                 properties=properties,
                 masks=masks,
+                primary_keys=primary_keys,
+                foreign_keys=foreign_keys,
+                comments=comments,
                 **cdc_options,
             )
 

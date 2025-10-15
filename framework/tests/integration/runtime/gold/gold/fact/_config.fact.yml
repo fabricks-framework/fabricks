@@ -94,7 +94,6 @@
     step: gold
     topic: fact
     item: optimize_vacuum
-    tags: [test]
     options:
       mode: complete
       optimize: true
@@ -103,17 +102,40 @@
     step: gold
     topic: fact
     item: no_drop
-    tags: [test]
     options:
       mode: memory
       no_drop: true
 - job:
     step: gold
     topic: fact
-    item: mask
-    tags: [test]
+    item: masker_and_commenter
     options:
       mode: complete
     table_options:
       masks:
         dummy: "mask_dummy"
+      comments:
+        dummy: "This is a dummy mask"
+        less_dummy: "This is a less dummy mask"
+        dummier: "This is a dummier mask"
+- job:
+    step: gold
+    topic: fact
+    item: primary_key
+    options:
+      mode: complete
+      primary_keys:
+        pk_dummy: [dummy, less_dummy, dummier]
+- job:
+    step: gold
+    topic: fact
+    item: foreign_key
+    options:
+      mode: complete
+    table_options:
+      primary_keys:
+        pk_dummy: [dummy]
+      foreign_keys:
+        fk_dummy: 
+          keys: [dummy, less_dummy, dummier]
+          parent: gold.fact_primary_key

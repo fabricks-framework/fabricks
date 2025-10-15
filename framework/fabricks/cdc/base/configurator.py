@@ -35,8 +35,8 @@ class Configurator(ABC):
         return self.table.is_view
 
     @property
-    def is_registered(self):
-        return self.table.is_registered
+    def registered(self):
+        return self.table.registered
 
     @property
     def qualified_name(self):

@@ -26,6 +26,9 @@ class Generator(Configurator):
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
         masks: Optional[dict[str, str]] = None,
+        primary_keys: Optional[dict[str, List[str]]] = None,
+        foreign_keys: Optional[dict[str, dict[List[str], str]]] = None,
+        comments: Optional[dict[str, str]] = None,
         **kwargs,
     ):
         kwargs["mode"] = "complete"
@@ -52,6 +55,9 @@ class Generator(Configurator):
             cluster_by=cluster_by,
             properties=properties,
             masks=masks,
+            primary_keys=primary_keys,
+            foreign_keys=foreign_keys,
+            comments=comments,
         )
 
     def create_or_replace_view(self, src: Union[Table, str], schema_evolution: bool = True, **kwargs):

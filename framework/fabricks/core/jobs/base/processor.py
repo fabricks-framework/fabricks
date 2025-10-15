@@ -204,7 +204,11 @@ class Processor(Invoker):
                 compute_statistics = self.options.job.get("compute_statistics", False)
 
             if vacuum or optimize or compute_statistics:
-                self.maintain(compute_statistics=compute_statistics, optimize=optimize, vacuum=vacuum)
+                self.maintain(
+                    compute_statistics=compute_statistics,
+                    optimize=optimize,
+                    vacuum=vacuum,
+                )
 
             DEFAULT_LOGGER.info("run ends", extra={"job": self})
 

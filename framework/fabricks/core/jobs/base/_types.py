@@ -37,6 +37,11 @@ class SparkOptions(TypedDict):
     conf: Optional[dict[str, str]]
 
 
+class ForeignKey(TypedDict):
+    keys: List[str]
+    parent: str
+
+
 class TableOptions(TypedDict):
     identity: Optional[bool]
     liquid_clustering: Optional[bool]
@@ -51,7 +56,10 @@ class TableOptions(TypedDict):
     comment: Optional[str]
     calculated_columns: Optional[dict[str, str]]
     masks: Optional[dict[str, str]]
+    comments: Optional[dict[str, str]]
     retention_days: Optional[int]
+    primary_keys: Optional[dict[str, List[str]]]
+    foreign_keys: Optional[dict[str, ForeignKey]]
 
 
 class _InvokeOptions(TypedDict):
