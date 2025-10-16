@@ -13,6 +13,7 @@ from fabricks.deploy.tables import deploy_tables
 from fabricks.deploy.udfs import deploy_udfs
 from fabricks.deploy.utils import print_atomic_bomb
 from fabricks.deploy.views import deploy_views
+from fabricks.deploy.schedules import deploy_schedules
 from fabricks.metastore.database import Database
 
 
@@ -41,6 +42,10 @@ class Deploy:
         deploy_notebooks()
 
     @staticmethod
+    def schedules():
+        deploy_schedules()
+
+    @staticmethod
     def armageddon(steps: Optional[Union[TStep, List[TStep], str, List[str]]], nowait: bool = False):
         DEFAULT_LOGGER.warning("!💥 armageddon 💥!")
         print_atomic_bomb(nowait=nowait)
@@ -60,6 +65,7 @@ class Deploy:
 
         fabricks = Database("fabricks")
         fabricks.drop()
+
         for s in steps:
             step = BaseStep(s)
             step.drop()
@@ -82,6 +88,7 @@ class Deploy:
         Deploy.udfs()
         Deploy.masks()
         Deploy.notebooks()
+        Deploy.schedules()
 
         for s in steps:
             step = BaseStep(s)

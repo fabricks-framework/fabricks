@@ -123,7 +123,10 @@ class BaseStep:
             tbl = Table("fabricks", self.name, t)
             tbl.drop()
 
-        SPARK.sql(f"delete from fabricks.steps where step = '{self.name}'")
+        try:
+            SPARK.sql(f"delete from fabricks.steps where step = '{self.name}'")
+        except Exception:
+            pass
 
         self.database.drop()
 
@@ -151,7 +154,7 @@ class BaseStep:
 
             self.update_tables_list()
             self.update_views_list()
-            self.update_step()
+            self.update_steps_list()
 
     def get_dependencies(
         self,
@@ -388,13 +391,11 @@ class BaseStep:
             run_in_parallel(_register, df, workers=16, progress_bar=True)
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
-    def update_step(self):
-        cdc = NoCDC("fabricks", "steps")
-
+    def update_steps_list(self):
         order = self.options.get("order", 0)
+        df = SPARK.sql(f"select '{self.expand}' as expand, '{self.name}' as step, '{order}' :: int as `order`")
 
-        df = SPARK.sql(f"select {self.expand} as expand, {self.name} as step, {order} as order from fabricks.steps")
-        cdc.update(df)
+        NoCDC("fabricks", "steps").delete_missing(df, keys=["step"], update_where=f"step = '{self.name}'")
 
     def __str__(self):
         return self.name
