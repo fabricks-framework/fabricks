@@ -74,18 +74,22 @@ class Configurator(ABC):
 
     @property
     def allowed_input__columns(self) -> List[str]:
-        cols = self.allowed_leading__columns + self.allowed_trailing__columns
+        cols = self.__columns
 
         if self.slowly_changing_dimension:
-            cols.remove("__valid_from")
-            cols.remove("__valid_to")
-            cols.remove("__is_current")
-            cols.remove("__is_deleted")
+            if "__valid_from" in cols:
+                cols.remove("__valid_from")
+            if "__valid_to" in cols:
+                cols.remove("__valid_to")
+            if "__is_current" in cols:
+                cols.remove("__is_current")
+            if "__is_deleted" in cols:
+                cols.remove("__is_deleted")
 
         return cols
 
     @property
-    def allowed_leading__columns(self) -> List[str]:
+    def allowed_ouput_leading__columns(self) -> List[str]:
         cols = [
             "__identity",
             "__source",
@@ -106,7 +110,7 @@ class Configurator(ABC):
         return cols
 
     @property
-    def allowed_trailing__columns(self) -> List[str]:
+    def allowed_output_trailing__columns(self) -> List[str]:
         cols = [
             "__operation",
             "__metadata",
@@ -187,8 +191,8 @@ class Configurator(ABC):
     def sort_columns(self, columns: List[str]) -> List[str]:
         fields = [c for c in columns if not c.startswith("__")]
 
-        leading = self.allowed_leading__columns
-        trailing = self.allowed_trailing__columns
+        leading = self.allowed_ouput_leading__columns
+        trailing = self.allowed_output_trailing__columns
 
         # move __hash to the front of the table to ensure statistics are present
         if "__key" not in columns and "__hash" in columns:

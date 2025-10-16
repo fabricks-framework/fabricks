@@ -37,7 +37,7 @@ class Forge:
 
     @staticmethod
     def armageddon(steps: Optional[Union[TStep, List[TStep], str, List[str]]]):
-        DEFAULT_LOGGER.critical("armageddon")
+        DEFAULT_LOGGER.warning("💥 armageddon 💥")
         print_atomic_bomb()
 
         DEFAULT_LOGGER.setLevel(logging.INFO)
