@@ -128,7 +128,7 @@ class BaseStep:
         self.database.drop()
 
     def create(self):
-        DEFAULT_LOGGER.info("🌟 (create)", extra={"label": self})
+        DEFAULT_LOGGER.info("create", extra={"label": self})
 
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"{self.name} not found in runtime")

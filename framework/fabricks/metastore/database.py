@@ -33,7 +33,7 @@ class Database:
         return self.storage.joinpath("delta")
 
     def create(self):
-        DEFAULT_LOGGER.info("🌟 (create database)", extra={"label": self})
+        DEFAULT_LOGGER.info("create database", extra={"label": self})
         self.spark.sql(f"create database if not exists {self.name};")
 
     def drop(self, rm: Optional[bool] = True):
