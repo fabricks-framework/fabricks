@@ -11,7 +11,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 
 
 def deploy_notebook(notebook: str):
-    DEFAULT_LOGGER.debug(f"(over)write {notebook}")
+    DEFAULT_LOGGER.debug(f"overwrite {notebook}")
 
     w = WorkspaceClient()
 
@@ -33,7 +33,7 @@ def deploy_notebook(notebook: str):
 
 
 def deploy_notebooks():
-    DEFAULT_LOGGER.info("(over)write notebooks")
+    DEFAULT_LOGGER.info("overwrite notebooks")
 
     for n in [
         "cluster",
