@@ -11,7 +11,7 @@ from fabricks.core.jobs.base._types import JobDependency, TBronze
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers import BaseParser
 from fabricks.core.parsers.get_parser import get_parser
-from fabricks.core.utils import clean
+from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.helpers import concat_ws
 from fabricks.utils.path import Path
