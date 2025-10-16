@@ -7,7 +7,7 @@ from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
-from fabricks.core.schedules.get_schedule import get_schedule
+from fabricks.core.jobs.get_schedule import get_schedule
 from fabricks.utils.path import Path
 
 

@@ -1,11 +1,7 @@
-from pyspark.sql.types import Row
+from fabricks.core.jobs.get_schedule import get_schedule  # avoid circular import
+from fabricks.core.jobs.get_schedules import get_schedules  # void circular import
 
-from fabricks.core.schedules.get_schedules import get_schedules
-
-
-def get_schedule(name: str) -> Row:
-    schedule = next(s for s in get_schedules() if s.get("name") == name)
-
-    assert schedule, "schedule not found"
-    assert len(schedule) == 1, "schedule duplicated"
-    return Row(**schedule)
+__all__ = [
+    "get_schedules",
+    "get_schedule",
+]
