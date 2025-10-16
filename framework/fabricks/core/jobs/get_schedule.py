@@ -1,6 +1,6 @@
 from pyspark.sql.types import Row
 
-from fabricks.core.schedules.get_schedules import get_schedules
+from fabricks.core.jobs.get_schedules import get_schedules
 
 
 def get_schedule(name: str) -> Row:
