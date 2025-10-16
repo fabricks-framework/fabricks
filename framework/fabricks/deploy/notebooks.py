@@ -5,12 +5,13 @@ from importlib import resources
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service import workspace
 
-from fabricks.api import notebooks
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
 
 
 def deploy_notebook(notebook: str):
+    from fabricks.api import notebooks
+
     DEFAULT_LOGGER.debug(f"overwrite {notebook}")
 
     w = WorkspaceClient()
