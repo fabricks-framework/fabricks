@@ -12,7 +12,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core import get_step
 from fabricks.core.jobs.base._types import TStep
-from fabricks.core.scripts import generate, terminate
+from fabricks.core.schedules import generate, terminate
 from fabricks.utils.helpers import run_in_parallel, run_notebook
 
 # COMMAND ----------

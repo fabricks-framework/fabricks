@@ -7,7 +7,7 @@ from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
-from fabricks.core.schedules import get_schedules
+from fabricks.core.schedules.get_schedule import get_schedule
 from fabricks.utils.path import Path
 
 
@@ -125,9 +125,7 @@ class Invoker(Checker):
 
         variables = None
         if schedule is not None:
-            variables = (
-                next(s for s in get_schedules() if s.get("name") == schedule).get("options", {}).get("variables", {})
-            )
+            variables = get_schedule(name=schedule).get("options", {}).get("variables", {})
 
         if variables is None:
             variables = {}

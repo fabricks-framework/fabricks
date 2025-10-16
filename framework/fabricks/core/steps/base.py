@@ -105,19 +105,25 @@ class BaseStep:
 
         tmp = fs.joinpath("tmp")
         if tmp.exists():
+            DEFAULT_LOGGER.warning("clean tmp folder")
             tmp.rm()
 
         checkpoint = fs.joinpath("checkpoints")
         if checkpoint.exists():
+            DEFAULT_LOGGER.warning("clean checkpoint folder")
             checkpoint.rm()
 
         schema = fs.joinpath("schemas")
         if schema.exists():
+            DEFAULT_LOGGER.warning("clean schema folder")
             schema.rm()
 
+        DEFAULT_LOGGER.warning("clean fabricks")
         for t in ["jobs", "tables", "dependencies", "views"]:
             tbl = Table("fabricks", self.name, t)
             tbl.drop()
+
+        SPARK.sql(f"delete from fabricks.steps where step = '{self.name}'")
 
         self.database.drop()
 
@@ -145,6 +151,7 @@ class BaseStep:
 
             self.update_tables_list()
             self.update_views_list()
+            self.update_step()
 
     def get_dependencies(
         self,
@@ -380,6 +387,14 @@ class BaseStep:
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
             run_in_parallel(_register, df, workers=16, progress_bar=True)
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
+
+    def update_step(self):
+        cdc = NoCDC("fabricks", "steps")
+
+        order = self.options.get("order", 0)
+
+        df = SPARK.sql(f"select {self.expand} as expand, {self.name} as step, {order} as order from fabricks.steps")
+        cdc.update(df)
 
     def __str__(self):
         return self.name

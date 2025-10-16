@@ -8,7 +8,7 @@ from typing import Any, cast
 
 from databricks.sdk.runtime import dbutils, display
 
-import fabricks.core.scripts as s
+import fabricks.core.schedules as s
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core import get_step

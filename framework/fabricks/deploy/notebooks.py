@@ -38,10 +38,9 @@ def deploy_notebooks():
     for n in [
         "cluster",
         "initialize",
-        "optimize",
         "process",
+        "schedule",
         "run",
         "terminate",
-        "vacuum",
     ]:
         deploy_notebook(notebook=n)

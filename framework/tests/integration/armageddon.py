@@ -21,7 +21,7 @@ DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 
-Deploy.armageddon(steps=steps)
+Deploy.armageddon(steps=steps, nowait=True)  # why wait ?
 
 # COMMAND ----------
 

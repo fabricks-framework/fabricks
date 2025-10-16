@@ -36,6 +36,7 @@ if CATALOG:
     try:
         spark.sql(f"use catalog {CATALOG}")
         spark.sql("drop schema if exists bronze cascade")
+
     except Exception:
         pass
 
@@ -66,6 +67,7 @@ if expected:
     db = Database("expected")
     db.drop()
     db.create()
+
     create_expected_views()
 
 # COMMAND ----------
