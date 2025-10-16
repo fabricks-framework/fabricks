@@ -11,6 +11,8 @@ def register_all_masks():
     """
     Register all masks.
     """
+
+    DEFAULT_LOGGER.info("register masks")
     for mask in get_masks():
         split = mask.split(".")
         try:
@@ -44,5 +46,7 @@ def register_mask(mask: str, spark: Optional[SparkSession] = None):
     assert spark is not None
 
     if not is_registered(mask, spark):
+        DEFAULT_LOGGER.debug(f"register mask {mask}")
+
         path = PATH_MASKS.joinpath(f"{mask}.sql")
         spark.sql(path.get_sql())

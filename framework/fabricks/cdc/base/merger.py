@@ -81,7 +81,7 @@ class Merger(Processor):
         try:
             sql = merge.render(**context)
         except Exception as e:
-            DEFAULT_LOGGER.debug("context", extra={"job": self, "content": context})
+            DEFAULT_LOGGER.debug("context", extra={"label": self, "content": context})
             raise e
 
         if fix:
@@ -89,10 +89,10 @@ class Merger(Processor):
                 sql = sql.replace("{src}", "src")
                 sql = fix_sql(sql)
                 sql = sql.replace("`src`", "{src}")
-                DEFAULT_LOGGER.debug("merge", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.debug("merge", extra={"label": self, "sql": sql})
 
             except Exception as e:
-                DEFAULT_LOGGER.exception("could not clean sql query", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.exception("could not clean sql query", extra={"label": self, "sql": sql})
                 raise e
 
         return sql
@@ -106,5 +106,5 @@ class Merger(Processor):
         view = create_or_replace_global_temp_view(global_temp_view, df, uuid=kwargs.get("uuid", False), job=self)
 
         merge = self.get_merge_query(view, **kwargs)
-        DEFAULT_LOGGER.debug("exec merge", extra={"job": self, "sql": merge})
+        DEFAULT_LOGGER.debug("exec merge", extra={"label": self, "sql": merge})
         self.spark.sql(merge, src=view)

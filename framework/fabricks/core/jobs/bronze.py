@@ -86,13 +86,13 @@ class Bronze(BaseJob):
         else:
             file_format = "delta"
 
-        DEFAULT_LOGGER.debug(f"register external table ({self.data_path})", extra={"job": self})
+        DEFAULT_LOGGER.debug(f"register external table ({self.data_path})", extra={"label": self})
 
         try:
             df = self.spark.sql(f"select * from {file_format}.`{self.data_path}`")
             assert len(df.columns) > 1, "external table must have at least one column"
         except Exception as e:
-            DEFAULT_LOGGER.exception("read external table failed", extra={"job": self})
+            DEFAULT_LOGGER.exception("read external table failed", extra={"label": self})
             raise e
 
         self.spark.sql(
@@ -100,17 +100,17 @@ class Bronze(BaseJob):
         )
 
     def drop_external_table(self):
-        DEFAULT_LOGGER.warning("remove external table from metastore", extra={"job": self})
+        DEFAULT_LOGGER.warning("remove external table from metastore", extra={"label": self})
         self.spark.sql(f"drop table if exists {self.qualified_name}")
 
     def compute_statistics_external_table(self):
-        DEFAULT_LOGGER.debug("compute statistics (external table)", extra={"job": self})
+        DEFAULT_LOGGER.debug("compute statistics (external table)", extra={"label": self})
         self.spark.sql(f"analyze table {self.qualified_name} compute statistics")
 
     def vacuum_external_table(self, retention_hours: Optional[int] = 168):
         from delta import DeltaTable
 
-        DEFAULT_LOGGER.debug("vacuum (external table)", extra={"job": self})
+        DEFAULT_LOGGER.debug("vacuum (external table)", extra={"label": self})
         try:
             dt = DeltaTable.forPath(self.spark, self.data_path.string)
             self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
@@ -123,7 +123,7 @@ class Bronze(BaseJob):
         vacuum: Optional[bool] = True,
         compute_statistics: Optional[bool] = True,
     ):
-        DEFAULT_LOGGER.debug("maintain (external table)", extra={"job": self})
+        DEFAULT_LOGGER.debug("maintain (external table)", extra={"label": self})
         if vacuum:
             self.vacuum_external_table()
 
@@ -199,7 +199,7 @@ class Bronze(BaseJob):
 
         if calculated_columns:
             for key, value in calculated_columns.items():
-                DEFAULT_LOGGER.debug(f"add calculated column ({key} -> {value})", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"add calculated column ({key} -> {value})", extra={"label": self})
                 df = df.withColumn(key, expr(f"{value}"))
 
         return df
@@ -207,7 +207,7 @@ class Bronze(BaseJob):
     def add_hash(self, df: DataFrame) -> DataFrame:
         if "__hash" not in df.columns:
             fields = [f"`{c}`" for c in df.columns if not c.startswith("__")]
-            DEFAULT_LOGGER.debug("add hash", extra={"job": self})
+            DEFAULT_LOGGER.debug("add hash", extra={"label": self})
 
             if "__operation" in df.columns:
                 fields += ["__operation == 'delete'"]
@@ -223,7 +223,7 @@ class Bronze(BaseJob):
         if "__key" not in df.columns:
             fields = self.options.job.get_list("keys")
             if fields:
-                DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"label": self})
 
                 if "__source" in df.columns:
                     fields = fields + ["__source"]
@@ -237,7 +237,7 @@ class Bronze(BaseJob):
         if "__source" not in df.columns:
             source = self.options.job.get("source")
             if source:
-                DEFAULT_LOGGER.debug(f"add source ({source})", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"add source ({source})", extra={"label": self})
                 df = df.withColumn("__source", lit(source))
 
         return df
@@ -246,7 +246,7 @@ class Bronze(BaseJob):
         if "__operation" not in df.columns:
             operation = self.options.job.get("operation")
             if operation:
-                DEFAULT_LOGGER.debug(f"add operation ({operation})", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"add operation ({operation})", extra={"label": self})
                 df = df.withColumn("__operation", lit(operation))
 
             else:
@@ -299,10 +299,10 @@ class Bronze(BaseJob):
         return df
 
     def create_or_replace_view(self):
-        DEFAULT_LOGGER.warning("create or replace view not allowed", extra={"job": self})
+        DEFAULT_LOGGER.warning("create or replace view not allowed", extra={"label": self})
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
-        DEFAULT_LOGGER.warning("schema overwrite not allowed", extra={"job": self})
+        DEFAULT_LOGGER.warning("schema overwrite not allowed", extra={"label": self})
 
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         return {}
@@ -319,7 +319,7 @@ class Bronze(BaseJob):
 
         check_df = self.spark.sql(sql)
         if check_df.isEmpty():
-            DEFAULT_LOGGER.warning("no data", extra={"job": self})
+            DEFAULT_LOGGER.warning("no data", extra={"label": self})
             return
 
         assert isinstance(self.cdc, NoCDC)
@@ -328,9 +328,9 @@ class Bronze(BaseJob):
 
     def for_each_run(self, **kwargs):
         if self.mode == "register":
-            DEFAULT_LOGGER.debug("register (no run)", extra={"job": self})
+            DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})
         elif self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no run)", extra={"job": self})
+            DEFAULT_LOGGER.debug("memory (no run)", extra={"label": self})
         else:
             super().for_each_run(**kwargs)
 
@@ -338,7 +338,7 @@ class Bronze(BaseJob):
         if self.mode == "register":
             self.register_external_table()
         elif self.mode == "memory":
-            DEFAULT_LOGGER.info("memory (no table nor view)", extra={"job": self})
+            DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
         else:
             super().create()
 
@@ -346,19 +346,19 @@ class Bronze(BaseJob):
         if self.mode == "register":
             self.register_external_table()
         elif self.mode == "memory":
-            DEFAULT_LOGGER.info("memory (no table nor view)", extra={"job": self})
+            DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
         else:
             super().register()
 
     def truncate(self):
         if self.mode == "register":
-            DEFAULT_LOGGER.info("register (no truncate)", extra={"job": self})
+            DEFAULT_LOGGER.info("register (no truncate)", extra={"label": self})
         else:
             super().truncate()
 
     def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
         if self.mode == "register":
-            DEFAULT_LOGGER.info("register (no restore)", extra={"job": self})
+            DEFAULT_LOGGER.info("register (no restore)", extra={"label": self})
         else:
             super().restore()
 
@@ -380,7 +380,7 @@ class Bronze(BaseJob):
 
     def vacuum(self):
         if self.mode == "memory":
-            DEFAULT_LOGGER.info("memory (no vacuum)", extra={"job": self})
+            DEFAULT_LOGGER.info("memory (no vacuum)", extra={"label": self})
         elif self.mode == "register":
             self.vacuum_external_table()
         else:

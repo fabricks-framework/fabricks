@@ -185,7 +185,7 @@ jobs = [s.strip() for s in dbutils.widgets.get("jobs").split(",")]
 jobs = [[j.strip() for j in job.split("//")] if "//" in job else job for job in jobs]
 
 for job in jobs:
-    DEFAULT_LOGGER.warning(", ".join(actions), extra={"job": job})
+    DEFAULT_LOGGER.warning(", ".join(actions), extra={"label": job})
 
 # COMMAND ----------
 

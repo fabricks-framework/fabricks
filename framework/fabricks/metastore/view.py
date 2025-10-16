@@ -47,7 +47,7 @@ def create_or_replace_global_temp_view(
     if job is None:
         job = name.split("__")[0]
 
-    DEFAULT_LOGGER.debug(f"create global temp view {name}", extra={"job": job})
+    DEFAULT_LOGGER.debug(f"create global temp view {name}", extra={"label": job})
     df.createOrReplaceGlobalTempView(name)
 
     return f"global_temp.{name}"

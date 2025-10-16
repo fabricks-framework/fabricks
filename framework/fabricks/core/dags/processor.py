@@ -143,7 +143,7 @@ class DagProcessor(BaseDags):
                         )
 
                 except Exception:
-                    LOGGER.warning("failed", extra={"step": str(self.step), "job": j.get("Job")})
+                    LOGGER.warning("failed", extra={"label": str(self.step), "job": j.get("Job")})
 
                 finally:
                     j["Status"] = "ok"

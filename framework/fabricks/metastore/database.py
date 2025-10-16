@@ -33,17 +33,17 @@ class Database:
         return self.storage.joinpath("delta")
 
     def create(self):
-        DEFAULT_LOGGER.info("🌟 (create database)", extra={"step": self})
+        DEFAULT_LOGGER.info("🌟 (create database)", extra={"label": self})
         self.spark.sql(f"create database if not exists {self.name};")
 
     def drop(self, rm: Optional[bool] = True):
         if self.exists():
-            DEFAULT_LOGGER.warning("drop database", extra={"step": self})
+            DEFAULT_LOGGER.warning("drop database", extra={"label": self})
             self.spark.sql(f"drop database if exists {self.name} cascade;")
 
         if rm:
             if self.delta_path.exists():
-                DEFAULT_LOGGER.debug("remove delta files", extra={"step": self})
+                DEFAULT_LOGGER.debug("remove delta files", extra={"label": self})
                 self.delta_path.rm()
 
     def exists(self) -> bool:

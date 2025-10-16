@@ -30,7 +30,7 @@ class Invoker(Checker):
 
         if invokers:
             for i in invokers:
-                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"job": self})
+                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"label": self})
                 try:
                     notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
@@ -64,7 +64,7 @@ class Invoker(Checker):
 
         if invokers:
             for i in invokers:
-                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"step": self.step})
+                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"label": self.step})
                 try:
                     notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
@@ -154,7 +154,7 @@ class Invoker(Checker):
         extenders = self.options.extenders
         for e in extenders:
             name = e.get("extender")
-            DEFAULT_LOGGER.info(f"calling {name}", extra={"job": self})
+            DEFAULT_LOGGER.info(f"calling {name}", extra={"label": self})
             arguments = e.get("arguments") or {}
 
             extender = get_extender(name)
@@ -168,7 +168,7 @@ class Invoker(Checker):
         extenders = self.step_conf.get("extender_options", {})
         for e in extenders:
             name = e.get("extender")
-            DEFAULT_LOGGER.info(f"calling {name}", extra={"step": self.step})
+            DEFAULT_LOGGER.info(f"calling {name}", extra={"label": self.step})
             arguments = e.get("arguments", {})
 
             extender = get_extender(name)

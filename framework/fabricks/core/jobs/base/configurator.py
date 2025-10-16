@@ -94,22 +94,22 @@ class Configurator(ABC):
             step_conf_options = step_options.get("conf", {})
             if step_sql_options:
                 for key, value in step_sql_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"step": self.step})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.sql(f"set {key} = {value}")
             if step_conf_options:
                 for key, value in step_conf_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"step": self.step})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.conf.set(f"{key}", f"{value}")
 
             job_sql_options = self.options.spark.get_dict("sql")
             job_conf_options = self.options.spark.get_dict("conf")
             if job_sql_options:
                 for key, value in job_sql_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"job": self})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.sql(f"set {key} = {value}")
             if job_conf_options:
                 for key, value in job_conf_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"job": self})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.conf.set(f"{key}", f"{value}")
 
             self._spark = spark
@@ -297,7 +297,7 @@ class Configurator(ABC):
         compute_statistics: Optional[bool] = True,
     ):
         if self.mode == "memory":
-            DEFAULT_LOGGER.debug("could not maintain (memory)", extra={"job": self})
+            DEFAULT_LOGGER.debug("could not maintain (memory)", extra={"label": self})
 
         else:
             if vacuum:
@@ -309,7 +309,7 @@ class Configurator(ABC):
 
     def vacuum(self):
         if self.mode == "memory":
-            DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"job": self})
+            DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"label": self})
 
         else:
             job = self.options.table.get("retention_days")

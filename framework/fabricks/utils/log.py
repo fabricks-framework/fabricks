@@ -49,8 +49,11 @@ class LogFormatter(logging.Formatter):
         levelname_formatted = f"{self.COLORS[record.levelno]}{levelname}:{padding}{self.RESET}"
 
         prefix = ""
-        if hasattr(record, "job"):
-            prefix = f"{record.__dict__.get('job')} - "
+
+        if hasattr(record, "label"):
+            prefix = f"{record.__dict__.get('label')} - "
+        elif hasattr(record, "job"):
+            prefix = f"{record.__dict__.get('job')} - "  # keep for backward compatibility
         elif hasattr(record, "step"):
             prefix = f"{self.BRIGHT}{record.__dict__.get('step')}{self.RESET} - "
 

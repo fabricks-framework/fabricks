@@ -4,6 +4,7 @@ from typing import List, Optional, Union, cast
 from fabricks.context import FABRICKS_STORAGE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.forge.masks import deploy_masks
+from fabricks.core.forge.notebooks import deploy_notebooks
 from fabricks.core.forge.tables import deploy_tables
 from fabricks.core.forge.udfs import deploy_udfs
 from fabricks.core.forge.utils import print_atomic_bomb
@@ -11,7 +12,7 @@ from fabricks.core.forge.views import deploy_views
 from fabricks.core.jobs.base._types import Steps, TStep
 from fabricks.core.schedules import create_or_replace_views as create_or_replace_schedules_views
 from fabricks.core.steps.base import BaseStep
-from fabricks.core.views import create_or_replace_views as create_or_replace_schedules_views_views
+from fabricks.core.views import create_or_replace_views as create_or_replace_custom_views
 from fabricks.metastore.database import Database
 
 
@@ -24,7 +25,7 @@ class Forge:
     def views():
         deploy_views()
 
-        create_or_replace_schedules_views_views()
+        create_or_replace_custom_views()
         create_or_replace_schedules_views()
 
     @staticmethod
@@ -34,6 +35,10 @@ class Forge:
     @staticmethod
     def masks():
         deploy_masks()
+
+    @staticmethod
+    def notebooks():
+        deploy_notebooks()
 
     @staticmethod
     def armageddon(steps: Optional[Union[TStep, List[TStep], str, List[str]]]):

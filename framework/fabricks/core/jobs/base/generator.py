@@ -14,7 +14,7 @@ from fabricks.metastore.view import create_or_replace_global_temp_view
 
 class Generator(Configurator):
     def update_dependencies(self):
-        DEFAULT_LOGGER.info("update dependencies", extra={"job": self})
+        DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
 
         deps = self.get_dependencies()
         if deps:
@@ -33,7 +33,7 @@ class Generator(Configurator):
         If the schema folder exists, it will be deleted. The method also calls the `rm_checkpoints` method to remove any checkpoints associated with the generator.
         """
         if self.paths.schema.exists():
-            DEFAULT_LOGGER.info("delete schema folder", extra={"job": self})
+            DEFAULT_LOGGER.info("delete schema folder", extra={"label": self})
             self.paths.schema.rm()
         self.rm_checkpoints()
 
@@ -44,7 +44,7 @@ class Generator(Configurator):
         This method checks if the checkpoints folder exists and deletes it if it does.
         """
         if self.paths.checkpoints.exists():
-            DEFAULT_LOGGER.info("delete checkpoints folder", extra={"job": self})
+            DEFAULT_LOGGER.info("delete checkpoints folder", extra={"label": self})
             self.paths.checkpoints.rm()
 
     def rm_commit(self, id: Union[str, int]):
@@ -59,7 +59,7 @@ class Generator(Configurator):
         """
         path = self.paths.commits.joinpath(str(id))
         if path.exists():
-            DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"job": self})
+            DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": self})
             path.rm()
 
     def truncate(self):
@@ -72,7 +72,7 @@ class Generator(Configurator):
         Returns:
             None
         """
-        DEFAULT_LOGGER.warning("truncate", extra={"job": self})
+        DEFAULT_LOGGER.warning("truncate", extra={"label": self})
         self.rm()
         if self.persist:
             self.table.truncate()
@@ -109,7 +109,7 @@ class Generator(Configurator):
                 """
             ).collect()[0]
             if cast(int, row.count) > 0:
-                DEFAULT_LOGGER.warning(f"{row.count} children found", extra={"job": self, "content": row.children})
+                DEFAULT_LOGGER.warning(f"{row.count} children found", extra={"label": self, "content": row.children})
 
         except Exception:
             pass
@@ -255,7 +255,7 @@ class Generator(Configurator):
                             cluster_by.append("__hash")
 
                     if not cluster_by:
-                        DEFAULT_LOGGER.debug("could not find clustering column", extra={"job": self})
+                        DEFAULT_LOGGER.debug("could not find clustering column", extra={"label": self})
                         liquid_clustering = False
                         cluster_by = None
 
@@ -301,7 +301,7 @@ class Generator(Configurator):
             )
 
         if not self.table.exists():
-            DEFAULT_LOGGER.info("create table", extra={"job": self})
+            DEFAULT_LOGGER.info("create table", extra={"label": self})
 
             df = self.get_data(self.stream, schema_only=True)
             if df:
@@ -340,7 +340,7 @@ class Generator(Configurator):
                     self.table.add_comment(comment=comment)
 
         else:
-            DEFAULT_LOGGER.debug("table exists, skip creation", extra={"job": self})
+            DEFAULT_LOGGER.debug("table exists, skip creation", extra={"label": self})
 
     def _update_schema(
         self,
@@ -445,4 +445,4 @@ class Generator(Configurator):
                 else:
                     self.table.enable_liquid_clustering(auto=True)
         else:
-            DEFAULT_LOGGER.debug("could not enable liquid clustering", extra={"job": self})
+            DEFAULT_LOGGER.debug("could not enable liquid clustering", extra={"label": self})

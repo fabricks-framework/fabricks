@@ -99,7 +99,7 @@ class Gold(BaseJob):
     def register_udfs(self):
         for u in self.get_udfs():
             if not is_registered(u):
-                DEFAULT_LOGGER.debug(f"register udf ({u})", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"register udf ({u})", extra={"label": self})
                 register_udf(udf=u, spark=self.spark)
 
     def base_transform(self, df: DataFrame) -> DataFrame:
@@ -120,7 +120,7 @@ class Gold(BaseJob):
         elif self.options.job.get("notebook"):
             from databricks.sdk.runtime import dbutils
 
-            DEFAULT_LOGGER.debug("run notebook", extra={"job": self})
+            DEFAULT_LOGGER.debug("run notebook", extra={"label": self})
             path = self.paths.runtime.get_notebook_path()
 
             if schema_only:
@@ -305,11 +305,11 @@ class Gold(BaseJob):
 
         check_df = self.spark.sql(sql)
         if check_df.isEmpty():
-            DEFAULT_LOGGER.warning("no data", extra={"job": self})
+            DEFAULT_LOGGER.warning("no data", extra={"label": self})
             return
 
         if reload:
-            DEFAULT_LOGGER.warning("force reload", extra={"job": self})
+            DEFAULT_LOGGER.warning("force reload", extra={"label": self})
             self.cdc.complete(sql, **context)
 
         elif self.mode == "update":
@@ -345,7 +345,7 @@ class Gold(BaseJob):
 
     def create(self):
         if self.mode == "invoke":
-            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
+            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
         else:
             self.register_udfs()
             super().create()
@@ -357,7 +357,7 @@ class Gold(BaseJob):
             self.cdc_last_timestamp.table.register()
 
         if self.mode == "invoke":
-            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
+            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
         else:
             super().register()
 
@@ -400,11 +400,11 @@ class Gold(BaseJob):
 
     def overwrite(self, schedule: Optional[str] = None):
         if self.mode == "invoke":
-            DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"job": self})
+            DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"label": self})
             return
 
         elif self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"job": self})
+            DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"label": self})
             self.create_or_replace_view()
             return
 

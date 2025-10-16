@@ -141,7 +141,7 @@ class Silver(BaseJob):
                         dfs.append(df)
 
                 except Exception as e:
-                    DEFAULT_LOGGER.exception("could not get dependencies", extra={"job": self})
+                    DEFAULT_LOGGER.exception("could not get dependencies", extra={"label": self})
                     raise e
 
             df = concat_dfs(dfs)
@@ -191,7 +191,7 @@ class Silver(BaseJob):
 
             sql = f"create or replace view {self.qualified_name} as {' union all '.join(queries)}"
             sql = fix_sql(sql)
-            DEFAULT_LOGGER.debug("view", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
             self.spark.sql(sql)
 
         else:
@@ -200,7 +200,7 @@ class Silver(BaseJob):
             parent = deps[0].parent
             sql = f"select * from {parent}"
             sql = fix_sql(sql)
-            DEFAULT_LOGGER.debug("view", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
 
             df = self.spark.sql(sql)
             cdc_options = self.get_cdc_context(df)
@@ -210,7 +210,7 @@ class Silver(BaseJob):
         from py4j.protocol import Py4JJavaError
 
         try:
-            DEFAULT_LOGGER.debug("create or replace current view", extra={"job": self})
+            DEFAULT_LOGGER.debug("create or replace current view", extra={"label": self})
 
             df = self.spark.sql(f"select * from {self.qualified_name}")
 
@@ -227,18 +227,18 @@ class Silver(BaseJob):
               {where_clause}
             """
             # sql = fix_sql(sql)
-            # DEFAULT_LOGGER.debug("current view", extra={"job": self, "sql": sql})
+            # DEFAULT_LOGGER.debug("current view", extra={"label": self, "sql": sql})
             self.spark.sql(sql)
 
         except Py4JJavaError as e:
-            DEFAULT_LOGGER.exception("could not create nor replace view", extra={"job": self}, exc_info=e)
+            DEFAULT_LOGGER.exception("could not create nor replace view", extra={"label": self}, exc_info=e)
 
     def overwrite(self, schedule: Optional[str] = None):
         self.truncate()
         self.run(schedule=schedule)
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
-        DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"job": self})
+        DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
 
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         # if dataframe, reference is passed (BUG)
@@ -270,12 +270,12 @@ class Silver(BaseJob):
                   1
                 """
             sql = fix_sql(sql)
-            DEFAULT_LOGGER.debug("check", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("check", extra={"label": self, "sql": sql})
 
             check_df = self.spark.sql(sql)
             if not check_df.isEmpty():
                 rectify = True
-                DEFAULT_LOGGER.debug("rectify enabled", extra={"job": self})
+                DEFAULT_LOGGER.debug("rectify enabled", extra={"label": self})
 
         context = {
             "soft_delete": self.slowly_changing_dimension,
@@ -324,7 +324,7 @@ class Silver(BaseJob):
 
         check_df = self.spark.sql(sql)
         if check_df.isEmpty():
-            DEFAULT_LOGGER.warning("no data", extra={"job": self})
+            DEFAULT_LOGGER.warning("no data", extra={"label": self})
             return
 
         if self.mode == "update":
@@ -365,5 +365,5 @@ class Silver(BaseJob):
 
     def drop(self):
         super().drop()
-        DEFAULT_LOGGER.debug("drop current view", extra={"job": self})
+        DEFAULT_LOGGER.debug("drop current view", extra={"label": self})
         self.spark.sql(f"drop view if exists {self.qualified_name}__current")

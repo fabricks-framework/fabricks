@@ -82,12 +82,12 @@ class Generator(Configurator):
         from __view
         """
         sql = fix_sql(sql)
-        DEFAULT_LOGGER.debug("create or replace view", extra={"job": self, "sql": sql})
+        DEFAULT_LOGGER.debug("create or replace view", extra={"label": self, "sql": sql})
 
         try:
             self.spark.sql(sql)
         except Py4JJavaError as e:
-            DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "sql": sql}, exc_info=e)
+            DEFAULT_LOGGER.exception("could not execute sql query", extra={"label": self, "sql": sql}, exc_info=e)
 
     def optimize_table(self):
         columns = None

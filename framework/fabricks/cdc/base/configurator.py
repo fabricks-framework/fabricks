@@ -159,7 +159,7 @@ class Configurator(ABC):
         return df
 
     def has_data(self, src: Union[DataFrame, Table, str], **kwargs) -> bool:
-        DEFAULT_LOGGER.debug("check if has data", extra={"job": self})
+        DEFAULT_LOGGER.debug("check if has data", extra={"label": self})
         df = self.get_src(src=src)
         return not df.isEmpty()
 

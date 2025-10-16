@@ -138,7 +138,7 @@ steps = [s.strip() for s in dbutils.widgets.get("steps").split(",")]
 steps = [[j.strip() for j in job.split("//")] if "//" in job else job for job in steps]
 
 for step in steps:
-    DEFAULT_LOGGER.warning(", ".join(actions), extra={"step": step})
+    DEFAULT_LOGGER.warning(", ".join(actions), extra={"label": step})
 
 # COMMAND ----------
 

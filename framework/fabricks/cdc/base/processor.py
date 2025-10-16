@@ -21,11 +21,11 @@ class Processor(Generator):
             src = f"select * from {global_temp_view}"
 
         sql = self.get_query(src, fix=True, **kwargs)
-        DEFAULT_LOGGER.debug("exec query", extra={"job": self, "sql": sql})
+        DEFAULT_LOGGER.debug("exec query", extra={"label": self, "sql": sql})
         return self.spark.sql(sql)
 
     def get_query_context(self, src: Union[DataFrame, Table, str], **kwargs) -> dict:
-        DEFAULT_LOGGER.debug("deduce query context", extra={"job": self})
+        DEFAULT_LOGGER.debug("deduce query context", extra={"label": self})
 
         if isinstance(src, (DataFrame, CDataFrame)):
             format = "dataframe"
@@ -375,11 +375,11 @@ class Processor(Generator):
             sql = fix_sql(sql)
             sql = sql.replace("`src`", "{src}")
 
-            DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql, "target": "buffer"})
+            DEFAULT_LOGGER.debug("query", extra={"label": self, "sql": sql, "target": "buffer"})
             return sql
 
         except Exception as e:
-            DEFAULT_LOGGER.exception("could not fix sql query", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.exception("could not fix sql query", extra={"label": self, "sql": sql})
             raise e
 
     def fix_context(self, context: dict, fix: Optional[bool] = True, **kwargs) -> dict:
@@ -389,11 +389,11 @@ class Processor(Generator):
         try:
             sql = template.render(**context)
             if fix:
-                DEFAULT_LOGGER.debug("fix context", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.debug("fix context", extra={"label": self, "sql": sql})
                 sql = self.fix_sql(sql)
 
         except (Exception, TypeError) as e:
-            DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "context": context})
+            DEFAULT_LOGGER.exception("could not execute sql query", extra={"label": self, "context": context})
             raise e
 
         row = self.spark.sql(sql).collect()[0]
@@ -420,11 +420,11 @@ class Processor(Generator):
             if fix:
                 sql = self.fix_sql(sql)
             else:
-                DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.debug("query", extra={"label": self, "sql": sql})
 
         except (Exception, TypeError) as e:
-            DEFAULT_LOGGER.debug("context", extra={"job": self, "context": context})
-            DEFAULT_LOGGER.exception("could not generate sql query", extra={"job": self, "context": context})
+            DEFAULT_LOGGER.debug("context", extra={"label": self, "context": context})
+            DEFAULT_LOGGER.exception("could not generate sql query", extra={"label": self, "context": context})
             raise e
 
         return sql
@@ -440,7 +440,7 @@ class Processor(Generator):
         create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
         append = f"insert into table {self.table} by name select * from global_temp.{name}"
 
-        DEFAULT_LOGGER.debug("exec append", extra={"job": self, "sql": append})
+        DEFAULT_LOGGER.debug("exec append", extra={"label": self, "sql": append})
         self.spark.sql(append)
 
     def overwrite(
@@ -466,5 +466,5 @@ class Processor(Generator):
         create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
         overwrite = f"insert overwrite table {self.table} by name select * from global_temp.{name}"
 
-        DEFAULT_LOGGER.debug("excec overwrite", extra={"job": self, "sql": overwrite})
+        DEFAULT_LOGGER.debug("excec overwrite", extra={"label": self, "sql": overwrite})
         self.spark.sql(overwrite)

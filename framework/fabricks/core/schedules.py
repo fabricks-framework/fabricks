@@ -75,7 +75,7 @@ def create_or_replace_view_internal(name: str, options: dict):
         and j.type not in ('manual')
     """
     sql = fix_sql(sql)
-    DEFAULT_LOGGER.debug("create or replace schedule view", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace (schedule) view", extra={"label": f"fabricks.{name}_schedule", "sql": sql})
 
     SPARK.sql(sql)
 
@@ -89,6 +89,8 @@ def create_or_replace_view(name: str):
 
 
 def create_or_replace_views():
+    DEFAULT_LOGGER.info("create or replace (schedule) views")
+
     df = get_schedules_df()
     for row in df.collect():
         try:

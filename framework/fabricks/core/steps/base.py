@@ -98,7 +98,7 @@ class BaseStep:
         return self._options
 
     def drop(self):
-        DEFAULT_LOGGER.warning("drop", extra={"step": self})
+        DEFAULT_LOGGER.warning("drop", extra={"label": self})
 
         fs = self.database.storage
         assert fs
@@ -122,7 +122,7 @@ class BaseStep:
         self.database.drop()
 
     def create(self):
-        DEFAULT_LOGGER.info("🌟 (create)", extra={"step": self})
+        DEFAULT_LOGGER.info("🌟 (create)", extra={"label": self})
 
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"{self.name} not found in runtime")
@@ -153,7 +153,7 @@ class BaseStep:
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
     ) -> Tuple[DataFrame, List[str]]:
-        DEFAULT_LOGGER.debug("get dependencies", extra={"step": self})
+        DEFAULT_LOGGER.debug("get dependencies", extra={"label": self})
 
         errors = []
         dependencies: list[JobDependency] = []
@@ -163,7 +163,7 @@ class BaseStep:
             try:
                 dependencies.extend(job.get_dependencies())
             except Exception as e:
-                DEFAULT_LOGGER.exception("could not get dependencies", extra={"job": job})
+                DEFAULT_LOGGER.exception("could not get dependencies", extra={"label": job})
                 errors.append((job, e))
 
         df = self.get_jobs()
@@ -176,7 +176,7 @@ class BaseStep:
                 topic = [topic]
 
             where = ", ".join([f"'{t}'" for t in topic])
-            DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"step": self})
+            DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"label": self})
             df = df.where(f"topic in ({where})")
 
         if not df:
@@ -196,7 +196,7 @@ class BaseStep:
         return read_yaml(self.runtime, root="job", preferred_file_name=topic)
 
     def get_jobs(self, topic: Optional[str] = None) -> DataFrame:
-        DEFAULT_LOGGER.debug("get jobs", extra={"step": self})
+        DEFAULT_LOGGER.debug("get jobs", extra={"label": self})
 
         try:
             conf = get_step_conf(self.name)
@@ -216,11 +216,11 @@ class BaseStep:
             return df
 
         except AssertionError as e:
-            DEFAULT_LOGGER.exception("could not get jobs", extra={"step": self})
+            DEFAULT_LOGGER.exception("could not get jobs", extra={"label": self})
             raise e
 
     def create_db_objects(self, retry: Optional[bool] = True) -> List[str]:
-        DEFAULT_LOGGER.info("create db objects", extra={"step": self})
+        DEFAULT_LOGGER.info("create db objects", extra={"label": self})
 
         errors = []
 
@@ -229,7 +229,7 @@ class BaseStep:
             try:
                 job.create()
             except:  # noqa E722
-                DEFAULT_LOGGER.exception("could not create db object", extra={"job": self})
+                DEFAULT_LOGGER.exception("could not create db object", extra={"label": self})
                 errors.append(job)
 
         df = self.get_jobs()
@@ -249,7 +249,7 @@ class BaseStep:
 
         if errors:
             if retry:
-                DEFAULT_LOGGER.warning("retry to create jobs", extra={"step": self})
+                DEFAULT_LOGGER.warning("retry to create jobs", extra={"label": self})
                 return self.create_db_objects(retry=False)
 
         return errors
@@ -265,7 +265,7 @@ class BaseStep:
     def update_configurations(self, drop: Optional[bool] = False):
         df = self.get_jobs()
 
-        DEFAULT_LOGGER.info("update configurations", extra={"step": self})
+        DEFAULT_LOGGER.info("update configurations", extra={"label": self})
 
         cdc = NoCDC("fabricks", self.name, "jobs")
 
@@ -274,7 +274,7 @@ class BaseStep:
         elif cdc.table.exists():
             df_diffs = cdc.get_differences_with_deltatable(df)
             if not df_diffs.isEmpty():
-                DEFAULT_LOGGER.warning("schema drift detected", extra={"step": self})
+                DEFAULT_LOGGER.warning("schema drift detected", extra={"label": self})
                 cdc.table.overwrite_schema(df=df)
 
         cdc.delete_missing(df, keys=["job_id"])
@@ -287,7 +287,7 @@ class BaseStep:
         df = self.database.get_tables()
         df = df.withColumn("job_id", expr("md5(table)"))
 
-        DEFAULT_LOGGER.info("update tables list", extra={"step": self})
+        DEFAULT_LOGGER.info("update tables list", extra={"label": self})
         NoCDC("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
 
     @deprecated("use update_views_list instead")
@@ -298,7 +298,7 @@ class BaseStep:
         df = self.database.get_views()
         df = df.withColumn("job_id", expr("md5(view)"))
 
-        DEFAULT_LOGGER.info("update views list", extra={"step": self})
+        DEFAULT_LOGGER.info("update views list", extra={"label": self})
         NoCDC("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
 
     def update_dependencies(
@@ -316,7 +316,7 @@ class BaseStep:
         )
         df.cache()
 
-        DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
+        DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
 
         update_where = None
 
@@ -327,7 +327,7 @@ class BaseStep:
                 )
 
             if update_where:
-                DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
+                DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"label": self})
 
             NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
@@ -347,7 +347,7 @@ class BaseStep:
             update_where = (
                 f"""job_id in (select job_id from fabricks.{self.name}_jobs where {where_topic} {where_not_manual})"""
             )
-            DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
+            DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"label": self})
 
             NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
