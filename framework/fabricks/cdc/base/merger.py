@@ -17,10 +17,12 @@ class Merger(Processor):
     def get_merge_context(self, src: Union[DataFrame, str], **kwargs) -> dict:
         if isinstance(src, (DataFrame, CDataFrame)):
             format = "dataframe"
-            columns = self.get_columns(src, backtick=False, sort=False)
+            columns = self.get_columns(src, backtick=False, sort=False, check=False)  # already done in processor
         elif isinstance(src, str):
             format = "view"
-            columns = self.get_columns(f"select * from {src}", backtick=False, sort=False)
+            columns = self.get_columns(
+                f"select * from {src}", backtick=False, sort=False, check=False
+            )  # already done in processor
         else:
             raise ValueError(f"{src} not allowed")
 

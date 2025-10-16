@@ -168,6 +168,7 @@ class Configurator(ABC):
         src: Union[DataFrame, Table, str],
         backtick: Optional[bool] = True,
         sort: Optional[bool] = True,
+        check: Optional[bool] = True,
     ) -> List[str]:
         if backtick:
             backtick = True
@@ -175,10 +176,11 @@ class Configurator(ABC):
         df = self.get_src(src=src)
         columns = df.columns
 
-        for c in columns:
-            # avoid duplicate column issue in merge
-            if c.startswith("__") and c in self.__columns:
-                assert c in self.allowed_input__columns, f"{c} is not allowed"
+        if check:
+            for c in columns:
+                # avoid duplicate column issue in merge
+                if c.startswith("__") and c in self.__columns:
+                    assert c in self.allowed_input__columns, f"{c} is not allowed"
 
         if sort:
             columns = self.sort_columns(columns)
