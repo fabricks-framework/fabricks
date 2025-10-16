@@ -5,24 +5,20 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 
 def deploy_views():
-    DEFAULT_LOGGER.info("🌟 (create or replace views)")
+    DEFAULT_LOGGER.info("create or replace fabricks (default) views")
 
     create_or_replace_jobs_view()
     create_or_replace_tables_view()
     create_or_replace_views_view()
-
     create_or_replace_logs_pivot_view()
     create_or_replace_last_schedule_view()
     create_or_replace_last_status_view()
     create_or_replace_previous_schedule_view()
-
     create_or_replace_schedules_view()
-
     create_or_replace_dependencies_view()
     create_or_replace_dependencies_flat_view()
     create_or_replace_dependencies_unpivot_view()
     create_or_replace_dependencies_circular_view()
-
     create_or_replace_jobs_to_be_updated_view()
 
 

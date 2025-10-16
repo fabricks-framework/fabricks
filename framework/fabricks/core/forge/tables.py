@@ -7,7 +7,7 @@ from fabricks.metastore.table import Table
 
 
 def deploy_tables(drop: bool = False):
-    DEFAULT_LOGGER.info("🌟 (create or replace tables)")
+    DEFAULT_LOGGER.info("create or replace fabricks (default) tables")
 
     create_table_log(drop)
     create_table_dummy(drop)
@@ -64,16 +64,19 @@ def create_table_log(drop: bool = False):
 
 
 def create_table_dummy(drop: bool = False):
-    table = NoCDC("fabricks", "dummy")
-    df = SPARK.sql(
-        """
-          select
-          1 as __key,
-          md5('1') as __hash,
-          cast('1900-01-01' as timestamp) as __valid_from,
-          cast('9999-12-31' as timestamp) as __valid_to
-        """
-    )
+    cdc = NoCDC("fabricks", "dummy")
+
     if drop:
-        table.drop()
-    table.overwrite(df)
+        cdc.drop()
+
+    if not cdc.table.exists():
+        df = SPARK.sql(
+            """
+            select
+            1 as __key,
+            md5('1') as __hash,
+            cast('1900-01-01' as timestamp) as __valid_from,
+            cast('9999-12-31' as timestamp) as __valid_to
+            """
+        )
+        cdc.overwrite(df)
