@@ -7,7 +7,7 @@ import json
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.core.dags.run import run
+from fabricks.core.jobs.run import run
 
 # COMMAND ----------
 

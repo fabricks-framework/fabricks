@@ -5,7 +5,7 @@
 
 from databricks.sdk.runtime import dbutils, display
 
-from fabricks.core.scripts import generate
+from fabricks.core.schedules import generate
 
 # COMMAND ----------
 
