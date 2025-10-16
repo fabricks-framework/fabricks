@@ -6,7 +6,7 @@
 from databricks.sdk.runtime import dbutils
 from pyspark.errors.exceptions.base import IllegalArgumentException
 
-from fabricks.core.scripts import terminate
+from fabricks.core.schedules import terminate
 
 # COMMAND ----------
 

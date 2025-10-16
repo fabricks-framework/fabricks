@@ -1,6 +1,8 @@
 from typing import Optional, cast
 
 from fabricks.context import DBUTILS, FABRICKS_STORAGE_CREDENTIAL, IS_UNITY_CATALOG, SECRET_SCOPE
+from fabricks.context.runtime import FABRICKS_STORAGE
+from fabricks.utils.azure_table import AzureTable
 
 
 def _get_access_key_from_secret_scope(storage_account: str) -> str:
@@ -38,3 +40,16 @@ def get_connection_info(storage_account: str) -> dict:
         "access_key": access_key,
         "credential": credential,
     }
+
+
+def get_table():
+    storage_account = FABRICKS_STORAGE.get_storage_account()
+
+    cx = get_connection_info(storage_account)
+
+    return AzureTable(
+        "dags",
+        storage_account=storage_account,
+        access_key=cx["access_key"],
+        credential=cx["credential"],
+    )
