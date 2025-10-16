@@ -1,3 +1,3 @@
 from typing import Literal
 
-ChangeDataCaptures = Literal["nocdc", "scd1", "scd2"]
+AllowedChangeDataCaptures = Literal["nocdc", "scd1", "scd2"]

@@ -6,7 +6,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
-from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
+from fabricks.cdc import SCD1, SCD2, AllowedChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
@@ -53,7 +53,7 @@ class Configurator(ABC):
     _root: Optional[Path] = None
 
     _cdc: Optional[Union[NoCDC, SCD1, SCD2]] = None
-    _change_data_capture: Optional[ChangeDataCaptures] = None
+    _change_data_capture: Optional[AllowedChangeDataCaptures] = None
     _mode: Optional[AllowedModes] = None
 
     @property
@@ -196,9 +196,9 @@ class Configurator(ABC):
         return self._options
 
     @property
-    def change_data_capture(self) -> ChangeDataCaptures:
+    def change_data_capture(self) -> AllowedChangeDataCaptures:
         if not self._change_data_capture:
-            cdc: ChangeDataCaptures = self.options.job.get("change_data_capture") or "nocdc"
+            cdc: AllowedChangeDataCaptures = self.options.job.get("change_data_capture") or "nocdc"
             self._change_data_capture = cdc
         return self._change_data_capture
 

@@ -4,7 +4,7 @@ from typing import List, Literal, Optional, TypedDict, Union
 from pydantic import BaseModel, ConfigDict, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
 
-from fabricks.cdc.base._types import ChangeDataCaptures
+from fabricks.cdc.base._types import AllowedChangeDataCaptures
 from fabricks.context import BRONZE, GOLD, SILVER
 from fabricks.core.jobs.get_job_id import get_dependency_id, get_job_id
 from fabricks.core.parsers import ParserOptions
@@ -130,7 +130,7 @@ class BronzeOptions(TypedDict):
 class SilverOptions(TypedDict):
     type: Optional[AllowedTypes]
     mode: AllowedModesSilver
-    change_data_capture: ChangeDataCaptures
+    change_data_capture: AllowedChangeDataCaptures
     # default
     parents: Optional[List[str]]
     filter_where: Optional[str]
@@ -149,7 +149,7 @@ class SilverOptions(TypedDict):
 class GoldOptions(TypedDict):
     type: Optional[AllowedTypes]
     mode: AllowedModesGold
-    change_data_capture: ChangeDataCaptures
+    change_data_capture: AllowedChangeDataCaptures
     update_where: Optional[str]
     # default
     parents: Optional[List[str]]
