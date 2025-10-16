@@ -115,7 +115,7 @@ class Processor(Invoker):
             partial(self._for_each_batch, **kwargs)
 
             if self.stream:
-                DEFAULT_LOGGER.debug("stream enabled", extra={"job": self})
+                DEFAULT_LOGGER.debug("use streaming", extra={"job": self})
                 write_stream(
                     df,
                     checkpoints_path=self.paths.checkpoints,
