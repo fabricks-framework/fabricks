@@ -15,8 +15,8 @@ def register_all_masks():
         split = mask.split(".")
         try:
             register_mask(mask=split[0])
-        except Exception:
-            DEFAULT_LOGGER.exception(f"mask {mask} not registered")
+        except Exception as e:
+            DEFAULT_LOGGER.exception(f"could not register mask {mask}", exc_info=e)
 
 
 def get_masks() -> List[str]:

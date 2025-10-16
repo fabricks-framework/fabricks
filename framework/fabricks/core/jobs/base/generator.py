@@ -255,7 +255,7 @@ class Generator(Configurator):
                             cluster_by.append("__hash")
 
                     if not cluster_by:
-                        DEFAULT_LOGGER.debug("no clustering column found", extra={"job": self})
+                        DEFAULT_LOGGER.debug("could not find clustering column", extra={"job": self})
                         liquid_clustering = False
                         cluster_by = None
 
@@ -301,6 +301,8 @@ class Generator(Configurator):
             )
 
         if not self.table.exists():
+            DEFAULT_LOGGER.info("create table", extra={"job": self})
+
             df = self.get_data(self.stream, schema_only=True)
             if df:
                 if self.stream:
@@ -336,6 +338,9 @@ class Generator(Configurator):
                 comment = self.options.table.get("comment")
                 if comment:
                     self.table.add_comment(comment=comment)
+
+        else:
+            DEFAULT_LOGGER.debug("table exists, skip creation", extra={"job": self})
 
     def _update_schema(
         self,
@@ -440,4 +445,4 @@ class Generator(Configurator):
                 else:
                     self.table.enable_liquid_clustering(auto=True)
         else:
-            DEFAULT_LOGGER.debug("liquid clustering not enabled", extra={"job": self})
+            DEFAULT_LOGGER.debug("could not enable liquid clustering", extra={"job": self})

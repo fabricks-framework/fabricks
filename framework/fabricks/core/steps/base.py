@@ -98,7 +98,7 @@ class BaseStep:
         return self._options
 
     def drop(self):
-        DEFAULT_LOGGER.warning("💣 (drop)", extra={"step": self})
+        DEFAULT_LOGGER.warning("drop", extra={"step": self})
 
         fs = self.database.storage
         assert fs
@@ -125,13 +125,13 @@ class BaseStep:
         DEFAULT_LOGGER.info("🌟 (create)", extra={"step": self})
 
         if not self.runtime.exists():
-            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
+            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime")
         else:
             self.update()
 
     def update(self, update_dependencies: Optional[bool] = True, progress_bar: Optional[bool] = False):
         if not self.runtime.exists():
-            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
+            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime")
 
         else:
             if not self.database.exists():
@@ -163,7 +163,7 @@ class BaseStep:
             try:
                 dependencies.extend(job.get_dependencies())
             except Exception as e:
-                DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": job})
+                DEFAULT_LOGGER.exception("could not get dependencies", extra={"job": job})
                 errors.append((job, e))
 
         df = self.get_jobs()
@@ -216,7 +216,7 @@ class BaseStep:
             return df
 
         except AssertionError as e:
-            DEFAULT_LOGGER.exception("failed to get jobs", extra={"step": self})
+            DEFAULT_LOGGER.exception("could not get jobs", extra={"step": self})
             raise e
 
     def create_db_objects(self, retry: Optional[bool] = True) -> List[str]:
@@ -229,7 +229,7 @@ class BaseStep:
             try:
                 job.create()
             except:  # noqa E722
-                DEFAULT_LOGGER.exception("not created", extra={"job": self})
+                DEFAULT_LOGGER.exception("could not create db object", extra={"job": self})
                 errors.append(job)
 
         df = self.get_jobs()
@@ -249,7 +249,7 @@ class BaseStep:
 
         if errors:
             if retry:
-                DEFAULT_LOGGER.warning("retry create jobs", extra={"step": self})
+                DEFAULT_LOGGER.warning("retry to create jobs", extra={"step": self})
                 return self.create_db_objects(retry=False)
 
         return errors

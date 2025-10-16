@@ -75,7 +75,7 @@ def create_or_replace_view_internal(name: str, options: dict):
         and j.type not in ('manual')
     """
     sql = fix_sql(sql)
-    DEFAULT_LOGGER.debug(f"schedule - %sql\n---\n{sql}\n---")
+    DEFAULT_LOGGER.debug("create or replace schedule view", extra={"sql": sql})
 
     SPARK.sql(sql)
 
@@ -84,8 +84,8 @@ def create_or_replace_view(name: str):
     row = get_schedule(name=name)
     try:
         create_or_replace_view_internal(row.name, row.options)
-    except Exception:
-        DEFAULT_LOGGER.exception(f"schedule - {row.name} not created nor replaced")
+    except Exception as e:
+        DEFAULT_LOGGER.exception(f"could not create nor replace view {row.name}", exc_info=e)
 
 
 def create_or_replace_views():
@@ -93,8 +93,8 @@ def create_or_replace_views():
     for row in df.collect():
         try:
             create_or_replace_view_internal(row.name, row.options.asDict())
-        except Exception:
-            DEFAULT_LOGGER.exception(f"schedule - {row.name} not created nor replaced")
+        except Exception as e:
+            DEFAULT_LOGGER.exception(f"could not create nor replace view {row.name}", exc_info=e)
 
 
 def get_dependencies(name: str) -> DataFrame:

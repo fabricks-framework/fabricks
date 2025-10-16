@@ -389,9 +389,8 @@ class Processor(Generator):
         try:
             sql = template.render(**context)
             if fix:
-                sql = self.fix_sql(sql)
-            else:
                 DEFAULT_LOGGER.debug("fix context", extra={"job": self, "sql": sql})
+                sql = self.fix_sql(sql)
 
         except (Exception, TypeError) as e:
             DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "context": context})

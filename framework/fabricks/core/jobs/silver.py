@@ -230,8 +230,8 @@ class Silver(BaseJob):
             # DEFAULT_LOGGER.debug("current view", extra={"job": self, "sql": sql})
             self.spark.sql(sql)
 
-        except Py4JJavaError:
-            DEFAULT_LOGGER.exception("could not create or replace view", extra={"job": self})
+        except Py4JJavaError as e:
+            DEFAULT_LOGGER.exception("could not create nor replace view", extra={"job": self}, exc_info=e)
 
     def overwrite(self, schedule: Optional[str] = None):
         self.truncate()

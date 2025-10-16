@@ -38,12 +38,12 @@ class Database:
 
     def drop(self, rm: Optional[bool] = True):
         if self.exists():
-            DEFAULT_LOGGER.warning("💣 (drop database)", extra={"step": self})
+            DEFAULT_LOGGER.warning("drop database", extra={"step": self})
             self.spark.sql(f"drop database if exists {self.name} cascade;")
 
         if rm:
             if self.delta_path.exists():
-                DEFAULT_LOGGER.debug("🧹 (remove delta files)", extra={"step": self})
+                DEFAULT_LOGGER.debug("remove delta files", extra={"step": self})
                 self.delta_path.rm()
 
     def exists(self) -> bool:

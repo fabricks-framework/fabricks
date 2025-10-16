@@ -27,8 +27,8 @@ def register_all_udfs(extension: Optional[str] = None):
         split = udf.split(".")
         try:
             register_udf(udf=split[0], extension=split[1])
-        except Exception:
-            DEFAULT_LOGGER.exception(f"udf {udf} not registered")
+        except Exception as e:
+            DEFAULT_LOGGER.exception(f"could not register udf {udf}", exc_info=e)
 
 
 def get_udfs(extension: Optional[str] = None) -> List[str]:

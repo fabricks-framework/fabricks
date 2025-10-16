@@ -297,7 +297,7 @@ class Configurator(ABC):
         compute_statistics: Optional[bool] = True,
     ):
         if self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no maintain)", extra={"job": self})
+            DEFAULT_LOGGER.debug("could not maintain (memory)", extra={"job": self})
 
         else:
             if vacuum:
@@ -309,7 +309,7 @@ class Configurator(ABC):
 
     def vacuum(self):
         if self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no vacuum)", extra={"job": self})
+            DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"job": self})
 
         else:
             job = self.options.table.get("retention_days")
