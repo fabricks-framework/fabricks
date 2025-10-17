@@ -375,7 +375,7 @@ class Processor(Generator):
             sql = fix_sql(sql)
             sql = sql.replace("`src`", "{src}")
 
-            DEFAULT_LOGGER.debug("query", extra={"label": self, "sql": sql, "target": "buffer"})
+            DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql, "target": "buffer"})
             return sql
 
         except Exception as e:
@@ -420,7 +420,7 @@ class Processor(Generator):
             if fix:
                 sql = self.fix_sql(sql)
             else:
-                DEFAULT_LOGGER.debug("query", extra={"label": self, "sql": sql})
+                DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql})
 
         except (Exception, TypeError) as e:
             DEFAULT_LOGGER.debug("context", extra={"label": self, "context": context})

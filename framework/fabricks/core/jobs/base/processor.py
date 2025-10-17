@@ -167,6 +167,7 @@ class Processor(Invoker):
 
         try:
             DEFAULT_LOGGER.info("run starts", extra={"label": self})
+
             if reload:
                 DEFAULT_LOGGER.debug("force reload", extra={"label": self})
 

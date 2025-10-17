@@ -120,7 +120,7 @@ class Gold(BaseJob):
         elif self.options.job.get("notebook"):
             from databricks.sdk.runtime import dbutils
 
-            DEFAULT_LOGGER.debug("run notebook", extra={"label": self})
+            DEFAULT_LOGGER.debug("call notebook", extra={"label": self})
             path = self.paths.runtime.get_notebook_path()
 
             if schema_only:
