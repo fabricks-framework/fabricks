@@ -105,26 +105,26 @@ class BaseStep:
 
         tmp = fs.joinpath("tmp")
         if tmp.exists():
-            DEFAULT_LOGGER.warning("clean tmp folder")
+            DEFAULT_LOGGER.warning("clean tmp folder", extra={"label": self})
             tmp.rm()
 
         checkpoint = fs.joinpath("checkpoints")
         if checkpoint.exists():
-            DEFAULT_LOGGER.warning("clean checkpoint folder")
+            DEFAULT_LOGGER.warning("clean checkpoint folder", extra={"label": self})
             checkpoint.rm()
 
         schema = fs.joinpath("schemas")
         if schema.exists():
-            DEFAULT_LOGGER.warning("clean schema folder")
+            DEFAULT_LOGGER.warning("clean schema folder", extra={"label": self})
             schema.rm()
 
-        DEFAULT_LOGGER.warning("clean fabricks")
+        DEFAULT_LOGGER.warning("clean fabricks", extra={"label": self})
         for t in ["jobs", "tables", "dependencies", "views"]:
             tbl = Table("fabricks", self.name, t)
             tbl.drop()
 
         try:
-            SPARK.sql(f"delete from fabricks.steps where step = '{self.name}'")
+            SPARK.sql(f"delete from fabricks.steps where step = '{self}'")
         except Exception:
             pass
 
