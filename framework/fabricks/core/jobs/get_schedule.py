@@ -1,11 +1,10 @@
-from pyspark.sql.types import Row
+from pyspark.sql.types import Dict
 
 from fabricks.core.jobs.get_schedules import get_schedules
 
 
-def get_schedule(name: str) -> Row:
+def get_schedule(name: str) -> Dict:
     schedule = next(s for s in get_schedules() if s.get("name") == name)
 
     assert schedule, "schedule not found"
-    assert len(schedule) == 1, "schedule duplicated"
-    return Row(**schedule)
+    return schedule
