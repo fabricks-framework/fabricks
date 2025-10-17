@@ -9,11 +9,11 @@ from fabricks.core.steps.base import BaseStep
 from fabricks.core.views import create_or_replace_views as create_or_replace_custom_views
 from fabricks.deploy.masks import deploy_masks
 from fabricks.deploy.notebooks import deploy_notebooks
+from fabricks.deploy.schedules import deploy_schedules
 from fabricks.deploy.tables import deploy_tables
 from fabricks.deploy.udfs import deploy_udfs
 from fabricks.deploy.utils import print_atomic_bomb
 from fabricks.deploy.views import deploy_views
-from fabricks.deploy.schedules import deploy_schedules
 from fabricks.metastore.database import Database
 
 

@@ -7,7 +7,7 @@ import json
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.core.schedules import runjob
+from fabricks.core.schedules import run
 
 # COMMAND ----------
 
@@ -52,7 +52,7 @@ except:  # noqa: E722
 
 # COMMAND ----------
 
-runjob(step=step, job_id=job_id, schedule_id=schedule_id, schedule=schedule, notebook_id=notebook_id)
+run(step=step, job_id=job_id, schedule_id=schedule_id, schedule=schedule, notebook_id=notebook_id)
 
 # COMMAND ----------
 
