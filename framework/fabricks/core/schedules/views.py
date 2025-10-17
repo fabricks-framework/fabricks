@@ -43,11 +43,11 @@ def create_or_replace_view_internal(name: str, options: dict):
 
 
 def create_or_replace_view(name: str):
-    row = get_schedule(name=name)
+    sc = get_schedule(name=name)
     try:
-        create_or_replace_view_internal(row.name, row.options)
+        create_or_replace_view_internal(sc["name"], sc["options"])
     except Exception as e:
-        DEFAULT_LOGGER.exception(f"could not create nor replace view {row.name}", exc_info=e)
+        DEFAULT_LOGGER.exception(f"could not create nor replace view {sc['name']}", exc_info=e)
 
 
 def create_or_replace_views():

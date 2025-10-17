@@ -1,4 +1,4 @@
-from pyspark.sql.types import Dict
+from typing import Dict
 
 from fabricks.core.jobs.get_schedules import get_schedules
 
