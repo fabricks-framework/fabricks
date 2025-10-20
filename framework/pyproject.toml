@@ -98,13 +98,5 @@ docs = [
     "mkdocs>=1.6.1",
 ]
 
-[tool.fabricks]
-runtime = "tests/integration/runtime"
-notebooks = "fabricks/api/notebooks"
-job_config_from_yaml = true
-loglevel = "debug"
-debugmode = true
-config = "tests/integration/runtime/fabricks/conf.uc.fabricks.yml"
-
 [tool.pytest.ini_options]
 python_files = ["test_*.py"]

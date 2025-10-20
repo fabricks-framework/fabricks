@@ -7,7 +7,7 @@ from typing import Optional
 
 from pyspark.sql import SparkSession
 
-from fabricks.context.runtime import IS_UNITY_CATALOG
+from fabricks.context import IS_UNITY_CATALOG
 from fabricks.utils.spark import spark as _spark
 
 

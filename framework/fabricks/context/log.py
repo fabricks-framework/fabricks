@@ -4,7 +4,7 @@ from typing import Final, Literal, Optional
 
 import requests
 
-from fabricks.context.runtime import IS_DEBUGMODE, LOGLEVEL, SECRET_SCOPE, TIMEZONE
+from fabricks.context import IS_DEBUGMODE, LOGLEVEL, SECRET_SCOPE, TIMEZONE
 from fabricks.utils.log import get_logger
 
 logger, _ = get_logger(

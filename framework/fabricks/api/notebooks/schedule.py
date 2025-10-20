@@ -8,8 +8,8 @@ from typing import Any, cast
 
 from databricks.sdk.runtime import dbutils, display, spark
 
+from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.context.runtime import PATH_NOTEBOOKS
 from fabricks.core import get_step
 from fabricks.core.jobs.base._types import TStep
 from fabricks.core.schedules import generate, terminate

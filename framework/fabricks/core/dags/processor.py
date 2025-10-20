@@ -8,7 +8,7 @@ from azure.core.exceptions import AzureError
 from databricks.sdk.runtime import dbutils, spark
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-from fabricks.context.runtime import PATH_NOTEBOOKS
+from fabricks.context import PATH_NOTEBOOKS
 from fabricks.core.dags.base import BaseDags
 from fabricks.core.dags.log import LOGGER
 from fabricks.core.dags.run import run

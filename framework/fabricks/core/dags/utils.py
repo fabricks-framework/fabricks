@@ -1,7 +1,6 @@
 from typing import Optional, cast
 
-from fabricks.context import DBUTILS, FABRICKS_STORAGE_CREDENTIAL, IS_UNITY_CATALOG, SECRET_SCOPE
-from fabricks.context.runtime import FABRICKS_STORAGE
+from fabricks.context import DBUTILS, FABRICKS_STORAGE, FABRICKS_STORAGE_CREDENTIAL, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.utils.azure_table import AzureTable
 
 
