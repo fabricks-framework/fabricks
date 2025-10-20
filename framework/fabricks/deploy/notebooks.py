@@ -1,5 +1,6 @@
 import base64
 import io
+import os
 from importlib import resources
 
 from databricks.sdk import WorkspaceClient
@@ -36,6 +37,9 @@ def deploy_notebook(notebook: str):
 def deploy_notebooks():
     DEFAULT_LOGGER.info("overwrite notebooks")
 
+    _clean_dir()
+    _create_dir_if_not_exists()
+
     for n in [
         "cluster",
         "initialize",
@@ -45,3 +49,16 @@ def deploy_notebooks():
         "terminate",
     ]:
         deploy_notebook(notebook=n)
+
+
+def _create_dir_if_not_exists():
+    dir = str(PATH_NOTEBOOKS)
+    os.makedirs(dir, exist_ok=True)
+
+
+def _clean_dir():
+    dir = str(PATH_NOTEBOOKS)
+    for f in os.listdir(dir):
+        file_path = os.path.join(dir, f)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
