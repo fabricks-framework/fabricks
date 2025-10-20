@@ -30,7 +30,7 @@ class Invoker(Checker):
 
         if invokers:
             for i in invokers:
-                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"label": self})
+                DEFAULT_LOGGER.info(f"invoke ({position})", extra={"label": self})
                 try:
                     notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
@@ -64,7 +64,7 @@ class Invoker(Checker):
 
         if invokers:
             for i in invokers:
-                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"label": self.step})
+                DEFAULT_LOGGER.info(f"invoke ({position})", extra={"label": self.step})
                 try:
                     notebook = i.get("notebook")
                     assert notebook, "notebook mandatory"
