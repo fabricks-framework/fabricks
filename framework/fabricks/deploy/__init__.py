@@ -88,10 +88,10 @@ class Deploy:
         Deploy.udfs()
         Deploy.masks()
         Deploy.notebooks()
-        Deploy.schedules()
 
         for s in steps:
             step = BaseStep(s)
             step.create()
 
         Deploy.views()
+        Deploy.schedules()

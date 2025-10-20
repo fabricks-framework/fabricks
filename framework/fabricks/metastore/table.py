@@ -238,7 +238,6 @@ class Table(DbObject):
             assert len(primary_key) == 1, "only one primary key allowed"
 
             for key, value in primary_key.items():
-                print(value)
                 keys = value["keys"]
                 if isinstance(keys, str):
                     keys = [keys]
