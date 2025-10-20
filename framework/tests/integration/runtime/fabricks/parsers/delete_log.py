@@ -40,7 +40,7 @@ class DeleteLogBaseParser(BaseParser):
         if "BEL_IsFullLoad".casefold() in cols:
             df = df.withColumn(
                 "__operation",
-                expr("if(BEL_IsFullLoad == 1, 'reload', 'upsert')"),
+                expr("if(BEL_IsFullLoad, 'reload', 'upsert')"),
             )
         else:
             df = df.withColumn("__operation", lit("upsert"))

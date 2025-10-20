@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 from uuid import uuid4
 
 from pyspark.sql import DataFrame
+from pyspark.sql.functions import lit
 
 from fabricks.context import SPARK
 from fabricks.core.dags.base import BaseDags
@@ -55,13 +56,11 @@ class DagGenerator(BaseDags):
         if job_df is None:
             job_df = self.get_jobs()
 
-        return SPARK.sql(
+        df = SPARK.sql(
             """
             select
               'dependencies' as PartitionKey, 
-              d.dependency_id::string as RowKey,
-              {schedule_id} as ScheduleId,
-              {schedule} as Schedule,
+              d.dependency_id :: string as RowKey,
               d.dependency_id as DependencyId,
               j.Step as Step,
               j.Job as Job,
@@ -90,9 +89,9 @@ class DagGenerator(BaseDags):
             group by all
             """,
             job=job_df,
-            schedule=self.schedule,
-            schedule_id=self.schedule_id,
         )
+        df = df.withColumn("ScheduleId", lit(self.schedule_id))
+        return df.withColumn("Schedule", lit(self.schedule))
 
     def get_steps(self, job_df: Optional[DataFrame] = None) -> DataFrame:
         if job_df is None:
@@ -136,7 +135,7 @@ class DagGenerator(BaseDags):
               'INFO' as `Level`,
               `Status` as `Message`,
               from_json(null, 'type STRING, message STRING, traceback STRING') as Exception,
-              md5(array_join(array(ScheduleId, `Schedule`, Step, Job, JobId, Created,  `Level`, `Message`, -1), "*")) as RowKey
+              md5(array_join(array(ScheduleId, `Schedule`, Step, Job, JobId, Created,  `Level`, `Message`, '-1'), "*")) as RowKey
             from
               {df}        
             """,
