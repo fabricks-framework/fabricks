@@ -58,7 +58,14 @@ def _create_dir_if_not_exists():
 
 def _clean_dir():
     dir = str(PATH_NOTEBOOKS)
-    for f in os.listdir(dir):
-        file_path = os.path.join(dir, f)
+    for n in [
+        "cluster",
+        "initialize",
+        "process",
+        "schedule",
+        "run",
+        "terminate",
+    ]:
+        file_path = os.path.join(dir, f"{n}.py")
         if os.path.isfile(file_path):
             os.remove(file_path)
