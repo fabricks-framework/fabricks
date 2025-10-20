@@ -10,4 +10,3 @@ checkpoints
 out
 expected/**/*.parquet
 config.debug.yml
-fabricks/notebooks
