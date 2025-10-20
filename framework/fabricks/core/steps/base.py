@@ -1,5 +1,5 @@
 import logging
-from typing import Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import Iterable, List, Literal, Optional, Tuple, Union, cast, Dict
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
@@ -118,7 +118,7 @@ class BaseStep:
             DEFAULT_LOGGER.debug("clean schema folder", extra={"label": self})
             schema.rm()
 
-        DEFAULT_LOGGER.info("clean fabricks", extra={"label": self})
+        DEFAULT_LOGGER.debug("clean fabricks", extra={"label": self})
         for t in ["jobs", "tables", "dependencies", "views"]:
             tbl = Table("fabricks", self.name, t)
             tbl.drop()
@@ -147,7 +147,10 @@ class BaseStep:
                 self.database.create()
 
             self.update_jobs()
-            self.create_db_objects()
+            errors = self.create_db_objects()
+
+            for e in errors:
+                DEFAULT_LOGGER.exception("fail to create db objects", extra={"label": e["job"]}, exc_info=e["error"])
 
             if update_dependencies:
                 self.update_dependencies(progress_bar=progress_bar)
@@ -162,7 +165,7 @@ class BaseStep:
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> Tuple[DataFrame, List[str]]:
+    ) -> Tuple[DataFrame, List[Dict]]:
         DEFAULT_LOGGER.debug("get dependencies", extra={"label": self})
 
         errors = []
@@ -174,7 +177,7 @@ class BaseStep:
                 dependencies.extend(job.get_dependencies())
             except Exception as e:
                 DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
-                errors.append((job, e))
+                errors.append({"job": job, "error": e})
 
         df = self.get_jobs()
 
@@ -229,7 +232,7 @@ class BaseStep:
             DEFAULT_LOGGER.exception("fail to get jobs", extra={"label": self})
             raise e
 
-    def create_db_objects(self, retry: Optional[bool] = True) -> List[str]:
+    def create_db_objects(self, retry: Optional[bool] = True) -> List[Dict]:
         DEFAULT_LOGGER.info("create db objects", extra={"label": self})
 
         errors = []
@@ -238,9 +241,9 @@ class BaseStep:
             job = get_job(step=self.name, job_id=row["job_id"])
             try:
                 job.create()
-            except:  # noqa E722
+            except Exception as e:  # noqa E722
                 DEFAULT_LOGGER.exception("fail to create db object", extra={"label": self})
-                errors.append(job)
+                errors.append({"job": job, "error": e})
 
         df = self.get_jobs()
         table_df = self.database.get_tables()
@@ -250,7 +253,6 @@ class BaseStep:
         df = df.join(view_df, "job_id", how="left_anti")
 
         if df:
-            DEFAULT_LOGGER.setLevel(logging.CRITICAL)
             run_in_parallel(_create_db_object, df, workers=16, progress_bar=True)
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
@@ -265,7 +267,7 @@ class BaseStep:
         return errors
 
     @deprecated("use create_db_objects instead")
-    def create_jobs(self, retry: Optional[bool] = True) -> List[str]:
+    def create_jobs(self, retry: Optional[bool] = True) -> List[Dict]:
         return self.create_db_objects(retry=retry)
 
     @deprecated("use update_configurations instead")
@@ -317,7 +319,7 @@ class BaseStep:
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> List[str]:
+    ) -> List[Dict]:
         df, errors = self.get_dependencies(
             progress_bar=progress_bar,
             topic=topic,
