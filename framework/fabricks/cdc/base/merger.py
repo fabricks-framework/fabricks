@@ -92,7 +92,7 @@ class Merger(Processor):
                 DEFAULT_LOGGER.debug("merge", extra={"label": self, "sql": sql})
 
             except Exception as e:
-                DEFAULT_LOGGER.exception("could not clean sql query", extra={"label": self, "sql": sql})
+                DEFAULT_LOGGER.exception("fail to clean sql query", extra={"label": self, "sql": sql})
                 raise e
 
         return sql

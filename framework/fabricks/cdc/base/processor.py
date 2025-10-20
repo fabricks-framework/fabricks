@@ -379,7 +379,7 @@ class Processor(Generator):
             return sql
 
         except Exception as e:
-            DEFAULT_LOGGER.exception("could not fix sql query", extra={"label": self, "sql": sql})
+            DEFAULT_LOGGER.exception("fail to fix sql query", extra={"label": self, "sql": sql})
             raise e
 
     def fix_context(self, context: dict, fix: Optional[bool] = True, **kwargs) -> dict:
@@ -393,7 +393,7 @@ class Processor(Generator):
                 sql = self.fix_sql(sql)
 
         except (Exception, TypeError) as e:
-            DEFAULT_LOGGER.exception("could not execute sql query", extra={"label": self, "context": context})
+            DEFAULT_LOGGER.exception("fail to execute sql query", extra={"label": self, "context": context})
             raise e
 
         row = self.spark.sql(sql).collect()[0]
@@ -424,7 +424,7 @@ class Processor(Generator):
 
         except (Exception, TypeError) as e:
             DEFAULT_LOGGER.debug("context", extra={"label": self, "context": context})
-            DEFAULT_LOGGER.exception("could not generate sql query", extra={"label": self, "context": context})
+            DEFAULT_LOGGER.exception("fail to generate sql query", extra={"label": self, "context": context})
             raise e
 
         return sql

@@ -69,7 +69,7 @@ def create_or_replace_jobs_view():
             dmls.append(dml)
 
         except Exception:
-            DEFAULT_LOGGER.warning(f"fabricks.{table} not found")
+            DEFAULT_LOGGER.debug(f"could not find fabricks.{table}")
 
     sql = f"""create or replace view fabricks.jobs with schema evolution as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -96,7 +96,7 @@ def create_or_replace_tables_view():
             dmls.append(dml)
 
         except Exception:
-            DEFAULT_LOGGER.warning(f"fabricks.{step}_tables not found")
+            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_tables")
 
     sql = f"""create or replace view fabricks.tables with schema evolution as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -123,7 +123,7 @@ def create_or_replace_views_view():
             dmls.append(dml)
 
         except Exception:
-            DEFAULT_LOGGER.warning(f"fabricks.{step}_views not found")
+            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_views")
 
     sql = f"""create or replace view fabricks.views with schema evolution as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -153,7 +153,7 @@ def create_or_replace_dependencies_view():
             dmls.append(dml)
 
         except Exception:
-            DEFAULT_LOGGER.warning(f"fabricks.{step}_dependencies not found")
+            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_dependencies")
 
     sql = f"""create or replace view fabricks.dependencies with schema evolution  as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)

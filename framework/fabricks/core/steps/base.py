@@ -105,20 +105,20 @@ class BaseStep:
 
         tmp = fs.joinpath("tmp")
         if tmp.exists():
-            DEFAULT_LOGGER.warning("clean tmp folder", extra={"label": self})
+            DEFAULT_LOGGER.debug("clean tmp folder", extra={"label": self})
             tmp.rm()
 
         checkpoint = fs.joinpath("checkpoints")
         if checkpoint.exists():
-            DEFAULT_LOGGER.warning("clean checkpoint folder", extra={"label": self})
+            DEFAULT_LOGGER.debug("clean checkpoint folder", extra={"label": self})
             checkpoint.rm()
 
         schema = fs.joinpath("schemas")
         if schema.exists():
-            DEFAULT_LOGGER.warning("clean schema folder", extra={"label": self})
+            DEFAULT_LOGGER.debug("clean schema folder", extra={"label": self})
             schema.rm()
 
-        DEFAULT_LOGGER.warning("clean fabricks", extra={"label": self})
+        DEFAULT_LOGGER.info("clean fabricks", extra={"label": self})
         for t in ["jobs", "tables", "dependencies", "views"]:
             tbl = Table("fabricks", self.name, t)
             tbl.drop()
@@ -134,13 +134,13 @@ class BaseStep:
         DEFAULT_LOGGER.info("create", extra={"label": self})
 
         if not self.runtime.exists():
-            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime")
+            DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
         else:
             self.update()
 
     def update(self, update_dependencies: Optional[bool] = True, progress_bar: Optional[bool] = False):
         if not self.runtime.exists():
-            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime")
+            DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
 
         else:
             if not self.database.exists():
@@ -173,7 +173,7 @@ class BaseStep:
             try:
                 dependencies.extend(job.get_dependencies())
             except Exception as e:
-                DEFAULT_LOGGER.exception("could not get dependencies", extra={"label": job})
+                DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
                 errors.append((job, e))
 
         df = self.get_jobs()
@@ -226,7 +226,7 @@ class BaseStep:
             return df
 
         except AssertionError as e:
-            DEFAULT_LOGGER.exception("could not get jobs", extra={"label": self})
+            DEFAULT_LOGGER.exception("fail to get jobs", extra={"label": self})
             raise e
 
     def create_db_objects(self, retry: Optional[bool] = True) -> List[str]:
@@ -239,7 +239,7 @@ class BaseStep:
             try:
                 job.create()
             except:  # noqa E722
-                DEFAULT_LOGGER.exception("could not create db object", extra={"label": self})
+                DEFAULT_LOGGER.exception("fail to create db object", extra={"label": self})
                 errors.append(job)
 
         df = self.get_jobs()

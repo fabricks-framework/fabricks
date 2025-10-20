@@ -87,7 +87,7 @@ class Generator(Configurator):
         try:
             self.spark.sql(sql)
         except Py4JJavaError as e:
-            DEFAULT_LOGGER.exception("could not execute sql query", extra={"label": self, "sql": sql}, exc_info=e)
+            DEFAULT_LOGGER.exception("fail to execute sql query", extra={"label": self, "sql": sql}, exc_info=e)
 
     def optimize_table(self):
         columns = None

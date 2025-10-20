@@ -255,7 +255,7 @@ class Generator(Configurator):
                             cluster_by.append("__hash")
 
                     if not cluster_by:
-                        DEFAULT_LOGGER.debug("could not find clustering column", extra={"label": self})
+                        DEFAULT_LOGGER.debug("could not determine clustering column", extra={"label": self})
                         liquid_clustering = False
                         cluster_by = None
 

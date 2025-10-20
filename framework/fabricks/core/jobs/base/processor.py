@@ -218,26 +218,26 @@ class Processor(Invoker):
             raise e
 
         except (PreRunCheckWarning, PostRunCheckWarning) as e:
-            DEFAULT_LOGGER.warning("could not pass warning check", extra={"label": self})
+            DEFAULT_LOGGER.warning("fail to pass warning check", extra={"label": self})
             raise e
 
         except (PreRunInvokeException, PostRunInvokeException) as e:
-            DEFAULT_LOGGER.exception("could not run invoker", extra={"label": self})
+            DEFAULT_LOGGER.exception("fail to run invoker", extra={"label": self})
             raise e
 
         except (PreRunCheckException, PostRunCheckException) as e:
-            DEFAULT_LOGGER.exception("could not pass check", extra={"label": self})
+            DEFAULT_LOGGER.exception("fail to pass check", extra={"label": self})
             self.restore(last_version, last_batch)
             raise e
 
         except AssertionError as e:
-            DEFAULT_LOGGER.exception("could not run", extra={"label": self})
+            DEFAULT_LOGGER.exception("fail to run", extra={"label": self})
             self.restore(last_version, last_batch)
             raise e
 
         except Exception as e:
             if not self.stream or not retry:
-                DEFAULT_LOGGER.exception("could not run", extra={"label": self})
+                DEFAULT_LOGGER.exception("fail to run", extra={"label": self})
                 self.restore(last_version, last_batch)
                 raise e
 

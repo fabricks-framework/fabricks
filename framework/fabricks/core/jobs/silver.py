@@ -141,7 +141,7 @@ class Silver(BaseJob):
                         dfs.append(df)
 
                 except Exception as e:
-                    DEFAULT_LOGGER.exception("could not get dependencies", extra={"label": self})
+                    DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": self})
                     raise e
 
             df = concat_dfs(dfs)
@@ -231,7 +231,7 @@ class Silver(BaseJob):
             self.spark.sql(sql)
 
         except Py4JJavaError as e:
-            DEFAULT_LOGGER.exception("could not create nor replace view", extra={"label": self}, exc_info=e)
+            DEFAULT_LOGGER.exception("fail to create nor replace view", extra={"label": self}, exc_info=e)
 
     def overwrite(self, schedule: Optional[str] = None):
         self.truncate()
