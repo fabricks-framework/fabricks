@@ -4,18 +4,18 @@ from typing import Optional, Union
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
+from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.processor import Processor
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.metastore.table import Table
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.utils._types import DataFrameLike
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Merger(Processor):
     def get_merge_context(self, src: Union[DataFrame, str], **kwargs) -> dict:
-        if isinstance(src, (DataFrame, CDataFrame)):
+        if isinstance(src, DataFrameLike):
             format = "dataframe"
             columns = self.get_columns(src, backtick=False, sort=False, check=False)  # already done in processor
         elif isinstance(src, str):
@@ -97,7 +97,7 @@ class Merger(Processor):
 
         return sql
 
-    def merge(self, src: Union[DataFrame, Table, str], **kwargs):
+    def merge(self, src: AllowedSources, **kwargs):
         if not self.table.exists():
             self.create_table(src, **kwargs)
 

@@ -58,31 +58,25 @@ class Configurator(ABC):
 
     @property
     @abstractmethod
-    def stream(self) -> bool:
-        raise NotImplementedError()
+    def stream(self) -> bool: ...
 
     @property
     @abstractmethod
-    def schema_drift(self) -> bool:
-        raise NotImplementedError()
+    def schema_drift(self) -> bool: ...
 
     @property
     @abstractmethod
-    def persist(self) -> bool:
-        raise NotImplementedError()
+    def persist(self) -> bool: ...
 
     @property
     @abstractmethod
-    def virtual(self) -> bool:
-        raise NotImplementedError()
+    def virtual(self) -> bool: ...
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str):
-        raise NotImplementedError()
+    def from_step_topic_item(cls, step: str, topic: str, item: str): ...
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str):
-        raise NotImplementedError()
+    def from_job_id(cls, step: str, job_id: str): ...
 
     @property
     def spark(self) -> SparkSession:
@@ -221,8 +215,7 @@ class Configurator(ABC):
         return self.change_data_capture in ["scd1", "scd2"]
 
     @abstractmethod
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict:
-        raise NotImplementedError()
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict: ...
 
     def get_cdc_data(self, stream: bool = False) -> Optional[DataFrame]:
         df = self.get_data(stream)
@@ -253,19 +246,16 @@ class Configurator(ABC):
         Returns:
             DataFrame or None: The retrieved data as a DataFrame, or None if the data is not available.
         """
-        raise NotImplementedError()
+        ...
 
     @abstractmethod
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
-        raise NotImplementedError()
+    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs): ...
 
     @abstractmethod
-    def for_each_run(self, **kwargs):
-        raise NotImplementedError()
+    def for_each_run(self, **kwargs): ...
 
     @abstractmethod
-    def base_transform(self, df: DataFrame) -> DataFrame:
-        raise NotImplementedError()
+    def base_transform(self, df: DataFrame) -> DataFrame: ...
 
     @abstractmethod
     def run(
@@ -274,8 +264,7 @@ class Configurator(ABC):
         schedule: Optional[str] = None,
         schedule_id: Optional[str] = None,
         invoke: Optional[bool] = True,
-    ):
-        raise NotImplementedError()
+    ): ...
 
     @deprecated("use maintain instead")
     def optimize(

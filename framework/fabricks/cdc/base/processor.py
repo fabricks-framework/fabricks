@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
+from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.generator import Generator
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.utils._types import DataFrameLike
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Processor(Generator):
-    def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
-        if isinstance(src, (DataFrame, CDataFrame)):
+    def get_data(self, src: AllowedSources, **kwargs) -> DataFrame:
+        if isinstance(src, DataFrameLike):
             name = f"{self.qualified_name}__data"
             global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False), job=self)
             src = f"select * from {global_temp_view}"
@@ -24,10 +25,10 @@ class Processor(Generator):
         DEFAULT_LOGGER.debug("exec query", extra={"label": self, "sql": sql})
         return self.spark.sql(sql)
 
-    def get_query_context(self, src: Union[DataFrame, Table, str], **kwargs) -> dict:
+    def get_query_context(self, src: AllowedSources, **kwargs) -> dict:
         DEFAULT_LOGGER.debug("deduce query context", extra={"label": self})
 
-        if isinstance(src, (DataFrame, CDataFrame)):
+        if isinstance(src, DataFrameLike):
             format = "dataframe"
         elif isinstance(src, Table):
             format = "table"
@@ -406,7 +407,7 @@ class Processor(Generator):
 
         return context
 
-    def get_query(self, src: Union[DataFrame, Table, str], fix: Optional[bool] = True, **kwargs) -> str:
+    def get_query(self, src: AllowedSources, fix: Optional[bool] = True, **kwargs) -> str:
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
@@ -429,7 +430,7 @@ class Processor(Generator):
 
         return sql
 
-    def append(self, src: Union[DataFrame, Table, str], **kwargs):
+    def append(self, src: AllowedSources, **kwargs):
         if not self.table.registered:
             self.create_table(src, **kwargs)
 
@@ -445,7 +446,7 @@ class Processor(Generator):
 
     def overwrite(
         self,
-        src: Union[DataFrame, Table, str],
+        src: AllowedSources,
         dynamic: Optional[bool] = False,
         **kwargs,
     ):

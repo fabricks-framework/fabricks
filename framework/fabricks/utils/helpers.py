@@ -3,9 +3,9 @@ from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
 
 from pyspark.sql import DataFrame
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 from typing_extensions import deprecated
 
+from fabricks.utils._types import DataFrameLike
 from fabricks.utils.path import Path
 from fabricks.utils.spark import spark
 
@@ -53,7 +53,7 @@ def run_in_parallel(
         List[Any]: A list containing the results of the function calls.
 
     """
-    iterable = iterable.collect() if isinstance(iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
+    iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         if progress_bar:

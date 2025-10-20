@@ -4,11 +4,12 @@ from typing import Any, List, Optional, Sequence, Union, cast
 
 from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
+from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.configurator import Configurator
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import SchemaDiff, Table
+from fabricks.utils._types import DataFrameLike
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
@@ -18,7 +19,7 @@ class Generator(Configurator):
 
     def create_table(
         self,
-        src: Union[DataFrame, Table, str],
+        src: AllowedSources,
         partitioning: Optional[bool] = False,
         partition_by: Optional[Union[List[str], str]] = None,
         identity: Optional[bool] = False,
@@ -61,7 +62,7 @@ class Generator(Configurator):
         )
 
     def create_or_replace_view(self, src: Union[Table, str], schema_evolution: bool = True, **kwargs):
-        assert not isinstance(src, (DataFrame, CDataFrame)), "dataframe not allowed"
+        assert not isinstance(src, DataFrameLike), "dataframe not allowed"
 
         assert kwargs["mode"] == "complete", f"{kwargs['mode']} not allowed"
         sql = self.get_query(src, **kwargs)
@@ -99,7 +100,7 @@ class Generator(Configurator):
 
         self.table.optimize(columns=columns)
 
-    def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
+    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs) -> DataFrame:
         from pyspark.sql.types import StringType, StructField, StructType
 
         schema = StructType(
@@ -126,7 +127,7 @@ class Generator(Configurator):
             diffs = self.table.get_schema_differences(df)
             return self.spark.createDataFrame([cast(Any, d.model_dump()) for d in diffs], schema=schema)
 
-    def get_schema_differences(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[Sequence[SchemaDiff]]:
+    def get_schema_differences(self, src: AllowedSources, **kwargs) -> Optional[Sequence[SchemaDiff]]:
         if self.is_view:
             return None
 
@@ -140,7 +141,7 @@ class Generator(Configurator):
 
             return self.table.get_schema_differences(df)
 
-    def schema_drifted(self, src: Union[DataFrame, Table, str], **kwargs) -> Optional[bool]:
+    def schema_drifted(self, src: AllowedSources, **kwargs) -> Optional[bool]:
         d = self.get_schema_differences(src, **kwargs)
         if d is None:
             return None
@@ -148,13 +149,13 @@ class Generator(Configurator):
 
     def _update_schema(
         self,
-        src: Union[DataFrame, Table, str],
+        src: AllowedSources,
         overwrite: bool = False,
         widen_types: bool = False,
         **kwargs,
     ):
         if self.is_view:
-            assert not isinstance(src, (DataFrame, CDataFrame)), "dataframe not allowed"
+            assert not isinstance(src, DataFrameLike), "dataframe not allowed"
             self.create_or_replace_view(src=src)
 
         else:
@@ -169,8 +170,8 @@ class Generator(Configurator):
             else:
                 self.table.update_schema(df, widen_types=widen_types)
 
-    def update_schema(self, src: Union[DataFrame, Table, str], **kwargs):
+    def update_schema(self, src: AllowedSources, **kwargs):
         self._update_schema(src=src, **kwargs)
 
-    def overwrite_schema(self, src: Union[DataFrame, Table, str], **kwargs):
+    def overwrite_schema(self, src: AllowedSources, **kwargs):
         self._update_schema(src=src, overwrite=True, **kwargs)

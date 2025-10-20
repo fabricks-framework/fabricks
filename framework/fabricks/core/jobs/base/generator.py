@@ -23,8 +23,7 @@ class Generator(Configurator):
             cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
 
     @abstractmethod
-    def get_dependencies(self) -> Sequence[JobDependency]:
-        raise NotImplementedError()
+    def get_dependencies(self) -> Sequence[JobDependency]: ...
 
     def rm(self):
         """
@@ -165,7 +164,7 @@ class Generator(Configurator):
         Raises:
             NotImplementedError: This method is meant to be overridden by subclasses.
         """
-        raise NotImplementedError()
+        ...
 
     def create_table(self):
         def _create_table(df: DataFrame, batch: Optional[int] = 0):

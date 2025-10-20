@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING, List, Optional, Union
 
 from azure.data.tables import TableClient, TableServiceClient
 from pyspark.sql import DataFrame
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+
+from fabricks.utils._types import DataFrameLike
 
 if TYPE_CHECKING:
     from azure.core.credentials import TokenCredential
@@ -121,7 +122,7 @@ class AzureTable:
                 raise e
 
     def delete(self, data: Union[List, DataFrame, dict]):
-        if isinstance(data, (DataFrame, CDataFrame)):
+        if isinstance(data, DataFrameLike):
             data = [row.asDict() for row in data.collect()]
         elif not isinstance(data, List):
             data = [data]
@@ -130,7 +131,7 @@ class AzureTable:
         self.submit(operations)
 
     def upsert(self, data: Union[List, DataFrame, dict]):
-        if isinstance(data, (DataFrame, CDataFrame)):
+        if isinstance(data, DataFrameLike):
             data = [row.asDict() for row in data.collect()]
         elif not isinstance(data, List):
             data = [data]

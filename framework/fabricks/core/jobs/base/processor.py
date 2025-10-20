@@ -246,5 +246,4 @@ class Processor(Invoker):
                 self.run(retry=False, schedule_id=schedule_id, schedule=schedule)
 
     @abstractmethod
-    def overwrite(self):
-        raise NotImplementedError()
+    def overwrite(self): ...

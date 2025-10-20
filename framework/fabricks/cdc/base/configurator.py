@@ -4,12 +4,13 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Union
 
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
+from fabricks.cdc.base._types import AllowedSources
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
+from fabricks.utils._types import DataFrameLike
 
 
 class Configurator(ABC):
@@ -43,17 +44,15 @@ class Configurator(ABC):
         return f"{self.database}_{'_'.join(self.levels)}"
 
     @abstractmethod
-    def get_query(self, src: Union[DataFrame, Table, str], **kwargs):
-        raise NotImplementedError()
+    def get_query(self, src: AllowedSources, **kwargs) -> str: ...
 
     @abstractmethod
-    def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
-        raise NotImplementedError()
+    def get_data(self, src: AllowedSources, **kwargs) -> DataFrame: ...
 
     @abstractmethod
     def create_table(
         self,
-        src: Union[DataFrame, Table, str],
+        src: AllowedSources,
         partitioning: Optional[bool] = False,
         partition_by: Optional[Union[List[str], str]] = None,
         identity: Optional[bool] = False,
@@ -61,16 +60,13 @@ class Configurator(ABC):
         cluster_by: Optional[Union[List[str], str]] = None,
         properties: Optional[dict[str, str]] = None,
         **kwargs,
-    ):
-        raise NotImplementedError()
+    ): ...
 
     @abstractmethod
-    def drop(self):
-        raise NotImplementedError()
+    def drop(self): ...
 
     @abstractmethod
-    def create_or_replace_view(self, src: Union[Table, str], **kwargs):
-        raise NotImplementedError()
+    def create_or_replace_view(self, src: Union[Table, str], **kwargs): ...
 
     @property
     def allowed_input__columns(self) -> List[str]:
@@ -146,8 +142,8 @@ class Configurator(ABC):
     def slowly_changing_dimension(self) -> bool:
         return self.change_data_capture in ["scd1", "scd2"]
 
-    def get_src(self, src: Union[DataFrame, Table, str]) -> DataFrame:
-        if isinstance(src, (DataFrame, CDataFrame)):
+    def get_src(self, src: AllowedSources) -> DataFrame:
+        if isinstance(src, DataFrameLike):
             df = src
         elif isinstance(src, Table):
             df = self.table.dataframe
@@ -158,14 +154,14 @@ class Configurator(ABC):
 
         return df
 
-    def has_data(self, src: Union[DataFrame, Table, str], **kwargs) -> bool:
+    def has_data(self, src: AllowedSources, **kwargs) -> bool:
         DEFAULT_LOGGER.debug("check if has data", extra={"label": self})
         df = self.get_src(src=src)
         return not df.isEmpty()
 
     def get_columns(
         self,
-        src: Union[DataFrame, Table, str],
+        src: AllowedSources,
         backtick: Optional[bool] = True,
         sort: Optional[bool] = True,
         check: Optional[bool] = True,
@@ -212,20 +208,16 @@ class Configurator(ABC):
         return df.select(columns)
 
     @abstractmethod
-    def optimize_table(self):
-        raise NotImplementedError()
+    def optimize_table(self): ...
 
     @abstractmethod
-    def update_schema(self, src: Union[DataFrame, Table, str], **kwargs):
-        raise NotImplementedError()
+    def update_schema(self, src: AllowedSources, **kwargs): ...
 
     @abstractmethod
-    def get_differences_with_deltatable(self, src: Union[DataFrame, Table, str], **kwargs):
-        raise NotImplementedError()
+    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs): ...
 
     @abstractmethod
-    def overwrite_schema(self, src: Union[DataFrame, Table, str]):
-        raise NotImplementedError()
+    def overwrite_schema(self, src: AllowedSources): ...
 
     def __str__(self):
         return f"{self.table.qualified_name}"

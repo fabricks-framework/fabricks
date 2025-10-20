@@ -3,11 +3,11 @@ from uuid import uuid4
 
 import pandas as pd
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.dbobject import DbObject
+from fabricks.utils._types import DataFrameLike
 
 
 class View(DbObject):
@@ -18,7 +18,7 @@ class View(DbObject):
         spark: Optional[SparkSession] = None,
     ) -> str:
         if spark is None:
-            if isinstance(df, (DataFrame, CDataFrame)):
+            if isinstance(df, DataFrameLike):
                 spark = df.sparkSession
             else:
                 spark = SPARK
