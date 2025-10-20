@@ -73,7 +73,7 @@ class Processor(Invoker):
                 assert self.paths.commits.joinpath(last_batch).exists()
 
     def _for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
-        DEFAULT_LOGGER.debug("for each batch starts", extra={"label": self})
+        DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
         if batch is not None:
             DEFAULT_LOGGER.debug(f"batch {batch}", extra={"label": self})
 
@@ -98,10 +98,10 @@ class Processor(Invoker):
             self.table.set_property("fabricks.last_batch", batch)
 
         self.table.create_restore_point()
-        DEFAULT_LOGGER.debug("for each batch ends", extra={"label": self})
+        DEFAULT_LOGGER.debug("end (for each batch)", extra={"label": self})
 
     def for_each_run(self, **kwargs):
-        DEFAULT_LOGGER.debug("for each run starts", extra={"label": self})
+        DEFAULT_LOGGER.debug("start (for each run)", extra={"label": self})
 
         if self.virtual:
             self.create_or_replace_view()
@@ -128,7 +128,7 @@ class Processor(Invoker):
         else:
             raise ValueError(f"{self.mode} - not allowed")
 
-        DEFAULT_LOGGER.debug("for each run ends", extra={"label": self})
+        DEFAULT_LOGGER.debug("end (for each run)", extra={"label": self})
 
     def run(
         self,
@@ -166,7 +166,7 @@ class Processor(Invoker):
                 DEFAULT_LOGGER.debug(f"last batch {last_batch}", extra={"label": self})
 
         try:
-            DEFAULT_LOGGER.info("run starts", extra={"label": self})
+            DEFAULT_LOGGER.info("start (run)", extra={"label": self})
 
             if reload:
                 DEFAULT_LOGGER.debug("force reload", extra={"label": self})
@@ -211,7 +211,7 @@ class Processor(Invoker):
                     vacuum=vacuum,
                 )
 
-            DEFAULT_LOGGER.info("run ends", extra={"label": self})
+            DEFAULT_LOGGER.info("end (run)", extra={"label": self})
 
         except SkipRunCheckWarning as e:
             DEFAULT_LOGGER.warning("skip run", extra={"label": self})
@@ -246,4 +246,4 @@ class Processor(Invoker):
                 self.run(retry=False, schedule_id=schedule_id, schedule=schedule)
 
     @abstractmethod
-    def overwrite(self): ...
+    def overwrite(self) -> None: ...

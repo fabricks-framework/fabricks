@@ -152,7 +152,7 @@ class Invoker(Checker):
         extenders = self.options.extenders
         for e in extenders:
             name = e.get("extender")
-            DEFAULT_LOGGER.info(f"calling {name}", extra={"label": self})
+            DEFAULT_LOGGER.info(f"call {name}", extra={"label": self})
             arguments = e.get("arguments") or {}
 
             extender = get_extender(name)
@@ -166,7 +166,7 @@ class Invoker(Checker):
         extenders = self.step_conf.get("extender_options", {})
         for e in extenders:
             name = e.get("extender")
-            DEFAULT_LOGGER.info(f"calling {name}", extra={"label": self.step})
+            DEFAULT_LOGGER.info(f"call {name}", extra={"label": self.step})
             arguments = e.get("arguments", {})
 
             extender = get_extender(name)
