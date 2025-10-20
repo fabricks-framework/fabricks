@@ -69,18 +69,18 @@ else:
 
 LOGLEVEL = _loglevel
 
-config_path = os.environ.get("FABRICKS_CONFIG")
-if config_path is None:
-    if config_path := file_config.get("config"):
+path_config = os.environ.get("FABRICKS_CONFIG")
+if path_config is None:
+    if path_config := file_config.get("config"):
         assert file_path is not None
-        config_path = file_path.joinpath(config_path)
+        path_config = file_path.joinpath(path_config)
 else:
-    config_path = PATH_RUNTIME.joinpath(config_path).string if config_path else None
+    path_config = PATH_RUNTIME.joinpath(path_config).string if path_config else None
 
-if not config_path:
-    config_path = PATH_RUNTIME.joinpath(
+if not path_config:
+    path_config = PATH_RUNTIME.joinpath(
         "fabricks",
         f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
     ).string
 
-PATH_CONFIG: Final[Path] = Path(config_path, assume_git=True)
+PATH_CONFIG: Final[Path] = Path(path_config, assume_git=True)

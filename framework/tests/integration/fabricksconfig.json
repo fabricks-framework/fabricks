@@ -1,9 +1,7 @@
 {
-    "runtime": "tests/integration/runtime",
+    "runtime": "runtime",
     "notebooks": "fabricks/api/notebooks",
     "job_config_from_yaml": true,
-    "loglevel": "debug",
-    "debugmode": true,
-    "config": "tests/integration/runtime/fabricks/conf.uc.fabricks.yml"
+    "loglevel": "warning",
+    "config": "runtime/fabricks/conf.uc.fabricks.yml"
 }
-
