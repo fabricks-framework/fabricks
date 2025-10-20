@@ -1,6 +1,6 @@
 {
     "runtime": "runtime",
-    "notebooks": "fabricks/api/notebooks",
+    "notebooks": "runtime/fabricks/notebooks",
     "job_config_from_yaml": true,
     "loglevel": "warning",
     "config": "runtime/fabricks/conf.uc.fabricks.yml"
