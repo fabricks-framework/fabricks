@@ -37,8 +37,8 @@ def deploy_notebook(notebook: str):
 def deploy_notebooks():
     DEFAULT_LOGGER.info("overwrite notebooks")
 
-    _clean_dir()
     _create_dir_if_not_exists()
+    _clean_dir()
 
     for n in [
         "cluster",

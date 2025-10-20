@@ -103,7 +103,7 @@ python_files = ["test_*.py"]
 
 [tool.fabricks]
 runtime = "tests/integration/runtime"
-notebooks = "fabricks/api/notebooks"
+notebooks = "tests/integration/runtime/fabricks/notebooks"
 job_config_from_yaml = true
 loglevel = "debug"
 debugmode = true
