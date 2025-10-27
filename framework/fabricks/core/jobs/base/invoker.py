@@ -12,8 +12,8 @@ from fabricks.utils.path import Path
 
 
 class Invoker(Checker):
-    def invoke(self, schedule: Optional[str] = None, schema_only: Optional[bool] = False, **kwargs):
-        self._invoke_job(position="run", schedule=schedule, schema_only=schema_only)
+    def invoke(self, schedule: Optional[str] = None, **kwargs):
+        self._invoke_job(position="run", schedule=schedule, **kwargs)  # kwargs needed for gold invoke
 
     def invoke_pre_run(self, schedule: Optional[str] = None):
         self._invoke_job(position="pre_run", schedule=schedule)
@@ -23,7 +23,7 @@ class Invoker(Checker):
         self._invoke_job(position="post_run", schedule=schedule)
         self._invoke_step(position="post_run", schedule=schedule)
 
-    def _invoke_job(self, position: str, schedule: Optional[str] = None, schema_only: Optional[bool] = False):
+    def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
         invokers = self.options.invokers.get_list(position)
 
         errors = []
@@ -32,13 +32,18 @@ class Invoker(Checker):
             for i in invokers:
                 DEFAULT_LOGGER.debug(f"invoke ({position})", extra={"label": self})
                 try:
-                    notebook = i.get("notebook")
-                    assert notebook, "notebook mandatory"
-                    path = PATH_RUNTIME.joinpath(notebook)
+                    path = kwargs.get("path")
+                    if path is not None:
+                        notebook = i.get("notebook")
+                        assert notebook, "notebook mandatory"
+                        path = PATH_RUNTIME.joinpath(notebook)
+
+                    assert path is not None, "path mandatory"
 
                     arguments = i.get("arguments") or {}
                     timeout = i.get("timeout")
 
+                    schema_only = kwargs.get("schema_only")
                     if schema_only is not None:
                         arguments["schema_only"] = schema_only
 
