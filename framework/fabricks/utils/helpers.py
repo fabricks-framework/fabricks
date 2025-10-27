@@ -1,3 +1,4 @@
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from typing import Any, Callable, Iterable, List, Optional, Union
@@ -40,6 +41,7 @@ def run_in_parallel(
     workers: int = 8,
     progress_bar: Optional[bool] = False,
     position: Optional[int] = None,
+    loglevel: int = logging.CRITICAL,
 ) -> List[Any]:
     """
     Runs the given function in parallel on the elements of the iterable using multiple threads.
@@ -53,6 +55,9 @@ def run_in_parallel(
         List[Any]: A list containing the results of the function calls.
 
     """
+    current_loglevel = logging.getLogger().getEffectiveLevel()
+    logging.getLogger().setLevel(loglevel)
+
     iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
@@ -62,6 +67,8 @@ def run_in_parallel(
             results = list(tqdm(executor.map(func, iterable), total=len(iterable), position=position))
         else:
             results = list(executor.map(func, iterable))
+
+    logging.getLogger().setLevel(current_loglevel)
 
     return results
 
