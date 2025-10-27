@@ -42,6 +42,7 @@ def run_in_parallel(
     progress_bar: Optional[bool] = False,
     position: Optional[int] = None,
     loglevel: int = logging.CRITICAL,
+    logger: Optional[logging.Logger] = None,
 ) -> List[Any]:
     """
     Runs the given function in parallel on the elements of the iterable using multiple threads.
@@ -55,8 +56,11 @@ def run_in_parallel(
         List[Any]: A list containing the results of the function calls.
 
     """
-    current_loglevel = logging.getLogger().getEffectiveLevel()
-    logging.getLogger().setLevel(loglevel)
+    if logger is None:
+        logger = logging.getLogger()
+
+    current_loglevel = logger.getEffectiveLevel()
+    logger.setLevel(loglevel)
 
     iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
 
@@ -68,7 +72,7 @@ def run_in_parallel(
         else:
             results = list(executor.map(func, iterable))
 
-    logging.getLogger().setLevel(current_loglevel)
+    logger.setLevel(current_loglevel)
 
     return results
 

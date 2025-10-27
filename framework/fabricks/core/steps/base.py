@@ -195,12 +195,7 @@ class BaseStep:
         if not df:
             raise ValueError("no jobs found")
 
-        DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-        run_in_parallel(_get_dependencies, df, workers=16, progress_bar=progress_bar)
-        if loglevel:
-            DEFAULT_LOGGER.setLevel(loglevel)
-        else:
-            DEFAULT_LOGGER.setLevel(LOGLEVEL)
+        run_in_parallel(_get_dependencies, df, workers=16, progress_bar=progress_bar, logger=DEFAULT_LOGGER, loglevel=logging.CRITICAL)
 
         df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)  # type: ignore
         return df, errors
@@ -253,8 +248,7 @@ class BaseStep:
         df = df.join(view_df, "job_id", how="left_anti")
 
         if df:
-            run_in_parallel(_create_db_object, df, workers=16, progress_bar=True)
-            DEFAULT_LOGGER.setLevel(LOGLEVEL)
+            run_in_parallel(_create_db_object, df, workers=16, progress_bar=True, logger=DEFAULT_LOGGER, loglevel=logging.CRITICAL)
 
         self.update_tables_list()
         self.update_views_list()
