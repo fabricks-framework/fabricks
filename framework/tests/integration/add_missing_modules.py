@@ -18,3 +18,5 @@ root = p.absolute()
 if str(root) not in sys.path:
     print(f"adding {root} to sys.path")
     sys.path.insert(0, str(root))
+    print(f"adding {root / 'tests'} to sys.path")
+    sys.path.insert(0, str(root / "tests"))
