@@ -23,6 +23,10 @@
     options:
       mode: complete
       notebook: true
+    invoker_options:
+      run:
+        - arguments:
+            arg1: '1'
 - job:
     step: gold
     topic: fact

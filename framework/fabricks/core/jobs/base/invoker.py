@@ -13,7 +13,7 @@ from fabricks.utils.path import Path
 
 class Invoker(Checker):
     def invoke(self, schedule: Optional[str] = None, **kwargs):
-        self._invoke_job(position="run", schedule=schedule, **kwargs)  # kwargs needed for gold invoke
+        return self._invoke_job(position="run", schedule=schedule, **kwargs)  # kwargs and return needed for get_data in gold
 
     def invoke_pre_run(self, schedule: Optional[str] = None):
         self._invoke_job(position="pre_run", schedule=schedule)
@@ -33,7 +33,7 @@ class Invoker(Checker):
                 DEFAULT_LOGGER.debug(f"invoke ({position})", extra={"label": self})
                 try:
                     path = kwargs.get("path")
-                    if path is not None:
+                    if path is None:
                         notebook = i.get("notebook")
                         assert notebook, "notebook mandatory"
                         path = PATH_RUNTIME.joinpath(notebook)
@@ -47,7 +47,7 @@ class Invoker(Checker):
                     if schema_only is not None:
                         arguments["schema_only"] = schema_only
 
-                    self._run_notebook(
+                    return self._run_notebook(
                         path=path,
                         arguments=arguments,
                         timeout=timeout,
@@ -141,7 +141,7 @@ class Invoker(Checker):
         if arguments is None:
             arguments = {}
 
-        dbutils.notebook.run(
+        return dbutils.notebook.run(
             path=path.get_notebook_path(),  # type: ignore
             timeout_seconds=timeout,  # type: ignore
             arguments={  # type: ignore
