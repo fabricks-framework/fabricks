@@ -13,7 +13,11 @@ from fabricks.utils.path import Path
 
 class Invoker(Checker):
     def invoke(self, schedule: Optional[str] = None, **kwargs):
-        return self._invoke_job(position="run", schedule=schedule, **kwargs)  # kwargs and return needed for get_data in gold
+        return self._invoke_job(
+            position="run",
+            schedule=schedule,
+            **kwargs,
+        )  # kwargs and return needed for get_data in gold
 
     def invoke_pre_run(self, schedule: Optional[str] = None):
         self._invoke_job(position="pre_run", schedule=schedule)
