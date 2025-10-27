@@ -218,7 +218,7 @@ class Configurator(ABC):
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict: ...
 
     def get_cdc_data(self, stream: bool = False) -> Optional[DataFrame]:
-        df = self.get_data(stream)
+        df = self.get_data(stream=stream)
         if df:
             cdc_context = self.get_cdc_context(df)
             cdc_df = self.cdc.get_data(src=df, **cdc_context)
@@ -233,20 +233,7 @@ class Configurator(ABC):
         return self._mode
 
     @abstractmethod
-    def get_data(
-        self, stream: bool = False, transform: Optional[bool] = False, schema_only: Optional[bool] = False
-    ) -> Optional[DataFrame]:
-        """
-        Retrieves the data for the job.
-
-        Args:
-            stream (bool, optional): If True, the data will be streamed. Defaults to False.
-            transform (bool, optional): If True, the data will be transformed. Defaults to False.
-
-        Returns:
-            DataFrame or None: The retrieved data as a DataFrame, or None if the data is not available.
-        """
-        ...
+    def get_data(self, stream: bool = False, **kwargs) -> Optional[DataFrame]: ...
 
     @abstractmethod
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs): ...

@@ -96,7 +96,10 @@ class Silver(BaseJob):
         return df
 
     def get_data(
-        self, stream: bool = False, transform: Optional[bool] = False, schema_only: Optional[bool] = False
+        self,
+        stream: bool = False,
+        transform: Optional[bool] = False,
+        schema_only: Optional[bool] = False,
     ) -> DataFrame:
         deps = self.get_dependencies()
         assert deps, "not dependency found"

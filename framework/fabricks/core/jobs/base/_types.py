@@ -168,6 +168,7 @@ class GoldOptions(TypedDict):
     notebook: Optional[bool]
     requirements: Optional[bool]
     timeout: Optional[int]
+    metadata: Optional[bool]
 
 
 StepOptions = Union[BronzeOptions, SilverOptions, GoldOptions]

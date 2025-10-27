@@ -109,7 +109,7 @@ class Processor(Invoker):
         elif self.persist:
             assert self.table.registered, f"{self} is not registered"
 
-            df = self.get_data(self.stream)
+            df = self.get_data(stream=self.stream, **kwargs)
             assert df is not None, "no data"
 
             partial(self._for_each_batch, **kwargs)

@@ -302,7 +302,7 @@ class Generator(Configurator):
         if not self.table.exists():
             DEFAULT_LOGGER.info("create table", extra={"label": self})
 
-            df = self.get_data(self.stream, schema_only=True)
+            df = self.get_data(stream=self.stream, schema_only=True)
             if df:
                 if self.stream:
                     # add dummy stream to be sure that the writeStream will start
@@ -359,7 +359,7 @@ class Generator(Configurator):
                 _update_schema(df)
 
             else:
-                df = self.get_data(self.stream, schema_only=True)
+                df = self.get_data(stream=self.stream, schema_only=True)
                 assert df is not None
                 df = self.base_transform(df)
 
@@ -391,7 +391,7 @@ class Generator(Configurator):
 
     def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
         if df is None:
-            df = self.get_data(self.stream)
+            df = self.get_data(stream=self.stream)
             assert df is not None
             df = self.base_transform(df)
 
@@ -401,7 +401,7 @@ class Generator(Configurator):
 
     def get_schema_differences(self, df: Optional[DataFrame] = None) -> Optional[Sequence[SchemaDiff]]:
         if df is None:
-            df = self.get_data(self.stream)
+            df = self.get_data(stream=self.stream)
             assert df is not None
             df = self.base_transform(df)
 

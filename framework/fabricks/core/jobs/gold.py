@@ -107,7 +107,11 @@ class Gold(BaseJob):
         return df
 
     def get_data(
-        self, stream: bool = False, transform: Optional[bool] = False, schema_only: Optional[bool] = False
+        self,
+        stream: bool = False,
+        transform: Optional[bool] = False,
+        schema_only: Optional[bool] = False,
+        **kwargs,
     ) -> DataFrame:
         if self.options.job.get_boolean("requirements"):
             import sys
@@ -118,17 +122,7 @@ class Gold(BaseJob):
             df = self.spark.createDataFrame([{}])  # type: ignore
 
         elif self.options.job.get("notebook"):
-            from databricks.sdk.runtime import dbutils
-
-            DEFAULT_LOGGER.debug("call notebook", extra={"label": self})
-            path = self.paths.runtime.get_notebook_path()
-
-            if schema_only:
-                args = {"schema_only": True}
-            else:
-                args = {}
-
-            global_temp_view = dbutils.notebook.run(path, self.timeout, arguments=args)  # type: ignore
+            global_temp_view = self.invoke(schema_only=schema_only, **kwargs)
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
 
         elif self.options.job.get("table"):
@@ -189,7 +183,7 @@ class Gold(BaseJob):
         from fabricks.context import CATALOG
 
         dependencies = []
-        df = self.get_data(self.stream)
+        df = self.get_data(stream=self.stream)
 
         if df is not None:
             explain_plan = self.spark.sql("explain extended select * from {df}", df=df).collect()[0][0]
@@ -209,7 +203,10 @@ class Gold(BaseJob):
         deduplicate = self.options.job.get_boolean("deduplicate", None)
         # assume no reload in gold (to improve performance)
         rectify = self.options.job.get_boolean("rectify_as_upserts", None)
-        add_metadata = self.step_conf.get("options", {}).get("metadata", False)
+
+        add_metadata = self.options.job.get_boolean("metadata", None)
+        if add_metadata is None:
+            add_metadata = self.step_conf.get("options", {}).get("metadata", False)
 
         context = {
             "add_metadata": add_metadata,
