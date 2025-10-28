@@ -30,7 +30,7 @@ class Invoker(Checker):
     def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
         invokers = self.options.invokers.get_list(position)
         if position == "run":
-            invokers = invokers if len(invokers) > 0 else [{}] # run must work even without run invoker options
+            invokers = invokers if len(invokers) > 0 else [{}]  # run must work even without run invoker options
 
         errors = []
 
