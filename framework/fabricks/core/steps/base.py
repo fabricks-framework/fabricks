@@ -194,9 +194,11 @@ class BaseStep:
         )
 
         errors = [res for res in results if res.get("error")]
-        dependencies = [res.get("dependencies") for res in results if res.get("dependencies")]
+        dependencies = []
+        for res in [res for res in results if res.get("dependencies")]:
+            dependencies.extend(res.get("dependencies"))
 
-        df = self.spark.createDataFrame(dependencies, SchemaDependencies)  # type: ignore
+        df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)  # type: ignore
         return df, errors
 
     def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:

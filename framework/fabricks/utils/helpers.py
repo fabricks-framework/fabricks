@@ -58,7 +58,7 @@ def run_in_parallel(
         loglevel (int, optional): Log level to set during execution. Defaults to logging.CRITICAL.
         logger (Optional[logging.Logger], optional): Logger instance to use. Defaults to None.
         executor (Optional[Literal["ThreadPoolExecutor", "ProcessPoolExecutor", "Pool"]], optional):
-            Type of executor to use. Defaults to "Pool".
+            Type of executor to use.
 
     Returns:
         List[Any]: A list containing the results of the function calls.
