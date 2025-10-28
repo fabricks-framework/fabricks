@@ -26,7 +26,7 @@ class BaseParser(ABC):
             "__timestamp",
             expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"),
         )
-        df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
+        df = df.withColumn("__timestamp", expr("try_to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
         df = df.drop("__split", "__split_size")
 
         return df
