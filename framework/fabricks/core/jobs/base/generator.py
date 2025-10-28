@@ -300,7 +300,7 @@ class Generator(Configurator):
             )
 
         if not self.table.exists():
-            DEFAULT_LOGGER.info("create table", extra={"label": self})
+            DEFAULT_LOGGER.debug("create table", extra={"label": self})
 
             df = self.get_data(stream=self.stream, schema_only=True)
             if df:
