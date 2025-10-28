@@ -122,9 +122,7 @@ class Gold(BaseJob):
             df = self.spark.createDataFrame([{}])  # type: ignore
 
         elif self.options.job.get("notebook"):
-            path = self.paths.runtime
-
-            global_temp_view = self.invoke(schema_only=schema_only, path=path, **kwargs)
+            global_temp_view = self.invoke(path=self.paths.runtime, **kwargs)
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
 
         elif self.options.job.get("table"):

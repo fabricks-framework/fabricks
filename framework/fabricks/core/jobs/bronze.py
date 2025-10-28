@@ -180,7 +180,11 @@ class Bronze(BaseJob):
         return df
 
     def get_data(
-        self, stream: bool = False, transform: Optional[bool] = False, schema_only: Optional[bool] = False
+        self,
+        stream: bool = False,
+        transform: Optional[bool] = False,
+        schema_only: Optional[bool] = False,
+        **kwargs,
     ) -> Optional[DataFrame]:
         df = self.parse(stream)
         df = self.filter_where(df)

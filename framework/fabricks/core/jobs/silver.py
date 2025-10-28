@@ -100,6 +100,7 @@ class Silver(BaseJob):
         stream: bool = False,
         transform: Optional[bool] = False,
         schema_only: Optional[bool] = False,
+        **kwargs,
     ) -> DataFrame:
         deps = self.get_dependencies()
         assert deps, "not dependency found"
