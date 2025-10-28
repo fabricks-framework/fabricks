@@ -413,7 +413,7 @@ def _create_db_object(row: Row):
 
 def _register(row: Row):
     job = get_job(step=row["step"], topic=row["topic"], item=row["item"])
-    try:    
+    try:
         job.register()
         return {"job": str(job)}
     except Exception as e:

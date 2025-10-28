@@ -83,7 +83,7 @@ def run_in_parallel(
                     for result in p.imap(func, iterable):
                         t.update()
                         t.refresh()
-                        
+
                         results.append(result)
             else:
                 results = list(p.imap(func, iterable))
