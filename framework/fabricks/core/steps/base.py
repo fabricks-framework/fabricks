@@ -50,6 +50,17 @@ class BaseStep:
     _workers: Optional[int] = None
     _timeouts: Optional[Timeouts] = None
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Don't pickle spark session
+        del state["spark"]
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        # Add spark session back since it doesn't exist in the pickle
+        self.spark = SPARK
+
     @property
     def workers(self):
         if not self._workers:
@@ -146,7 +157,7 @@ class BaseStep:
             if not self.database.exists():
                 self.database.create()
 
-            self.update_jobs()
+            self.update_configurations()
             errors = self.create_db_objects()
 
             for e in errors:
@@ -256,7 +267,12 @@ class BaseStep:
 
         if df:
             run_in_parallel(
-                _create_db_object, df, workers=16, progress_bar=True, logger=DEFAULT_LOGGER, loglevel=logging.CRITICAL
+                _create_db_object,
+                df,
+                workers=16,
+                progress_bar=True,
+                logger=DEFAULT_LOGGER,
+                loglevel=logging.CRITICAL,
             )
 
         self.update_tables_list()
