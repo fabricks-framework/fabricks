@@ -391,26 +391,31 @@ class BaseStep:
         return self.name
 
 
-# to avoid AttributeError: Can't pickle local object
+# to avoid AttributeError: can't pickle local object
 def _get_dependencies(row: Row):
     job = get_job(step=row["step"], job_id=row["job_id"])
     try:
-        return {"job": job, "dependencies": job.get_dependencies()}
+        return {"job": str(job), "dependencies": job.get_dependencies()}
     except Exception as e:
         DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
-        return {"job": job, "error": e}
+        return {"job": str(job), "error": e}
 
 
 def _create_db_object(row: Row):
     job = get_job(step=row["step"], job_id=row["job_id"])
     try:
         job.create()
-        return {"job": job}
+        return {"job": str(job)}
     except Exception as e:  # noqa E722
         DEFAULT_LOGGER.exception("fail to create db object", extra={"label": job})
-        return {"job": job, "error": e}
+        return {"job": str(job), "error": e}
 
 
 def _register(row: Row):
     job = get_job(step=row["step"], topic=row["topic"], item=row["item"])
-    job.register()
+    try:    
+        job.register()
+        return {"job": str(job)}
+    except Exception as e:
+        DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
+        return {"job": str(job), "error": e}
