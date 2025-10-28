@@ -1,8 +1,28 @@
 from pyspark.sql import DataFrame, SparkSession
 
-from fabricks.core.parsers import parser
-from fabricks.utils.path import Path
-from tests.integration.runtime.fabricks.parsers.delete_log import DeleteLogBaseParser
+try:
+    from fabricks.core.parsers import parser
+    from fabricks.utils.path import Path
+    from tests.integration.runtime.fabricks.parsers.delete_log import DeleteLogBaseParser
+
+except ModuleNotFoundError:  # Needed for the tests (https://docs.databricks.com/aws/en/files/workspace-modules)
+    import os
+    import sys
+    from pathlib import Path
+
+    p = Path(os.getcwd())
+    while not (p / "pyproject.toml").exists():
+        p = p.parent
+
+    root = p.absolute()
+
+    if str(root) not in sys.path:
+        print(f"adding {root} to sys.path")
+        sys.path.insert(0, str(root))
+
+    from fabricks.core.parsers import parser
+    from fabricks.utils.path import Path
+    from tests.integration.runtime.fabricks.parsers.delete_log import DeleteLogBaseParser
 
 
 @parser(name="monarch")

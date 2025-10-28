@@ -34,7 +34,6 @@ from fabricks.context.runtime import (
 from fabricks.context.spark_session import DBUTILS, SPARK, build_spark_session, init_spark_session
 from fabricks.context.utils import pprint_runtime
 
-
 __all__ = [
     "BRONZE",
     "build_spark_session",

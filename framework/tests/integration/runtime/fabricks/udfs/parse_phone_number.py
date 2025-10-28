@@ -1,7 +1,25 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, StringType, StructField, StructType
 
-from fabricks.core.udfs import udf
+try:
+    from fabricks.core.udfs import udf
+
+except ModuleNotFoundError:  # Needed for the tests (https://docs.databricks.com/aws/en/files/workspace-modules)
+    import os
+    import sys
+    from pathlib import Path
+
+    p = Path(os.getcwd())
+    while not (p / "pyproject.toml").exists():
+        p = p.parent
+
+    root = p.absolute()
+
+    if str(root) not in sys.path:
+        print(f"adding {root} to sys.path")
+        sys.path.insert(0, str(root))
+
+    from fabricks.core.udfs import udf
 
 
 @udf(name="parse_phone_number")

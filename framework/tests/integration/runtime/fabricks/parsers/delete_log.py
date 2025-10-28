@@ -6,10 +6,31 @@ from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, lit, when
 
-from fabricks.core.parsers import BaseParser, ParserOptions
-from fabricks.utils.helpers import concat_dfs
-from fabricks.utils.path import Path
-from fabricks.utils.read import read
+try:
+    from fabricks.core.parsers import BaseParser, ParserOptions
+    from fabricks.utils.helpers import concat_dfs
+    from fabricks.utils.path import Path
+    from fabricks.utils.read import read
+
+except ModuleNotFoundError:  # Needed for the tests (https://docs.databricks.com/aws/en/files/workspace-modules)
+    import os
+    import sys
+    from pathlib import Path
+
+    p = Path(os.getcwd())
+    while not (p / "pyproject.toml").exists():
+        p = p.parent
+
+    root = p.absolute()
+
+    if str(root) not in sys.path:
+        print(f"adding {root} to sys.path")
+        sys.path.insert(0, str(root))
+
+    from fabricks.core.parsers import BaseParser, ParserOptions
+    from fabricks.utils.helpers import concat_dfs
+    from fabricks.utils.path import Path
+    from fabricks.utils.read import read
 
 
 class DeleteLogBaseParser(BaseParser):

@@ -10,7 +10,7 @@ from pathlib import Path
 # COMMAND ----------
 
 p = Path(os.getcwd())
-while not (p / "pyproject.toml").exists() or (p / "fabricksconfig.json").exists():
+while not (p / "pyproject.toml").exists():
     p = p.parent
 
 # COMMAND ----------
