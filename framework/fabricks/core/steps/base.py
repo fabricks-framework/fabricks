@@ -9,7 +9,7 @@ from typing_extensions import deprecated
 from fabricks.cdc import NoCDC
 from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import Bronzes, Golds, JobDependency, SchemaDependencies, Silvers, TStep
+from fabricks.core.jobs.base._types import Bronzes, Golds, SchemaDependencies, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
@@ -49,17 +49,6 @@ class BaseStep:
 
     _workers: Optional[int] = None
     _timeouts: Optional[Timeouts] = None
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        # Don't pickle spark session
-        del state["spark"]
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        # Add spark session back since it doesn't exist in the pickle
-        self.spark = SPARK
 
     @property
     def workers(self):
@@ -179,17 +168,6 @@ class BaseStep:
     ) -> Tuple[DataFrame, List[Dict]]:
         DEFAULT_LOGGER.debug("get dependencies", extra={"label": self})
 
-        errors = []
-        dependencies: list[JobDependency] = []
-
-        def _get_dependencies(row: Row):
-            job = get_job(step=self.name, job_id=row["job_id"])
-            try:
-                dependencies.extend(job.get_dependencies())
-            except Exception as e:
-                DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
-                errors.append({"job": job, "error": e})
-
         df = self.get_jobs()
 
         if not include_manual:
@@ -206,7 +184,7 @@ class BaseStep:
         if not df:
             raise ValueError("no jobs found")
 
-        run_in_parallel(
+        results = run_in_parallel(
             _get_dependencies,
             df,
             workers=16,
@@ -214,6 +192,9 @@ class BaseStep:
             logger=DEFAULT_LOGGER,
             loglevel=logging.CRITICAL,
         )
+
+        errors = [res for res in results if res.get("error")]
+        dependencies = [res.get("dependencies") for res in results if res.get("dependencies")]
 
         df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)  # type: ignore
         return df, errors
@@ -248,16 +229,6 @@ class BaseStep:
     def create_db_objects(self, retry: Optional[bool] = True) -> List[Dict]:
         DEFAULT_LOGGER.info("create db objects", extra={"label": self})
 
-        errors = []
-
-        def _create_db_object(row: Row):
-            job = get_job(step=self.name, job_id=row["job_id"])
-            try:
-                job.create()
-            except Exception as e:  # noqa E722
-                DEFAULT_LOGGER.exception("fail to create db object", extra={"label": self})
-                errors.append({"job": job, "error": e})
-
         df = self.get_jobs()
         table_df = self.database.get_tables()
         view_df = self.database.get_views()
@@ -266,7 +237,7 @@ class BaseStep:
         df = df.join(view_df, "job_id", how="left_anti")
 
         if df:
-            run_in_parallel(
+            results = run_in_parallel(
                 _create_db_object,
                 df,
                 workers=16,
@@ -277,6 +248,8 @@ class BaseStep:
 
         self.update_tables_list()
         self.update_views_list()
+
+        errors = [res for res in results if res.get("error")]
 
         if errors:
             if retry:
@@ -390,10 +363,6 @@ class BaseStep:
         return errors
 
     def register(self, update: Optional[bool] = False, drop: Optional[bool] = False):
-        def _register(row: Row):
-            job = get_job(step=self.name, topic=row["topic"], item=row["item"])
-            job.register()
-
         if drop:
             SPARK.sql(f"drop database if exists {self.name} cascade ")
             SPARK.sql(f"create database {self.name}")
@@ -420,3 +389,28 @@ class BaseStep:
 
     def __str__(self):
         return self.name
+
+
+# to avoid AttributeError: Can't pickle local object
+def _get_dependencies(row: Row):
+    job = get_job(step=row["step"], job_id=row["job_id"])
+    try:
+        return {"job": job, "dependencies": job.get_dependencies()}
+    except Exception as e:
+        DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
+        return {"job": job, "error": e}
+
+
+def _create_db_object(row: Row):
+    job = get_job(step=row["step"], job_id=row["job_id"])
+    try:
+        job.create()
+        return {"job": job}
+    except Exception as e:  # noqa E722
+        DEFAULT_LOGGER.exception("fail to create db object", extra={"label": job})
+        return {"job": job, "error": e}
+
+
+def _register(row: Row):
+    job = get_job(step=row["step"], topic=row["topic"], item=row["item"])
+    job.register()

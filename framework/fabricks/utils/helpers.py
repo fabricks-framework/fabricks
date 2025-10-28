@@ -79,10 +79,11 @@ def run_in_parallel(
             if progress_bar:
                 from tqdm import tqdm
 
-                with tqdm(total=len(iterable), position=position) as pbar:
+                with tqdm(total=len(iterable), position=position) as t:
                     for result in p.imap(func, iterable):
-                        pbar.update()
-                        pbar.refresh()
+                        t.update()
+                        t.refresh()
+                        
                         results.append(result)
             else:
                 results = list(p.imap(func, iterable))
@@ -93,10 +94,11 @@ def run_in_parallel(
             if progress_bar:
                 from tqdm import tqdm
 
-                with tqdm(total=len(iterable), position=position) as pbar:
+                with tqdm(total=len(iterable), position=position) as t:
                     for result in exe.map(func, iterable):
-                        pbar.update()
-                        pbar.refresh()
+                        t.update()
+                        t.refresh()
+
                         results.append(result)
             else:
                 results = list(exe.map(func, iterable))
