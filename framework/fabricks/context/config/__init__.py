@@ -49,6 +49,12 @@ if is_debugmode is None:
 
 IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1", "yes")
 
+is_devmode = os.environ.get("FABRICKS_IS_DEVMODE", None)
+if is_devmode is None:
+    is_devmode = file_config.get("devmode")
+
+IS_DEVMODE: Final[bool] = str(is_devmode).lower() in ("true", "1", "yes")
+
 loglevel = os.environ.get("FABRICKS_LOGLEVEL", None)
 if loglevel is None:
     loglevel = file_config.get("loglevel")

@@ -1,5 +1,6 @@
 from fabricks.context.config import (
     IS_DEBUGMODE,
+    IS_DEVMODE,
     IS_JOB_CONFIG_FROM_YAML,
     LOGLEVEL,
     PATH_CONFIG,
@@ -33,6 +34,7 @@ from fabricks.context.runtime import (
 from fabricks.context.spark_session import DBUTILS, SPARK, build_spark_session, init_spark_session
 from fabricks.context.utils import pprint_runtime
 
+
 __all__ = [
     "BRONZE",
     "build_spark_session",
@@ -44,6 +46,7 @@ __all__ = [
     "GOLD",
     "init_spark_session",
     "IS_DEBUGMODE",
+    "IS_DEVMODE",
     "IS_JOB_CONFIG_FROM_YAML",
     "IS_TYPE_WIDENING",
     "IS_UNITY_CATALOG",

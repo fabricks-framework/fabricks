@@ -3,5 +3,6 @@
     "notebooks": "runtime/fabricks/notebooks",
     "job_config_from_yaml": true,
     "loglevel": "info",
-    "config": "runtime/fabricks/conf.uc.fabricks.yml"
+    "config": "runtime/fabricks/conf.uc.fabricks.yml",
+    "devmode": true
 }
