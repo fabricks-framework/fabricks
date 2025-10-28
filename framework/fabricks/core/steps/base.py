@@ -150,7 +150,7 @@ class BaseStep:
             errors = self.create_db_objects()
 
             for e in errors:
-                DEFAULT_LOGGER.exception("fail to create db objects", extra={"label": e["job"]}, exc_info=e["error"])
+                DEFAULT_LOGGER.exception("fail to create db object", extra={"label": e["job"]}, exc_info=e["error"])
 
             if update_dependencies:
                 self.update_dependencies(progress_bar=progress_bar)
