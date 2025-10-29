@@ -1,7 +1,5 @@
 import logging
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from functools import reduce
-from multiprocessing import Pool
 from queue import Queue
 from typing import Any, Callable, Iterable, List, Literal, Optional, Union
 
@@ -61,7 +59,9 @@ def run_in_parallel(
     position: Optional[int] = None,
     loglevel: int = logging.CRITICAL,
     logger: Optional[logging.Logger] = None,
-    executor: Optional[Literal["ThreadPoolExecutor", "ProcessPoolExecutor", "Pool", "Queue"]] = "ThreadPoolExecutor",
+    run_as: Optional[
+        Literal["ThreadPool", "ProcessPool", "Pool", "Queue"]
+    ] = "ThreadPool",  # Legacy behavior is ThreadPool
 ) -> List[Any]:
     """
     Runs the given function in parallel on the elements of the iterable using multiple threads or processes.
@@ -74,7 +74,7 @@ def run_in_parallel(
         position (Optional[int], optional): Position for the progress bar. Defaults to None.
         loglevel (int, optional): Log level to set during execution. Defaults to logging.CRITICAL.
         logger (Optional[logging.Logger], optional): Logger instance to use. Defaults to None.
-        executor (Optional[Literal["ThreadPoolExecutor", "ProcessPoolExecutor", "Pool", "Queue"]], optional): Type of executor to use.
+        run_as (Optional[Literal["ThreadPool", "ProcessPool", "Pool", "Queue"]], optional): Type of run as to use.
 
     Returns:
         List[Any]: A list containing the results of the function calls.
@@ -89,7 +89,7 @@ def run_in_parallel(
     iterables = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
     results = []
 
-    if executor == "Queue":
+    if run_as == "Queue":
         import threading
 
         task_queue = Queue()
@@ -126,7 +126,9 @@ def run_in_parallel(
         for t in threads:
             t.join()
 
-    elif executor == "Pool":
+    elif run_as == "Pool":
+        from multiprocessing import Pool
+
         with Pool(processes=workers) as p:
             if progress_bar:
                 from tqdm import tqdm
@@ -142,7 +144,9 @@ def run_in_parallel(
                 results = list(p.map(func, iterables))
 
     else:
-        Executor = ProcessPoolExecutor if executor == "ProcessPoolExecutor" else ThreadPoolExecutor
+        from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+
+        Executor = ProcessPoolExecutor if run_as == "ProcessPool" else ThreadPoolExecutor
         with Executor(max_workers=workers) as exe:
             if progress_bar:
                 from tqdm import tqdm

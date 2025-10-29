@@ -191,6 +191,7 @@ class BaseStep:
             progress_bar=progress_bar,
             logger=DEFAULT_LOGGER,
             loglevel=logging.CRITICAL,
+            run_as="Pool",
         )
 
         errors = [res for res in results if res.get("error")]
@@ -246,6 +247,7 @@ class BaseStep:
                 progress_bar=True,
                 logger=DEFAULT_LOGGER,
                 loglevel=logging.CRITICAL,
+                run_as="Pool",
             )
 
         self.update_tables_list()
@@ -380,7 +382,7 @@ class BaseStep:
 
         if df:
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-            run_in_parallel(_register, df, workers=16, progress_bar=True)
+            run_in_parallel(_register, df, workers=16, progress_bar=True, run_as="Pool")
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
     def update_steps_list(self):
