@@ -61,7 +61,7 @@ def run_in_parallel(
     position: Optional[int] = None,
     loglevel: int = logging.CRITICAL,
     logger: Optional[logging.Logger] = None,
-    executor: Optional[Literal["ThreadPoolExecutor", "ProcessPoolExecutor", "Pool", "Queue"]] = "Pool",
+    executor: Optional[Literal["ThreadPoolExecutor", "ProcessPoolExecutor", "Pool", "Queue"]] = "ThreadPoolExecutor",
 ) -> List[Any]:
     """
     Runs the given function in parallel on the elements of the iterable using multiple threads or processes.
@@ -86,9 +86,7 @@ def run_in_parallel(
     current_loglevel = logger.getEffectiveLevel()
     logger.setLevel(loglevel)
 
-    iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
-    iterables = list(iterable)
-
+    iterables = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
     results = []
 
     if executor == "Queue":
@@ -134,14 +132,14 @@ def run_in_parallel(
                 from tqdm import tqdm
 
                 with tqdm(total=len(iterables), position=position) as t:
-                    for result in p.imap(func, iterables):
+                    for result in p.map(func, iterables):
                         results.append(result)
 
                         t.update()
                         t.refresh()
 
             else:
-                results = list(p.imap(func, iterables))
+                results = list(p.map(func, iterables))
 
     else:
         Executor = ProcessPoolExecutor if executor == "ProcessPoolExecutor" else ThreadPoolExecutor
