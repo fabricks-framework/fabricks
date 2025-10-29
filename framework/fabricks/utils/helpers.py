@@ -2,8 +2,8 @@ import logging
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from functools import reduce
 from multiprocessing import Pool
-from typing import Any, Callable, Iterable, List, Literal, Optional, Union
 from queue import Queue
+from typing import Any, Callable, Iterable, List, Literal, Optional, Union
 
 from pyspark.sql import DataFrame
 from typing_extensions import deprecated
@@ -37,13 +37,12 @@ def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], worker
     return run_in_parallel(func, iter, workers)
 
 
-
-def _processor(func: Callable, task_queue: Queue, result_queue: Queue, stop_signal: Any):
+def _process_queue_item(func: Callable, task_queue: Queue, result_queue: Queue, stop_signal: Any):
     """Worker function that processes items from a queue."""
     while True:
         try:
             item = task_queue.get(timeout=1)
-            
+
             if item is stop_signal:
                 task_queue.put(stop_signal)  # Put it back for other workers
                 break
@@ -75,8 +74,7 @@ def run_in_parallel(
         position (Optional[int], optional): Position for the progress bar. Defaults to None.
         loglevel (int, optional): Log level to set during execution. Defaults to logging.CRITICAL.
         logger (Optional[logging.Logger], optional): Logger instance to use. Defaults to None.
-        executor (Optional[Literal["ThreadPoolExecutor", "ProcessPoolExecutor", "Pool"]], optional):
-            Type of executor to use.
+        executor (Optional[Literal["ThreadPoolExecutor", "ProcessPoolExecutor", "Pool", "Queue"]], optional): Type of executor to use.
 
     Returns:
         List[Any]: A list containing the results of the function calls.
@@ -95,36 +93,38 @@ def run_in_parallel(
 
     if executor == "Queue":
         import threading
-        
+
         task_queue = Queue()
         result_queue = Queue()
         stop_signal = object()
-        
+
         for item in iterables:
             task_queue.put(item)
 
         task_queue.put(stop_signal)
-        
+
         threads = []
         for _ in range(workers):
-            t = threading.Thread(target=_processor, args=(func, task_queue, result_queue, stop_signal))
+            t = threading.Thread(target=_process_queue_item, args=(func, task_queue, result_queue, stop_signal))
             t.start()
 
             threads.append(t)
-        
+
         if progress_bar:
             from tqdm import tqdm
-            with tqdm(total=len(iterables), position=position) as pbar:
+
+            with tqdm(total=len(iterables), position=position) as t:
                 for _ in range(len(iterables)):
                     result = result_queue.get()
                     results.append(result)
 
-                    pbar.update()
+                    t.update()
+                    t.refresh()
 
         else:
             for _ in range(len(iterables)):
                 results.append(result_queue.get())
-        
+
         for t in threads:
             t.join()
 
@@ -135,10 +135,11 @@ def run_in_parallel(
 
                 with tqdm(total=len(iterables), position=position) as t:
                     for result in p.imap(func, iterables):
+                        results.append(result)
+
                         t.update()
                         t.refresh()
 
-                        results.append(result)
             else:
                 results = list(p.imap(func, iterables))
 
@@ -150,10 +151,11 @@ def run_in_parallel(
 
                 with tqdm(total=len(iterables), position=position) as t:
                     for result in exe.map(func, iterables):
+                        results.append(result)
+
                         t.update()
                         t.refresh()
 
-                        results.append(result)
             else:
                 results = list(exe.map(func, iterables))
 
