@@ -58,7 +58,7 @@ def test_no_unforced_failure():
 @pytest.mark.order(103)
 def test_forced_failures():
     df = SPARK.sql(
-        """
+        f"""
         select
           *
         from
