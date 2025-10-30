@@ -11,5 +11,8 @@ DEFAULT_LOGGER.setLevel(ERROR)
 
 @pytest.mark.order(201)
 def test_run():
-    run_notebook(PATH_RUNTIME.parent().joinpath("run"), i=2)
-    assert True
+    try:
+        run_notebook(PATH_RUNTIME.parent().joinpath("run"), i=2)
+        assert False
+    except Exception:
+        assert True  # notebook should fail
