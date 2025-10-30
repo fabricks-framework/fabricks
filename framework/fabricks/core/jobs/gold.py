@@ -122,8 +122,12 @@ class Gold(BaseJob):
             df = self.spark.createDataFrame([{}])  # type: ignore
 
         elif self.options.job.get("notebook"):
+            invokers = self.options.invokers.get_list("run")
+            assert len(invokers) == 1, "only one invoker allowed when notebook is true"
+
             global_temp_view = self.invoke(path=self.paths.runtime, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"
+
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
 
         elif self.options.job.get("table"):

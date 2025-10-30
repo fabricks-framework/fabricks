@@ -35,32 +35,42 @@ class Invoker(Checker):
         errors = []
 
         if invokers:
-            for i in invokers:
-                DEFAULT_LOGGER.debug(f"invoke ({position})", extra={"label": self})
+            for i, invoker in enumerate(invokers):
+                DEFAULT_LOGGER.debug(f"invoke ({i}, {position})", extra={"label": self})
                 try:
                     path = kwargs.get("path")
                     if path is None:
-                        notebook = i.get("notebook")
+                        notebook = invoker.get("notebook")
                         assert notebook, "notebook mandatory"
                         path = PATH_RUNTIME.joinpath(notebook)
 
                     assert path is not None, "path mandatory"
 
-                    arguments = i.get("arguments") or {}
-                    timeout = i.get("timeout")
+                    arguments = invoker.get("arguments") or {}
+                    timeout = invoker.get("timeout")
 
                     schema_only = kwargs.get("schema_only")
                     if schema_only is not None:
                         arguments["schema_only"] = schema_only
 
-                    return self._run_notebook(
-                        path=path,
-                        arguments=arguments,
-                        timeout=timeout,
-                        schedule=schedule,
-                    )
+                    if len(invokers) == 1 and position == "run":
+                        return self._run_notebook(
+                            path=path,
+                            arguments=arguments,
+                            timeout=timeout,
+                            schedule=schedule,
+                        )
+                    else:
+                        self._run_notebook(
+                            path=path,
+                            arguments=arguments,
+                            timeout=timeout,
+                            schedule=schedule,
+                        )
 
                 except Exception as e:
+                    DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self})
+
                     if position == "pre_run":
                         errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
@@ -77,15 +87,15 @@ class Invoker(Checker):
         errors = []
 
         if invokers:
-            for i in invokers:
-                DEFAULT_LOGGER.debug(f"invoke by step ({position})", extra={"label": self})
+            for i, invoker in enumerate(invokers):
+                DEFAULT_LOGGER.debug(f"invoke by step ({i}, {position})", extra={"label": self})
                 try:
-                    notebook = i.get("notebook")
+                    notebook = invoker.get("notebook")
                     assert notebook, "notebook mandatory"
                     path = PATH_RUNTIME.joinpath(notebook)
 
-                    arguments = i.get("arguments", {})
-                    timeout = i.get("timeout")
+                    arguments = invoker.get("arguments", {})
+                    timeout = invoker.get("timeout")
 
                     self._run_notebook(
                         path=path,
@@ -95,6 +105,8 @@ class Invoker(Checker):
                     )
 
                 except Exception as e:
+                    DEFAULT_LOGGER.warning(f"fail to run invoker by step ({i}, {position})", extra={"label": self})
+
                     if position == "pre_run":
                         errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
