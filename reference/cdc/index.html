@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../../steps/gold/">
+        <link rel="prev" href="../../introduction/layers/">
       
       
         <link rel="next" href="../checks-data-quality/">
@@ -254,7 +254,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../steps/bronze/" class="md-tabs__link">
+        <a href="../../steps/bronze.md" class="md-tabs__link">
           
   
   
@@ -307,28 +307,6 @@
     
   
   Helpers
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../license/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  About
 
         </a>
       </li>
@@ -556,7 +534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/bronze/" class="md-nav__link">
+      <a href="../../steps/bronze.md" class="md-nav__link">
         
   
   
@@ -579,7 +557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/silver/" class="md-nav__link">
+      <a href="../../steps/silver.md" class="md-nav__link">
         
   
   
@@ -602,7 +580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/gold/" class="md-nav__link">
+      <a href="../../steps/gold.md" class="md-nav__link">
         
   
   
@@ -774,33 +752,6 @@
   <a href="#how-to-enable-cdc" class="md-nav__link">
     <span class="md-ellipsis">
       How to enable CDC
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#input-contracts" class="md-nav__link">
-    <span class="md-ellipsis">
-      Input contracts
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#merge-semantics-under-the-hood" class="md-nav__link">
-    <span class="md-ellipsis">
-      Merge semantics (under the hood)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#scd1-details" class="md-nav__link">
-    <span class="md-ellipsis">
-      SCD1 details
     </span>
   </a>
   
@@ -1120,106 +1071,6 @@
   
 
     
-      
-      
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    About
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
-            <span class="md-nav__icon md-icon"></span>
-            About
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../license/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    License
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../release-notes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Release Notes
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
   </ul>
 </nav>
                   </div>
@@ -1283,33 +1134,6 @@
   <a href="#how-to-enable-cdc" class="md-nav__link">
     <span class="md-ellipsis">
       How to enable CDC
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#input-contracts" class="md-nav__link">
-    <span class="md-ellipsis">
-      Input contracts
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#merge-semantics-under-the-hood" class="md-nav__link">
-    <span class="md-ellipsis">
-      Merge semantics (under the hood)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#scd1-details" class="md-nav__link">
-    <span class="md-ellipsis">
-      SCD1 details
     </span>
   </a>
   
@@ -1405,7 +1229,7 @@
 <tr>
 <td><code>nocdc</code></td>
 <td>No CDC; writes the result as-is.</td>
-<td>—</td>
+<td>â€"</td>
 </tr>
 <tr>
 <td><code>scd1</code></td>
@@ -1423,13 +1247,13 @@
 <ul>
 <li>Definition: Slowly Changing Dimension Type 1 keeps only the current state of each business key. Attribute changes overwrite previous values rather than preserving history.</li>
 <li>Typical columns in Fabricks: <code>__is_current</code>, <code>__is_deleted</code>. A convenience view <code>{table}__current</code> in Silver selects current non-deleted rows.</li>
-<li>When to use: When downstream consumers only need the latest values and you do not need to answer “as-of” questions or audit historical attribute values.</li>
+<li>When to use: When downstream consumers only need the <code>latest</code> values and you do not need to answer â€œas-ofâ€ questions or audit historical attribute values.</li>
 </ul>
 <h3 id="what-is-scd2">What is SCD2?<a class="headerlink" href="#what-is-scd2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Definition: Slowly Changing Dimension Type 2 preserves the full change history by creating a new versioned row each time attributes change. Each row covers a validity window for a given business key.</li>
-<li>Typical columns in Fabricks: <code>__valid_from</code>, <code>__valid_to</code>, and <code>__is_current</code> (optional <code>__is_deleted</code> if soft-deletes are modeled). Silver also provides <code>{table}__current</code> for latest rows.</li>
-<li>When to use: When you must answer “as-of” queries (e.g., “What was the customer segment on 2024‑03‑01?”), analyze changes over time, or maintain auditable history. In Gold SCD2 merges, inputs use <code>__key</code>, <code>__timestamp</code>, <code>__operation</code> to define change points.</li>
+<li>Typical columns in Fabricks: <code>__valid_from</code>, <code>__valid_to</code>, and <code>__is_current</code> (optional <code>__is_deleted</code> if soft-deletes are modeled). Silver also provides <code>{table}__current</code> for <code>latest</code> rows.</li>
+<li>When to use: When you must answer â€œas-ofâ€ queries (e.g., â€œWhat was the customer segment on 2024â€'03â€'01?â€), analyze changes over time, or maintain auditable history. In Gold SCD2 merges, inputs use <code>__key</code>, <code>__timestamp</code>, <code>__operation</code> to define change points.</li>
 </ul>
 <hr />
 <h2 id="how-to-enable-cdc">How to enable CDC<a class="headerlink" href="#how-to-enable-cdc" title="Permanent link">&para;</a></h2>
@@ -1437,145 +1261,139 @@
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">demo</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd1`</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">update`</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd1`</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="nt">parents</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">bronze.demo_source</span><span class="p p-Indicator">]</span>
-</span></code></pre></div>
-<p>For Gold:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd2</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd2</span>
-</span></code></pre></div>
-<p>Supported values: <code>nocdc</code>, <code>scd1</code>, <code>scd2</code>.</p>
-<hr />
-<h2 id="input-contracts">Input contracts<a class="headerlink" href="#input-contracts" title="Permanent link">&para;</a></h2>
-<p>Some helper columns govern CDC behavior. Fabricks generates additional internal helpers during processing.</p>
-<ul>
-<li>
-<p>Gold jobs (consumer side):</p>
-<ul>
-<li>scd2 (required): <code>__key</code>, <code>__timestamp</code>, <code>__operation</code> with values <code>'upsert' | 'delete' | 'reload'</code>.</li>
-<li>scd1 (required): <code>__key</code>; optional <code>__timestamp</code> / <code>__operation</code> (<code>'upsert' | 'delete' | 'reload'</code>) for delete/rectify handling.</li>
-<li>Note: If <code>__operation</code> is absent in Gold SCD update jobs, Fabricks auto-injects <code>__operation = 'reload'</code> and enables rectification.</li>
-<li>Optional helpers used by merges:<ul>
-<li><code>__order_duplicate_by_asc</code> / <code>__order_duplicate_by_desc</code></li>
-<li><code>__identity</code> (only when <code>table_options.identity</code> is not true; if <code>identity: true</code>, the identity column is auto-created and you should not supply <code>__identity</code>)</li>
-<li><code>__source</code> (to scope merges by logical source)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p>Silver jobs (producer side):</p>
-<ul>
-<li>Provide business keys through job-level <code>keys</code> (or compute a <code>__key</code>) to support downstream CDC.</li>
-<li>Silver can apply CDC directly and yields convenience views (e.g., <code>{table}__current</code>).</li>
-</ul>
-</li>
-</ul>
-<p>Note</p>
-<ul>
-<li>Memory outputs ignore columns that start with <code>__</code>.</li>
-<li>Special characters in column names are preserved.</li>
-</ul>
-<p>See details in:</p>
-<ul>
-<li>Steps: <a href="../../steps/silver/">Silver</a> • <a href="../../steps/gold/">Gold</a></li>
-<li><a href="../table-options/">Table Options</a></li>
-</ul>
-<hr />
-<h2 id="merge-semantics-under-the-hood">Merge semantics (under the hood)<a class="headerlink" href="#merge-semantics-under-the-hood" title="Permanent link">&para;</a></h2>
-<p>Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The core logic lives in <code>fabricks.cdc</code>:</p>
-<ul>
-<li><code>Merger.get_merge_query</code> renders <code>templates/merge.sql.jinja</code> for the selected <code>change_data_capture</code> strategy.</li>
-<li>The framework computes internal columns such as:<ul>
-<li><code>__merge_condition</code> — one of <code>'upsert' | 'delete' | 'update' | 'insert'</code> depending on strategy and inputs.</li>
-<li><code>__merge_key</code> — a synthetic key used to join against the target.</li>
-</ul>
-</li>
-<li>You usually do not set these internal fields manually; they are derived from your inputs (<code>__key</code>, <code>__operation</code>, <code>__timestamp</code>) and job options.</li>
-</ul>
-<p><em>Join keys</em></p>
-<ul>
-<li>If a <code>__key</code> column exists in the target, merges use <code>t.__key = s.__merge_key</code>.</li>
-<li>Otherwise, the configured <code>keys</code> option is used to build an equality join on business keys.</li>
-</ul>
-<p><em>Source scoping</em></p>
-<ul>
-<li>If <code>__source</code> exists in both sides, merges add <code>t.__source = s.__source</code> to support multi-source data in the same table.</li>
-</ul>
-<p><em>Soft delete vs hard delete (SCD1)</em></p>
-<ul>
-<li>If the incoming data contains <code>__is_deleted</code>, the SCD1 template performs soft deletes:<ul>
-<li>Sets <code>__is_current = false</code>, <code>__is_deleted = true</code> on delete.</li>
-</ul>
-</li>
-<li>If <code>__is_deleted</code> is absent, deletes are physical for SCD1.</li>
-</ul>
-<p><em>Timestamps and metadata</em></p>
-<ul>
-<li>If the incoming data provides <code>__timestamp</code>, it is propagated to the target.</li>
-<li>If the target has <code>__metadata</code>, the <code>updated</code> timestamp is set to the current time during updates/deletes.</li>
-</ul>
-<p><em>Identity and hash</em></p>
-<ul>
-<li>If <code>table_options.identity: true</code>, the identity column is created automatically when the table is created.</li>
-<li>If <code>table_options.identity</code> is not true and <code>__identity</code> is present in the input, it will be written as a regular column.</li>
-<li>If <code>__hash</code> is present, it is updated during upsert operations.</li>
-</ul>
-<p><em>Update filtering</em></p>
-<ul>
-<li><code>options.update_where</code> can constrain rows affected during merges (useful for limiting the scope of updates).</li>
-</ul>
-<p><em>Internals reference</em></p>
-<ul>
-<li><code>framework/fabricks/cdc/base/merger.py</code></li>
-<li>Templates under <code>framework/fabricks/cdc/templates/merge/*.sql.jinja</code></li>
-</ul>
-<hr />
-<h2 id="scd1-details">SCD1 details<a class="headerlink" href="#scd1-details" title="Permanent link">&para;</a></h2>
-<p><em>Behavior</em> (see <code>merge/scd1.sql.jinja</code>)</p>
-<ul>
-<li>Upsert (<code>__merge_condition = 'upsert'</code>): updates matching rows and inserts non‑matching rows.</li>
-<li>Delete (<code>__merge_condition = 'delete'</code>):<ul>
-<li>Soft delete if <code>__is_deleted</code> is part of the schema: sets <code>__is_current = false</code>, <code>__is_deleted = true</code>.</li>
-<li>Otherwise, performs a physical delete.</li>
-</ul>
-</li>
-</ul>
-<p><em>Convenience view (in Silver)</em></p>
-<ul>
-<li><code>{table}__current</code>: filters current (non‑deleted) rows for simplified consumption.</li>
-</ul>
-<p><em>Minimal Silver example</em></p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monarch</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nt">```For\nGold</span><span class="p">:</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="err">```</span><span class="l l-Scalar l-Scalar-Plain">yaml</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd2`</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">update`</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">update`</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd2`</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="nt">```Supported\nvalues</span><span class="p">:</span><span class="w"> </span><span class="err">``</span><span class="l l-Scalar l-Scalar-Plain">nocdc``, ``scd1``, ``scd2``.</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="nn">---</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="c1">## Input contracts</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="l l-Scalar l-Scalar-Plain">Some helper columns govern CDC behavior. Fabricks generates additional internal helpers during processing.</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="l l-Scalar l-Scalar-Plain">- Gold jobs (consumer side)</span><span class="p p-Indicator">:</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">`scd2` (required)</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">__key`, `__timestamp`, `__operation` with values `&#39;upsert&#39; | &#39;delete&#39; | &#39;reload&#39;`.</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">`scd1` (required)</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">__key`; optional `__timestamp` / `__operation` (`&#39;upsert&#39; | &#39;delete&#39; | &#39;reload&#39;`) for delete/rectify handling.</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Note</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">If `__operation` is absent in Gold SCD `update` jobs, Fabricks auto-injects `__operation = &#39;reload&#39;` and enables rectification.</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Optional helpers used by merges</span><span class="p">:</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">__order_duplicate_by_asc` / `__order_duplicate_by_desc`</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">`__identity` (only when `table_options.identity` is not true; if `identity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true`, the identity column is auto-created and you should not supply `__identity`)</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">__source` (to scope merges by logical source)</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Silver jobs (producer side)</span><span class="p">:</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Provide business keys through job-level `keys` (or compute a `__key`) to support downstream CDC.</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Silver can apply CDC directly and yields convenience views (e.g., `{table}__current`).</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="l l-Scalar l-Scalar-Plain">Note</span>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Memory outputs ignore columns that start with `__`.</span>
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Special characters in column names are preserved.</span>
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="nt">See details in</span><span class="p">:</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Steps</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Silver</span><span class="p p-Indicator">]</span><span class="l l-Scalar l-Scalar-Plain">(../steps/silver.md) â€¢ [Gold](../steps/gold.md)</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">Table Options</span><span class="p p-Indicator">]</span><span class="l l-Scalar l-Scalar-Plain">(./table-options.md)</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="nn">---</span>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="c1">## Merge semantics (under the hood)</span>
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="nt">Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The core logic lives in `fabricks.cdc`</span><span class="p">:</span>
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">Merger.get_merge_query` renders `templates/merge.sql.jinja` for the selected `change_data_capture` strategy.</span>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">The framework computes internal columns such as</span><span class="p">:</span>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">__merge_condition` â€&quot; one of `&#39;upsert&#39; | &#39;delete&#39; | &#39;`update`&#39; | &#39;insert&#39;` depending on strategy and inputs.</span>
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">__merge_key` â€&quot; a synthetic key used to join against the target.</span>
+</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">You usually do not set these internal fields manually; they are derived from your inputs (`__key`, `__operation`, `__timestamp`) and job options.</span>
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>
+</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a><span class="nv">*Join</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keys*</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">If a `__key` column exists in the target, merges use `t.__key = s.__merge_key`.</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Otherwise, the configured `keys` option is used to build an equality join on business keys.</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>
+</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a><span class="nv">*Source</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scoping*</span>
+</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>
+</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">If `__source` exists in both sides, merges add `t.__source = s.__source` to support multi-source data in the same table.</span>
+</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>
+</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a><span class="nv">*Soft</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">delete vs hard delete (SCD1)*</span>
+</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>
+</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">If the incoming data contains `__is_deleted`, the SCD1 template performs soft deletes</span><span class="p p-Indicator">:</span>
+</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Sets `__is_current = false`, `__is_deleted = true` on delete.</span>
+</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">If `__is_deleted` is absent, deletes are physical for SCD1.</span>
+</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>
+</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a><span class="nv">*Timestamps</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">and metadata*</span>
+</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a>
+</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">If the incoming data provides `__timestamp`, it is propagated to the target.</span>
+</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">If the target has `__metadata`, the `updated` timestamp is set to the current time during updates/deletes.</span>
+</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a>
+</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a><span class="nv">*Identity</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">and hash*</span>
+</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a>
+</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">If `table_options.identity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true`, the identity column is created automatically when the table is created.</span>
+</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">If `table_options.identity` is not true and `__identity` is present in the input, it will be written as a regular column.</span>
+</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">If `__hash` is present, it is updated during upsert operations.</span>
+</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a>
+</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a><span class="nv">*Update</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filtering*</span>
+</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a>
+</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">options.update_where` can constrain rows affected during merges (useful for limiting the scope of updates).</span>
+</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a>
+</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92" href="#__codelineno-0-92"></a><span class="nv">*Internals</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reference*</span>
+</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93" href="#__codelineno-0-93"></a>
+</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94" href="#__codelineno-0-94"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">framework/fabricks/cdc/base/merger.py`</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95" href="#__codelineno-0-95"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Templates under `framework/fabricks/cdc/templates/merge/*.sql.jinja`</span>
+</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96" href="#__codelineno-0-96"></a>
+</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97" href="#__codelineno-0-97"></a><span class="nn">---</span>
+</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98" href="#__codelineno-0-98"></a>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99" href="#__codelineno-0-99"></a><span class="c1">## SCD1 details</span>
+</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100" href="#__codelineno-0-100"></a>
+</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101" href="#__codelineno-0-101"></a><span class="nv">*Behavior</span><span class="err">*</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">(see `merge/`scd1`.sql.jinja`)</span>
+</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102" href="#__codelineno-0-102"></a>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103" href="#__codelineno-0-103"></a><span class="l l-Scalar l-Scalar-Plain">- Upsert (`__merge_condition = &#39;upsert&#39;`)</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">updates matching rows and inserts nonâ€&#39;matching rows.</span>
+</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104" href="#__codelineno-0-104"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Delete (`__merge_condition = &#39;delete&#39;`)</span><span class="p p-Indicator">:</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105" href="#__codelineno-0-105"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Soft delete if `__is_deleted` is part of the schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sets `__is_current = false`, `__is_deleted = true`.</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106" href="#__codelineno-0-106"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Otherwise, performs a physical delete.</span>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107" href="#__codelineno-0-107"></a>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108" href="#__codelineno-0-108"></a><span class="nv">*Convenience</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">view (in Silver)*</span>
+</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109" href="#__codelineno-0-109"></a>
+</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110" href="#__codelineno-0-110"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="p p-Indicator">{</span><span class="nv">table</span><span class="p p-Indicator">}</span><span class="nt">__current`</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filters current (nonâ€&#39;deleted) rows for simplified consumption.</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111" href="#__codelineno-0-111"></a>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112" href="#__codelineno-0-112"></a><span class="nv">*Minimal</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Silver example*</span>
+</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113" href="#__codelineno-0-113"></a>
+</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114" href="#__codelineno-0-114"></a><span class="err">```</span><span class="l l-Scalar l-Scalar-Plain">yaml</span>
+</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115" href="#__codelineno-0-115"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116" href="#__codelineno-0-116"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
+</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117" href="#__codelineno-0-117"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monarch</span>
+</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118" href="#__codelineno-0-118"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd1`</span>
+</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119" href="#__codelineno-0-119"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120" href="#__codelineno-0-120"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">update`</span>
+</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121" href="#__codelineno-0-121"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd1`</span>
 </span></code></pre></div>
 <p><em>Gold consumption example</em></p>
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">-- Example: consuming current rows from SCD1 silver output</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">monarch</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd1__current</span>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">-- Example: consuming current rows from SCD1 silver output</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">monarch</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd1__current</span>
 </span></code></pre></div>
 <hr />
 <h2 id="reload-operation">Reload operation<a class="headerlink" href="#reload-operation" title="Permanent link">&para;</a></h2>
 <p><code>'reload'</code> is a CDC input operation used as a reconciliation boundary. It is not a direct MERGE action; instead, it signals Fabricks to rectify the target table using the supplied snapshot at that timestamp.</p>
 <ul>
 <li>Purpose: mark a full or partial snapshot boundary so missing keys can be treated as deletes and present keys as upserts as needed.</li>
-<li>Auto-injection: when a Gold SCD job runs in <code>mode: update</code> and your SQL does not provide <code>__operation</code>, Fabricks injects <code>__operation = 'reload'</code> and turns on rectification.</li>
+<li>Auto-injection: when a Gold SCD job runs in <code>mode:</code>update<code>` and your SQL does not provide</code>__operation<code>, Fabricks injects</code>__operation = 'reload'` and turns on rectification.</li>
 <li><strong>Silver</strong> behavior:<ul>
-<li>If a batch contains <code>'reload'</code> after the target’s max timestamp, Silver enables rectification logic.</li>
-<li>In <code>mode: latest</code>, <code>'reload'</code> is not allowed and will be rejected.</li>
+<li>If a batch contains <code>'reload'</code> after the targetâ€™s max timestamp, Silver enables rectification logic.</li>
+<li>In <code>mode:</code>latest<code>`,</code>'reload'` is not allowed and will be rejected.</li>
 </ul>
 </li>
 <li><strong>Gold</strong> behavior:<ul>
@@ -1586,19 +1404,16 @@
 </ul>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>In Silver <code>mode: latest</code>, <code>'reload'</code> is forbidden and will be rejected. 
-Use <code>mode: update</code> or <code>mode: append</code> instead if you need reconciliation behavior.</p>
-</div>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>You generally do not need to emit <code>'reload'</code> manually in Gold SCD update jobs; it is injected for you when <code>__operation</code> is missing. 
-For explicit control, you can produce rows with <code>__operation = 'reload'</code> at the snapshot timestamp.</p>
+<p>In Silver <code>mode:</code>latest<code>, `'reload'` is forbidden and will be rejected. 
+Use `mode: `update</code> or <code>mode:</code>append<code>` instead if you need reconciliation behavior.</code>n<code>n!!! tip
+You generally do not need to emit</code>'reload'<code>manually in Gold SCD</code>update<code>jobs; it is injected for you when</code>__operation<code>is missing. 
+For explicit control, you can produce rows with</code>__operation = 'reload'` at the snapshot timestamp.</p>
 </div>
 <hr />
 <h2 id="scd2-details">SCD2 details<a class="headerlink" href="#scd2-details" title="Permanent link">&para;</a></h2>
-<p><em>Behavior</em> (see <code>merge/scd2.sql.jinja</code>):</p>
+<p><em>Behavior</em> (see <code>merge/</code>scd2<code>.sql.jinja</code>):</p>
 <ul>
-<li>Update (<code>__merge_condition = 'update'</code>): closes the current row by setting <code>__valid_to = __valid_from - 1 second</code>, <code>__is_current = false</code>. A subsequent insert creates the new current row.</li>
+<li>Update (<code>__merge_condition = '</code>update<code>'</code>): closes the current row by setting <code>__valid_to = __valid_from - 1 second</code>, <code>__is_current = false</code>. A subsequent insert creates the new current row.</li>
 <li>Delete (<code>__merge_condition = 'delete'</code>): closes the current row and sets <code>__is_current = false</code> (and <code>__is_deleted = true</code> if soft delete is modeled).</li>
 <li>Insert (<code>__merge_condition = 'insert'</code>): inserts a new current row.</li>
 </ul>
@@ -1609,10 +1424,10 @@ For explicit control, you can produce rows with <code>__operation = 'reload'</co
 <p><em>Reload notes</em>:</p>
 <ul>
 <li><code>'reload'</code> marks a reconciliation boundary; Fabricks derives concrete actions (e.g., closing current rows, inserting new ones, deleting missing keys) across that boundary.</li>
-<li>If you omit <code>__operation</code> in Gold SCD update jobs, Fabricks injects <code>'reload'</code> and enables rectification automatically.</li>
+<li>If you omit <code>__operation</code> in Gold SCD <code>update</code> jobs, Fabricks injects <code>'reload'</code> and enables rectification automatically.</li>
 <li>In Silver:<ul>
-<li>Presence of <code>'reload'</code> (beyond target’s max timestamp) enables rectification.</li>
-<li><code>'reload'</code> is forbidden in <code>mode: latest</code>.</li>
+<li>Presence of <code>'reload'</code> (beyond targetâ€™s max timestamp) enables rectification.</li>
+<li><code>'reload'</code> is forbidden in <code>mode:</code>latest``.</li>
 </ul>
 </li>
 </ul>
@@ -1623,38 +1438,38 @@ For explicit control, you can produce rows with <code>__operation = 'reload'</co
 </ul>
 <p><em>Convenience view</em>:</p>
 <ul>
-<li><code>{table}__current</code>: returns only the latest (current) rows per business key.</li>
+<li><code>{table}__current</code>: returns only the <code>latest</code> (current) rows per business key.</li>
 </ul>
 <p><em>Minimal Silver example</em>:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monarch</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd2</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd2</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monarch</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd2`</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">update`</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd2`</span>
 </span></code></pre></div>
-<p><em>Note</em>: Credit — <a href="https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table">Temporal Snapshot Fact Table (SQLBits 2012)</a>. Recommended to watch to understand SCD2 snapshot-based modeling concepts. </p>
+<p><em>Note</em>: Credit â€" <a href="https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table">Temporal Snapshot Fact Table (SQLBits 2012)</a>. Recommended to watch to understand SCD2 snapshot-based modeling concepts. </p>
 <p><em>Slides</em>: <a href="https://www.slideshare.net/slideshow/temporal-snapshot-fact-tables/15900670#45">Temporal Snapshot Fact Tables (slides)</a></p>
 <p><em>Gold input construction example</em>:</p>
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1">-- Turn SCD2 changes into Gold input operations</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">with</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">__valid_from</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;upsert&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__operation</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">__valid_from</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">&#39;1900-01-02&#39;</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="k">union</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">__valid_to</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;delete&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__operation</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">__is_deleted</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="p">)</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="k">select</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__key</span><span class="p">,</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">monarch</span><span class="p">,</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">doubleField</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">value</span><span class="p">,</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">  </span><span class="n">d</span><span class="p">.</span><span class="n">__operation</span><span class="p">,</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">__operation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">interval</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">second</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span>
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="k">from</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span><span class="n">d</span>
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="k">left</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="n">s</span>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">  </span><span class="k">on</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="w"> </span><span class="k">between</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_from</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_to</span>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">-- Turn SCD2 changes into Gold input operations</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">with</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">__valid_from</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;upsert&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__operation</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">__valid_from</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">&#39;1900-01-02&#39;</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="k">union</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">__valid_to</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;delete&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__operation</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="k">from</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">__is_deleted</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="p">)</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="k">select</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__key</span><span class="p">,</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">monarch</span><span class="p">,</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span><span class="n">s</span><span class="p">.</span><span class="n">doubleField</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">value</span><span class="p">,</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">  </span><span class="n">d</span><span class="p">.</span><span class="n">__operation</span><span class="p">,</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">__operation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">interval</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">second</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__timestamp</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="k">from</span><span class="w"> </span><span class="n">dates</span><span class="w"> </span><span class="n">d</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="k">left</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">silver</span><span class="p">.</span><span class="n">monarch_scd2</span><span class="w"> </span><span class="n">s</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">  </span><span class="k">on</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">__timestamp</span><span class="w"> </span><span class="k">between</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_from</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">__valid_to</span>
 </span></code></pre></div>
 <hr />
 <h2 id="keys-and-__key">Keys and <code>__key</code><a class="headerlink" href="#keys-and-__key" title="Permanent link">&para;</a></h2>
@@ -1669,25 +1484,26 @@ For explicit control, you can produce rows with <code>__operation = 'reload'</co
 <hr />
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>Silver SCD1 with duplicates handling</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">princess</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order_duplicate</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">      </span><span class="nt">order_duplicate_by</span><span class="p">:</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">        </span><span class="nt">order_by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">desc</span>
-</span></code></pre></div>
-<p>Gold SCD1 update with incremental timestamp</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">last_timestamp</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">      </span><span class="nt">persist_last_timestamp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">silver</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">princess</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order_duplicate</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">update`</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd1`</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="nt">order_duplicate_by</span><span class="p">:</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">        </span><span class="nt">order_by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">desc</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="err">```</span><span class="l l-Scalar l-Scalar-Plain">Gold\nSCD1 `update` with incremental timestamp</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="err">```</span><span class="l l-Scalar l-Scalar-Plain">yaml</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="nt">step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gold</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd1`</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">last_timestamp</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd1`</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">update`</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">      </span><span class="nt">persist_last_timestamp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span></code></pre></div>
 <hr />
 <h2 id="operational-notes">Operational notes<a class="headerlink" href="#operational-notes" title="Permanent link">&para;</a></h2>
@@ -1699,7 +1515,7 @@ For explicit control, you can produce rows with <code>__operation = 'reload'</co
 <hr />
 <h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Steps: <a href="../../steps/silver/">Silver</a> • <a href="../../steps/gold/">Gold</a></li>
+<li>Steps: <a href="../steps/silver.md">Silver</a> â€¢ <a href="../steps/gold.md">Gold</a></li>
 <li>Reference: <a href="../table-options/">Table Options</a>, <a href="../extenders-udfs-parsers/">Extenders, UDFs &amp; Parsers</a></li>
 <li>Sample runtime: <a href="../../helpers/runtime/#sample-runtime">Sample runtime</a></li>
 </ul>
@@ -1740,7 +1556,7 @@ For explicit control, you can produce rows with <code>__operation = 'reload'</co
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../steps/gold/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Gold">
+          <a href="../../introduction/layers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Layers">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1750,7 +1566,7 @@ For explicit control, you can produce rows with <code>__operation = 'reload'</co
                 Previous
               </span>
               <div class="md-ellipsis">
-                Gold
+                Layers
               </div>
             </div>
           </a>

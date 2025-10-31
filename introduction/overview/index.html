@@ -256,7 +256,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../steps/bronze/" class="md-tabs__link">
+        <a href="../../steps/bronze.md" class="md-tabs__link">
           
   
   
@@ -307,28 +307,6 @@
     
   
   Helpers
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../license/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  About
 
         </a>
       </li>
@@ -571,7 +549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/bronze/" class="md-nav__link">
+      <a href="../../steps/bronze.md" class="md-nav__link">
         
   
   
@@ -594,7 +572,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/silver/" class="md-nav__link">
+      <a href="../../steps/silver.md" class="md-nav__link">
         
   
   
@@ -617,7 +595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/gold/" class="md-nav__link">
+      <a href="../../steps/gold.md" class="md-nav__link">
         
   
   
@@ -965,106 +943,6 @@
   
 
     
-      
-      
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    About
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
-            <span class="md-nav__icon md-icon"></span>
-            About
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../license/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    License
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../release-notes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Release Notes
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
   </ul>
 </nav>
                   </div>
@@ -1117,11 +995,11 @@
 <li><em>Step</em>: A processing layer/type that defines behavior and defaults (Bronze, Silver, Gold).</li>
 <li><em>Job</em>: A concrete unit of work within a step (identified by topic + item) that you schedule/run.</li>
 </ul>
-<p><strong>Layers (Bronze → Silver → Gold)</strong></p>
+<p><strong>Layers (Bronze â†' Silver â†' Gold)</strong></p>
 <ul>
-<li>Bronze: Land raw data (append/register/memory). Keep logic light.</li>
+<li>Bronze: Land raw data (<code>append</code>/<code>register</code>/<code>memory</code>). Keep logic light.</li>
 <li>Silver: Standardize/clean/enrich. Optional CDC (SCD1/SCD2) and convenience views.</li>
-<li>Gold: Consumption models and marts. Supports merge/update and SCD patterns.</li>
+<li>Gold: Consumption models and marts. Supports merge/<code>update</code> and SCD patterns.</li>
 </ul>
 <p><strong>Change Data Capture (CDC)</strong></p>
 <ul>
@@ -1142,12 +1020,12 @@
 </ul>
 <p>Navigation</p>
 <ul>
-<li>Layers guide: Layers (Bronze/Silver/Gold) → <a href="../layers/">Layers</a></li>
-<li>CDC strategies and contracts → <a href="../../reference/cdc/">CDC</a></li>
-<li>Step references → <a href="../../steps/bronze/">Bronze</a> • <a href="../../steps/silver/">Silver</a> • <a href="../../steps/gold/">Gold</a></li>
-<li>Data Quality → <a href="../../reference/checks-data-quality/">Checks &amp; Data Quality</a></li>
-<li>Table and storage options → <a href="../../reference/table-options/">Table Options</a></li>
-<li>Extensibility → <a href="../../reference/extenders-udfs-parsers/">Extenders, UDFs &amp; Parsers</a></li>
+<li>Layers guide: Layers (Bronze/Silver/Gold) â†' <a href="../layers/">Layers</a></li>
+<li>CDC strategies and contracts â†' <a href="../../reference/cdc/">CDC</a></li>
+<li>Step references â†' <a href="../steps/bronze.md">Bronze</a> â€¢ <a href="../steps/silver.md">Silver</a> â€¢ <a href="../steps/gold.md">Gold</a></li>
+<li>Data Quality â†' <a href="../../reference/checks-data-quality/">Checks &amp; Data Quality</a></li>
+<li>Table and storage options â†' <a href="../../reference/table-options/">Table Options</a></li>
+<li>Extensibility â†' <a href="../../reference/extenders-udfs-parsers/">Extenders, UDFs &amp; Parsers</a></li>
 </ul>
 
 

@@ -254,7 +254,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../steps/bronze/" class="md-tabs__link">
+        <a href="../../steps/bronze.md" class="md-tabs__link">
           
   
   
@@ -307,28 +307,6 @@
     
   
   Helpers
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../license/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  About
 
         </a>
       </li>
@@ -556,7 +534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/bronze/" class="md-nav__link">
+      <a href="../../steps/bronze.md" class="md-nav__link">
         
   
   
@@ -579,7 +557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/silver/" class="md-nav__link">
+      <a href="../../steps/silver.md" class="md-nav__link">
         
   
   
@@ -602,7 +580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/gold/" class="md-nav__link">
+      <a href="../../steps/gold.md" class="md-nav__link">
         
   
   
@@ -925,24 +903,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      Troubleshooting
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-topics" class="md-nav__link">
-    <span class="md-ellipsis">
-      Related topics
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1051,106 +1011,6 @@
   
 
     
-      
-      
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    About
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
-            <span class="md-nav__icon md-icon"></span>
-            About
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../license/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    License
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../release-notes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Release Notes
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
   </ul>
 </nav>
                   </div>
@@ -1213,24 +1073,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
-    <span class="md-ellipsis">
-      Troubleshooting
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-topics" class="md-nav__link">
-    <span class="md-ellipsis">
-      Related topics
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1255,106 +1097,104 @@
 <ul>
 <li>Installing the Fabricks library</li>
 <li>Pointing Fabricks to your runtime</li>
-<li>Running the armageddon script to bootstrap metadata and objects</li>
+<li>Running the <code>armageddon</code> script to bootstrap metadata and objects</li>
 </ul>
 <h2 id="1-install-fabricks">1) Install Fabricks<a class="headerlink" href="#1-install-fabricks" title="Permanent link">&para;</a></h2>
 <p>You need the Fabricks package available on your cluster or local environment.</p>
 <ul>
 <li>Databricks cluster (recommended)</li>
-<li>Libraries → Install new → Python PyPI → fabricks (or install a wheel/artifact you build)</li>
+<li>Libraries → Install new → Python PyPI → <code>fabricks</code> (or install a wheel/artifact you build)</li>
 <li>
 <p>Alternatively, attach a workspace library artifact built from this repository</p>
 </li>
 <li>
 <p>Local development (optional)</p>
 </li>
-<li>pip install fabricks</li>
-<li>or from source (for development): pip install -e .[dev,test]</li>
+<li><code>pip install fabricks</code></li>
+<li>or from source (for development): <code>pip install -e .[dev,test]</code></li>
 </ul>
 <p>Python &gt;=3.9,&lt;4 is recommended; align with your Databricks LTS runtime.</p>
 <h2 id="2-point-fabricks-to-your-runtime">2) Point Fabricks to your runtime<a class="headerlink" href="#2-point-fabricks-to-your-runtime" title="Permanent link">&para;</a></h2>
-<p>Fabricks discovers its runtime via either environment variables or [tool.fabricks] in your pyproject.toml. The core lookup logic is implemented in fabricks/context/runtime.py.</p>
-<p><em>Option A</em>: Configure via pyproject.toml (preferred for repo-managed projects):
+<p>Fabricks discovers its runtime via either environment variables or <code>[tool.fabricks]</code> in your <code>pyproject.toml</code>. The core lookup logic is implemented in <code>fabricks/context/runtime.py</code>.</p>
+<p><em>Option A</em>: Configure via <code>pyproject.toml</code> (preferred for repo-managed projects):
 <div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[tool.fabricks]</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">runtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;path/to/your/runtime&quot;</span><span class="w">                   </span><span class="c1"># e.g., tests/integration/runtime or examples/runtime</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">notebooks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;fabricks/api/notebooks&quot;</span><span class="w">               </span><span class="c1"># optional: helpers shipped with Fabricks</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">job_config_from_yaml</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">                        </span><span class="c1"># optional</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">loglevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="w">                                  </span><span class="c1"># optional: DEBUG|INFO|WARNING|ERROR|CRITICAL</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">loglevel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="w">                                  </span><span class="c1"># optional: `DEBUG`|`INFO`|`WARNING`|`ERROR`|`CRITICAL`</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">debugmode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="w">                                  </span><span class="c1"># optional</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;path/to/your/runtime/fabricks/conf.fabricks.yml&quot;</span><span class="w">  </span><span class="c1"># main runtime YAML</span>
 </span></code></pre></div></p>
 <p><em>Option B</em>: Configure via environment variables (useful on clusters):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># FABRICKS_RUNTIME: path to your runtime (jobs, SQL, configs)</span>
+<p><div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># FABRICKS_RUNTIME: path to your runtime (jobs, SQL, configs)</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1"># FABRICKS_CONFIG: full path to your main conf.fabricks.yml (if not set, Fabricks tries to infer a conf.uc.&lt;orgId&gt;.yml)</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># FABRICKS_NOTEBOOKS: optional helper notebook path</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># FABRICKS_IS_JOB_CONFIG_FROM_YAML, FABRICKS_LOGLEVEL, FABRICKS_IS_DEBUGMODE: optional toggles</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="err">```</span><span class="n">Example</span>\<span class="n">non</span> <span class="n">Databricks</span> <span class="p">(</span><span class="n">Cluster</span> <span class="err">→</span> <span class="n">Configuration</span> <span class="err">→</span> <span class="n">Advanced</span> <span class="n">options</span> <span class="err">→</span> <span class="n">Environment</span> <span class="n">variables</span><span class="p">):</span>
 </span></code></pre></div>
-<p>Example on Databricks (Cluster → Configuration → Advanced options → Environment variables):
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>FABRICKS_RUNTIME=/Workspace/Repos/your/repo/examples/runtime
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>FABRICKS_CONFIG=/Workspace/Repos/your/repo/examples/runtime/fabricks/conf.fabricks.yml
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>FABRICKS_LOGLEVEL=INFO
+FABRICKS_RUNTIME=/Workspace/Repos/your/repo/examples/runtime
+FABRICKS_CONFIG=/Workspace/Repos/your/repo/examples/runtime/fabricks/conf.fabricks.yml
+FABRICKS_LOGLEVEL=INFO
+```You\ncan also set env vars in a notebook before importing Fabricks:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;FABRICKS_RUNTIME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;/Workspace/Repos/your/repo/examples/runtime&quot;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;FABRICKS_CONFIG&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;/Workspace/Repos/your/repo/examples/runtime/fabricks/conf.fabricks.yml&quot;</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Optional:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># os.environ[&quot;FABRICKS_LOGLEVEL&quot;] = &quot;INFO&quot;</span>
 </span></code></pre></div></p>
-<p>You can also set env vars in a notebook before importing Fabricks:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;FABRICKS_RUNTIME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;/Workspace/Repos/your/repo/examples/runtime&quot;</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;FABRICKS_CONFIG&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;/Workspace/Repos/your/repo/examples/runtime/fabricks/conf.fabricks.yml&quot;</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Optional:</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># os.environ[&quot;FABRICKS_LOGLEVEL&quot;] = &quot;INFO&quot;</span>
-</span></code></pre></div></p>
-<h2 id="3-run-armageddon">3) Run armageddon<a class="headerlink" href="#3-run-armageddon" title="Permanent link">&para;</a></h2>
-<p>armageddon performs a one-shot setup aligned with your runtime configuration (e.g., preparing databases/metadata, registering views).</p>
+<h2 id="3-run-armageddon">3) Run <code>armageddon</code><a class="headerlink" href="#3-run-armageddon" title="Permanent link">&para;</a></h2>
+<p><code>armageddon</code> performs a one-time setup based on your runtime configuration (e.g., preparing databases/metadata, registering views).</p>
 <p>Import and call:
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Databricks or local</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.scripts.armageddon</span><span class="w"> </span><span class="kn">import</span> <span class="n">armageddon</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># You may pass one or more steps (bronze, silver, gold, semantic, transf, ...)</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># Examples:</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">armageddon</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">)</span>                      <span class="c1"># single step</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">armageddon</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="s2">&quot;silver&quot;</span><span class="p">,</span> <span class="s2">&quot;gold&quot;</span><span class="p">])</span>  <span class="c1"># multiple steps</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">armageddon</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>                        <span class="c1"># default behavior, follow runtime config</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Databricks or local</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.scripts.</span><span class="err">`</span><span class="n">armageddon</span><span class="err">`</span> <span class="kn">import</span><span class="w"> </span><span class="err">`</span><span class="n">armageddon</span><span class="err">`</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># You may pass one or more steps (`bronze`, `silver`, `gold`, `semantic`, `transf`, ...)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># Examples:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="err">`</span><span class="n">armageddon</span><span class="err">`</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="s2">&quot;gold&quot;</span><span class="p">)</span>                      <span class="c1"># single step</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="err">`</span><span class="n">armageddon</span><span class="err">`</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="s2">&quot;silver&quot;</span><span class="p">,</span> <span class="s2">&quot;gold&quot;</span><span class="p">])</span>  <span class="c1"># multiple steps</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="err">`</span><span class="n">armageddon</span><span class="err">`</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>                        <span class="c1"># default behavior, follow runtime config</span>
 </span></code></pre></div></p>
 <h2 id="example-databricks-notebook-initialize">Example: Databricks Notebook: Initialize<a class="headerlink" href="#example-databricks-notebook-initialize" title="Permanent link">&para;</a></h2>
 <p>Create a new notebook (Python) named initialize and include:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># (Optional) set env vars if not using pyproject.toml</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># import os</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># os.environ[&quot;FABRICKS_RUNTIME&quot;] = &quot;/Workspace/Repos/your/repo/examples/runtime&quot;</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># os.environ[&quot;FABRICKS_CONFIG&quot;] = &quot;/Workspace/Repos/your/repo/examples/runtime/fabricks/conf.fabricks.yml&quot;</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># os.environ[&quot;FABRICKS_LOGLEVEL&quot;] = &quot;INFO&quot;</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.scripts.armageddon</span><span class="w"> </span><span class="kn">import</span> <span class="n">armageddon</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># Run for all default steps from your runtime config:</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">armageddon</span><span class="p">()</span>
-</span></code></pre></div>
-<p>Attach the Fabricks library to the cluster before running the notebook.</p>
+<p>```python</p>
+<h1 id="optional-set-env-vars-if-not-using-pyprojecttoml">(Optional) set env vars if not using pyproject.toml<a class="headerlink" href="#optional-set-env-vars-if-not-using-pyprojecttoml" title="Permanent link">&para;</a></h1>
+<h1 id="import-os">import os<a class="headerlink" href="#import-os" title="Permanent link">&para;</a></h1>
+<h1 id="osenvironfabricks_runtime-workspacereposyourrepoexamplesruntime">os.environ["FABRICKS_RUNTIME"] = "/Workspace/Repos/your/repo/examples/runtime"<a class="headerlink" href="#osenvironfabricks_runtime-workspacereposyourrepoexamplesruntime" title="Permanent link">&para;</a></h1>
+<h1 id="osenvironfabricks_config-workspacereposyourrepoexamplesruntimefabricksconffabricksyml">os.environ["FABRICKS_CONFIG"] = "/Workspace/Repos/your/repo/examples/runtime/fabricks/conf.fabricks.yml"<a class="headerlink" href="#osenvironfabricks_config-workspacereposyourrepoexamplesruntimefabricksconffabricksyml" title="Permanent link">&para;</a></h1>
+<h1 id="osenvironfabricks_loglevel-info">os.environ["FABRICKS_LOGLEVEL"] = "INFO"<a class="headerlink" href="#osenvironfabricks_loglevel-info" title="Permanent link">&para;</a></h1>
+<p>from fabricks.core.scripts.<code>armageddon</code> import <code>armageddon</code></p>
+<h1 id="run-for-all-default-steps-from-your-runtime-config">Run for all default steps from your runtime config:<a class="headerlink" href="#run-for-all-default-steps-from-your-runtime-config" title="Permanent link">&para;</a></h1>
+<p><code>armageddon</code>()
+```Attach\nthe Fabricks library to the cluster before running the notebook.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Missing env/config:</li>
-<li>ValueError: Must have at least a pyproject.toml or set FABRICKS_RUNTIME</li>
+<li><code>ValueError</code>: Must have at least a <code>pyproject.toml</code> or set <code>FABRICKS_RUNTIME</code></li>
 <li>
-<p>Fix by setting FABRICKS_RUNTIME or adding [tool.fabricks] to pyproject.toml</p>
+<p>Fix by setting <code>FABRICKS_RUNTIME</code> or adding <code>[tool.fabricks]</code> to <code>pyproject.toml</code></p>
 </li>
 <li>
 <p>Unity Catalog:</p>
 </li>
 <li>
-<p>Ensure options.unity_catalog is true and options.catalog is set in conf.fabricks.yml</p>
+<p>Ensure <code>options.unity_catalog</code> is true and <code>options.catalog</code> is set in <code>conf.fabricks.yml</code></p>
 </li>
 <li>
 <p>Paths and storage:</p>
 </li>
 <li>
-<p>conf.fabricks.yml must define path_options.storage and per-step runtime/storage paths; Fabricks uses these to resolve PATHS_RUNTIME and PATHS_STORAGE</p>
+<p><code>conf.fabricks.yml</code> must define <code>path_options.storage</code> and per-step runtime/storage paths; Fabricks uses these to resolve <code>PATHS_RUNTIME</code> and <code>PATHS_STORAGE</code></p>
 </li>
 <li>
 <p>Logging:</p>
 </li>
-<li>Set FABRICKS_LOGLEVEL or tool.fabricks.loglevel to control verbosity</li>
+<li>Set <code>FABRICKS_LOGLEVEL</code> or <code>tool.fabricks.loglevel</code> to control verbosity</li>
 </ul>
 <h2 id="related-topics">Related topics<a class="headerlink" href="#related-topics" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Runtime configuration: ../helpers/runtime.md</li>
-<li>Step Helper: ./step.md</li>
-<li>Job Helper: ./job.md</li>
+<li>Runtime configuration: <code>../helpers/runtime.md</code></li>
+<li>Step Helper: <code>./step.md</code></li>
+<li>Job Helper: <code>./job.md</code></li>
 </ul>
 
 

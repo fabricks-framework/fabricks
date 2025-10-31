@@ -254,7 +254,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../steps/bronze/" class="md-tabs__link">
+        <a href="../../steps/bronze.md" class="md-tabs__link">
           
   
   
@@ -307,28 +307,6 @@
     
   
   Helpers
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../license/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  About
 
         </a>
       </li>
@@ -556,7 +534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/bronze/" class="md-nav__link">
+      <a href="../../steps/bronze.md" class="md-nav__link">
         
   
   
@@ -579,7 +557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/silver/" class="md-nav__link">
+      <a href="../../steps/silver.md" class="md-nav__link">
         
   
   
@@ -602,7 +580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/gold/" class="md-nav__link">
+      <a href="../../steps/gold.md" class="md-nav__link">
         
   
   
@@ -793,9 +771,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#option-matrix-types-defaults-compatibility" class="md-nav__link">
+  <a href="#option-matrix-types-a-defaults-a-compatibility" class="md-nav__link">
     <span class="md-ellipsis">
-      Option matrix (types • defaults • compatibility)
+      Option matrix (types â€¢ defaults â€¢ compatibility)
     </span>
   </a>
   
@@ -1051,106 +1029,6 @@
   
 
     
-      
-      
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    About
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
-            <span class="md-nav__icon md-icon"></span>
-            About
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../license/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    License
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../release-notes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Release Notes
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
   </ul>
 </nav>
                   </div>
@@ -1187,9 +1065,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#option-matrix-types-defaults-compatibility" class="md-nav__link">
+  <a href="#option-matrix-types-a-defaults-a-compatibility" class="md-nav__link">
     <span class="md-ellipsis">
-      Option matrix (types • defaults • compatibility)
+      Option matrix (types â€¢ defaults â€¢ compatibility)
     </span>
   </a>
   
@@ -1265,9 +1143,9 @@
 <li><strong>comment</strong>: Table comment/description.</li>
 <li><strong>calculated_columns</strong>: Map of computed columns populated on write.</li>
 <li><strong>retention_days</strong>: Table VACUUM retention period (days).</li>
-<li><strong>powerbi</strong>: true to apply Power BI–specific metadata (if supported).</li>
+<li><strong>powerbi</strong>: true to apply Power BIâ€"specific metadata (if supported).</li>
 </ul>
-<h2 id="option-matrix-types-defaults-compatibility">Option matrix (types • defaults • compatibility)<a class="headerlink" href="#option-matrix-types-defaults-compatibility" title="Permanent link">&para;</a></h2>
+<h2 id="option-matrix-types-a-defaults-a-compatibility">Option matrix (types â€¢ defaults â€¢ compatibility)<a class="headerlink" href="#option-matrix-types-a-defaults-a-compatibility" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -1283,90 +1161,90 @@
 <td>identity</td>
 <td>boolean</td>
 <td>false</td>
-<td>append, complete, update</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>Creates a Delta identity column on table create.</td>
 </tr>
 <tr>
 <td>liquid_clustering</td>
 <td>boolean</td>
 <td>false</td>
-<td>append, complete, update</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>Requires Databricks runtime support.</td>
 </tr>
 <tr>
 <td>partition_by</td>
 <td>array[string]</td>
-<td>—</td>
-<td>append, complete, update</td>
+<td>â€"</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>Low-cardinality columns recommended.</td>
 </tr>
 <tr>
 <td>zorder_by</td>
 <td>array[string]</td>
-<td>—</td>
-<td>append, complete, update</td>
+<td>â€"</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>Improves data skipping on frequently filtered columns.</td>
 </tr>
 <tr>
 <td>cluster_by</td>
 <td>array[string]</td>
-<td>—</td>
-<td>append, complete, update</td>
+<td>â€"</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>Logical clustering; materialization depends on runtime features.</td>
 </tr>
 <tr>
 <td>bloomfilter_by</td>
 <td>array[string]</td>
-<td>—</td>
-<td>append, complete, update</td>
+<td>â€"</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>Use selectively for point-lookups.</td>
 </tr>
 <tr>
 <td>constraints</td>
 <td>map[string,string]</td>
-<td>—</td>
-<td>append, complete, update</td>
+<td>â€"</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>E.g., <code>primary key(__key)</code>.</td>
 </tr>
 <tr>
 <td>properties</td>
 <td>map[string,string]</td>
-<td>—</td>
-<td>append, complete, update</td>
+<td>â€"</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>Arbitrary Delta table properties.</td>
 </tr>
 <tr>
 <td>comment</td>
 <td>string</td>
-<td>—</td>
-<td>append, complete, update</td>
+<td>â€"</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>Table description.</td>
 </tr>
 <tr>
 <td>calculated_columns</td>
 <td>map[string,string]</td>
-<td>—</td>
-<td>append, complete, update</td>
+<td>â€"</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>Computed at write time.</td>
 </tr>
 <tr>
 <td>retention_days</td>
 <td>integer</td>
-<td>—</td>
-<td>append, complete, update</td>
+<td>â€"</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
 <td>VACUUM retention (days).</td>
 </tr>
 <tr>
 <td>powerbi</td>
 <td>boolean</td>
 <td>false</td>
-<td>append, complete, update</td>
-<td>Applies Power BI–specific metadata where supported.</td>
+<td><code>append</code>, <code>complete</code>, <code>update</code></td>
+<td>Applies Power BIâ€"specific metadata where supported.</td>
 </tr>
 </tbody>
 </table>
 <p>Notes:
-- table_options are ignored in memory mode (view-only).
+- table_options are ignored in <code>memory</code> mode (view-only).
 - Defaults may also be set at step level in your runtime and overridden per job.</p>
 <h2 id="minimal-example">Minimal example<a class="headerlink" href="#minimal-example" title="Permanent link">&para;</a></h2>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
@@ -1374,7 +1252,7 @@
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fact</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">option</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">complete</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">complete`</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">table_options</span><span class="p">:</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="nt">identity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">cluster_by</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">monarch</span><span class="p p-Indicator">]</span>
@@ -1388,8 +1266,8 @@
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sales</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">item</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">curated</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">update</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">scd1</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">update`</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">change_data_capture</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">scd1`</span>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">table_options</span><span class="p">:</span>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span><span class="nt">identity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">      </span><span class="nt">partition_by</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">date_id</span><span class="p p-Indicator">]</span>
@@ -1415,7 +1293,7 @@
 </ul>
 <h2 id="related-topics">Related topics<a class="headerlink" href="#related-topics" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Steps: <a href="../../steps/bronze/">Bronze</a> • <a href="../../steps/silver/">Silver</a> • <a href="../../steps/gold/">Gold</a></li>
+<li>Steps: <a href="../steps/bronze.md">Bronze</a> â€¢ <a href="../steps/silver.md">Silver</a> â€¢ <a href="../steps/gold.md">Gold</a></li>
 <li>Data quality checks: <a href="../checks-data-quality/">Checks &amp; Data Quality</a></li>
 <li>Custom logic integration: <a href="../extenders-udfs-parsers/">Extenders, UDFs &amp; Parsers</a></li>
 <li>Runtime configuration: <a href="../../helpers/runtime/">Runtime</a></li>

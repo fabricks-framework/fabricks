@@ -12,7 +12,7 @@
         <link rel="prev" href="../overview/">
       
       
-        <link rel="next" href="../../steps/bronze/">
+        <link rel="next" href="../../reference/cdc/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#layers-bronze-silver-gold" class="md-skip">
+        <a href="#layers-bronze-a-silver-a-gold" class="md-skip">
           Skip to content
         </a>
       
@@ -256,7 +256,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../steps/bronze/" class="md-tabs__link">
+        <a href="../../steps/bronze.md" class="md-tabs__link">
           
   
   
@@ -307,28 +307,6 @@
     
   
   Helpers
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../license/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  About
 
         </a>
       </li>
@@ -571,7 +549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/bronze/" class="md-nav__link">
+      <a href="../../steps/bronze.md" class="md-nav__link">
         
   
   
@@ -594,7 +572,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/silver/" class="md-nav__link">
+      <a href="../../steps/silver.md" class="md-nav__link">
         
   
   
@@ -617,7 +595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/gold/" class="md-nav__link">
+      <a href="../../steps/gold.md" class="md-nav__link">
         
   
   
@@ -965,106 +943,6 @@
   
 
     
-      
-      
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    About
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
-            <span class="md-nav__icon md-icon"></span>
-            About
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../license/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    License
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../release-notes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Release Notes
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
   </ul>
 </nav>
                   </div>
@@ -1102,11 +980,11 @@
   
 
 
-<h1 id="layers-bronze-silver-gold">Layers (Bronze → Silver → Gold)<a class="headerlink" href="#layers-bronze-silver-gold" title="Permanent link">&para;</a></h1>
+<h1 id="layers-bronze-a-silver-a-gold">Layers (Bronze â†' Silver â†' Gold)<a class="headerlink" href="#layers-bronze-a-silver-a-gold" title="Permanent link">&para;</a></h1>
 <p>Fabricks organizes pipelines into layered steps to keep responsibilities clear and composable. Use this page to decide where logic belongs and how to structure data flow.</p>
 <p>Layer summary</p>
 <ul>
-<li>Bronze: Land raw data “as-is” from files/streams/tables. Keep it light.</li>
+<li>Bronze: Land raw data â€œas-isâ€ from files/streams/tables. Keep it light.</li>
 <li>Silver: Standardize, clean, enrich; optionally apply CDC (SCD1/SCD2). Provide conformed datasets and convenience views.</li>
 <li>Gold: Build consumption-ready models (facts/dims/marts), possibly with CDC merges or full refreshes.</li>
 </ul>
@@ -1117,15 +995,15 @@
 <ul>
 <li>Ingest from external sources with minimal logic</li>
 <li>Keep provenance and raw fidelity</li>
-<li>Typical modes: memory, append, register</li>
+<li>Typical modes: <code>memory</code>, <code>append</code>, <code>register</code></li>
 </ul>
 </li>
 <li>
 <p>Silver</p>
 <ul>
 <li>Standardize schemas, apply business keys, deduplicate</li>
-<li>Apply CDC: scd1/scd2 with convenience views (e.g., table__current)</li>
-<li>Typical modes: memory, append, latest, update, combine</li>
+<li>Apply CDC: <code>scd1</code>/<code>scd2</code> with convenience views (e.g., table__current)</li>
+<li>Typical modes: <code>memory</code>, <code>append</code>, <code>latest</code>, <code>update</code>, <code>combine</code></li>
 </ul>
 </li>
 <li>
@@ -1133,15 +1011,15 @@
 <ul>
 <li>Aggregate, reshape, and model data for analytics/reporting</li>
 <li>Implement SCD patterns at the desired consumption grain</li>
-<li>Typical modes: memory, append, complete, update, invoke (notebook)</li>
+<li>Typical modes: <code>memory</code>, <code>append</code>, <code>complete</code>, <code>update</code>, <code>invoke</code> (notebook)</li>
 </ul>
 </li>
 </ul>
 <p>Data flow</p>
 <ul>
-<li>Bronze: raw sources → (light parsing, optional filters/calculated columns) → raw tables/views</li>
-<li>Silver: bronze tables/views → (standardize/enrich, optional CDC) → conformed tables + {table}__current view</li>
-<li>Gold: silver conformed outputs → (marts/dim/fact, SCD merges or complete refresh) → business-consumption tables/views</li>
+<li>Bronze: raw sources â†' (light parsing, optional filters/calculated columns) â†' raw tables/views</li>
+<li>Silver: bronze tables/views â†' (standardize/enrich, optional CDC) â†' conformed tables + {table}__current view</li>
+<li>Gold: silver conformed outputs â†' (marts/dim/fact, SCD merges or <code>complete</code> refresh) â†' business-consumption tables/views</li>
 </ul>
 <p>Quality and governance</p>
 <ul>
@@ -1211,13 +1089,13 @@
         
         
           
-          <a href="../../steps/bronze/" class="md-footer__link md-footer__link--next" aria-label="Next: Bronze">
+          <a href="../../reference/cdc/" class="md-footer__link md-footer__link--next" aria-label="Next: Change Data Capture (CDC)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Bronze
+                Change Data Capture (CDC)
               </div>
             </div>
             <div class="md-footer__button md-icon">
