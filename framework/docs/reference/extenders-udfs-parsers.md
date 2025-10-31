@@ -142,7 +142,7 @@ def add_country(df: DataFrame, **kwargs) -> DataFrame:
 
 ## Related
 
-- Steps: [Bronze](../steps/bronze.md) â€¢ [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
-- Reference: [Checks & Data Quality](checks-data-quality.md) â€¢ [Table Options](table-options.md)
+- Steps: [Bronze](../steps/bronze.md) | [Silver](../steps/silver.md) | [Gold](../steps/gold.md)
+- Reference: [Checks & Data Quality](checks-data-quality.md) | [Table Options](table-options.md)
 - Runtime: [Runtime Configuration](../helpers/runtime.md)
 

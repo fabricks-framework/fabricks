@@ -17,7 +17,7 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 - **retention_days**: Table VACUUM retention period (days).
 - **powerbi**: true to apply Power BIâ€"specific metadata (if supported).
 
-## Option matrix (types â€¢ defaults â€¢ compatibility)
+## Option matrix (types | defaults | compatibility)
 
 | Option             | Type                   | Default | Applies to modes                  | Notes                                                                                  |
 |--------------------|------------------------|---------|-----------------------------------|----------------------------------------------------------------------------------------|
@@ -91,7 +91,7 @@ Notes:
 
 ## Related topics
 
-- Steps: [Bronze](../steps/bronze.md) â€¢ [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
+- Steps: [Bronze](../steps/bronze.md) | [Silver](../steps/silver.md) | [Gold](../steps/gold.md)
 - Data quality checks: [Checks & Data Quality](./checks-data-quality.md)
 - Custom logic integration: [Extenders, UDFs & Parsers](./extenders-udfs-parsers.md)
 - Runtime configuration: [Runtime](../helpers/runtime.md)

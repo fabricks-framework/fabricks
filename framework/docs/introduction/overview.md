@@ -42,7 +42,7 @@ Navigation
 
 - Layers guide: Layers (Bronze/Silver/Gold) â†' [Layers](./layers.md)
 - CDC strategies and contracts â†' [CDC](../reference/cdc.md)
-- Step references â†' [Bronze](../steps/bronze.md) â€¢ [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
+- Step references â†' [Bronze](../steps/bronze.md) | [Silver](../steps/silver.md) | [Gold](../steps/gold.md)
 - Data Quality â†' [Checks & Data Quality](../reference/checks-data-quality.md)
 - Table and storage options â†' [Table Options](../reference/table-options.md)
 - Extensibility â†' [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)

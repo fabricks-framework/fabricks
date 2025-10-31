@@ -77,7 +77,7 @@ Note
 
 See details in:
 
-- Steps: [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
+- Steps: [Silver](../steps/silver.md) | [Gold](../steps/gold.md)
 - [Table Options](./table-options.md)
 
 ---
@@ -305,7 +305,7 @@ Silver SCD1 with duplicates handling
 
 ## Related
 
-- Steps: [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
+- Steps: [Silver](../steps/silver.md) | [Gold](../steps/gold.md)
 - Reference: [Table Options](./table-options.md), [Extenders, UDFs & Parsers](./extenders-udfs-parsers.md)
 - Sample runtime: [Sample runtime](../helpers/runtime.md#sample-runtime)
 

@@ -201,7 +201,7 @@ How to use this sample
 
 ## Related topics
 
-- Steps: [Bronze](../steps/bronze.md) â€¢ [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
+- Steps: [Bronze](../steps/bronze.md) | [Silver](../steps/silver.md) | [Gold](../steps/gold.md)
 - Data quality checks and contracts: [Checks & Data Quality](../reference/checks-data-quality.md)
 - Table properties and physical layout: [Table Options](../reference/table-options.md)
 - Custom logic integration: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
