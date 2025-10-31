@@ -99,14 +99,20 @@ class Gold(BaseJob):
     def register_udfs(self):
         for u in self.get_udfs():
             if not is_registered(u):
-                DEFAULT_LOGGER.debug(f"register udf ({u})", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"register udf ({u})", extra={"label": self})
                 register_udf(udf=u, spark=self.spark)
 
     def base_transform(self, df: DataFrame) -> DataFrame:
         df = df.transform(self.extend)
         return df
 
-    def get_data(self, stream=False, transform: Optional[bool] = False) -> DataFrame:
+    def get_data(
+        self,
+        stream: bool = False,
+        transform: Optional[bool] = False,
+        schema_only: Optional[bool] = False,
+        **kwargs,
+    ) -> DataFrame:
         if self.options.job.get_boolean("requirements"):
             import sys
 
@@ -116,12 +122,12 @@ class Gold(BaseJob):
             df = self.spark.createDataFrame([{}])  # type: ignore
 
         elif self.options.job.get("notebook"):
-            from databricks.sdk.runtime import dbutils
+            invokers = self.options.invokers.get_list("run")
+            assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
 
-            DEFAULT_LOGGER.debug("run notebook", extra={"job": self})
-            path = self.paths.runtime.get_notebook_path()
+            global_temp_view = self.invoke(path=self.paths.runtime, schema_only=schema_only, **kwargs)
+            assert global_temp_view is not None, "global_temp_view not found"
 
-            global_temp_view = dbutils.notebook.run(path, self.timeout, arguments={})  # type: ignore
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
 
         elif self.options.job.get("table"):
@@ -135,6 +141,10 @@ class Gold(BaseJob):
 
         if transform:
             df = self.base_transform(df)
+
+        if schema_only:
+            df = df.where("1 == 2")
+
         return df
 
     def create_or_replace_view(self):
@@ -178,7 +188,7 @@ class Gold(BaseJob):
         from fabricks.context import CATALOG
 
         dependencies = []
-        df = self.get_data(self.stream)
+        df = self.get_data(stream=self.stream)
 
         if df is not None:
             explain_plan = self.spark.sql("explain extended select * from {df}", df=df).collect()[0][0]
@@ -194,23 +204,14 @@ class Gold(BaseJob):
         return dependencies
 
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
-        if "__order_duplicate_by_asc" in df.columns:
-            order_duplicate_by = {"__order_duplicate_by_asc": "asc"}
-        elif "__order_duplicate_by_desc" in df.columns:
-            order_duplicate_by = {"__order_duplicate_by_desc": "desc"}
-        else:
-            order_duplicate_by = None
+        # assume no duplicate in gold (to improve performance)
+        deduplicate = self.options.job.get_boolean("deduplicate", None)
+        # assume no reload in gold (to improve performance)
+        rectify = self.options.job.get_boolean("rectify_as_upserts", None)
 
-        deduplicate = self.options.job.get_boolean(
-            "deduplicate",
-            None,
-        )  # assume no duplicate in gold (to improve performance)
-        rectify = self.options.job.get_boolean(
-            "rectify_as_upserts",
-            None,
-        )  # assume no reload in gold (to improve performance)
-        correct_valid_from = self.options.job.get_boolean("correct_valid_from", True)
-        add_metadata = self.step_conf.get("options", {}).get("metadata", False)
+        add_metadata = self.options.job.get_boolean("metadata", None)
+        if add_metadata is None:
+            add_metadata = self.step_conf.get("options", {}).get("metadata", False)
 
         context = {
             "add_metadata": add_metadata,
@@ -219,27 +220,37 @@ class Gold(BaseJob):
             "deduplicate_hash": True if self.slowly_changing_dimension else None,
             "deduplicate": False,
             "rectify": False,
-            "order_duplicate_by": order_duplicate_by,
-            "correct_valid_from": correct_valid_from,
         }
 
+        # force deduplicate
         if deduplicate is not None:
             context["deduplicate"] = deduplicate
             context["deduplicate_key"] = deduplicate
             context["deduplicate_hash"] = deduplicate
 
+        # force rectify
         if rectify is not None:
             context["rectify"] = rectify
 
+        # add key and hash when needed
+        if self.mode == "update" and self.change_data_capture == "nocdc":
+            if "__key" not in df.columns:
+                context["add_key"] = True
+            if "__hash" not in df.columns:
+                context["add_hash"] = True
+
+        # add key and hash when needed
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
                 context["add_key"] = True
             if "__hash" not in df.columns:
                 context["add_hash"] = True
 
+        if self.slowly_changing_dimension:
             if "__operation" not in df.columns:
+                # assume no duplicate hash
                 if deduplicate is None:
-                    context["deduplicate_hash"] = None  # assume no duplicate hash
+                    context["deduplicate_hash"] = None
 
                 if self.mode == "update":
                     context["add_operation"] = "reload"
@@ -249,8 +260,12 @@ class Gold(BaseJob):
                 else:
                     context["add_operation"] = "upsert"
 
+        # filter to get latest data
         if not reload:
             if self.mode == "update" and self.change_data_capture == "scd2":
+                context["slice"] = "update"
+
+            if self.mode == "update" and self.change_data_capture == "nocdc" and "__timestamp" in df.columns:
                 context["slice"] = "update"
 
             if self.mode == "append" and "__timestamp" in df.columns:
@@ -259,6 +274,11 @@ class Gold(BaseJob):
         if self.mode == "memory":
             context["mode"] = "complete"
 
+        # correct __valid_from
+        if self.change_data_capture == "scd2":
+            context["correct_valid_from"] = self.options.job.get_boolean("correct_valid_from", True)
+
+        # add __timestamp
         if self.options.job.get_boolean("persist_last_timestamp"):
             if self.change_data_capture == "scd1":
                 if "__timestamp" not in df.columns:
@@ -266,6 +286,11 @@ class Gold(BaseJob):
             if self.change_data_capture == "scd2":
                 if "__valid_from" not in df.columns:
                     context["add_timestamp"] = True
+
+        if "__order_duplicate_by_asc" in df.columns:
+            context["order_duplicate_by"] = {"__order_duplicate_by_asc": "asc"}
+        elif "__order_duplicate_by_desc" in df.columns:
+            context["order_duplicate_by"] = {"__order_duplicate_by_desc": "desc"}
 
         return context
 
@@ -277,20 +302,19 @@ class Gold(BaseJob):
 
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}"
-        global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
+        global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
 
         check_df = self.spark.sql(sql)
         if check_df.isEmpty():
-            DEFAULT_LOGGER.warning("no data", extra={"job": self})
+            DEFAULT_LOGGER.warning("no data", extra={"label": self})
             return
 
         if reload:
-            DEFAULT_LOGGER.warning("force reload", extra={"job": self})
+            DEFAULT_LOGGER.warning("force reload", extra={"label": self})
             self.cdc.complete(sql, **context)
 
         elif self.mode == "update":
-            assert not isinstance(self.cdc, NoCDC), "nocdc update not allowed"
             self.cdc.update(sql, **context)
 
         elif self.mode == "append":
@@ -323,7 +347,7 @@ class Gold(BaseJob):
 
     def create(self):
         if self.mode == "invoke":
-            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
+            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
         else:
             self.register_udfs()
             super().create()
@@ -335,7 +359,7 @@ class Gold(BaseJob):
             self.cdc_last_timestamp.table.register()
 
         if self.mode == "invoke":
-            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"job": self})
+            DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
         else:
             super().register()
 
@@ -344,17 +368,6 @@ class Gold(BaseJob):
             self.cdc_last_timestamp.drop()
 
         super().drop()
-
-    def optimize(
-        self,
-        vacuum: Optional[bool] = True,
-        optimize: Optional[bool] = True,
-        analyze: Optional[bool] = True,
-    ):
-        if self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
-        else:
-            super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)
 
     @property
     def cdc_last_timestamp(self) -> NoCDC:
@@ -387,15 +400,15 @@ class Gold(BaseJob):
         else:
             self.cdc_last_timestamp.overwrite(df)
 
-    def overwrite(self):
+    def overwrite(self, schedule: Optional[str] = None):
         if self.mode == "invoke":
-            DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"job": self})
+            DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"label": self})
             return
 
         elif self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"job": self})
+            DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"label": self})
             self.create_or_replace_view()
             return
 
         self.overwrite_schema()
-        self.run(reload=True)
+        self.run(reload=True, schedule=schedule)

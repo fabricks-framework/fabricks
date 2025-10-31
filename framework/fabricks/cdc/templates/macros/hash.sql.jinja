@@ -1,0 +1,18 @@
+{% macro add_hash(fields) -%}
+    md5(
+        array_join(
+            array(
+                {% for f in fields %}
+                    {% if f == "__operation" %}cast(`{{ f }}` <=> 'delete' as string)  -- reloads and upserts should have the same hash, not deletes,
+                    {% else %}`{{ f }}`::string,
+                    {% endif %}
+                {% endfor %}
+            ),
+            '*',
+            '-1'
+        )
+    )
+{%- endmacro %}
+{% macro add_key(fields) -%}
+    md5(array_join(array({% for f in fields %}`{{ f }}`::string, {% endfor %}), '*', '-1'))
+{%- endmacro %}

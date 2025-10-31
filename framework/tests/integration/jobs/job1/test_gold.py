@@ -131,3 +131,14 @@ def test_gold_fact_option():
 def test_gold_scd1_last_timestamp():
     last_timestamp = SPARK.sql("select * from gold.scd1_last_timestamp__last_timestamp").collect()[0][0]
     assert last_timestamp is None
+
+
+@pytest.mark.order(130)
+def test_gold_fact_no_drop():
+    j = get_job(step="gold", topic="fact", item="no_drop")
+
+    try:
+        j.drop()
+        assert False, "drop is allowed while no_drop is set"
+    except ValueError:
+        assert True, "drop not allowed while no_drop is set"

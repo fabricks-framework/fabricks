@@ -1,13 +1,13 @@
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from uuid import uuid4
 
 import pandas as pd
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.dbobject import DbObject
+from fabricks.utils._types import DataFrameLike
 
 
 class View(DbObject):
@@ -18,7 +18,7 @@ class View(DbObject):
         spark: Optional[SparkSession] = None,
     ) -> str:
         if spark is None:
-            if isinstance(df, (DataFrame, CDataFrame)):
+            if isinstance(df, DataFrameLike):
                 spark = df.sparkSession
             else:
                 spark = SPARK
@@ -35,12 +35,19 @@ class View(DbObject):
         return uuid
 
 
-def create_or_replace_global_temp_view(name: str, df: DataFrame, uuid: Optional[bool] = False) -> str:
+def create_or_replace_global_temp_view(
+    name: str,
+    df: DataFrame,
+    uuid: Optional[bool] = False,
+    job: Optional[Any] = None,
+) -> str:
     if uuid:
         name = f"{name}__{str(uuid4().hex)}"
 
-    job = name.split("__")[0]
-    DEFAULT_LOGGER.debug(f"create global temp view {name}", extra={"job": job})
+    if job is None:
+        job = name.split("__")[0]
+
+    DEFAULT_LOGGER.debug(f"create global temp view {name}", extra={"label": job})
     df.createOrReplaceGlobalTempView(name)
 
     return f"global_temp.{name}"

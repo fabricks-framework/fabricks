@@ -4,12 +4,13 @@ from typing import Optional, Union, cast
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
+from typing_extensions import deprecated
 
-from fabricks.cdc import SCD1, SCD2, ChangeDataCaptures, NoCDC
+from fabricks.cdc import SCD1, SCD2, AllowedChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
-from fabricks.core.jobs.base._types import Modes, Options, Paths, TStep
+from fabricks.core.jobs.base._types import AllowedModes, Options, Paths, TStep
 from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.core.jobs.get_job_id import get_job_id
 from fabricks.metastore.table import Table
@@ -52,36 +53,30 @@ class Configurator(ABC):
     _root: Optional[Path] = None
 
     _cdc: Optional[Union[NoCDC, SCD1, SCD2]] = None
-    _change_data_capture: Optional[ChangeDataCaptures] = None
-    _mode: Optional[Modes] = None
+    _change_data_capture: Optional[AllowedChangeDataCaptures] = None
+    _mode: Optional[AllowedModes] = None
 
     @property
     @abstractmethod
-    def stream(self) -> bool:
-        raise NotImplementedError()
+    def stream(self) -> bool: ...
 
     @property
     @abstractmethod
-    def schema_drift(self) -> bool:
-        raise NotImplementedError()
+    def schema_drift(self) -> bool: ...
 
     @property
     @abstractmethod
-    def persist(self) -> bool:
-        raise NotImplementedError()
+    def persist(self) -> bool: ...
 
     @property
     @abstractmethod
-    def virtual(self) -> bool:
-        raise NotImplementedError()
+    def virtual(self) -> bool: ...
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str):
-        raise NotImplementedError()
+    def from_step_topic_item(cls, step: str, topic: str, item: str): ...
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str):
-        raise NotImplementedError()
+    def from_job_id(cls, step: str, job_id: str): ...
 
     @property
     def spark(self) -> SparkSession:
@@ -93,22 +88,22 @@ class Configurator(ABC):
             step_conf_options = step_options.get("conf", {})
             if step_sql_options:
                 for key, value in step_sql_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"step": self.step})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.sql(f"set {key} = {value}")
             if step_conf_options:
                 for key, value in step_conf_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"step": self.step})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.conf.set(f"{key}", f"{value}")
 
             job_sql_options = self.options.spark.get_dict("sql")
             job_conf_options = self.options.spark.get_dict("conf")
             if job_sql_options:
                 for key, value in job_sql_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"job": self})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.sql(f"set {key} = {value}")
             if job_conf_options:
                 for key, value in job_conf_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"job": self})
+                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.conf.set(f"{key}", f"{value}")
 
             self._spark = spark
@@ -195,9 +190,9 @@ class Configurator(ABC):
         return self._options
 
     @property
-    def change_data_capture(self) -> ChangeDataCaptures:
+    def change_data_capture(self) -> AllowedChangeDataCaptures:
         if not self._change_data_capture:
-            cdc: ChangeDataCaptures = self.options.job.get("change_data_capture") or "nocdc"
+            cdc: AllowedChangeDataCaptures = self.options.job.get("change_data_capture") or "nocdc"
             self._change_data_capture = cdc
         return self._change_data_capture
 
@@ -220,49 +215,34 @@ class Configurator(ABC):
         return self.change_data_capture in ["scd1", "scd2"]
 
     @abstractmethod
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict:
-        raise NotImplementedError()
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict: ...
 
     def get_cdc_data(self, stream: bool = False) -> Optional[DataFrame]:
-        df = self.get_data(stream)
+        df = self.get_data(stream=stream)
         if df:
             cdc_context = self.get_cdc_context(df)
             cdc_df = self.cdc.get_data(src=df, **cdc_context)
             return cdc_df
 
     @property
-    def mode(self) -> Modes:
+    def mode(self) -> AllowedModes:
         if not self._mode:
             _mode = self.options.job.get("mode")
             assert _mode is not None
-            self._mode = cast(Modes, _mode)
+            self._mode = cast(AllowedModes, _mode)
         return self._mode
 
     @abstractmethod
-    def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> Optional[DataFrame]:
-        """
-        Retrieves the data for the job.
-
-        Args:
-            stream (bool, optional): If True, the data will be streamed. Defaults to False.
-            transform (bool, optional): If True, the data will be transformed. Defaults to False.
-
-        Returns:
-            DataFrame or None: The retrieved data as a DataFrame, or None if the data is not available.
-        """
-        raise NotImplementedError()
+    def get_data(self, stream: bool = False, transform: Optional[bool] = None, **kwargs) -> Optional[DataFrame]: ...
 
     @abstractmethod
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
-        raise NotImplementedError()
+    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs): ...
 
     @abstractmethod
-    def for_each_run(self, **kwargs):
-        raise NotImplementedError()
+    def for_each_run(self, **kwargs): ...
 
     @abstractmethod
-    def base_transform(self, df: DataFrame) -> DataFrame:
-        raise NotImplementedError()
+    def base_transform(self, df: DataFrame) -> DataFrame: ...
 
     @abstractmethod
     def run(
@@ -271,47 +251,41 @@ class Configurator(ABC):
         schedule: Optional[str] = None,
         schedule_id: Optional[str] = None,
         invoke: Optional[bool] = True,
-    ):
-        raise NotImplementedError()
+    ): ...
 
+    @deprecated("use maintain instead")
     def optimize(
         self,
         vacuum: Optional[bool] = True,
         optimize: Optional[bool] = True,
         analyze: Optional[bool] = True,
     ):
-        """
-        Optimize the table by performing vacuum, optimizing CDC, and analyzing the table.
+        return self.maintain(
+            vacuum=vacuum,
+            optimize=optimize,
+            compute_statistics=analyze,
+        )
 
-        If the mode is set to 'memory', no optimization is performed.
-
-        The retention days for optimization are determined in the following order:
-        1. If 'retention_days' is specified in the job options table, it is used.
-        2. If 'retention_days' is specified in the step configuration table options, it is used.
-        3. If 'retention_days' is specified in the CONF_RUNTIME options, it is used.
-
-        After determining the retention days, the table is vacuumed with the specified retention days,
-        CDC is optimized for the table, and the table is analyzed.
-
-        Note: This method assumes that either 'runtime' or 'step' or 'job' is specified.
-
-        Returns:
-            None
-        """
+    def maintain(
+        self,
+        vacuum: Optional[bool] = True,
+        optimize: Optional[bool] = True,
+        compute_statistics: Optional[bool] = True,
+    ):
         if self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
+            DEFAULT_LOGGER.debug("could not maintain (memory)", extra={"label": self})
 
         else:
             if vacuum:
                 self.vacuum()
             if optimize:
                 self.cdc.optimize_table()
-            if analyze:
+            if compute_statistics:
                 self.table.compute_statistics()
 
     def vacuum(self):
         if self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no vacuum)", extra={"job": self})
+            DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"label": self})
 
         else:
             job = self.options.table.get("retention_days")

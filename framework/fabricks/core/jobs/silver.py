@@ -95,7 +95,13 @@ class Silver(BaseJob):
             )
         return df
 
-    def get_data(self, stream: bool = False, transform: Optional[bool] = False) -> DataFrame:
+    def get_data(
+        self,
+        stream: bool = False,
+        transform: Optional[bool] = False,
+        schema_only: Optional[bool] = False,
+        **kwargs,
+    ) -> DataFrame:
         deps = self.get_dependencies()
         assert deps, "not dependency found"
 
@@ -139,7 +145,7 @@ class Silver(BaseJob):
                         dfs.append(df)
 
                 except Exception as e:
-                    DEFAULT_LOGGER.exception("could not get dependencies", extra={"job": self})
+                    DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": self})
                     raise e
 
             df = concat_dfs(dfs)
@@ -150,6 +156,9 @@ class Silver(BaseJob):
         df = self.encrypt(df)
         if transform:
             df = self.base_transform(df)
+
+        if schema_only:
+            df = df.where("1 == 2")
 
         return df
 
@@ -186,7 +195,7 @@ class Silver(BaseJob):
 
             sql = f"create or replace view {self.qualified_name} as {' union all '.join(queries)}"
             sql = fix_sql(sql)
-            DEFAULT_LOGGER.debug("view", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
             self.spark.sql(sql)
 
         else:
@@ -195,7 +204,7 @@ class Silver(BaseJob):
             parent = deps[0].parent
             sql = f"select * from {parent}"
             sql = fix_sql(sql)
-            DEFAULT_LOGGER.debug("view", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
 
             df = self.spark.sql(sql)
             cdc_options = self.get_cdc_context(df)
@@ -205,7 +214,7 @@ class Silver(BaseJob):
         from py4j.protocol import Py4JJavaError
 
         try:
-            DEFAULT_LOGGER.debug("create or replace current view", extra={"job": self})
+            DEFAULT_LOGGER.debug("create or replace current view", extra={"label": self})
 
             df = self.spark.sql(f"select * from {self.qualified_name}")
 
@@ -222,23 +231,23 @@ class Silver(BaseJob):
               {where_clause}
             """
             # sql = fix_sql(sql)
-            # DEFAULT_LOGGER.debug("current view", extra={"job": self, "sql": sql})
+            # DEFAULT_LOGGER.debug("current view", extra={"label": self, "sql": sql})
             self.spark.sql(sql)
 
-        except Py4JJavaError:
-            DEFAULT_LOGGER.exception("could not create or replace view", extra={"job": self})
+        except Py4JJavaError as e:
+            DEFAULT_LOGGER.exception("fail to create nor replace view", extra={"label": self}, exc_info=e)
 
-    def overwrite(self):
+    def overwrite(self, schedule: Optional[str] = None):
         self.truncate()
-        self.run()
+        self.run(schedule=schedule)
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
-        DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"job": self})
+        DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
 
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
-        global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
+        global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
 
         not_append = not self.mode == "append"
         nocdc = self.change_data_capture == "nocdc"
@@ -265,12 +274,12 @@ class Silver(BaseJob):
                   1
                 """
             sql = fix_sql(sql)
-            DEFAULT_LOGGER.debug("check", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.debug("check", extra={"label": self, "sql": sql})
 
             check_df = self.spark.sql(sql)
             if not check_df.isEmpty():
                 rectify = True
-                DEFAULT_LOGGER.debug("rectify enabled", extra={"job": self})
+                DEFAULT_LOGGER.debug("rectify enabled", extra={"label": self})
 
         context = {
             "soft_delete": self.slowly_changing_dimension,
@@ -279,28 +288,29 @@ class Silver(BaseJob):
             "order_duplicate_by": order_duplicate_by,
         }
 
+        if self.mode == "memory":
+            context["mode"] = "complete"
+
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
                 context["add_key"] = True
 
-        if self.mode == "memory":
-            context["mode"] = "complete"
+        if nocdc and self.mode == "memory":
+            if "__operation" not in df.columns:
+                context["add_operation"] = "upsert"
+
         if self.mode == "latest":
             context["slice"] = "latest"
+        if not self.stream and self.mode == "update":
+            context["slice"] = "update"
 
         if self.change_data_capture == "scd2":
             context["correct_valid_from"] = True
 
-        if nocdc:
-            if "__operation" in df.columns:
-                context["except"] = ["__operation"]
-        if nocdc and self.mode == "memory":
-            if "__operation" not in df.columns:
-                context["add_operation"] = "upsert"
-                context["except"] = ["__operation"]
-
-        if not self.stream and self.mode == "update":
-            context["slice"] = "update"
+        if "__operation" in df.columns:
+            context["exclude"] = ["__operation"]
+        if nocdc:  # operation is passed from the bronze layer
+            context["exclude"] = ["__operation"]
 
         return context
 
@@ -313,12 +323,12 @@ class Silver(BaseJob):
         name = f"{self.step}_{self.topic}_{self.item}"
         if batch is not None:
             name = f"{name}__{batch}"
-        global_temp_view = create_or_replace_global_temp_view(name=name, df=df)
+        global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
 
         check_df = self.spark.sql(sql)
         if check_df.isEmpty():
-            DEFAULT_LOGGER.warning("no data", extra={"job": self})
+            DEFAULT_LOGGER.warning("no data", extra={"label": self})
             return
 
         if self.mode == "update":
@@ -359,16 +369,5 @@ class Silver(BaseJob):
 
     def drop(self):
         super().drop()
-        DEFAULT_LOGGER.debug("drop current view", extra={"job": self})
+        DEFAULT_LOGGER.debug("drop current view", extra={"label": self})
         self.spark.sql(f"drop view if exists {self.qualified_name}__current")
-
-    def optimize(
-        self,
-        vacuum: Optional[bool] = True,
-        optimize: Optional[bool] = True,
-        analyze: Optional[bool] = True,
-    ):
-        if self.mode == "memory":
-            DEFAULT_LOGGER.debug("memory (no optimize)", extra={"job": self})
-        else:
-            super().optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)

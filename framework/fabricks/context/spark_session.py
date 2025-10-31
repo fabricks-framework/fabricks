@@ -3,7 +3,7 @@ from typing import Optional
 from pyspark.sql import SparkSession
 from typing_extensions import deprecated
 
-from fabricks.context.runtime import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, SECRET_SCOPE
+from fabricks.context import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.secret import add_secret_to_spark, get_secret_from_secret_scope
 from fabricks.utils.spark import get_dbutils, get_spark
 

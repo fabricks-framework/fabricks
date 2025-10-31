@@ -47,6 +47,30 @@
                         "null"
                     ]
                 },
+                "optimize": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "compute_statistics": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "vacuum": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "no_drop": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
                 "encrypted_columns": {
                     "type": "array",
                     "items": {
@@ -79,6 +103,86 @@
                     "type": [
                         "integer",
                         "null"
+                    ]
+                }
+            }
+        },
+        "PrimaryKeyOptions": {
+            "type": "object",
+            "properties": {
+                "constraint": {
+                    "enum": [
+                        "not enforced",
+                        "deferrable",
+                        "initially deferred",
+                        "norely",
+                        "rely"
+                    ]
+                }
+            }
+        },
+        "PrimaryKey": {
+            "type": "object",
+            "properties": {
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/PrimaryKeyOptions"
+                        }
+                    ]
+                }
+            }
+        },
+        "ForeignKeyOptions": {
+            "type": "object",
+            "properties": {
+                "foreign_key": {
+                    "enum": [
+                        "match full",
+                        "on update no action",
+                        "on delete no action"
+                    ]
+                },
+                "constraint": {
+                    "enum": [
+                        "not enforced",
+                        "deferrable",
+                        "initially deferred",
+                        "norely",
+                        "rely"
+                    ]
+                }
+            }
+        },
+        "ForeignKey": {
+            "type": "object",
+            "properties": {
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "reference": {
+                    "type": "string"
+                },
+                "options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/ForeignKeyOptions"
+                        }
                     ]
                 }
             }
@@ -117,6 +221,12 @@
                     }
                 },
                 "powerbi": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "maximum_compatibility": {
                     "type": [
                         "boolean",
                         "null"
@@ -179,10 +289,66 @@
                         }
                     ]
                 },
+                "masks": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                },
+                "comments": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    ]
+                },
                 "retention_days": {
                     "type": [
                         "integer",
                         "null"
+                    ]
+                },
+                "primary_key": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/$defs/PrimaryKey"
+                            }
+                        }
+                    ]
+                },
+                "foreign_keys": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/$defs/ForeignKey"
+                            }
+                        }
                     ]
                 }
             }
@@ -492,6 +658,30 @@
                         "null"
                     ]
                 },
+                "optimize": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "compute_statistics": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "vacuum": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "no_drop": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
                 "deduplicate": {
                     "type": [
                         "boolean",
@@ -647,6 +837,30 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "optimize": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "compute_statistics": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "vacuum": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "no_drop": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
                 },
                 "deduplicate": {
                     "type": [

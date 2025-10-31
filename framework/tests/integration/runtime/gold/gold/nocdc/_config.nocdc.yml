@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=../../../job-schema.json
+- job:
+    step: gold
+    topic: nocdc
+    item: update
+    tags: [test]
+    options:
+      mode: update
+- job:
+    step: gold
+    topic: nocdc
+    item: deduplicate
+    tags: [test]
+    options:
+      mode: update
+      deduplicate: true

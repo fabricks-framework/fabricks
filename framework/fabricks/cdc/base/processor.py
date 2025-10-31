@@ -1,30 +1,34 @@
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 
+from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.generator import Generator
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.utils._types import DataFrameLike
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Processor(Generator):
-    def get_data(self, src: Union[DataFrame, Table, str], **kwargs) -> DataFrame:
-        if isinstance(src, (DataFrame, CDataFrame)):
+    def get_data(self, src: AllowedSources, **kwargs) -> DataFrame:
+        if isinstance(src, DataFrameLike):
             name = f"{self.qualified_name}__data"
-            global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False))
+            global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False), job=self)
             src = f"select * from {global_temp_view}"
 
         sql = self.get_query(src, fix=True, **kwargs)
+        DEFAULT_LOGGER.debug("exec query", extra={"label": self, "sql": sql})
         return self.spark.sql(sql)
 
-    def get_query_context(self, src: Union[DataFrame, Table, str], **kwargs) -> dict:
-        if isinstance(src, (DataFrame, CDataFrame)):
+    def get_query_context(self, src: AllowedSources, **kwargs) -> dict:
+        DEFAULT_LOGGER.debug("deduce query context", extra={"label": self})
+
+        if isinstance(src, DataFrameLike):
             format = "dataframe"
         elif isinstance(src, Table):
             format = "table"
@@ -33,18 +37,20 @@ class Processor(Generator):
         else:
             raise ValueError(f"{src} not allowed")
 
-        columns = self.get_columns(src, backtick=False)
-        fields = [c for c in columns if not c.startswith("__")]
-
+        inputs = self.get_columns(src, backtick=False, sort=False)
+        fields = [c for c in inputs if not c.startswith("__")]
         keys = kwargs.get("keys", None)
-        mode = kwargs.get("mode", "complete")
 
+        mode = kwargs.get("mode", "complete")
         if mode == "update":
             tgt = str(self.table)
-        elif mode == "append" and "__timestamp" in columns:
+        elif mode == "append" and "__timestamp" in inputs:
             tgt = str(self.table)
         else:
             tgt = None
+
+        overwrite = []
+        exclude = kwargs.get("exclude", [])  # used by silver to exclude __operation from output if not update
 
         order_duplicate_by = kwargs.get("order_duplicate_by", None)
         if order_duplicate_by:
@@ -52,104 +58,209 @@ class Processor(Generator):
 
         add_source = kwargs.get("add_source", None)
         add_calculated_columns = kwargs.get("add_calculated_columns", [])
+        if add_calculated_columns:
+            raise ValueError("add_calculated_columns is not yet supported")
         add_operation = kwargs.get("add_operation", None)
         add_key = kwargs.get("add_key", None)
         add_hash = kwargs.get("add_hash", None)
         add_timestamp = kwargs.get("add_timestamp", None)
         add_metadata = kwargs.get("add_metadata", None)
 
-        has_metadata = add_metadata or "__metadata" in columns
-        has_source = add_source or "__source" in columns
-        has_timestamp = add_timestamp or "__timestamp" in columns
-        has_key = add_key or "__key" in columns
-        has_hash = add_hash or "__hash" in columns
-        has_identity = "__identity" in columns
-        has_rescued_data = "__rescued_data" in columns
         has_order_by = None if not order_duplicate_by else True
-        try:
-            has_rows = self.table.rows > 0
-        except Exception:
-            has_rows = None
 
+        # determine which special columns are present or need to be added to the output
+        has_operation = add_operation or "__operation" in inputs
+        has_metadata = add_metadata or "__metadata" in inputs
+        has_source = add_source or "__source" in inputs
+        has_timestamp = add_timestamp or "__timestamp" in inputs
+        has_key = add_key or "__key" in inputs
+        has_hash = add_hash or "__hash" in inputs
+        has_identity = "__identity" in inputs
+        has_rescued_data = "__rescued_data" in inputs
+
+        soft_delete = kwargs.get("soft_delete", None)
+        delete_missing = kwargs.get("delete_missing", None)
         slice = kwargs.get("slice", None)
         rectify = kwargs.get("rectify", None)
         deduplicate = kwargs.get("deduplicate", None)
         deduplicate_key = kwargs.get("deduplicate_key", None)
         deduplicate_hash = kwargs.get("deduplicate_hash", None)
-        soft_delete = kwargs.get("soft_delete", None)
         correct_valid_from = kwargs.get("correct_valid_from", None)
-        delete_missing = kwargs.get("delete_missing", None)
 
-        if mode == "update" and delete_missing:
-            has_data = self.has_data(src)
+        try:
+            has_rows = self.table.rows > 0
+        except Exception:
+            has_rows = None
+
+        # only needed when comparing to current
+        # delete all records in current if there is no new data
+        if mode == "update" and delete_missing and self.change_data_capture in ["scd1", "scd2"]:
+            has_no_data = not self.has_data(src)
         else:
-            has_data = True
+            has_no_data = None
 
-        if slice is None:
-            if mode == "update" and has_timestamp and has_rows:
-                slice = "update"
-
-        # override slice if update and table is empty
-        if slice == "update" and not has_rows:
-            slice = None
-
+        # always deduplicate if not set for slowly changing dimensions
         if self.slowly_changing_dimension:
             if deduplicate is None:
                 deduplicate = True
-            if rectify is None:
-                rectify = True
 
+        # order duplicates by implies key deduplication
         if order_duplicate_by:
             deduplicate_key = True
-
-        if self.slowly_changing_dimension and mode == "update":
-            correct_valid_from = correct_valid_from and self.table.rows == 0
-
-        transformed = slice or rectify or deduplicate or deduplicate_key or deduplicate_hash
 
         if deduplicate:
             deduplicate_key = True
             deduplicate_hash = True
 
-        all_except = kwargs.get("except", []) or []
-        all_overwrite = []
+        # if any deduplication is requested, deduplicate all
+        deduplicate = deduplicate or deduplicate_key or deduplicate_hash
 
-        # override operation if provided and found in df
-        if add_operation and "__operation" in columns:
-            all_overwrite.append("__operation")
-        # add operation if not provided and not found in df BUT remove from output
-        elif (transformed or self.slowly_changing_dimension) and not add_operation and "__operation" not in columns:
-            add_operation = "upsert"
-            if self.change_data_capture == "nocdc":
-                all_except.append("__operation")
+        # always rectify if not set
+        if self.slowly_changing_dimension:
+            if rectify is None:
+                rectify = True
 
-        # override key if provided and found in df
-        if add_key and "__key" in columns:
-            all_overwrite.append("__key")
-        # add key if not provided and not found in df BUT remove from output
-        elif (transformed or keys or self.slowly_changing_dimension) and not add_key and "__key" not in columns:
-            add_key = True
-            all_except.append("__key")
+        # only correct valid_from on first load
+        if self.slowly_changing_dimension and mode == "update":
+            correct_valid_from = correct_valid_from and self.table.rows == 0
 
-        # override hash if provided and found in df
-        if add_hash and "__hash" in columns:
-            all_overwrite.append("__hash")
-        # add hash if not provided and not found in df BUT remove from output
-        elif (transformed or self.slowly_changing_dimension) and not add_hash and "__hash" not in columns:
-            add_hash = True
-            all_except.append("__hash")
+        # override slice for incremental load if timestamp and rows are present
+        if slice is None:
+            if mode == "update" and has_timestamp and has_rows:
+                slice = "update"
 
-        # override timestamp if provided and found in df
-        if add_timestamp and "__timestamp" in columns:
-            all_overwrite.append("__timestamp")
-        # add timestamp if not provided and not found in df BUT remove from output
-        elif (transformed or self.slowly_changing_dimension) and not add_timestamp and "__timestamp" not in columns:
-            add_timestamp = True
-            all_except.append("__timestamp")
+        # override slice for full load if update and table is empty
+        if slice == "update" and not has_rows:
+            slice = None
 
-        # override metadata if provided and found in df
-        if add_metadata and "__metadata" in columns:
-            all_overwrite.append("__metadata")
+        # override operation if added and found in df
+        if add_operation and "__operation" in inputs:
+            overwrite.append("__operation")
+
+        # override timestamp if added and found in df
+        if add_timestamp and "__timestamp" in inputs:
+            overwrite.append("__timestamp")
+
+        # override key if added and found in df (key needed for merge)
+        if add_key and "__key" in inputs:
+            overwrite.append("__key")
+
+        # override hash if added and found in df (hash needed to identify fake updates)
+        if add_hash and "__hash" in inputs:
+            overwrite.append("__hash")
+
+        # override metadata if added and found in df
+        if add_metadata and "__metadata" in inputs:
+            overwrite.append("__metadata")
+
+        advanced_ctes = ((rectify or deduplicate) and self.slowly_changing_dimension) or self.slowly_changing_dimension
+        advanced_deduplication = advanced_ctes and deduplicate
+
+        # add key and hash if not added nor found in df but exclude from output
+        # needed for merge
+        if mode == "update" or advanced_ctes or deduplicate:
+            if not add_key and "__key" not in inputs:
+                add_key = True
+                exclude.append("__key")
+
+            if not add_hash and "__hash" not in inputs:
+                add_hash = True
+                exclude.append("__hash")
+
+        # add operation and timestamp if not added nor found in df but exclude from output
+        # needed for deduplication and/or rectification
+        if advanced_ctes:
+            if not add_operation and "__operation" not in inputs:
+                add_operation = "upsert"
+                exclude.append("__operation")
+
+            if not add_timestamp and "__timestamp" not in inputs:
+                add_timestamp = True
+                exclude.append("__timestamp")
+
+        if add_key:
+            keys = keys if keys is not None else [f for f in fields]
+            if isinstance(keys, str):
+                keys = [keys]
+            if has_source:
+                keys.append("__source")
+
+        hashes = None
+        if add_hash:
+            hashes = [f for f in fields]
+            if "__operation" in inputs or add_operation:
+                hashes.append("__operation")
+
+        if self.change_data_capture == "nocdc":
+            intermediates = [i for i in inputs]
+            outputs = [i for i in inputs]
+        else:
+            intermediates = [f for f in fields]
+            outputs = [f for f in fields]
+
+        if has_operation:
+            if "__operation" not in outputs:
+                outputs.append("__operation")
+        if has_timestamp:
+            if "__timestamp" not in outputs:
+                outputs.append("__timestamp")
+        if has_key:
+            if "__key" not in outputs:
+                outputs.append("__key")
+        if has_hash:
+            if "__hash" not in outputs:
+                outputs.append("__hash")
+
+        if has_metadata:
+            if "__metadata" not in outputs:
+                outputs.append("__metadata")
+            if "__metadata" not in intermediates:
+                intermediates.append("__metadata")
+        if has_source:
+            if "__source" not in outputs:
+                outputs.append("__source")
+            if "__source" not in intermediates:
+                intermediates.append("__source")
+        if has_identity:
+            if "__identity" not in outputs:
+                outputs.append("__identity")
+            if "__identity" not in intermediates:
+                intermediates.append("__identity")
+        if has_rescued_data:
+            if "__rescued_data" not in outputs:
+                outputs.append("__rescued_data")
+            if "__rescued_data" not in intermediates:
+                intermediates.append("__rescued_data")
+
+        if soft_delete:
+            if "__is_deleted" not in outputs:
+                outputs.append("__is_deleted")
+            if "__is_current" not in outputs:
+                outputs.append("__is_current")
+
+        if self.change_data_capture == "scd2":
+            if "__valid_from" not in outputs:
+                outputs.append("__valid_from")
+            if "__valid_to" not in outputs:
+                outputs.append("__valid_to")
+            if "__is_current" not in outputs:
+                outputs.append("__is_current")
+
+        if advanced_ctes:
+            if "__operation" not in intermediates:
+                intermediates.append("__operation")
+            if "__timestamp" not in intermediates:
+                intermediates.append("__timestamp")
+
+        # needed for deduplication and/or rectification
+        # might need __operation or __source
+        if "__key" not in intermediates:
+            intermediates.append("__key")
+        if "__hash" not in intermediates:
+            intermediates.append("__hash")
+
+        outputs = [o for o in outputs if o not in exclude]
+        outputs = self.sort_columns(outputs)
 
         parent_slice = None
         if slice:
@@ -196,38 +307,6 @@ class Processor(Generator):
 
         parent_final = "__final"
 
-        if add_key:
-            keys = keys if keys is not None else fields
-            if isinstance(keys, str):
-                keys = [keys]
-            if has_source:
-                keys.append("__source")
-            keys = [f"cast(`{k}` as string)" for k in keys]
-
-        hashes = None
-        if add_hash:
-            hashes = [f"cast(`{f}` as string)" for f in fields]
-            if "__operation" in columns or add_operation:
-                hashes.append("cast(`__operation` <=> 'delete' as string)")
-
-        if fields:
-            if has_order_by:
-                if "__order_duplicate_by_desc desc" in order_duplicate_by:
-                    fields.append("__order_duplicate_by_desc")
-                elif "__order_duplicate_by_asc asc" in order_duplicate_by:
-                    fields.append("__order_duplicate_by_asc")
-            fields = [f"`{f}`" for f in fields]
-
-        if self.change_data_capture == "nocdc":
-            __not_allowed_columns = [
-                c
-                for c in columns
-                if c.startswith("__")
-                and c not in self.allowed_leading_columns
-                and c not in self.allowed_trailing_columns
-            ]
-            all_except = all_except + __not_allowed_columns
-
         return {
             "src": src,
             "format": format,
@@ -235,22 +314,28 @@ class Processor(Generator):
             "cdc": self.change_data_capture,
             "mode": mode,
             # fields
+            "inputs": inputs,
+            "intermediates": intermediates,
+            "outputs": outputs,
             "fields": fields,
             "keys": keys,
             "hashes": hashes,
             # options
+            "delete_missing": delete_missing,
+            "advanced_deduplication": advanced_deduplication,
+            # cte's
             "slice": slice,
             "rectify": rectify,
             "deduplicate": deduplicate,
-            # extra
             "deduplicate_key": deduplicate_key,
             "deduplicate_hash": deduplicate_hash,
             # has
-            "has_data": has_data,
+            "has_no_data": has_no_data,
             "has_rows": has_rows,
             "has_source": has_source,
             "has_metadata": has_metadata,
             "has_timestamp": has_timestamp,
+            "has_operation": has_operation,
             "has_identity": has_identity,
             "has_key": has_key,
             "has_hash": has_hash,
@@ -269,9 +354,8 @@ class Processor(Generator):
             "order_duplicate_by": order_duplicate_by,
             "soft_delete": soft_delete,
             "correct_valid_from": correct_valid_from,
-            # except
-            "all_except": all_except,
-            "all_overwrite": all_overwrite,
+            # overwrite
+            "overwrite": overwrite,
             # filter
             "slices": None,
             "sources": None,
@@ -291,11 +375,12 @@ class Processor(Generator):
             sql = sql.replace("{src}", "src")
             sql = fix_sql(sql)
             sql = sql.replace("`src`", "{src}")
-            DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql, "target": "buffer"})
+
+            DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql, "target": "buffer"})
             return sql
 
         except Exception as e:
-            DEFAULT_LOGGER.exception("could not fix sql query", extra={"job": self, "sql": sql})
+            DEFAULT_LOGGER.exception("fail to fix sql query", extra={"label": self, "sql": sql})
             raise e
 
     def fix_context(self, context: dict, fix: Optional[bool] = True, **kwargs) -> dict:
@@ -305,12 +390,11 @@ class Processor(Generator):
         try:
             sql = template.render(**context)
             if fix:
+                DEFAULT_LOGGER.debug("fix context", extra={"label": self, "sql": sql})
                 sql = self.fix_sql(sql)
-            else:
-                DEFAULT_LOGGER.debug("fix context", extra={"job": self, "sql": sql})
 
-        except Exception as e:
-            DEFAULT_LOGGER.exception("could not execute sql query", extra={"job": self, "context": context})
+        except (Exception, TypeError) as e:
+            DEFAULT_LOGGER.exception("fail to execute sql query", extra={"label": self, "context": context})
             raise e
 
         row = self.spark.sql(sql).collect()[0]
@@ -323,51 +407,54 @@ class Processor(Generator):
 
         return context
 
-    def get_query(self, src: Union[DataFrame, Table, str], fix: Optional[bool] = True, **kwargs) -> str:
+    def get_query(self, src: AllowedSources, fix: Optional[bool] = True, **kwargs) -> str:
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
-        if context.get("slice"):
-            context = self.fix_context(context, fix=fix, **kwargs)
-
-        template = environment.get_template("query.sql.jinja")
         try:
+            if context.get("slice"):
+                context = self.fix_context(context, fix=fix, **kwargs)
+
+            template = environment.get_template("query.sql.jinja")
+
             sql = template.render(**context)
             if fix:
                 sql = self.fix_sql(sql)
             else:
-                DEFAULT_LOGGER.debug("query", extra={"job": self, "sql": sql})
+                DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql})
 
-        except Exception as e:
-            DEFAULT_LOGGER.exception("could not generate sql query", extra={"job": self, "context": context})
+        except (Exception, TypeError) as e:
+            DEFAULT_LOGGER.debug("context", extra={"label": self, "context": context})
+            DEFAULT_LOGGER.exception("fail to generate sql query", extra={"label": self, "context": context})
             raise e
 
         return sql
 
-    def append(self, src: Union[DataFrame, Table, str], **kwargs):
-        if not self.table.exists():
+    def append(self, src: AllowedSources, **kwargs):
+        if not self.table.registered:
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
-        df = self.reorder_columns(df)
+        df = self.reorder_dataframe(df)
 
         name = f"{self.qualified_name}__append"
-        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
+        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
+        append = f"insert into table {self.table} by name select * from global_temp.{name}"
 
-        DEFAULT_LOGGER.debug("append", extra={"job": self})
-        self.spark.sql(f"insert into table {self.table} by name select * from global_temp.{name}")
+        DEFAULT_LOGGER.debug("exec append", extra={"label": self, "sql": append})
+        self.spark.sql(append)
 
     def overwrite(
         self,
-        src: Union[DataFrame, Table, str],
+        src: AllowedSources,
         dynamic: Optional[bool] = False,
         **kwargs,
     ):
-        if not self.table.exists():
+        if not self.table.registered:
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
-        df = self.reorder_columns(df)
+        df = self.reorder_dataframe(df)
 
         if not dynamic:
             if kwargs.get("update_where"):
@@ -377,7 +464,8 @@ class Processor(Generator):
             self.spark.sql("set spark.sql.sources.partitionOverwriteMode = dynamic")
 
         name = f"{self.qualified_name}__overwrite"
-        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False))
+        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
+        overwrite = f"insert overwrite table {self.table} by name select * from global_temp.{name}"
 
-        DEFAULT_LOGGER.debug("overwrite", extra={"job": self})
-        self.spark.sql(f"insert overwrite table {self.table} by name select * from global_temp.{name}")
+        DEFAULT_LOGGER.debug("excec overwrite", extra={"label": self, "sql": overwrite})
+        self.spark.sql(overwrite)

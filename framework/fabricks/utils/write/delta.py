@@ -3,17 +3,17 @@ from typing import List, Optional, Union, get_args
 from pyspark.sql import DataFrame
 
 from fabricks.utils.path import Path
-from fabricks.utils.read._types import IOModes
+from fabricks.utils.read._types import AllowedIOModes
 
 
 def write_delta(
     df: DataFrame,
     path: Path,
-    mode: IOModes,
+    mode: AllowedIOModes,
     options: Optional[dict[str, str]] = None,
     partition_by: Union[Optional[List[str]], str] = None,
 ):
-    assert mode in list(get_args(IOModes))
+    assert mode in list(get_args(AllowedIOModes))
 
     if isinstance(partition_by, str):
         partition_by = [partition_by]

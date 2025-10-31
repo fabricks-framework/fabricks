@@ -11,29 +11,25 @@ from fabricks.context.log import DEFAULT_LOGGER
 UDFS: dict[str, Callable] = {}
 
 
-def register_all_udfs():
+def register_all_udfs(extension: Optional[str] = None):
     """
     Register all user-defined functions (UDFs).
-
-    This function iterates over all UDFs returned by the `get_udfs` function,
-    splits the UDF name into the function name and extension, and attempts to
-    register the UDF using the `register_udf` function. If an exception occurs
-    during registration, an error message is logged.
-
-    Returns:
-        None
     """
-    for udf in get_udfs():
+    DEFAULT_LOGGER.info("register udfs")
+
+    for udf in get_udfs(extension=extension):
         split = udf.split(".")
         try:
             register_udf(udf=split[0], extension=split[1])
-        except Exception:
-            DEFAULT_LOGGER.exception(f"udf {udf} not registered")
+        except Exception as e:
+            DEFAULT_LOGGER.exception(f"could not register udf {udf}", exc_info=e)
 
 
-def get_udfs() -> List[str]:
+def get_udfs(extension: Optional[str] = None) -> List[str]:
     files = [os.path.basename(f) for f in PATH_UDFS.walk()]
     udfs = [f for f in files if not str(f).endswith("__init__.py") and not str(f).endswith(".requirements.txt")]
+    if extension:
+        udfs = [f for f in udfs if f.endswith(f".{extension}")]
     return udfs
 
 
@@ -63,22 +59,15 @@ def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
 
 def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[SparkSession] = None):
     """
-    Register a user-defined function (UDF) in Spark.
-
-    Args:
-        udf (str): The name of the UDF to register.
-        extension (Optional[str]): The file extension of the UDF implementation file. If not provided, it will be inferred from the UDF name.
-        spark (Optional[SparkSession]): The SparkSession object. If not provided, a new SparkSession will be created.
-
-    Raises:
-        ValueError: If the UDF implementation file is not found or if the UDF name is not found.
-
+    Register a user-defined function (UDF).
     """
     if spark is None:
         spark = SPARK
     assert spark is not None
 
     if not is_registered(udf, spark):
+        DEFAULT_LOGGER.debug(f"register udf {udf}")
+
         if extension is None:
             extension = get_extension(udf)
 

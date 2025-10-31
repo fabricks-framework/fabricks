@@ -1,0 +1,186 @@
+/*
+
+⚙️ BASE
+{%- if cdc %}
+☐ cdc: {{ cdc }}
+{%- endif %}
+{%- if mode %}
+☐ mode: {{ mode }}
+{%- endif %}
+
+🎯 SOURCE & TARTGET
+{%- if format %}
+☐ format: {{ format }}
+{%- endif %}
+{%- if src %}
+☐ src: {{ src | truncate(100, killwords=True) }}
+{%- endif %}
+{%- if tgt %}
+☐ tgt: {{ tgt }}
+{%- endif %}
+
+📊 CTE's
+{%- if slice %}
+🗹 slice?
+{%- endif %}
+{%- if deduplicate %}
+🗹 deduplicate?
+{%- endif %}
+{%- if advanced_deduplication %}
+🗹 advanced deduplication?
+{%- endif %}
+{%- if deduplicate_key %}
+🗹 deduplicate key?
+{%- endif %}
+{%- if deduplicate_hash %}
+🗹 deduplicate hash?
+{%- endif %}
+{%- if order_duplicate_by %}
+🗹 order duplicate by?
+{%- endif %}
+{%- if rectify %}
+🗹 rectify?
+{%- endif %}
+{%- if correct_valid_from %}
+🗹 correct valid from?
+{%- endif %}
+
+🔪 FILTERING
+{%- if filter_where %}
+☐ filter where: {{ filter_where }}
+{%- endif %}
+{%- if update_where %}
+☐ update where: {{ update_where }}
+{%- endif %}
+{%- if slices %}
+☐ slices: {{ slices }}
+{%- endif %}
+{%- if sources %}
+☐ sources: {{ sources }}
+{%- endif %}
+
+🗑️ DELETES
+{%- if delete_missing %}
+🗹 delete missing?
+{%- endif %}
+{%- if soft_delete %}
+🗹 soft delete?
+{%- endif %}
+
+✅ DATA VALIDATION
+{%- if has_no_data %}
+☒ has_data?
+{%- else %}
+🗹 has data?
+{%- endif %}
+{%- if has_rows %}
+🗹 has rows?
+{%- else %}
+☒ has rows?
+{%- endif %}
+{%- if has_source %}
+🗹 has source?
+{%- endif %}
+
+🏷️ HAS FIELDS
+{%- if has_metadata %}
+🗹 has metadata?
+{%- endif %}
+{%- if has_timestamp %}
+🗹 has timestamp?
+{%- endif %}
+{%- if has_identity %}
+🗹 has identity?
+{%- endif %}
+{%- if has_key %}
+🗹 has key?
+{%- endif %}
+{%- if has_hash %}
+🗹 has hash?
+{%- endif %}
+{%- if has_operation %}
+🗹 has operation?
+{%- endif %}
+{%- if has_order_by %}
+🗹 has order by?
+{%- endif %}
+{%- if has_rescued_data %}
+🗹 has rescued data?
+{%- endif %}
+
+➕ ADD COLUMNS
+{%- if add_metadata %}
+🗹 add metadata?
+{%- endif %}
+{%- if add_timestamp %}
+🗹 add timestamp?
+{%- endif %}
+{%- if add_key %}
+🗹 add key?
+{%- endif %}
+{%- if add_hash %}
+🗹 add hash?
+{%- endif %}
+{%- if add_operation %}
+☐ add_operation: {{ add_operation }}
+{%- endif %}
+{%- if add_source %}
+☐ add_source: {{ add_source }}
+{%- endif %}
+{%- if add_calculated_columns %}
+☐ add_calculated_columns: {{ add_calculated_columns }}
+{%- endif %}
+
+🔄 EXTRA COLUMN OPERATIONs
+{%- if all_except %}
+☐ all_except: {{ all_except | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
+{%- if all_overwrite %}
+☐ all_overwrite: {{ all_overwrite | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
+{%- if overwrite %}
+☐ overwrite: {{ overwrite | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
+
+👨‍👩‍👧 PARENTS
+{%- if parent_slice %}
+☐ parent_slice: {{ parent_slice }}
+{%- endif %}
+{%- if parent_rectify %}
+☐ parent_rectify: {{ parent_rectify }}
+{%- endif %}
+{%- if parent_deduplicate_key %}
+☐ parent_deduplicate_key: {{ parent_deduplicate_key }}
+{%- endif %}
+{%- if parent_deduplicate_hash %}
+☐ parent_deduplicate_hash: {{ parent_deduplicate_hash }}
+{%- endif %}
+{%- if parent_cdc %}
+☐ parent_cdc: {{ parent_cdc }}
+{%- endif %}
+{%- if parent_final %}
+☐ parent_final: {{ parent_final }}
+{%- endif %}
+
+📦 LAYOUT
+{%- if columns %}
+☐ columns: {{ columns | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
+{%- if inputs %}
+☐ inputs: {{ inputs | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
+{%- if intermediates %}
+☐ intermediates: {{ intermediates | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
+{%- if outputs %}
+☐ outputs: {{ outputs | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
+{%- if keys %}
+☐ keys: {{ keys | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
+{%- if hashes %}
+☐ hashes: {{ hashes | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
+
+*/
+

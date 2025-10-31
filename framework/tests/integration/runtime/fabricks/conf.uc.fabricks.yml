@@ -12,6 +12,8 @@
         pre_run: 3600
         post_run: 3600
       workers: 8
+      retention_days: 7
+      timezone: Europe/Paris
     path_options:
       storage: abfss://test@$standard
       udfs: fabricks/udfs

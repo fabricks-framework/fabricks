@@ -1,26 +1,26 @@
-# Bronze Step Reference
+﻿# Bronze Step Reference
 
-The Bronze step ingests raw data from files/streams/sources into the Lakehouse.
+The Bronze step ingests raw data from files, streams, or existing tables into the Lakehouse. Its purpose is to capture source data with minimal transformation so downstream steps can standardize, enrich, and model it.
 
-What it does
-- Reads from a URI using a parser (e.g., parquet) or custom parser
-- Optionally filters, calculates, or encrypts columns
-- Appends or registers data for downstream steps
+What Bronze does
 
-## Modes
+- Reads data from a `uri` using a built-in parser (e.g., `parquet`, `csv`) or a custom parser/extender.
+- Optionally applies lightweight transformations: filters, calculated columns, or column encryption.
+- Produces one of: a temporary view, an appended Delta table, or registers an existing table/view for downstream steps.
 
-| Mode    | Description                                                    |
-|---------|----------------------------------------------------------------|
-| memory  | Register a temporary view only; no Delta table is written.     |
-| append  | Append records to the target table (no merge/upsert).          |
-| register| Register an existing Delta table/view at `uri`.                |
+Modes
 
+| Mode       | Behavior                                                                 |
+|------------|--------------------------------------------------------------------------|
+| `memory`   | Register a temporary view only; no Delta table is written. Useful for quick testing or transient inputs.
+| `append`   | Append records to the target Delta table (no merge/upsert). Typical for landing raw files.
+| `register` | Register an existing Delta table or view available at `uri`. Parser is not used in this mode.
 
-### Required fields
+When to use each mode
 
-- memory: Requires `options.mode: memory`. Typically specify `uri` and `parser` unless your extender or custom parser produces the DataFrame. No Delta table is written; a temporary view is registered.
-- append: Requires `options.mode: append` and a readable source (`uri` + `parser`). `keys` are optional but recommended for de-duplication and downstream CDC.
-- register: Requires `options.mode: register` and `uri` pointing to an existing Delta table or view. `parser` is not used in this mode.
+- `memory`: Use when you want a temporary, in-session view (no persisted table).
+- `append`: Use for typical raw file ingestion where new data is appended to a Delta target.
+- `register`: Use when the source is already materialized as a table/view and you only want to reference it.
 
 Minimal example
 ```yaml
@@ -29,13 +29,13 @@ Minimal example
     topic: demo
     item: source
     options:
-      mode: append
+      mode: `append`
       uri: /mnt/demo/raw/demo
       parser: parquet
       keys: [id]
 ```
 
-Additional examples
+**Examples**
 
 Memory (temporary view only)
 ```yaml
@@ -44,7 +44,7 @@ Memory (temporary view only)
     topic: demo
     item: mem_view
     options:
-      mode: memory
+      mode: `memory`
       uri: /mnt/demo/raw/demo
       parser: parquet
       keys: [id]   # optional, useful for downstream CDC
@@ -57,88 +57,54 @@ Register an existing table/view
     topic: demo
     item: register_source
     options:
-      mode: register
+      mode: `register`
       uri: analytics.raw_demo   # existing Delta table or view name
 ```
 
-### Bronze options
+Common options (summary)
 
-#### Option matrix (types • defaults • required)
+This section lists the most common options for a Bronze job. Options can be defined at the job level (recommended) or inherited from step-level defaults.
 
-| Option             | Type                     | Default  | Required | Description                                                                                     |
-|--------------------|--------------------------|----------|----------|-------------------------------------------------------------------------------------------------|
-| type               | enum: default, manual    | default  | no       | `manual` disables auto DDL/DML; you manage persistence yourself.                                |
-| mode               | enum: memory, append, register | —        | yes      | Controls behavior: register temp view, append to table, or register an existing table/view.     |
-| uri                | string (path or table)   | —        | cond.    | Source location or existing table/view (for `register`). Required for `append`/`register`.      |
-| parser             | string                    | —        | cond.    | Input parser (e.g., parquet, csv, json) or custom parser. Not used in `register` mode.          |
-| source             | string                    | —        | no       | Logical source label for lineage/logging.                                                       |
-| keys               | array[string]             | —        | no       | Business keys used for dedup and downstream CDC. Recommended.                                   |
-| parents            | array[string]             | —        | no       | Upstream job dependencies to enforce ordering.                                                  |
-| filter_where       | string (SQL predicate)    | —        | no       | Row-level filter applied during ingestion.                                                      |
-| calculated_columns | map[string]string         | —        | no       | New columns defined as SQL expressions evaluated at load time.                                  |
-| encrypted_columns  | array[string]             | —        | no       | Columns to encrypt during write.                                                                |
-| extender           | string                    | —        | no       | Python extender to transform the DataFrame (see Extenders).                                     |
-| extender_options   | map[string,any]           | {}       | no       | Arguments passed to the extender.                                                               |
-| operation          | enum: upsert, reload, delete | —     | no       | Changelog semantics for certain feeds.                                                          |
-| timeout            | integer (seconds)         | —        | no       | Per-job timeout; overrides step default.                                                        |
+| Option             | Type                      | Default | Required | Purpose / notes
+|--------------------|---------------------------|---------|----------|---------------------------------------------------------------------------------
+| `type`             | enum: `default`, `manual` | `default` | no    | `manual` disables auto DDL/DML; you manage persistence yourself.
+| `mode`             | enum: `memory`,`append`,`register` | - | yes | Controls ingestion behavior.
+| `uri`              | string (path or table)    | -       | cond.     | Source location or existing table/view (required for `append`/`register`).
+| `parser`           | string                    | -       | cond.     | Input parser (`parquet`, `csv`, `json`) or custom parser. Not used in `register`.
+| `source`           | string                    | -       | no        | Logical source label for lineage/logging.
+| `keys`             | array[string]             | -       | no        | Business keys used for dedup and downstream CDC; recommended.
+| `parents`          | array[string]             | -       | no        | Upstream job dependencies to enforce ordering.
+| `filter_where`     | string (SQL predicate)    | -       | no        | Row-level filter applied during ingestion.
+| `calculated_columns` | map[string,string      | -       | no        | New columns defined as SQL expressions evaluated at load time.
+| `encrypted_columns`| array[string]             | -       | no        | Columns to encrypt during write.
+| `extender`         | string                    | -       | no        | Python extender to transform the DataFrame (see Extenders).
+| `extender_options` | map[string,any]           | {}      | no        | Arguments passed to the extender.
+| `operation`        | enum: `upsert`,`reload`,`delete` | - | no     | Changelog semantics for certain feeds.
+| `timeout`          | integer (seconds)         | -       | no        | Per-job timeout; overrides step default.
 
-Notes:
-- `uri` is required for `append` and `register`; optional for `memory` when a custom source is produced by an extender or custom parser.
-- `parser` is required when reading files/directories; it is not used in `register` mode.
-- `keys` are optional but recommended for de-duplication and downstream CDC.
+Notes
 
-#### All Options at a glance
+- `uri` is required for `append` and `register`; optional for `memory` when an extender or custom parser produces the DataFrame.
+- `parser` is required when reading files/directories and is ignored in `register` mode.
+- `keys` help with deduplication and enable downstream CDC patterns; provide them when available.
+- `type: manual` is useful when you want full control over how data is persisted (avoid Fabricks auto-DDL).
 
-| Option             | Purpose                                                                                   |
-|--------------------|-------------------------------------------------------------------------------------------|
-| type               | `default` vs `manual` (manual disables auto DDL/DML; you manage persistence).             |
-| mode               | One of: `memory`, `append`, `register`.                                                   |
-| uri                | Source location (e.g., `/mnt/...`, `abfss://...`) used by the parser.                     |
-| parser             | Input parser (e.g., `parquet`) or the name of a custom parser.                            |
-| source             | Logical source label for lineage/logging.                                                 |
-| keys               | Business keys used for dedup and downstream CDC.                                          |
-| parents            | Upstream jobs to enforce dependencies and ordering.                                       |
-| filter_where       | SQL predicate applied during ingestion.                                                   |
-| encrypted_columns  | Columns to encrypt at write time.                                                         |
-| calculated_columns | Derived columns defined as SQL expressions.                                               |
-| extender           | Name of a Python extender to apply (see Extenders).                                       |
-| extender_options   | Arguments for the extender (mapping).                                                     |
-| operation          | Changelog semantics for certain feeds: `upsert` \| `reload` \| `delete`.                  |
-| timeout            | Per-job timeout seconds (overrides step default).                                         |
+Extensibility
 
-#### Bronze dedicated options
+- `extender`: A Python callable that receives the input DataFrame and returns a transformed DataFrame. Use extenders for custom parsing, enrichment, or complex transformations that are difficult in SQL.
+- `extender_options`: Mapping of options passed to the extender.
+- See also: [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
 
-- *Core*
-    - **type**: `default` vs `manual`. Manual means Fabricks will not auto-generate DDL/DML; you control persistence.
-    - **mode**: Controls ingestion behavior (`memory`, `append`, `register`).
-    - **timeout**: Per-job timeout seconds; overrides step defaults.
+Operational guidance
 
-- *Source*
-    - **uri**: Filesystem or table/view location resolved by the parser.
-    - **parser**: Name of the parser to read the source (e.g., `parquet`) or a custom parser.
-    - **source**: Optional logical label used for lineage/logging.
+- Data lineage: set `source` and `parents` to make job lineage and ordering explicit.
+- Error handling: use `timeout` and configure `Checks & Data Quality` to detect and halt on bad input.
+- Security: use `encrypted_columns` to protect sensitive fields at write time.
 
-- *Dependencies & ordering*
-    - **parents**: Explicit upstream jobs that must complete before this job runs.
-    - **keys**: Natural/business keys used for deduplication and for downstream CDC.
+Related
 
-- *Transformations & security*
-    - **filter_where**: SQL predicate to filter rows during ingestion.
-    - **calculated_columns**: Mapping of new columns to SQL expressions evaluated at load time.
-    - **encrypted_columns**: List of columns to encrypt during write.
-
-- *Changelog semantics*
-    - **operation**: For change-log style feeds, indicates whether incoming rows should be treated (`upsert`, `reload`, `delete`).
-
-#### Extensibility
-
-- extender: Apply a Python extender to the ingested DataFrame.
-- extender_options: Mapping of arguments passed to the extender.
-- See also: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
-
-#### Related
-
-- Next steps: [Silver Step](./silver.md), [Table Options](../reference/table-options.md)
+- Next steps: [Silver Step](./SILVER.md), [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
-- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
+- Extensibility: [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
 - Sample runtime: [Sample runtime](../helpers/runtime.md#sample-runtime)
+

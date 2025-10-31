@@ -1,8 +1,8 @@
-# Extenders, UDFs, and Parsers
+﻿# Extenders, UDFs, and Parsers
 
 This reference explains how to extend Fabricks with custom Python code and reusable SQL assets:
 - Extenders: Python functions that transform a Spark DataFrame before it is written.
-- UDFs: User-defined functions you register on the Spark session and use in SQL.
+- UDFs: User-defined functions you `register` on the Spark session and use in SQL.
 - Parsers: Source-specific readers/cleaners that return a DataFrame (optional, advanced).
 
 Use these to encapsulate business logic, reuse patterns, and keep SQL jobs focused and readable.
@@ -26,9 +26,7 @@ from fabricks.core.extenders import extender
 @extender(name="add_country")
 def add_country(df: DataFrame, **kwargs) -> DataFrame:
     return df.withColumn("country", lit(kwargs.get("country", "Unknown")))
-```
-
-In a job:
+```In\na job:
 
 ```yaml
 - job:
@@ -36,7 +34,7 @@ In a job:
     topic: sales_analytics
     item: daily_summary
     options:
-      mode: update
+      mode: `update`
     extender: add_country
     extender_options:
       country: CH
@@ -63,10 +61,8 @@ from fabricks.core.udfs import udf
 def addition(spark: SparkSession):
     def _add(a: int, b: int) -> int:
         return a + b
-    spark.udf.register("udf_addition", _add)
-```
-
-Using built-in helpers and a custom UDF in SQL:
+    spark.udf.`register`("udf_addition", _add)
+```Using\nbuilt-in helpers and a custom UDF in SQL:
 
 ```sql
 select
@@ -108,16 +104,14 @@ Reference in a job:
     topic: demo
     item: source
     options:
-      mode: append
+      mode: `append`
       uri: /mnt/demo/raw/demo
       parser: monarch
     parser_options:
       file_format: parquet
       read_options:
         mergeSchema: true
-```
-
-Example implementation:
+```Example\nimplementation:
 
 ```python
 from pyspark.sql import DataFrame, SparkSession
@@ -148,6 +142,7 @@ def add_country(df: DataFrame, **kwargs) -> DataFrame:
 
 ## Related
 
-- Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
-- Reference: [Checks & Data Quality](checks-data-quality.md) • [Table Options](table-options.md)
+- Steps: [Bronze](../steps/bronze.md) â€¢ [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
+- Reference: [Checks & Data Quality](checks-data-quality.md) â€¢ [Table Options](table-options.md)
 - Runtime: [Runtime Configuration](../helpers/runtime.md)
+

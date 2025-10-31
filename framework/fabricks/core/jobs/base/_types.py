@@ -4,7 +4,7 @@ from typing import List, Literal, Optional, TypedDict, Union
 from pydantic import BaseModel, ConfigDict, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
 
-from fabricks.cdc.base._types import ChangeDataCaptures
+from fabricks.cdc.base._types import AllowedChangeDataCaptures
 from fabricks.context import BRONZE, GOLD, SILVER
 from fabricks.core.jobs.get_job_id import get_dependency_id, get_job_id
 from fabricks.core.parsers import ParserOptions
@@ -21,20 +21,43 @@ Silvers: List[TSilver] = [s.get("name") for s in SILVER]
 Golds: List[TGold] = [g.get("name") for g in GOLD]
 Steps: List[TStep] = Bronzes + Silvers + Golds
 
-BronzeModes = Literal["memory", "append", "register"]
-SilverModes = Literal["memory", "append", "latest", "update", "combine"]
-GoldModes = Literal["memory", "append", "complete", "update", "invoke"]
-Modes = Literal[BronzeModes, SilverModes, GoldModes]
+AllowedModesBronze = Literal["memory", "append", "register"]
+AllowedModesSilver = Literal["memory", "append", "latest", "update", "combine"]
+AllowedModesGold = Literal["memory", "append", "complete", "update", "invoke"]
+AllowedModes = Literal[AllowedModesBronze, AllowedModesSilver, AllowedModesGold]
 
-FileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "delta"]
-Operations = Literal["upsert", "reload", "delete"]
-Types = Literal["manual", "default"]
-Origins = Literal["parser", "job"]
+AllowedFileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "delta"]
+AllowedOperations = Literal["upsert", "reload", "delete"]
+AllowedTypes = Literal["manual", "default"]
+AllowedOrigins = Literal["parser", "job"]
+
+AllowedConstraintOptions = Literal["not enforced", "deferrable", "initially deferred", "norely", "rely"]
+AllowedForeignKeyOptions = Literal["match full", "on update no action", "on delete no action"]
 
 
 class SparkOptions(TypedDict):
     sql: Optional[dict[str, str]]
     conf: Optional[dict[str, str]]
+
+
+class ForeignKeyOptions(TypedDict):
+    foreign_key: Optional[AllowedForeignKeyOptions]
+    constraint: Optional[AllowedConstraintOptions]
+
+
+class PrimaryKeyOptions(TypedDict):
+    constraint: Optional[AllowedConstraintOptions]
+
+
+class ForeignKey(TypedDict):
+    keys: List[str]
+    reference: str
+    options: Optional[ForeignKeyOptions]
+
+
+class PrimaryKey(TypedDict):
+    keys: List[str]
+    options: Optional[PrimaryKeyOptions]
 
 
 class TableOptions(TypedDict):
@@ -44,12 +67,17 @@ class TableOptions(TypedDict):
     zorder_by: Optional[List[str]]
     cluster_by: Optional[List[str]]
     powerbi: Optional[bool]
+    maximum_compatibility: Optional[bool]
     bloomfilter_by: Optional[List[str]]
     constraints: Optional[dict[str, str]]
     properties: Optional[dict[str, str]]
     comment: Optional[str]
     calculated_columns: Optional[dict[str, str]]
+    masks: Optional[dict[str, str]]
+    comments: Optional[dict[str, str]]
     retention_days: Optional[int]
+    primary_key: Optional[dict[str, PrimaryKey]]
+    foreign_keys: Optional[dict[str, ForeignKey]]
 
 
 class _InvokeOptions(TypedDict):
@@ -79,8 +107,8 @@ class CheckOptions(TypedDict):
 
 
 class BronzeOptions(TypedDict):
-    type: Optional[Types]
-    mode: BronzeModes
+    type: Optional[AllowedTypes]
+    mode: AllowedModesBronze
     uri: str
     parser: str
     source: str
@@ -88,20 +116,28 @@ class BronzeOptions(TypedDict):
     # default
     parents: Optional[List[str]]
     filter_where: Optional[str]
+    optimize: Optional[bool]
+    compute_statistics: Optional[bool]
+    vacuum: Optional[bool]
+    no_drop: Optional[bool]
     # extra
     encrypted_columns: Optional[List[str]]
     calculated_columns: Optional[dict[str, str]]
-    operation: Optional[Operations]
+    operation: Optional[AllowedOperations]
     timeout: Optional[int]
 
 
 class SilverOptions(TypedDict):
-    type: Optional[Types]
-    mode: SilverModes
-    change_data_capture: ChangeDataCaptures
+    type: Optional[AllowedTypes]
+    mode: AllowedModesSilver
+    change_data_capture: AllowedChangeDataCaptures
     # default
     parents: Optional[List[str]]
     filter_where: Optional[str]
+    optimize: Optional[bool]
+    compute_statistics: Optional[bool]
+    vacuum: Optional[bool]
+    no_drop: Optional[bool]
     # extra
     deduplicate: Optional[bool]
     stream: Optional[bool]
@@ -111,22 +147,28 @@ class SilverOptions(TypedDict):
 
 
 class GoldOptions(TypedDict):
-    type: Optional[Types]
-    mode: GoldModes
-    change_data_capture: ChangeDataCaptures
+    type: Optional[AllowedTypes]
+    mode: AllowedModesGold
+    change_data_capture: AllowedChangeDataCaptures
     update_where: Optional[str]
     # default
     parents: Optional[List[str]]
+    optimize: Optional[bool]
+    compute_statistics: Optional[bool]
+    vacuum: Optional[bool]
+    no_drop: Optional[bool]
     # extra
     deduplicate: Optional[bool]  # remove duplicates on the keys and on the hash
     rectify_as_upserts: Optional[bool]  # convert reloads into upserts and deletes
-    correct_valid_from: Optional[bool]
-    persist_last_timestamp: Optional[bool]
+    correct_valid_from: Optional[bool]  # update valid_from to '1900-01-01' for the first timestamp
+    persist_last_timestamp: Optional[bool]  # persist the last timestamp to be used as a watermark for the next run
+    # delete_missing: Optional[bool]  # delete missing records on update (to be implemented)
     # else
     table: Optional[str]
     notebook: Optional[bool]
     requirements: Optional[bool]
     timeout: Optional[int]
+    metadata: Optional[bool]
 
 
 StepOptions = Union[BronzeOptions, SilverOptions, GoldOptions]
@@ -204,7 +246,7 @@ class Options:
 
 class JobDependency(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
-    origin: Origins
+    origin: AllowedOrigins
     job_id: str
     parent: str
     parent_id: str
@@ -220,7 +262,7 @@ class JobDependency(BaseModel):
         return self
 
     @staticmethod
-    def from_parts(job_id: str, parent: str, origin: Origins):
+    def from_parts(job_id: str, parent: str, origin: AllowedOrigins):
         parent = parent.removesuffix("__current")
         return JobDependency(
             job_id=job_id,

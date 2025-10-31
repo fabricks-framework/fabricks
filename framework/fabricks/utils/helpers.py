@@ -1,11 +1,12 @@
-from concurrent.futures import ThreadPoolExecutor
+import logging
 from functools import reduce
-from typing import Any, Callable, Iterable, List, Optional, Union
+from queue import Queue
+from typing import Any, Callable, Iterable, List, Literal, Optional, Union
 
 from pyspark.sql import DataFrame
-from pyspark.sql.connect.dataframe import DataFrame as CDataFrame
 from typing_extensions import deprecated
 
+from fabricks.utils._types import DataFrameLike
 from fabricks.utils.path import Path
 from fabricks.utils.spark import spark
 
@@ -34,26 +35,32 @@ def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], worker
     return run_in_parallel(func, iter, workers)
 
 
-def run_in_parallel(
+def _process_queue_item(func: Callable, task_queue: Queue, result_queue: Queue, stop_signal: Any):
+    """Worker function that processes items from a queue."""
+    while True:
+        try:
+            item = task_queue.get(timeout=1)
+
+            if item is stop_signal:
+                task_queue.put(stop_signal)  # Put it back for other workers
+                break
+
+            result = func(item)
+            result_queue.put(result)
+        except Exception:
+            continue
+
+
+def _run_in_parallel_legacy(
     func: Callable,
     iterable: Union[List, DataFrame, range, set],
     workers: int = 8,
     progress_bar: Optional[bool] = False,
     position: Optional[int] = None,
 ) -> List[Any]:
-    """
-    Runs the given function in parallel on the elements of the iterable using multiple threads.
+    from concurrent.futures import ThreadPoolExecutor
 
-    Args:
-        func (Callable): The function to be executed in parallel.
-        iterable (Union[List, DataFrame, range, set]): The iterable containing the elements on which the function will be executed.
-        workers (int, optional): The number of worker threads to use. Defaults to 8.
-
-    Returns:
-        List[Any]: A list containing the results of the function calls.
-
-    """
-    iterable = iterable.collect() if isinstance(iterable, (DataFrame, CDataFrame)) else iterable  # type: ignore
+    iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         if progress_bar:
@@ -62,6 +69,129 @@ def run_in_parallel(
             results = list(tqdm(executor.map(func, iterable), total=len(iterable), position=position))
         else:
             results = list(executor.map(func, iterable))
+
+    return results
+
+
+def run_in_parallel(
+    func: Callable,
+    iterable: Union[List, DataFrame, range, set],
+    workers: int = 8,
+    progress_bar: Optional[bool] = False,
+    position: Optional[int] = None,
+    loglevel: int = logging.CRITICAL,
+    logger: Optional[logging.Logger] = None,
+    run_as: Optional[Literal["ThreadPool", "ProcessPool", "Pool", "Queue", "Legacy"]] = "Legacy",
+) -> List[Any]:
+    """
+    Runs the given function in parallel on the elements of the iterable using multiple threads or processes.
+
+    Args:
+        func (Callable): The function to be executed in parallel.
+        iterable (Union[List, DataFrame, range, set]): The iterable containing the elements on which the function will be executed.
+        workers (int, optional): The number of worker threads/processes to use. Defaults to 8.
+        progress_bar (Optional[bool], optional): Whether to display a progress bar. Defaults to False.
+        position (Optional[int], optional): Position for the progress bar. Defaults to None.
+        loglevel (int, optional): Log level to set during execution. Defaults to logging.CRITICAL.
+        logger (Optional[logging.Logger], optional): Logger instance to use. Defaults to None.
+        run_as (Optional[Literal["ThreadPool", "ProcessPool", "Pool", "Queue"]], optional): Type of run as to use.
+
+    Returns:
+        List[Any]: A list containing the results of the function calls.
+
+    """
+    if logger is None:
+        logger = logging.getLogger()
+
+    current_loglevel = logger.getEffectiveLevel()
+    logger.setLevel(loglevel)
+
+    if run_as == "Legacy":
+        results = _run_in_parallel_legacy(
+            func=func,
+            iterable=iterable,
+            workers=workers,
+            progress_bar=progress_bar,
+            position=position,
+        )
+
+    else:
+        iterables = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
+        results = []
+
+        if run_as == "Queue":
+            import threading
+
+            task_queue = Queue()
+            result_queue = Queue()
+            stop_signal = object()
+
+            for item in iterables:
+                task_queue.put(item)
+
+            task_queue.put(stop_signal)
+
+            threads = []
+            for _ in range(workers):
+                t = threading.Thread(target=_process_queue_item, args=(func, task_queue, result_queue, stop_signal))
+                t.start()
+
+                threads.append(t)
+
+            if progress_bar:
+                from tqdm import tqdm
+
+                with tqdm(total=len(iterables), position=position) as t:
+                    for _ in range(len(iterables)):
+                        result = result_queue.get()
+                        results.append(result)
+
+                        t.update()
+                        t.refresh()
+
+            else:
+                for _ in range(len(iterables)):
+                    results.append(result_queue.get())
+
+            for t in threads:
+                t.join()
+
+        elif run_as == "Pool":
+            from multiprocessing import Pool
+
+            with Pool(processes=workers) as p:
+                if progress_bar:
+                    from tqdm import tqdm
+
+                    with tqdm(total=len(iterables), position=position) as t:
+                        for result in p.map(func, iterables):
+                            results.append(result)
+
+                            t.update()
+                            t.refresh()
+
+                else:
+                    results = list(p.map(func, iterables))
+
+        else:
+            from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+
+            Executor = ProcessPoolExecutor if run_as == "ProcessPool" else ThreadPoolExecutor
+            with Executor(max_workers=workers) as exe:
+                if progress_bar:
+                    from tqdm import tqdm
+
+                    with tqdm(total=len(iterables), position=position) as t:
+                        for result in exe.map(func, iterables):
+                            results.append(result)
+
+                            t.update()
+                            t.refresh()
+
+                else:
+                    results = list(exe.map(func, iterables))
+
+    logger.setLevel(current_loglevel)
 
     return results
 

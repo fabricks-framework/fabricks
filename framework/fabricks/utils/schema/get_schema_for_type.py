@@ -90,4 +90,10 @@ def get_schema_for_type(proptype: Type) -> DataType:  # type: ignore
         fields = [StructField(f.name, get_schema_for_type(f.type)) for f in dataclasses.fields(proptype)]
         return StructType(fields=fields)
 
+    if hasattr(proptype, "__origin__") and proptype.__origin__ == dict:  # noqa E721
+        if len(proptype.__args__) == 2:
+            value_type = proptype.__args__[1]
+            value_schema = get_schema_for_type(value_type)
+            return MapType(StringType(), value_schema)
+
     raise NotImplementedError()

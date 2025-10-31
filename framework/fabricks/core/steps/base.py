@@ -1,15 +1,15 @@
 import logging
-from typing import Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
 from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
-from fabricks.cdc import SCD1
+from fabricks.cdc import NoCDC
 from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import Bronzes, Golds, JobDependency, SchemaDependencies, Silvers, TStep
+from fabricks.core.jobs.base._types import Bronzes, Golds, SchemaDependencies, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
@@ -98,53 +98,66 @@ class BaseStep:
         return self._options
 
     def drop(self):
-        DEFAULT_LOGGER.warning("💣 (drop)", extra={"step": self})
+        DEFAULT_LOGGER.warning("drop", extra={"label": self})
 
         fs = self.database.storage
         assert fs
 
         tmp = fs.joinpath("tmp")
         if tmp.exists():
+            DEFAULT_LOGGER.debug("clean tmp folder", extra={"label": self})
             tmp.rm()
 
         checkpoint = fs.joinpath("checkpoints")
         if checkpoint.exists():
+            DEFAULT_LOGGER.debug("clean checkpoint folder", extra={"label": self})
             checkpoint.rm()
 
         schema = fs.joinpath("schemas")
         if schema.exists():
+            DEFAULT_LOGGER.debug("clean schema folder", extra={"label": self})
             schema.rm()
 
+        DEFAULT_LOGGER.debug("clean fabricks", extra={"label": self})
         for t in ["jobs", "tables", "dependencies", "views"]:
             tbl = Table("fabricks", self.name, t)
             tbl.drop()
 
+        try:
+            SPARK.sql(f"delete from fabricks.steps where step = '{self}'")
+        except Exception:
+            pass
+
         self.database.drop()
 
     def create(self):
-        DEFAULT_LOGGER.info("🌟 (create)", extra={"step": self})
+        DEFAULT_LOGGER.info("create", extra={"label": self})
 
         if not self.runtime.exists():
-            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
+            DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
         else:
             self.update()
 
     def update(self, update_dependencies: Optional[bool] = True, progress_bar: Optional[bool] = False):
         if not self.runtime.exists():
-            DEFAULT_LOGGER.warning(f"{self.name} not found in runtime ({self.runtime})")
+            DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
 
         else:
             if not self.database.exists():
                 self.database.create()
 
-            self.update_jobs()
-            self.create_db_objects()
+            self.update_configurations()
+            errors = self.create_db_objects()
+
+            for e in errors:
+                DEFAULT_LOGGER.exception("fail to create db object", extra={"label": e["job"]}, exc_info=e["error"])
 
             if update_dependencies:
                 self.update_dependencies(progress_bar=progress_bar)
 
             self.update_tables_list()
             self.update_views_list()
+            self.update_steps_list()
 
     def get_dependencies(
         self,
@@ -152,19 +165,8 @@ class BaseStep:
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> Tuple[DataFrame, List[str]]:
-        DEFAULT_LOGGER.debug("get dependencies", extra={"step": self})
-
-        errors = []
-        dependencies: list[JobDependency] = []
-
-        def _get_dependencies(row: Row):
-            job = get_job(step=self.name, job_id=row["job_id"])
-            try:
-                dependencies.extend(job.get_dependencies())
-            except Exception as e:
-                DEFAULT_LOGGER.exception("failed to get dependencies", extra={"job": job})
-                errors.append((job, e))
+    ) -> Tuple[DataFrame, List[Dict]]:
+        DEFAULT_LOGGER.debug("get dependencies", extra={"label": self})
 
         df = self.get_jobs()
 
@@ -176,18 +178,25 @@ class BaseStep:
                 topic = [topic]
 
             where = ", ".join([f"'{t}'" for t in topic])
-            DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"step": self})
+            DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"label": self})
             df = df.where(f"topic in ({where})")
 
         if not df:
             raise ValueError("no jobs found")
 
-        DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-        run_in_parallel(_get_dependencies, df, workers=16, progress_bar=progress_bar)
-        if loglevel:
-            DEFAULT_LOGGER.setLevel(loglevel)
-        else:
-            DEFAULT_LOGGER.setLevel(LOGLEVEL)
+        results = run_in_parallel(
+            _get_dependencies,
+            df,
+            workers=16,
+            progress_bar=progress_bar,
+            logger=DEFAULT_LOGGER,
+            loglevel=logging.CRITICAL,
+        )
+
+        errors = [res for res in results if res.get("error")]
+        dependencies = []
+        for res in [res for res in results if res.get("dependencies")]:
+            dependencies.extend(res.get("dependencies"))
 
         df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)  # type: ignore
         return df, errors
@@ -196,7 +205,7 @@ class BaseStep:
         return read_yaml(self.runtime, root="job", preferred_file_name=topic)
 
     def get_jobs(self, topic: Optional[str] = None) -> DataFrame:
-        DEFAULT_LOGGER.debug("get jobs", extra={"step": self})
+        DEFAULT_LOGGER.debug("get jobs", extra={"label": self})
 
         try:
             conf = get_step_conf(self.name)
@@ -216,21 +225,11 @@ class BaseStep:
             return df
 
         except AssertionError as e:
-            DEFAULT_LOGGER.exception("failed to get jobs", extra={"step": self})
+            DEFAULT_LOGGER.exception("fail to get jobs", extra={"label": self})
             raise e
 
-    def create_db_objects(self, retry: Optional[bool] = True) -> List[str]:
-        DEFAULT_LOGGER.info("create db objects", extra={"step": self})
-
-        errors = []
-
-        def _create_db_object(row: Row):
-            job = get_job(step=self.name, job_id=row["job_id"])
-            try:
-                job.create()
-            except:  # noqa E722
-                DEFAULT_LOGGER.exception("not created", extra={"job": self})
-                errors.append(job)
+    def create_db_objects(self, retry: Optional[bool] = True) -> List[Dict]:
+        DEFAULT_LOGGER.info("create db objects", extra={"label": self})
 
         df = self.get_jobs()
         table_df = self.database.get_tables()
@@ -240,22 +239,29 @@ class BaseStep:
         df = df.join(view_df, "job_id", how="left_anti")
 
         if df:
-            DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-            run_in_parallel(_create_db_object, df, workers=16, progress_bar=True)
-            DEFAULT_LOGGER.setLevel(LOGLEVEL)
+            results = run_in_parallel(
+                _create_db_object,
+                df,
+                workers=16,
+                progress_bar=True,
+                logger=DEFAULT_LOGGER,
+                loglevel=logging.CRITICAL,
+            )
 
         self.update_tables_list()
         self.update_views_list()
 
+        errors = [res for res in results if res.get("error")]
+
         if errors:
             if retry:
-                DEFAULT_LOGGER.warning("retry create jobs", extra={"step": self})
+                DEFAULT_LOGGER.warning("retry to create jobs", extra={"label": self})
                 return self.create_db_objects(retry=False)
 
         return errors
 
     @deprecated("use create_db_objects instead")
-    def create_jobs(self, retry: Optional[bool] = True) -> List[str]:
+    def create_jobs(self, retry: Optional[bool] = True) -> List[Dict]:
         return self.create_db_objects(retry=retry)
 
     @deprecated("use update_configurations instead")
@@ -265,19 +271,19 @@ class BaseStep:
     def update_configurations(self, drop: Optional[bool] = False):
         df = self.get_jobs()
 
-        DEFAULT_LOGGER.info("update configurations", extra={"step": self})
+        DEFAULT_LOGGER.info("update configurations", extra={"label": self})
 
-        scd1 = SCD1("fabricks", self.name, "jobs")
+        cdc = NoCDC("fabricks", self.name, "jobs")
 
         if drop:
-            scd1.table.drop()
-        elif scd1.table.exists():
-            diffs = scd1.get_differences_with_deltatable(df)
-            if diffs:
-                DEFAULT_LOGGER.warning("schema drift detected", extra={"step": self})
-                scd1.table.overwrite_schema(df=df)
+            cdc.table.drop()
+        elif cdc.table.exists():
+            df_diffs = cdc.get_differences_with_deltatable(df)
+            if not df_diffs.isEmpty():
+                DEFAULT_LOGGER.warning("schema drift detected", extra={"label": self})
+                cdc.table.overwrite_schema(df=df)
 
-        scd1.delete_missing(df, keys=["job_id"])
+        cdc.delete_missing(df, keys=["job_id"])
 
     @deprecated("use update_tables_list instead")
     def update_tables(self):
@@ -287,8 +293,8 @@ class BaseStep:
         df = self.database.get_tables()
         df = df.withColumn("job_id", expr("md5(table)"))
 
-        DEFAULT_LOGGER.info("update tables list", extra={"step": self})
-        SCD1("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
+        DEFAULT_LOGGER.info("update tables list", extra={"label": self})
+        NoCDC("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
 
     @deprecated("use update_views_list instead")
     def update_views(self):
@@ -298,8 +304,8 @@ class BaseStep:
         df = self.database.get_views()
         df = df.withColumn("job_id", expr("md5(view)"))
 
-        DEFAULT_LOGGER.info("update views list", extra={"step": self})
-        SCD1("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
+        DEFAULT_LOGGER.info("update views list", extra={"label": self})
+        NoCDC("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
 
     def update_dependencies(
         self,
@@ -307,7 +313,7 @@ class BaseStep:
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> List[str]:
+    ) -> List[Dict]:
         df, errors = self.get_dependencies(
             progress_bar=progress_bar,
             topic=topic,
@@ -316,7 +322,7 @@ class BaseStep:
         )
         df.cache()
 
-        DEFAULT_LOGGER.info("update dependencies", extra={"step": self})
+        DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
 
         update_where = None
 
@@ -327,9 +333,9 @@ class BaseStep:
                 )
 
             if update_where:
-                DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
+                DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"label": self})
 
-            SCD1("fabricks", self.name, "dependencies").delete_missing(
+            NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
                 keys=["dependency_id"],
                 update_where=update_where,
@@ -347,9 +353,9 @@ class BaseStep:
             update_where = (
                 f"""job_id in (select job_id from fabricks.{self.name}_jobs where {where_topic} {where_not_manual})"""
             )
-            DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"step": self})
+            DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"label": self})
 
-            SCD1("fabricks", self.name, "dependencies").delete_missing(
+            NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
                 keys=["dependency_id"],
                 update_where=update_where,
@@ -359,10 +365,6 @@ class BaseStep:
         return errors
 
     def register(self, update: Optional[bool] = False, drop: Optional[bool] = False):
-        def _register(row: Row):
-            job = get_job(step=self.name, topic=row["topic"], item=row["item"])
-            job.register()
-
         if drop:
             SPARK.sql(f"drop database if exists {self.name} cascade ")
             SPARK.sql(f"create database {self.name}")
@@ -378,8 +380,44 @@ class BaseStep:
 
         if df:
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
-            run_in_parallel(_register, df, workers=16, progress_bar=True)
+            run_in_parallel(_register, df, workers=16, progress_bar=True, run_as="Pool")
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
+
+    def update_steps_list(self):
+        order = self.options.get("order", 0)
+        df = SPARK.sql(f"select '{self.expand}' as expand, '{self.name}' as step, '{order}' :: int as `order`")
+
+        NoCDC("fabricks", "steps").delete_missing(df, keys=["step"], update_where=f"step = '{self.name}'")
 
     def __str__(self):
         return self.name
+
+
+# to avoid AttributeError: can't pickle local object
+def _get_dependencies(row: Row):
+    job = get_job(step=row["step"], job_id=row["job_id"])
+    try:
+        return {"job": str(job), "dependencies": job.get_dependencies()}
+    except Exception as e:
+        DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
+        return {"job": str(job), "error": e}
+
+
+def _create_db_object(row: Row):
+    job = get_job(step=row["step"], job_id=row["job_id"])
+    try:
+        job.create()
+        return {"job": str(job)}
+    except Exception as e:  # noqa E722
+        DEFAULT_LOGGER.exception("fail to create db object", extra={"label": job})
+        return {"job": str(job), "error": e}
+
+
+def _register(row: Row):
+    job = get_job(step=row["step"], topic=row["topic"], item=row["item"])
+    try:
+        job.register()
+        return {"job": str(job)}
+    except Exception as e:
+        DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
+        return {"job": str(job), "error": e}

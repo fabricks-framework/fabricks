@@ -6,7 +6,7 @@ from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
 
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, PATHS_RUNTIME, SPARK
-from fabricks.core.jobs.base._types import Modes, TStep
+from fabricks.core.jobs.base._types import AllowedModes, TStep
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.get_job import get_job, get_job_internal
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
@@ -16,7 +16,7 @@ from fabricks.utils.schema import get_schema_for_type
 
 
 class GenericOptions(TypedDict):
-    mode: Modes
+    mode: AllowedModes
 
 
 @dataclass

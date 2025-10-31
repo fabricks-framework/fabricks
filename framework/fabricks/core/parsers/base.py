@@ -6,7 +6,7 @@ from pyspark.sql.functions import col, expr, from_json, lit
 from pyspark.sql.types import MapType, StringType
 
 from fabricks.core.parsers._types import ParserOptions
-from fabricks.core.utils import clean
+from fabricks.core.parsers.utils import clean
 from fabricks.utils.path import Path
 from fabricks.utils.read.read import read
 
@@ -26,7 +26,7 @@ class BaseParser(ABC):
             "__timestamp",
             expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"),
         )
-        df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
+        df = df.withColumn("__timestamp", expr("try_to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
         df = df.drop("__split", "__split_size")
 
         return df

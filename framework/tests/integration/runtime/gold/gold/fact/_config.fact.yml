@@ -23,6 +23,10 @@
     options:
       mode: complete
       notebook: true
+    invoker_options:
+      run:
+        - arguments:
+            arg1: '1'
 - job:
     step: gold
     topic: fact
@@ -90,3 +94,55 @@
     tags: [test]
     options:
       mode: append
+- job:
+    step: gold
+    topic: fact
+    item: optimize_vacuum
+    options:
+      mode: complete
+      optimize: true
+      vacuum: true
+- job:
+    step: gold
+    topic: fact
+    item: no_drop
+    options:
+      mode: memory
+      no_drop: true
+- job:
+    step: gold
+    topic: fact
+    item: masker_and_commenter
+    options:
+      mode: complete
+    table_options:
+      masks:
+        dummy: "mask_dummy"
+      comments:
+        dummy: "This is a dummy comment"
+        less_dummy: "This is a less dummy comment"
+        dummier: "This is a dummier comment"
+- job:
+    step: gold
+    topic: fact
+    item: foreign_keys
+    options:
+      mode: complete
+    table_options:
+      primary_key:
+        pk_foreign_keys: 
+          keys: [dummy]
+      foreign_keys:
+        fk_dummy: 
+          keys: [dummy, less_dummy, dummier]
+          reference: gold.fact_primary_key
+- job:
+    step: gold
+    topic: fact
+    item: primary_key
+    options:
+      mode: complete
+    table_options:
+      primary_key:
+        pk_primary_key: 
+          keys: [dummy, less_dummy, dummier]

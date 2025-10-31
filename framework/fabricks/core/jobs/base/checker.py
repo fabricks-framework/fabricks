@@ -20,7 +20,7 @@ class Checker(Generator):
 
     def _check(self, position: Literal["pre_run", "post_run"]):
         if self.options.check.get(position):
-            DEFAULT_LOGGER.debug(f"{position.replace('_', ' ')} check", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"check {position}", extra={"label": self})
 
             p = self.paths.runtime.append(f".{position}.sql")
             assert p.exists(), f"{position} check not found ({p})"
@@ -31,9 +31,9 @@ class Checker(Generator):
 
             if not fail_df.isEmpty():
                 for row in fail_df.collect():
-                    DEFAULT_LOGGER.error(
-                        f"{position.replace('_', ' ')} check failed due to {row['__message']}",
-                        extra={"job": self},
+                    DEFAULT_LOGGER.warning(
+                        f"check {position} failed due to {row['__message']}",
+                        extra={"label": self},
                     )
 
                 if position == "pre_run":
@@ -44,8 +44,8 @@ class Checker(Generator):
             elif not warning_df.isEmpty():
                 for row in warning_df.collect():
                     DEFAULT_LOGGER.warning(
-                        f"{position.replace('_', ' ')} check failed due to {row['__message']}",
-                        extra={"job": self},
+                        f"check {position} failed due to {row['__message']}",
+                        extra={"label": self},
                     )
 
                 if position == "pre_run":
@@ -59,19 +59,20 @@ class Checker(Generator):
         count_must_equal = self.options.check.get("count_must_equal")
 
         if min_rows or max_rows or count_must_equal:
-            DEFAULT_LOGGER.debug("extra post run check", extra={"job": self})
-
             df = self.spark.sql(f"select count(*) from {self}")
             rows = df.collect()[0][0]
             if min_rows:
+                DEFAULT_LOGGER.debug("check min rows", extra={"label": self})
                 if rows < min_rows:
                     raise PostRunCheckException(f"min rows check failed ({rows} < {min_rows})", dataframe=df)
 
             if max_rows:
+                DEFAULT_LOGGER.debug("check max rows", extra={"label": self})
                 if rows > max_rows:
                     raise PostRunCheckException(f"max rows check failed ({rows} > {max_rows})", dataframe=df)
 
             if count_must_equal:
+                DEFAULT_LOGGER.debug("check count must equal", extra={"label": self})
                 equals_rows = self.spark.read.table(count_must_equal).count()
                 if rows != equals_rows:
                     raise PostRunCheckException(
@@ -81,7 +82,7 @@ class Checker(Generator):
 
     def _check_duplicate_in_column(self, column: str):
         if column in self.table.columns:
-            DEFAULT_LOGGER.debug(f"duplicate {column} check", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"check duplicate in {column}", extra={"label": self})
 
             cols = [column]
 
@@ -108,7 +109,7 @@ class Checker(Generator):
                 )
 
         else:
-            DEFAULT_LOGGER.debug(f"{column} not found", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"could not find {column}", extra={"label": self})
 
     def check_duplicate_key(self):
         self._check_duplicate_in_column("__key")
@@ -121,7 +122,7 @@ class Checker(Generator):
 
     def check_skip_run(self):
         if self.options.check.get("skip"):
-            DEFAULT_LOGGER.debug("skip check", extra={"job": self})
+            DEFAULT_LOGGER.debug("check if run should be skipped", extra={"label": self})
 
             p = self.paths.runtime.append(".skip.sql")
             assert p.exists(), "skip check not found"
@@ -132,7 +133,7 @@ class Checker(Generator):
                 for row in skip_df.collect():
                     DEFAULT_LOGGER.warning(
                         f"skip run due to {row['__message']}",
-                        extra={"job": self},
+                        extra={"label": self},
                     )
 
                 raise SkipRunCheckWarning(row["__message"], dataframe=df)

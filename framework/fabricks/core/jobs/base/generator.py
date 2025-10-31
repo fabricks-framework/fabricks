@@ -4,7 +4,7 @@ from typing import Optional, Sequence, Union, cast
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
 
-from fabricks.cdc import SCD1
+from fabricks.cdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import JobDependency
 from fabricks.core.jobs.base.configurator import Configurator
@@ -14,17 +14,16 @@ from fabricks.metastore.view import create_or_replace_global_temp_view
 
 class Generator(Configurator):
     def update_dependencies(self):
-        DEFAULT_LOGGER.info("update dependencies", extra={"job": self})
+        DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
 
         deps = self.get_dependencies()
         if deps:
             df = self.spark.createDataFrame([d.model_dump() for d in deps])  # type: ignore
-            scd1 = SCD1("fabricks", self.step, "dependencies")
-            scd1.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
+            cdc = NoCDC("fabricks", self.step, "dependencies")
+            cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
 
     @abstractmethod
-    def get_dependencies(self) -> Sequence[JobDependency]:
-        raise NotImplementedError()
+    def get_dependencies(self) -> Sequence[JobDependency]: ...
 
     def rm(self):
         """
@@ -33,7 +32,7 @@ class Generator(Configurator):
         If the schema folder exists, it will be deleted. The method also calls the `rm_checkpoints` method to remove any checkpoints associated with the generator.
         """
         if self.paths.schema.exists():
-            DEFAULT_LOGGER.info("delete schema folder", extra={"job": self})
+            DEFAULT_LOGGER.info("delete schema folder", extra={"label": self})
             self.paths.schema.rm()
         self.rm_checkpoints()
 
@@ -44,7 +43,7 @@ class Generator(Configurator):
         This method checks if the checkpoints folder exists and deletes it if it does.
         """
         if self.paths.checkpoints.exists():
-            DEFAULT_LOGGER.info("delete checkpoints folder", extra={"job": self})
+            DEFAULT_LOGGER.info("delete checkpoints folder", extra={"label": self})
             self.paths.checkpoints.rm()
 
     def rm_commit(self, id: Union[str, int]):
@@ -59,7 +58,7 @@ class Generator(Configurator):
         """
         path = self.paths.commits.joinpath(str(id))
         if path.exists():
-            DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"job": self})
+            DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": self})
             path.rm()
 
     def truncate(self):
@@ -72,7 +71,7 @@ class Generator(Configurator):
         Returns:
             None
         """
-        DEFAULT_LOGGER.warning("truncate", extra={"job": self})
+        DEFAULT_LOGGER.warning("truncate", extra={"label": self})
         self.rm()
         if self.persist:
             self.table.truncate()
@@ -92,6 +91,9 @@ class Generator(Configurator):
         Returns:
                 None
         """
+        if self.options.job.get("no_drop"):
+            raise ValueError("no_drop is set, cannot drop the job")
+
         try:
             row = self.spark.sql(
                 f"""
@@ -106,7 +108,7 @@ class Generator(Configurator):
                 """
             ).collect()[0]
             if cast(int, row.count) > 0:
-                DEFAULT_LOGGER.warning(f"{row.count} children found", extra={"job": self, "content": row.children})
+                DEFAULT_LOGGER.warning(f"{row.count} children found", extra={"label": self, "content": row.children})
 
         except Exception:
             pass
@@ -162,7 +164,7 @@ class Generator(Configurator):
         Raises:
             NotImplementedError: This method is meant to be overridden by subclasses.
         """
-        raise NotImplementedError()
+        ...
 
     def create_table(self):
         def _create_table(df: DataFrame, batch: Optional[int] = 0):
@@ -185,12 +187,29 @@ class Generator(Configurator):
             elif step_powerbi is not None:
                 powerbi = step_powerbi
 
-            if powerbi:
+            # first take from job options, then from step options
+            job_masks = self.options.table.get("masks", None)
+            step_masks = self.step_conf.get("table_options", {}).get("masks", None)
+            if job_masks is not None:
+                masks = job_masks
+            elif step_masks is not None:
+                masks = step_masks
+            else:
+                masks = None
+
+            maximum_compatibility = self.options.table.get_boolean("maximum_compatibility", False)
+
+            if maximum_compatibility:
+                default_properties = {
+                    "delta.minReaderVersion": "1",
+                    "delta.minWriterVersion": "7",
+                    "delta.columnMapping.mode": "none",
+                }
+            elif powerbi:
                 default_properties = {
                     "delta.columnMapping.mode": "name",
                     "delta.minReaderVersion": "2",
                     "delta.minWriterVersion": "5",
-                    "fabricks.last_version": "0",
                 }
             else:
                 default_properties = {
@@ -200,8 +219,9 @@ class Generator(Configurator):
                     "delta.minReaderVersion": "2",
                     "delta.minWriterVersion": "5",
                     "delta.feature.timestampNtz": "supported",
-                    "fabricks.last_version": "0",
                 }
+
+            default_properties["fabricks.last_version"] = "0"
 
             if "__identity" in df.columns:
                 identity = False
@@ -234,9 +254,7 @@ class Generator(Configurator):
                             cluster_by.append("__hash")
 
                     if not cluster_by:
-                        DEFAULT_LOGGER.warning(
-                            "liquid clustering disabled (no clustering columns found)", extra={"job": self}
-                        )
+                        DEFAULT_LOGGER.debug("could not determine clustering column", extra={"label": self})
                         liquid_clustering = False
                         cluster_by = None
 
@@ -257,9 +275,13 @@ class Generator(Configurator):
             if properties is None:
                 properties = default_properties
 
+            primary_key = self.options.table.get_dict("primary_key")
+            foreign_keys = self.options.table.get_dict("foreign_keys")
+            comments = self.options.table.get_dict("comments")
+
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
-            global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 == 2"))
+            global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 == 2"), job=self)
             sql = f"select * from {global_temp_view}"
 
             self.cdc.create_table(
@@ -270,11 +292,17 @@ class Generator(Configurator):
                 partitioning=partitioning,
                 partition_by=partition_by,
                 properties=properties,
+                masks=masks,
+                primary_key=primary_key,
+                foreign_keys=foreign_keys,
+                comments=comments,
                 **cdc_options,
             )
 
         if not self.table.exists():
-            df = self.get_data(self.stream)
+            DEFAULT_LOGGER.debug("create table", extra={"label": self})
+
+            df = self.get_data(stream=self.stream, schema_only=True)
             if df:
                 if self.stream:
                     # add dummy stream to be sure that the writeStream will start
@@ -310,6 +338,9 @@ class Generator(Configurator):
                 if comment:
                     self.table.add_comment(comment=comment)
 
+        else:
+            DEFAULT_LOGGER.debug("table exists, skip creation", extra={"label": self})
+
     def _update_schema(
         self,
         df: Optional[DataFrame] = None,
@@ -328,7 +359,7 @@ class Generator(Configurator):
                 _update_schema(df)
 
             else:
-                df = self.get_data(self.stream)
+                df = self.get_data(stream=self.stream, schema_only=True)
                 assert df is not None
                 df = self.base_transform(df)
 
@@ -360,7 +391,7 @@ class Generator(Configurator):
 
     def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
         if df is None:
-            df = self.get_data(self.stream)
+            df = self.get_data(stream=self.stream)
             assert df is not None
             df = self.base_transform(df)
 
@@ -370,7 +401,7 @@ class Generator(Configurator):
 
     def get_schema_differences(self, df: Optional[DataFrame] = None) -> Optional[Sequence[SchemaDiff]]:
         if df is None:
-            df = self.get_data(self.stream)
+            df = self.get_data(stream=self.stream)
             assert df is not None
             df = self.base_transform(df)
 
@@ -413,4 +444,4 @@ class Generator(Configurator):
                 else:
                     self.table.enable_liquid_clustering(auto=True)
         else:
-            DEFAULT_LOGGER.debug("liquid clustering not enabled", extra={"job": self})
+            DEFAULT_LOGGER.debug("could not enable liquid clustering", extra={"label": self})

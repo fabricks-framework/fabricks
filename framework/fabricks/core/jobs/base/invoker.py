@@ -7,13 +7,17 @@ from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
-from fabricks.core.schedules import get_schedules
+from fabricks.core.jobs.get_schedule import get_schedule
 from fabricks.utils.path import Path
 
 
 class Invoker(Checker):
-    def invoke(self, schedule: Optional[str] = None):
-        self._invoke_job(position="run", schedule=schedule)
+    def invoke(self, schedule: Optional[str] = None, **kwargs):
+        return self._invoke_job(
+            position="run",
+            schedule=schedule,
+            **kwargs,
+        )  # kwargs and return needed for get_data in gold
 
     def invoke_pre_run(self, schedule: Optional[str] = None):
         self._invoke_job(position="pre_run", schedule=schedule)
@@ -23,30 +27,50 @@ class Invoker(Checker):
         self._invoke_job(position="post_run", schedule=schedule)
         self._invoke_step(position="post_run", schedule=schedule)
 
-    def _invoke_job(self, position: str, schedule: Optional[str] = None):
+    def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
         invokers = self.options.invokers.get_list(position)
+        if position == "run":
+            invokers = invokers if len(invokers) > 0 else [{}]  # run must work even without run invoker options
 
         errors = []
 
         if invokers:
-            for i in invokers:
-                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"job": self})
+            for i, invoker in enumerate(invokers):
+                DEFAULT_LOGGER.debug(f"invoke ({i}, {position})", extra={"label": self})
                 try:
-                    notebook = i.get("notebook")
-                    assert notebook, "notebook mandatory"
-                    path = PATH_RUNTIME.joinpath(notebook)
+                    path = kwargs.get("path")
+                    if path is None:
+                        notebook = invoker.get("notebook")
+                        assert notebook, "notebook mandatory"
+                        path = PATH_RUNTIME.joinpath(notebook)
 
-                    arguments = i.get("arguments") or {}
-                    timeout = i.get("timeout")
+                    assert path is not None, "path mandatory"
 
-                    self._run_notebook(
-                        path=path,
-                        arguments=arguments,
-                        timeout=timeout,
-                        schedule=schedule,
-                    )
+                    arguments = invoker.get("arguments") or {}
+                    timeout = invoker.get("timeout")
+
+                    schema_only = kwargs.get("schema_only")
+                    if schema_only is not None:
+                        arguments["schema_only"] = schema_only
+
+                    if len(invokers) == 1 and position == "run":
+                        return self._run_notebook(
+                            path=path,
+                            arguments=arguments,
+                            timeout=timeout,
+                            schedule=schedule,
+                        )
+                    else:
+                        self._run_notebook(
+                            path=path,
+                            arguments=arguments,
+                            timeout=timeout,
+                            schedule=schedule,
+                        )
 
                 except Exception as e:
+                    DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self})
+
                     if position == "pre_run":
                         errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
@@ -63,15 +87,15 @@ class Invoker(Checker):
         errors = []
 
         if invokers:
-            for i in invokers:
-                DEFAULT_LOGGER.info(f"{position}-invoke", extra={"step": self.step})
+            for i, invoker in enumerate(invokers):
+                DEFAULT_LOGGER.debug(f"invoke by step ({i}, {position})", extra={"label": self})
                 try:
-                    notebook = i.get("notebook")
+                    notebook = invoker.get("notebook")
                     assert notebook, "notebook mandatory"
                     path = PATH_RUNTIME.joinpath(notebook)
 
-                    arguments = i.get("arguments", {})
-                    timeout = i.get("timeout")
+                    arguments = invoker.get("arguments", {})
+                    timeout = invoker.get("timeout")
 
                     self._run_notebook(
                         path=path,
@@ -81,6 +105,8 @@ class Invoker(Checker):
                     )
 
                 except Exception as e:
+                    DEFAULT_LOGGER.warning(f"fail to run invoker by step ({i}, {position})", extra={"label": self})
+
                     if position == "pre_run":
                         errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
@@ -125,9 +151,7 @@ class Invoker(Checker):
 
         variables = None
         if schedule is not None:
-            variables = (
-                next(s for s in get_schedules() if s.get("name") == schedule).get("options", {}).get("variables", {})
-            )
+            variables = get_schedule(name=schedule).get("options", {}).get("variables", {})
 
         if variables is None:
             variables = {}
@@ -135,7 +159,7 @@ class Invoker(Checker):
         if arguments is None:
             arguments = {}
 
-        dbutils.notebook.run(
+        return dbutils.notebook.run(
             path=path.get_notebook_path(),  # type: ignore
             timeout_seconds=timeout,  # type: ignore
             arguments={  # type: ignore
@@ -154,7 +178,7 @@ class Invoker(Checker):
         extenders = self.options.extenders
         for e in extenders:
             name = e.get("extender")
-            DEFAULT_LOGGER.info(f"calling {name}", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"extend ({name})", extra={"label": self})
             arguments = e.get("arguments") or {}
 
             extender = get_extender(name)
@@ -168,7 +192,7 @@ class Invoker(Checker):
         extenders = self.step_conf.get("extender_options", {})
         for e in extenders:
             name = e.get("extender")
-            DEFAULT_LOGGER.info(f"calling {name}", extra={"step": self.step})
+            DEFAULT_LOGGER.debug(f"extend by step ({name})", extra={"label": self})
             arguments = e.get("arguments", {})
 
             extender = get_extender(name)

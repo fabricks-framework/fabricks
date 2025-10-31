@@ -1,0 +1,28 @@
+{% import 'macros/hash.sql.jinja' as h -%}
+
+__current as (
+    select
+        {% for i in intermediates %}
+            {% if i == "__timestamp" %}
+                {% if add_timestamp %} cast('0001-01-01' as timestamp) as __timestamp,
+                {% elif cdc == "nocdc" %} __timestamp,
+                {% elif cdc == "scd1" %} __timestamp,
+                {% elif cdc == "scd2" %} __valid_from as __timestamp,
+                {% endif %}
+            {% elif i == "__operation" %}
+                {% if has_no_data %} 'delete' as __operation, {% else %} 'current' as __operation, {% endif %}
+            {% elif i == "__hash" %}
+                {% if add_hash %} {{ h.add_hash(fields=hashes) }} as __hash, {% else %} __hash, {% endif %}
+            {% elif i == "__key" %}
+                {% if add_key %} {{ h.add_key(fields=keys) }} as __key, {% else %} __key, {% endif %}
+            {% else %} `{{ i }}`,
+            {% endif %}
+        {% endfor %}
+    from {{ tgt }} t
+    where
+        true
+        {% if cdc == "scd2" %} and __is_current {% endif %}
+        {% if cdc == "scd1" %} {% if soft_delete %} and __is_current {% endif %} {% endif %}
+        {% if sources %} and ({{ sources }}) {% endif %}
+        {% if update_where %} and {{ update_where }} {% endif %}
+),

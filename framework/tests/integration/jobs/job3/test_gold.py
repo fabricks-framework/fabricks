@@ -2,9 +2,10 @@ from logging import ERROR
 
 import pytest
 
+from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
-from tests.integration.compare import compare_gold_to_expected
+from tests.integration.compare import assert_dfs_equal, compare_gold_to_expected
 
 DEFAULT_LOGGER.setLevel(ERROR)
 
@@ -49,3 +50,37 @@ def test_gold_scd2_update():
 def test_gold_scd2_memory():
     j = get_job(step="gold", topic="scd2", item="memory")
     compare_gold_to_expected(j, "scd2", 11)
+
+
+@pytest.mark.order(327)
+def test_gold_nocdc_update():
+    j = get_job(step="gold", topic="nocdc", item="update")
+    j.run()
+
+    df_a = SPARK.sql(
+        """
+        select
+          `id`,
+          valid_from,
+          valid_to,
+          `value`,
+          monarch
+        from
+          gold.nocdc_update
+        """
+    )
+
+    df_b = SPARK.sql(
+        """
+        select
+          `id`,
+          `__valid_from` as valid_from,
+          `__valid_to` as valid_to,
+          `value`,
+          monarch
+        from
+          expected.gold_scd2_job11
+        """
+    )
+
+    assert_dfs_equal(df_a, df_b)

@@ -26,7 +26,7 @@ class Processor(Invoker):
         f = self.options.job.get("filter_where")
 
         if f:
-            DEFAULT_LOGGER.debug(f"filter where {f}", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
             df = df.where(f"{f}")
 
         return df
@@ -46,7 +46,7 @@ class Processor(Invoker):
             assert key, "key not found"
 
             for col in encrypted_columns:
-                DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"label": self})
                 df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
 
         return df
@@ -73,16 +73,16 @@ class Processor(Invoker):
                 assert self.paths.commits.joinpath(last_batch).exists()
 
     def _for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
-        DEFAULT_LOGGER.debug("for each batch starts", extra={"job": self})
+        DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
         if batch is not None:
-            DEFAULT_LOGGER.debug(f"batch {batch}", extra={"job": self})
+            DEFAULT_LOGGER.debug(f"batch {batch}", extra={"label": self})
 
         df = self.base_transform(df)
 
         diffs = self.get_schema_differences(df)
         if diffs:
             if self.schema_drift or kwargs.get("reload", False):
-                DEFAULT_LOGGER.warning("schema drifted", extra={"job": self, "diffs": diffs})
+                DEFAULT_LOGGER.warning("schema drifted", extra={"label": self, "diffs": diffs})
                 self.update_schema(df=df)
 
             else:
@@ -98,24 +98,24 @@ class Processor(Invoker):
             self.table.set_property("fabricks.last_batch", batch)
 
         self.table.create_restore_point()
-        DEFAULT_LOGGER.debug("for each batch ends", extra={"job": self})
+        DEFAULT_LOGGER.debug("end (for each batch)", extra={"label": self})
 
     def for_each_run(self, **kwargs):
-        DEFAULT_LOGGER.debug("for each run starts", extra={"job": self})
+        DEFAULT_LOGGER.debug("start (for each run)", extra={"label": self})
 
         if self.virtual:
             self.create_or_replace_view()
 
         elif self.persist:
-            assert self.table.exists(), "delta table not found"
+            assert self.table.registered, f"{self} is not registered"
 
-            df = self.get_data(self.stream)
+            df = self.get_data(stream=self.stream, **kwargs)
             assert df is not None, "no data"
 
             partial(self._for_each_batch, **kwargs)
 
             if self.stream:
-                DEFAULT_LOGGER.debug("stream enabled", extra={"job": self})
+                DEFAULT_LOGGER.debug("use streaming", extra={"label": self})
                 write_stream(
                     df,
                     checkpoints_path=self.paths.checkpoints,
@@ -128,7 +128,7 @@ class Processor(Invoker):
         else:
             raise ValueError(f"{self.mode} - not allowed")
 
-        DEFAULT_LOGGER.debug("for each run ends", extra={"job": self})
+        DEFAULT_LOGGER.debug("end (for each run)", extra={"label": self})
 
     def run(
         self,
@@ -137,6 +137,9 @@ class Processor(Invoker):
         schedule_id: Optional[str] = None,
         invoke: Optional[bool] = True,
         reload: Optional[bool] = None,
+        vacuum: Optional[bool] = None,
+        optimize: Optional[bool] = None,
+        compute_statistics: Optional[bool] = None,
     ):
         """
         Run the processor.
@@ -154,18 +157,19 @@ class Processor(Invoker):
         if self.persist:
             last_version = self.table.get_property("fabricks.last_version")
             if last_version is not None:
-                DEFAULT_LOGGER.debug(f"last version {last_version}", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"last version {last_version}", extra={"label": self})
             else:
                 last_version = str(self.table.last_version)
 
             last_batch = self.table.get_property("fabricks.last_batch")
             if last_batch is not None:
-                DEFAULT_LOGGER.debug(f"last batch {last_batch}", extra={"job": self})
+                DEFAULT_LOGGER.debug(f"last batch {last_batch}", extra={"label": self})
 
         try:
-            DEFAULT_LOGGER.info("run starts", extra={"job": self})
+            DEFAULT_LOGGER.info("start (run)", extra={"label": self})
+
             if reload:
-                DEFAULT_LOGGER.debug("force reload", extra={"job": self})
+                DEFAULT_LOGGER.debug("force reload", extra={"label": self})
 
             if invoke:
                 self.invoke_pre_run(schedule=schedule)
@@ -193,40 +197,53 @@ class Processor(Invoker):
             if exception:
                 raise exception
 
-            DEFAULT_LOGGER.info("run ends", extra={"job": self})
+            if vacuum is None:
+                vacuum = self.options.job.get("vacuum", False)
+            if optimize is None:
+                optimize = self.options.job.get("optimize", False)
+            if compute_statistics is None:
+                compute_statistics = self.options.job.get("compute_statistics", False)
+
+            if vacuum or optimize or compute_statistics:
+                self.maintain(
+                    compute_statistics=compute_statistics,
+                    optimize=optimize,
+                    vacuum=vacuum,
+                )
+
+            DEFAULT_LOGGER.info("end (run)", extra={"label": self})
 
         except SkipRunCheckWarning as e:
-            DEFAULT_LOGGER.warning("skip run", extra={"job": self})
+            DEFAULT_LOGGER.warning("skip run", extra={"label": self})
             raise e
 
         except (PreRunCheckWarning, PostRunCheckWarning) as e:
-            DEFAULT_LOGGER.warning("could not pass warning check", extra={"job": self})
+            DEFAULT_LOGGER.warning("fail to pass warning check", extra={"label": self})
             raise e
 
         except (PreRunInvokeException, PostRunInvokeException) as e:
-            DEFAULT_LOGGER.exception("could not run invoker", extra={"job": self})
+            DEFAULT_LOGGER.exception("fail to run invoker", extra={"label": self})
             raise e
 
         except (PreRunCheckException, PostRunCheckException) as e:
-            DEFAULT_LOGGER.exception("could not pass check", extra={"job": self})
+            DEFAULT_LOGGER.exception("fail to pass check", extra={"label": self})
             self.restore(last_version, last_batch)
             raise e
 
         except AssertionError as e:
-            DEFAULT_LOGGER.exception("could not run", extra={"job": self})
+            DEFAULT_LOGGER.exception("fail to run", extra={"label": self})
             self.restore(last_version, last_batch)
             raise e
 
         except Exception as e:
             if not self.stream or not retry:
-                DEFAULT_LOGGER.exception("could not run", extra={"job": self})
+                DEFAULT_LOGGER.exception("fail to run", extra={"label": self})
                 self.restore(last_version, last_batch)
                 raise e
 
             else:
-                DEFAULT_LOGGER.warning("retry to run", extra={"job": self})
-                self.run(retry=False, schedule_id=schedule_id)
+                DEFAULT_LOGGER.warning("retry to run", extra={"label": self})
+                self.run(retry=False, schedule_id=schedule_id, schedule=schedule)
 
     @abstractmethod
-    def overwrite(self):
-        raise NotImplementedError()
+    def overwrite(self) -> None: ...

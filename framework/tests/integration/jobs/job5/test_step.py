@@ -14,24 +14,24 @@ def test_step_gold():
     step = get_step("gold")
 
     deps, error = step.get_dependencies(loglevel=ERROR)
-    assert deps.count() == 29, f"{deps.count()} dependencies <> 29"
+    assert deps.count() == 32, f"{deps.count()} dependencies <> 32"
     assert len(error) == 0, f"{error} error(s)"
 
     step.update_dependencies(loglevel=ERROR)
     df = SPARK.sql("select * from fabricks.gold_dependencies")
-    assert df.count() == 29, f"{df.count()} dependencies <> 29"
+    assert df.count() == 32, f"{df.count()} dependencies <> 32"
 
     deps, error = step.get_dependencies(topic="scd1", loglevel=ERROR)
-    assert deps.count() == 5, f"{deps.count()} dependencies <> 5"
+    assert deps.count() == 6, f"{deps.count()} dependencies <> 6"
     assert len(error) == 0, f"{error} error(s)"
 
     step.update_dependencies(topic="scd1", loglevel=ERROR)
     df = SPARK.sql("select * from fabricks.gold_dependencies")
-    assert df.count() == 29, f"{df.count()} dependencies <> 29"
+    assert df.count() == 32, f"{df.count()} dependencies <> 32"
 
     step.update_dependencies(topic="it_does_not_exist", loglevel=ERROR)
     df = SPARK.sql("select * from fabricks.gold_dependencies")
-    assert df.count() == 29, f"{df.count()} dependencies <> 29"
+    assert df.count() == 32, f"{df.count()} dependencies <> 32"
 
 
 @pytest.mark.order(502)

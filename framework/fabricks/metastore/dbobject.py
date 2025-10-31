@@ -29,7 +29,7 @@ class DbObject:
         return f"{self.database.name}.{self.name}"
 
     @property
-    def is_registered(self) -> bool:
+    def registered(self) -> bool:
         try:
             df = self.spark.sql(f"show tables in {self.database}").where(f"tableName == '{self.name}'")
             return not df.isEmpty()
@@ -51,15 +51,15 @@ class DbObject:
         if self.is_view:
             return False
         else:
-            return self.is_registered
+            return self.registered
 
     def drop(self):
         if self.is_view:
-            DEFAULT_LOGGER.warning("drop view from metastore", extra={"job": self})
+            DEFAULT_LOGGER.warning("drop view from metastore", extra={"label": self})
             self.spark.sql(f"drop view if exists {self}")
 
         elif self.is_table:
-            DEFAULT_LOGGER.warning("drop table from metastore", extra={"job": self})
+            DEFAULT_LOGGER.warning("drop table from metastore", extra={"label": self})
             self.spark.sql(f"drop table if exists {self}")
 
     def __str__(self):
