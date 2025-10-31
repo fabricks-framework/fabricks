@@ -1095,11 +1095,13 @@
 </tr>
 </tbody>
 </table>
-<p>Operational guidance
-- Use <code>type: manual</code> when you need explicit control over table DDL or persistence.
-- When using SCD patterns, ensure your inputs include the expected <code>__</code> CDC columns.
-- Use <code>update_where</code> to scope merges and avoid unintended updates.
-- For heavy operations, configure <code>table_options</code> (clustering, partitioning, properties) and <code>spark_options</code> appropriately.</p>
+<p>Operational guidance</p>
+<ul>
+<li>Use <code>type: manual</code> when you need explicit control over table DDL or persistence.</li>
+<li>When using SCD patterns, ensure your inputs include the expected <code>__</code> CDC columns.</li>
+<li>Use <code>update_where</code> to scope merges and avoid unintended updates.</li>
+<li>For heavy operations, configure <code>table_options</code> (clustering, partitioning, properties) and <code>spark_options</code> appropriately.</li>
+</ul>
 <p><strong>Examples</strong></p>
 <p>Append example
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job</span><span class="p">:</span>
