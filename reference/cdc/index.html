@@ -1452,7 +1452,7 @@
 <li>Purpose: mark a full or partial snapshot boundary so missing keys can be treated as deletes and present keys as upserts as needed.</li>
 <li>Auto-injection: when a Gold SCD job runs in <code>mode:</code>update<code>` and your SQL does not provide</code>__operation<code>, Fabricks injects</code>__operation = 'reload'` and turns on rectification.</li>
 <li><strong>Silver</strong> behavior:<ul>
-<li>If a batch contains <code>'reload'</code> after the targetâ€™s max timestamp, Silver enables rectification logic.</li>
+<li>If a batch contains <code>'reload'</code> after the target's max timestamp, Silver enables rectification logic.</li>
 <li>In <code>mode:</code>latest<code>`,</code>'reload'` is not allowed and will be rejected.</li>
 </ul>
 </li>
@@ -1465,10 +1465,13 @@
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>In Silver <code>mode:</code>latest<code>, `'reload'` is forbidden and will be rejected. 
-Use `mode: `update</code> or <code>mode:</code>append<code>` instead if you need reconciliation behavior.</code>n<code>n!!! tip
-You generally do not need to emit</code>'reload'<code>manually in Gold SCD</code>update<code>jobs; it is injected for you when</code>__operation<code>is missing. 
-For explicit control, you can produce rows with</code>__operation = 'reload'` at the snapshot timestamp.</p>
+Use `mode: `update</code> or <code>mode:</code>append<code>` instead if you need reconciliation behavior.</code></p>
 </div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+</div>
+<p>You generally do not need to emit <code>'reload'</code> manually in Gold SCD <code>update</code> jobs; it is injected for you when <code>__operation</code> is missing. 
+  For explicit control, you can produce rows with <code>__operation = 'reload'</code> at the snapshot timestamp.</p>
 <hr />
 <h2 id="scd2-details">SCD2 details<a class="headerlink" href="#scd2-details" title="Permanent link">&para;</a></h2>
 <p><em>Behavior</em> (see <code>merge/</code>scd2<code>.sql.jinja</code>):</p>
@@ -1486,7 +1489,7 @@ For explicit control, you can produce rows with</code>__operation = 'reload'` at
 <li><code>'reload'</code> marks a reconciliation boundary; Fabricks derives concrete actions (e.g., closing current rows, inserting new ones, deleting missing keys) across that boundary.</li>
 <li>If you omit <code>__operation</code> in Gold SCD <code>update</code> jobs, Fabricks injects <code>'reload'</code> and enables rectification automatically.</li>
 <li>In Silver:<ul>
-<li>Presence of <code>'reload'</code> (beyond targetâ€™s max timestamp) enables rectification.</li>
+<li>Presence of <code>'reload'</code> (beyond target's max timestamp) enables rectification.</li>
 <li><code>'reload'</code> is forbidden in <code>mode:</code>latest``.</li>
 </ul>
 </li>
