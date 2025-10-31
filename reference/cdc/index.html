@@ -1449,8 +1449,8 @@
 <h2 id="reload-operation">Reload operation<a class="headerlink" href="#reload-operation" title="Permanent link">&para;</a></h2>
 <p><code>'reload'</code> is a CDC input operation used as a reconciliation boundary. It is not a direct MERGE action; instead, it signals Fabricks to rectify the target table using the supplied snapshot at that timestamp.</p>
 <ul>
-<li>Purpose: mark a full or partial snapshot boundary so missing keys can be treated as deletes and present keys as upserts as needed.</li>
-<li>Auto-injection: when a Gold SCD job runs in <code>mode:</code>update<code>` and your SQL does not provide</code>__operation<code>, Fabricks injects</code>__operation = 'reload'` and turns on rectification.</li>
+<li><strong>Purpose</strong>: mark a full or partial snapshot boundary so missing keys can be treated as deletes and present keys as upserts as needed.</li>
+<li><strong>Auto-injection</strong>: when a Gold SCD job runs in <code>mode:</code>update<code>` and your SQL does not provide</code>__operation<code>, Fabricks injects</code>__operation = 'reload'` and turns on rectification.</li>
 <li><strong>Silver</strong> behavior:<ul>
 <li>If a batch contains <code>'reload'</code> after the target's max timestamp, Silver enables rectification logic.</li>
 <li>In <code>mode:</code>latest<code>`,</code>'reload'` is not allowed and will be rejected.</li>
