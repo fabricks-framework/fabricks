@@ -22,7 +22,8 @@ Python >=3.9,<4 is recommended; align with your Databricks LTS runtime.
 
 ## 2) Point Fabricks to your runtime
 
-Fabricks discovers its runtime via either environment variables or `[tool.fabricks]` in your `pyproject.toml`. The core lookup logic is implemented in `fabricks/context/runtime.py`.
+Fabricks discovers its runtime via either environment variables or `[tool.fabricks]` in your `pyproject.toml`. 
+The core lookup logic is implemented in `fabricks/context/runtime.py`.
 
 *Option A*: Configure via `pyproject.toml` (preferred for repo-managed projects):
 ```toml
@@ -42,12 +43,16 @@ config = "path/to/your/runtime/fabricks/conf.fabricks.yml"  # main runtime YAML
 # FABRICKS_CONFIG: full path to your main conf.fabricks.yml (if not set, Fabricks tries to infer a conf.uc.<orgId>.yml)
 # FABRICKS_NOTEBOOKS: optional helper notebook path
 # FABRICKS_IS_JOB_CONFIG_FROM_YAML, FABRICKS_LOGLEVEL, FABRICKS_IS_DEBUGMODE: optional toggles
-```Example\non Databricks (Cluster → Configuration → Advanced options → Environment variables):
+```
+
+Example on Databricks (Cluster → Configuration → Advanced options → Environment variables):
 ```
 FABRICKS_RUNTIME=/Workspace/Repos/your/repo/examples/runtime
 FABRICKS_CONFIG=/Workspace/Repos/your/repo/examples/runtime/fabricks/conf.fabricks.yml
 FABRICKS_LOGLEVEL=INFO
-```You\ncan also set env vars in a notebook before importing Fabricks:
+```
+
+You can also set env vars in a notebook before importing Fabricks:
 ```python
 import os
 os.environ["FABRICKS_RUNTIME"] = "/Workspace/Repos/your/repo/examples/runtime"
@@ -86,8 +91,9 @@ Create a new notebook (Python) named initialize and include:
 from fabricks.core.scripts.`armageddon` import `armageddon`
 # Run for all default steps from your runtime config:
 `armageddon`()
-```Attach\nthe Fabricks library to the cluster before running the notebook.
+```
 
+Attach the Fabricks library to the cluster before running the notebook.
 ## Troubleshooting
 
 - Missing env/config:

@@ -10,7 +10,7 @@ This page explains the supported CDC strategies, required inputs, merge semantic
 
 | Strategy | Description                                                                                   | Convenience views                  |
 |---------|-----------------------------------------------------------------------------------------------|-------------------------------------|
-| ``nocdc`` | No CDC; writes the result as-is.                                                              | â€"                                   |
+| ``nocdc`` | No CDC; writes the result as-is.                                                              | ~                                   |
 | ``scd1``  | Tracks current vs deleted; maintains flags `__is_current`, `__is_deleted`.                    | `{table}__current` in Silver        |
 | ``scd2``  | Slowly Changing Dimension Type 2: validity windows with `__valid_from`, `__valid_to`.         | `{table}__current` in Silver        |
 
@@ -39,8 +39,9 @@ Set the CDC strategy in the job options:
       mode: `update`
       change_data_capture: `scd1`
       parents: [bronze.demo_source]
-```For\nGold:
+```
 
+For Gold:
 ```yaml
 - job:
     step: gold
@@ -49,7 +50,9 @@ Set the CDC strategy in the job options:
     options:
       mode: `update`
       change_data_capture: `scd2`
-```Supported\nvalues: ``nocdc``, ``scd1``, ``scd2``.
+```
+
+Supported values: ``nocdc``, ``scd1``, ``scd2``.
 
 ---
 
@@ -88,8 +91,8 @@ Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The co
 
 - `Merger.get_merge_query` renders `templates/merge.sql.jinja` for the selected `change_data_capture` strategy.
 - The framework computes internal columns such as:
-    - `__merge_condition` â€" one of `'upsert' | 'delete' | '`update`' | 'insert'` depending on strategy and inputs.
-    - `__merge_key` â€" a synthetic key used to join against the target.
+    - `__merge_condition` ~ one of `'upsert' | 'delete' | '`update`' | 'insert'` depending on strategy and inputs.
+    - `__merge_key` ~ a synthetic key used to join against the target.
 - You usually do not set these internal fields manually; they are derived from your inputs (`__key`, `__operation`, `__timestamp`) and job options.
 
 *Join keys*
@@ -226,7 +229,7 @@ from silver.monarch_scd1__current
       change_data_capture: `scd2`
 ```
 
-*Note*: Credit â€" [Temporal Snapshot Fact Table (SQLBits 2012)](https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table). Recommended to watch to understand SCD2 snapshot-based modeling concepts. 
+*Note*: Credit ~ [Temporal Snapshot Fact Table (SQLBits 2012)](https://sqlbits.com/sessions/event2012/Temporal_Snapshot_Fact_Table). Recommended to watch to understand SCD2 snapshot-based modeling concepts. 
 
 *Slides*: [Temporal Snapshot Fact Tables (slides)](https://www.slideshare.net/slideshow/temporal-snapshot-fact-tables/15900670#45)
 
@@ -280,7 +283,9 @@ Silver SCD1 with duplicates handling
       change_data_capture: `scd1`
       order_duplicate_by:
         order_by: desc
-```Gold\nSCD1 `update` with incremental timestamp
+```
+
+Gold SCD1 `update` with incremental timestamp
 
 ```yaml
 - job:

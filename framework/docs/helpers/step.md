@@ -28,7 +28,8 @@ s.update_dependencies(progress_bar=False)
 
 ## Helper Notebook
 
-```python\n# Databricks notebook source
+```python
+# Databricks notebook source
 import os
 from multiprocessing import Pool
 from typing import Callable, List

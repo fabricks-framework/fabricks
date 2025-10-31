@@ -19,7 +19,9 @@ Enable checks per job using `check_options`:
       max_rows: 10000       # maximum expected row count
       count_must_equal: fabricks.dummy  # enforce row count equality with another table
       skip: false           # skip all checks if true
-```Supported\noptions:
+```
+
+Supported options:
 - pre_run/post_run: Run checks around the execution of the job.
 - min_rows/max_rows: Row count bounds.
 - count_must_equal: Assert row count equals a reference table.
@@ -46,13 +48,16 @@ check_options:
   pre_run: true
   min_rows: 10
   max_rows: 100000
-```Equality\nagainst a reference:
+```
+Equality against a reference:
 ```yaml
 check_options:
   post_run: true
   count_must_equal: analytics.dim_customer
-```Mixing\nbuilt-ins with SQL contracts:
-- Use `pre_run`/`post_run` to enable contract execution and add your contract SQL files (see â€œSQL contractsâ€ below).
+```
+
+Mixing built-ins with SQL contracts:
+- Use `pre_run`/`post_run` to enable contract execution and add your contract SQL files (see “SQL contracts” below).
 ## SQL contracts
 
 When `pre_run` or `post_run` checks are enabled, provide SQL files named after the table or job:

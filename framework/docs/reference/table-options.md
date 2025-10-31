@@ -15,7 +15,7 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 - **comment**: Table comment/description.
 - **calculated_columns**: Map of computed columns populated on write.
 - **retention_days**: Table VACUUM retention period (days).
-- **powerbi**: true to apply Power BIâ€"specific metadata (if supported).
+- **powerbi**: true to apply Power BI~specific metadata (if supported).
 
 ## Option matrix (types | defaults | compatibility)
 
@@ -23,16 +23,16 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 |--------------------|------------------------|---------|-----------------------------------|----------------------------------------------------------------------------------------|
 | identity           | boolean                | false   | `append`, `complete`, `update`          | Creates a Delta identity column on table create.                                       |
 | liquid_clustering  | boolean                | false   | `append`, `complete`, `update`          | Requires Databricks runtime support.                                                   |
-| partition_by       | array[string]          | â€"       | `append`, `complete`, `update`          | Low-cardinality columns recommended.                                                   |
-| zorder_by          | array[string]          | â€"       | `append`, `complete`, `update`          | Improves data skipping on frequently filtered columns.                                 |
-| cluster_by         | array[string]          | â€"       | `append`, `complete`, `update`          | Logical clustering; materialization depends on runtime features.                        |
-| bloomfilter_by     | array[string]          | â€"       | `append`, `complete`, `update`          | Use selectively for point-lookups.                                                     |
-| constraints        | map[string,string]     | â€"       | `append`, `complete`, `update`          | E.g., `primary key(__key)`.                                                            |
-| properties         | map[string,string]     | â€"       | `append`, `complete`, `update`          | Arbitrary Delta table properties.                                                      |
-| comment            | string                 | â€"       | `append`, `complete`, `update`          | Table description.                                                                     |
-| calculated_columns | map[string,string]     | â€"       | `append`, `complete`, `update`          | Computed at write time.                                                                |
-| retention_days     | integer                | â€"       | `append`, `complete`, `update`          | VACUUM retention (days).                                                               |
-| powerbi            | boolean                | false   | `append`, `complete`, `update`          | Applies Power BIâ€"specific metadata where supported.                                    |
+| partition_by       | array[string]          | ~       | `append`, `complete`, `update`          | Low-cardinality columns recommended.                                                   |
+| zorder_by          | array[string]          | ~       | `append`, `complete`, `update`          | Improves data skipping on frequently filtered columns.                                 |
+| cluster_by         | array[string]          | ~       | `append`, `complete`, `update`          | Logical clustering; materialization depends on runtime features.                        |
+| bloomfilter_by     | array[string]          | ~       | `append`, `complete`, `update`          | Use selectively for point-lookups.                                                     |
+| constraints        | map[string,string]     | ~       | `append`, `complete`, `update`          | E.g., `primary key(__key)`.                                                            |
+| properties         | map[string,string]     | ~       | `append`, `complete`, `update`          | Arbitrary Delta table properties.                                                      |
+| comment            | string                 | ~       | `append`, `complete`, `update`          | Table description.                                                                     |
+| calculated_columns | map[string,string]     | ~       | `append`, `complete`, `update`          | Computed at write time.                                                                |
+| retention_days     | integer                | ~       | `append`, `complete`, `update`          | VACUUM retention (days).                                                               |
+| powerbi            | boolean                | false   | `append`, `complete`, `update`          | Applies Power BI~specific metadata where supported.                                    |
 
 Notes:
 - table_options are ignored in `memory` mode (view-only).

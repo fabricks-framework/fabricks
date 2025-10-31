@@ -59,7 +59,9 @@ Create a file `monarch.sql` in your runtime `views` directory:
 select *
 from fabricks.jobs j
 where j.topic = 'monarch'
-```This\nwill create a view called `fabricks.monarch`. You can then reference this view in a schedule.
+```
+
+This will create a view called `fabricks.monarch`. You can then reference this view in a schedule.
 
 ---
 
@@ -150,18 +152,21 @@ Filter by step:
 select *
 from fabricks.jobs j
 where j.step = 'gold'
-```Filter\nby a set of topics:
+```
+Filter by a set of topics:
 ```sql title:core_topics.sql
 select *
 from fabricks.jobs j
 where j.topic in ('sales', 'finance', 'marketing')
-```Filter\nby both step and topic pattern:
+```
+Filter by both step and topic pattern:
 ```sql title:gold_sales_like.sql
 select *
 from fabricks.jobs j
 where j.step = 'gold'
   and j.topic like 'sales_%'
-```Curate\nexplicit jobs:
+```
+Curate explicit jobs:
 ```sql title:curated_selection.sql
 select *
 from fabricks.jobs j

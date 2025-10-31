@@ -26,7 +26,9 @@ from fabricks.core.extenders import extender
 @extender(name="add_country")
 def add_country(df: DataFrame, **kwargs) -> DataFrame:
     return df.withColumn("country", lit(kwargs.get("country", "Unknown")))
-```In\na job:
+```
+
+In a job:
 
 ```yaml
 - job:
@@ -62,7 +64,9 @@ def addition(spark: SparkSession):
     def _add(a: int, b: int) -> int:
         return a + b
     spark.udf.`register`("udf_addition", _add)
-```Using\nbuilt-in helpers and a custom UDF in SQL:
+```
+
+Using built-in helpers and a custom UDF in SQL:
 
 ```sql
 select
@@ -111,7 +115,9 @@ Reference in a job:
       file_format: parquet
       read_options:
         mergeSchema: true
-```Example\nimplementation:
+```
+
+Example implementation:
 
 ```python
 from pyspark.sql import DataFrame, SparkSession

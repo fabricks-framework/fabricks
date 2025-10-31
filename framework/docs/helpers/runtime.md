@@ -99,7 +99,9 @@ gold:
     path_options:
       runtime: src/steps/gold
       storage: abfss://gold@youraccount.blob.core.windows.net
-```Key\nconcepts:
+```
+
+Key concepts:
 - options: global project config (secrets, timeouts, worker count)
 - path_options: shared storage/config paths
 - spark_options: default Spark SQL options applied for jobs
@@ -134,7 +136,9 @@ Schedules group jobs and define step order. Place schedules in your runtime (com
       variables:
         var1: 1
         var2: 2
-```Pass\nthe schedule name when running the shipped notebooks or the Databricks bundle job.
+```
+
+Pass the schedule name when running the shipped notebooks or the Databricks bundle job.
 
 ## Typical runtime structure
 
@@ -187,7 +191,9 @@ examples/runtime/
       hello_world.sql
   semantic/
     _config.example.yml
-```Key\nfiles and purpose
+```
+
+Key concepts:
 - `fabricks/conf.fabricks.yml`: project-level configuration (secret scope, timeouts, workers, storage paths, schedules path)
 - `fabricks/schedules/schedule.yml`: minimal schedule to run the gold step
 - `gold/gold/_config.example.yml`: defines a simple Gold job
