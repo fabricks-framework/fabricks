@@ -43,6 +43,7 @@ Common options (summary)
 | `timeout` | Per-job timeout seconds (overrides step defaults). |
 
 Operational guidance
+
 - Use `type: manual` when you need explicit control over table DDL or persistence.
 - When using SCD patterns, ensure your inputs include the expected `__` CDC columns.
 - Use `update_where` to scope merges and avoid unintended updates.

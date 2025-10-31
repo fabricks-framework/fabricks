@@ -44,9 +44,9 @@ CDC strategies
 
 Common options (summary)
 
-- type: default or manual. manual disables Fabricks auto-DDL/DML; you manage persistence.
-- mode: One of memory, append, latest, update, combine (required).
-- change_data_capture: nocdc, scd1, or scd2 (optional).
+- type: `default` or `manual`. manual disables Fabricks auto-DDL/DML; you manage persistence.
+- mode: One of `memory`, `append`, `latest`, `update`, `combine` (required).
+- change_data_capture: `nocdc`, `scd1`, or `scd2` (optional).
 - parents: List upstream job identifiers (recommended for lineage and ordering).
 - keys: Business keys used for deduplication and downstream CDC (recommended where available).
 - deduplicate: Boolean to drop duplicates within the batch.
