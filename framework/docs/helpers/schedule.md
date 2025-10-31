@@ -18,7 +18,7 @@ Typical use cases:
 
 - Schedule views (frameworkâ€'generated):
   - For each `schedule` defined in your runtime YAML, Fabricks can generate a companion view named `fabricks.<schedule_name>_schedule`.
-  - A schedule view selects `j.*` from `fabricks.jobs` and applies optional filters from the scheduleâ€™s options (`view`, `steps`, `tag`), excluding manual jobs.
+  - A schedule view selects `j.*` from `fabricks.jobs` and applies optional filters from the schedule's options (`view`, `steps`, `tag`), excluding manual jobs.
 
 Both kinds of views are useful: data views define job subsets; schedule views expose the final, resolved set for each schedule.
 
@@ -30,7 +30,7 @@ Both kinds of views are useful: data views define job subsets; schedule views ex
 - Data views: Your SQL selects a subset from `fabricks.jobs` (recommended: `select *`).
 - Schedules:
   - In `schedule.yml`, you can set `options.view: <data_view_name>`.
-  - Fabricks resolves the scheduleâ€™s membership via the data view (and optional `steps` / `tag` filters).
+  - Fabricks resolves the schedule's membership via the data view (and optional `steps` / `tag` filters).
   - Fabricks can also materialize a schedule view `fabricks.<schedule_name>_schedule` for inspection and tooling.
 
 ---

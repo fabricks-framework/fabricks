@@ -174,7 +174,7 @@ from silver.monarch_scd1__current
 - Purpose: mark a full or partial snapshot boundary so missing keys can be treated as deletes and present keys as upserts as needed.
 - Auto-injection: when a Gold SCD job runs in `mode: `update`` and your SQL does not provide `__operation`, Fabricks injects `__operation = 'reload'` and turns on rectification.
 - **Silver** behavior:
-      - If a batch contains `'reload'` after the targetâ€™s max timestamp, Silver enables rectification logic.
+      - If a batch contains `'reload'` after the target's max timestamp, Silver enables rectification logic.
       - In `mode: `latest``, `'reload'` is not allowed and will be rejected.
 - **Gold** behavior:
       - Passing `reload=True` to a Gold job run triggers a full ``complete`` write for that run.
@@ -182,9 +182,11 @@ from silver.monarch_scd1__current
 
 !!! warning
     In Silver `mode: `latest``, `'reload'` is forbidden and will be rejected. 
-    Use `mode: `update`` or `mode: `append`` instead if you need reconciliation behavior.`n`n!!! tip
-    You generally do not need to emit `'reload'` manually in Gold SCD `update` jobs; it is injected for you when `__operation` is missing. 
-    For explicit control, you can produce rows with `__operation = 'reload'` at the snapshot timestamp.
+    Use `mode: `update`` or `mode: `append`` instead if you need reconciliation behavior.`
+
+!!! tip
+  You generally do not need to emit `'reload'` manually in Gold SCD `update` jobs; it is injected for you when `__operation` is missing. 
+  For explicit control, you can produce rows with `__operation = 'reload'` at the snapshot timestamp.
 
 ---
 
@@ -205,7 +207,7 @@ from silver.monarch_scd1__current
 - `'reload'` marks a reconciliation boundary; Fabricks derives concrete actions (e.g., closing current rows, inserting new ones, deleting missing keys) across that boundary.
 - If you omit `__operation` in Gold SCD `update` jobs, Fabricks injects `'reload'` and enables rectification automatically.
 - In Silver:
-    - Presence of `'reload'` (beyond targetâ€™s max timestamp) enables rectification.
+    - Presence of `'reload'` (beyond target's max timestamp) enables rectification.
     - `'reload'` is forbidden in `mode: `latest``.
 
 *Optional features*:
