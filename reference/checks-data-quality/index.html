@@ -254,7 +254,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../steps/bronze/" class="md-tabs__link">
+        <a href="../../steps/bronze.md" class="md-tabs__link">
           
   
   
@@ -534,7 +534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/bronze/" class="md-nav__link">
+      <a href="../../steps/bronze.md" class="md-nav__link">
         
   
   
@@ -557,7 +557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/silver/" class="md-nav__link">
+      <a href="../../steps/silver.md" class="md-nav__link">
         
   
   
@@ -580,7 +580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/gold/" class="md-nav__link">
+      <a href="../../steps/gold.md" class="md-nav__link">
         
   
   
@@ -748,6 +748,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#catalog-of-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Catalog of checks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Catalog of checks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sql-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      SQL contracts
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#behavior-and-rollback" class="md-nav__link">
     <span class="md-ellipsis">
       Behavior and rollback
@@ -766,7 +799,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
+  <a href="#examples_1" class="md-nav__link">
     <span class="md-ellipsis">
       Examples
     </span>
@@ -1056,6 +1089,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#catalog-of-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Catalog of checks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Catalog of checks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sql-contracts" class="md-nav__link">
+    <span class="md-ellipsis">
+      SQL contracts
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#behavior-and-rollback" class="md-nav__link">
     <span class="md-ellipsis">
       Behavior and rollback
@@ -1074,7 +1140,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
+  <a href="#examples_1" class="md-nav__link">
     <span class="md-ellipsis">
       Examples
     </span>
@@ -1126,58 +1192,103 @@
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">max_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000</span><span class="w">       </span><span class="c1"># maximum expected row count</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">count_must_equal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fabricks.dummy</span><span class="w">  </span><span class="c1"># enforce row count equality with another table</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">skip</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">           </span><span class="c1"># skip all checks if true</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="nt">```Supported\noptions</span><span class="p">:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">pre_run/post_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run checks around the execution of the job.</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">min_rows/max_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Row count bounds.</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">count_must_equal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Assert row count equals a reference table.</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">skip</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Disable checks for this job.</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1">## Catalog of checks</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="l l-Scalar l-Scalar-Plain">These are the built-in switches you can use in `check_options`. Built-in checks evaluate simple properties of the dataset and will fail the job on violation. Use SQL contracts when you need richer logic or to emit warnings instead of hard failures.</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="p p-Indicator">|</span><span class="err"> Name              | Type                | Default | Required | Description                                                  | Failure behavior                                      |</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="p p-Indicator">|</span><span class="err">-------------------|---------------------|---------|----------|--------------------------------------------------------------|-------------------------------------------------------|</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="nt">| pre_run           | boolean             | false   | no       | Run SQL contracts and built-in checks before the write.      | Contract</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">__action` controls outcome.                |</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="nt">| post_run          | boolean             | false   | no       | Run SQL contracts and built-in checks after the write.       | Contract</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">__action` controls outcome.                |</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="p p-Indicator">|</span><span class="err"> min_rows          | integer             | unset   | no       | Minimum expected row count of the dataset being written.     | Fail if `count &lt; min_rows`.                           |</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="p p-Indicator">|</span><span class="err"> max_rows          | integer             | unset   | no       | Maximum allowed row count of the dataset being written.      | Fail if `count &gt; max_rows`.                           |</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="p p-Indicator">|</span><span class="err"> count_must_equal  | string (table/view) | unset   | no       | Require row count to equal a reference table or view.        | Fail if counts differ.                                |</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="p p-Indicator">|</span><span class="err"> skip              | boolean             | false   | no       | Disable all checks for this job.                             | No checks executed.                                   |</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="c1">### Examples</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="nt">Bounds only</span><span class="p">:</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="err">```</span><span class="l l-Scalar l-Scalar-Plain">yaml</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="nt">check_options</span><span class="p">:</span>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="w">  </span><span class="nt">pre_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a><span class="w">  </span><span class="nt">min_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="w">  </span><span class="nt">max_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100000</span>
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a><span class="nt">```Equality\nagainst a reference</span><span class="p">:</span>
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a><span class="err">```</span><span class="l l-Scalar l-Scalar-Plain">yaml</span>
-</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a><span class="nt">check_options</span><span class="p">:</span>
-</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="w">  </span><span class="nt">post_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a><span class="w">  </span><span class="nt">count_must_equal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analytics.dim_customer</span>
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a><span class="nt">```Mixing\nbuilt-ins with SQL contracts</span><span class="p">:</span>
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Use `pre_run`/`post_run` to enable contract execution and add your contract SQL files (see â€œSQL contractsâ€ below).</span>
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a><span class="c1">## SQL contracts</span>
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="l l-Scalar l-Scalar-Plain">When `pre_run` or `post_run` checks are enabled, provide SQL files named after the table or job</span><span class="p p-Indicator">:</span>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">table_name.pre_run.sql`</span>
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="err">`</span><span class="l l-Scalar l-Scalar-Plain">table_name.post_run.sql`</span>
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a><span class="nt">Each SQL must return</span><span class="p">:</span>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">`__action`</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">either `&#39;fail&#39;` or `&#39;warning&#39;`</span>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">`__message`</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">human-readable message</span>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="nt">Example</span><span class="p">:</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a><span class="err">```</span><span class="l l-Scalar l-Scalar-Plain">sql</span>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="l l-Scalar l-Scalar-Plain">-- fail.pre_run.sql</span>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a><span class="l l-Scalar l-Scalar-Plain">select &quot;fail&quot; as __action, &quot;Please don&#39;t fail on me :(&quot; as __message;</span>
-</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a><span class="l l-Scalar l-Scalar-Plain">-- warning.post_run.sql</span>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="l l-Scalar l-Scalar-Plain">select &quot;warning&quot; as __action, &quot;I want you to warn me !&quot; as __message;</span>
+</span></code></pre></div>
+<p>Supported options:
+- pre_run/post_run: Run checks around the execution of the job.
+- min_rows/max_rows: Row count bounds.
+- count_must_equal: Assert row count equals a reference table.
+- skip: Disable checks for this job.</p>
+<h2 id="catalog-of-checks">Catalog of checks<a class="headerlink" href="#catalog-of-checks" title="Permanent link">&para;</a></h2>
+<p>These are the built-in switches you can use in <code>check_options</code>. Built-in checks evaluate simple properties of the dataset and will fail the job on violation. Use SQL contracts when you need richer logic or to emit warnings instead of hard failures.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Default</th>
+<th>Required</th>
+<th>Description</th>
+<th>Failure behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pre_run</td>
+<td>boolean</td>
+<td>false</td>
+<td>no</td>
+<td>Run SQL contracts and built-in checks before the write.</td>
+<td>Contract: <code>__action</code> controls outcome.</td>
+</tr>
+<tr>
+<td>post_run</td>
+<td>boolean</td>
+<td>false</td>
+<td>no</td>
+<td>Run SQL contracts and built-in checks after the write.</td>
+<td>Contract: <code>__action</code> controls outcome.</td>
+</tr>
+<tr>
+<td>min_rows</td>
+<td>integer</td>
+<td>unset</td>
+<td>no</td>
+<td>Minimum expected row count of the dataset being written.</td>
+<td>Fail if <code>count &lt; min_rows</code>.</td>
+</tr>
+<tr>
+<td>max_rows</td>
+<td>integer</td>
+<td>unset</td>
+<td>no</td>
+<td>Maximum allowed row count of the dataset being written.</td>
+<td>Fail if <code>count &gt; max_rows</code>.</td>
+</tr>
+<tr>
+<td>count_must_equal</td>
+<td>string (table/view)</td>
+<td>unset</td>
+<td>no</td>
+<td>Require row count to equal a reference table or view.</td>
+<td>Fail if counts differ.</td>
+</tr>
+<tr>
+<td>skip</td>
+<td>boolean</td>
+<td>false</td>
+<td>no</td>
+<td>Disable all checks for this job.</td>
+<td>No checks executed.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<p>Bounds only:
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">check_options</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">pre_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">min_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">max_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100000</span>
+</span></code></pre></div>
+Equality against a reference:
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">check_options</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">post_run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">count_must_equal</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analytics.dim_customer</span>
+</span></code></pre></div></p>
+<p>Mixing built-ins with SQL contracts:
+- Use <code>pre_run</code>/<code>post_run</code> to enable contract execution and add your contract SQL files (see “SQL contracts” below).</p>
+<h2 id="sql-contracts">SQL contracts<a class="headerlink" href="#sql-contracts" title="Permanent link">&para;</a></h2>
+<p>When <code>pre_run</code> or <code>post_run</code> checks are enabled, provide SQL files named after the table or job:
+- <code>table_name.pre_run.sql</code>
+- <code>table_name.post_run.sql</code></p>
+<p>Each SQL must return:
+- <code>__action</code>: either <code>'fail'</code> or <code>'warning'</code>
+- <code>__message</code>: human-readable message</p>
+<p>Example:</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">-- fail.pre_run.sql</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">select</span><span class="w"> </span><span class="ss">&quot;fail&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;Please don&#39;t fail on me :(&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1">-- warning.post_run.sql</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">select</span><span class="w"> </span><span class="ss">&quot;warning&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;I want you to warn me !&quot;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
 </span></code></pre></div>
 <h2 id="behavior-and-rollback">Behavior and rollback<a class="headerlink" href="#behavior-and-rollback" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1200,17 +1311,17 @@
 <li>When <code>__action = 'warning'</code>, the job continues and exits with code 0. Ensure your CI surfaces logs so warnings are visible in pull requests.</li>
 </ul>
 <p>Example contract outputs (see â€œSQL contractsâ€):
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">-- Fails the job and rolls back (physical tables)</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">select</span><span class="w"> </span><span class="s1">&#39;fail&#39;</span><span class="w">    </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Row count below threshold&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1">-- Logs a warning; job continues</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">select</span><span class="w"> </span><span class="s1">&#39;warning&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Null rate above target&#39;</span><span class="w">    </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1">-- Fails the job and rolls back (physical tables)</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">select</span><span class="w"> </span><span class="s1">&#39;fail&#39;</span><span class="w">    </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Row count below threshold&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1">-- Logs a warning; job continues</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="k">select</span><span class="w"> </span><span class="s1">&#39;warning&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">__action</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Null rate above target&#39;</span><span class="w">    </span><span class="k">as</span><span class="w"> </span><span class="n">__message</span><span class="p">;</span>
 </span></code></pre></div></p>
 <p>Tips:
 - Prefer <code>post_run</code> for checks that must consider the final persisted state.
 - Use built-in bounds for simple invariants; reserve contracts for multi-table logic and nuanced policies.
 - If you need to gate on warnings, implement a small CI step that scans logs for known warning markers and decides policy for your repository.</p>
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h2 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Working scenarios are available in the sample runtime:</li>
 <li>Browsable: <a href="../../helpers/runtime/">Sample runtime</a></li>
@@ -1219,7 +1330,7 @@
 </ul>
 <h2 id="related-topics">Related topics<a class="headerlink" href="#related-topics" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Steps: <a href="../../steps/bronze/">Bronze</a> | <a href="../../steps/silver/">Silver</a> | <a href="../../steps/gold/">Gold</a></li>
+<li>Steps: <a href="../steps/bronze.md">Bronze</a> | <a href="../steps/silver.md">Silver</a> | <a href="../steps/gold.md">Gold</a></li>
 <li>Table properties and physical layout: <a href="../table-options/">Table Options</a></li>
 <li>Custom logic integration: <a href="../extenders-udfs-parsers/">Extenders, UDFs &amp; Parsers</a></li>
 </ul>

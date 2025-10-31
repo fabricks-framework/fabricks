@@ -252,7 +252,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../steps/bronze/" class="md-tabs__link">
+        <a href="../../steps/bronze.md" class="md-tabs__link">
           
   
   
@@ -532,7 +532,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/bronze/" class="md-nav__link">
+      <a href="../../steps/bronze.md" class="md-nav__link">
         
   
   
@@ -555,7 +555,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/silver/" class="md-nav__link">
+      <a href="../../steps/silver.md" class="md-nav__link">
         
   
   
@@ -578,7 +578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../steps/gold/" class="md-nav__link">
+      <a href="../../steps/gold.md" class="md-nav__link">
         
   
   
@@ -985,6 +985,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#using-a-data-view-in-a-schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using a data view in a schedule
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#schedule-views-generated" class="md-nav__link">
     <span class="md-ellipsis">
       Schedule views (generated)
@@ -1093,6 +1102,15 @@
   <a href="#where-to-put-data-view-sql-files" class="md-nav__link">
     <span class="md-ellipsis">
       Where to put data view SQL files
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-a-data-view-in-a-schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using a data view in a schedule
     </span>
   </a>
   
@@ -1215,21 +1233,18 @@ path_options:
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>select *
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>from fabricks.jobs j
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>where j.topic = &#39;monarch&#39;
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>```This\nwill create a view called `fabricks.monarch`. You can then reference this view in a schedule.
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>---
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>## Using a data view in a schedule
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>```yaml
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>- schedule:
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    name: run-monarch
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    options:
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>      view: monarch            # join to fabricks.monarch on job_id
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>      steps: [silver, gold]    # optional: restrict to these steps
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>      tag: nightly             # optional: only jobs having this tag
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>      # variables, timeouts, etc. can still be provided as needed
 </span></code></pre></div></p>
+<p>This will create a view called <code>fabricks.monarch</code>. You can then reference this view in a schedule.</p>
+<hr />
+<h2 id="using-a-data-view-in-a-schedule">Using a data view in a schedule<a class="headerlink" href="#using-a-data-view-in-a-schedule" title="Permanent link">&para;</a></h2>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">schedule</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">run-monarch</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">options</span><span class="p">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span><span class="nt">view</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monarch</span><span class="w">            </span><span class="c1"># join to fabricks.monarch on job_id</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">steps</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">silver</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">gold</span><span class="p p-Indicator">]</span><span class="w">    </span><span class="c1"># optional: restrict to these steps</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nightly</span><span class="w">             </span><span class="c1"># optional: only jobs having this tag</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="c1"># variables, timeouts, etc. can still be provided as needed</span>
+</span></code></pre></div>
 <p>Behavior:
 - Fabricks loads all jobs returned by <code>fabricks.monarch</code> and further filters by <code>steps</code> and <code>tag</code> if provided.
 - Scheduleâ€'level options like <code>variables</code>, <code>timeouts</code>, etc., still apply to execution.
@@ -1237,24 +1252,24 @@ path_options:
 <hr />
 <h2 id="schedule-views-generated">Schedule views (generated)<a class="headerlink" href="#schedule-views-generated" title="Permanent link">&para;</a></h2>
 <p>For each schedule, Fabricks can generate a companion SQL view named <code>fabricks.&lt;schedule_name&gt;_schedule</code> that reflects the resolved membership. The core SQL shape (simplified) is:</p>
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">create</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="k">replace</span><span class="w"> </span><span class="k">view</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="o">&lt;</span><span class="n">schedule_name</span><span class="o">&gt;</span><span class="n">_schedule</span><span class="w"> </span><span class="k">as</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">select</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="o">*</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">from</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="n">jobs</span><span class="w"> </span><span class="n">j</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="cm">/* optional: if options.view is provided */</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">inner</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="o">&lt;</span><span class="k">options</span><span class="p">.</span><span class="k">view</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="n">job_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">job_id</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="k">where</span><span class="w"> </span><span class="k">true</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="cm">/* optional: if options.steps is provided */</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="k">and</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="n">step</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;bronze&#39;</span><span class="p">,</span><span class="s1">&#39;silver&#39;</span><span class="p">,</span><span class="s1">&#39;gold&#39;</span><span class="w"> </span><span class="cm">/* ... */</span><span class="p">)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="cm">/* optional: if options.tag is provided (array of tags on the job) */</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="k">and</span><span class="w"> </span><span class="n">array_contains</span><span class="p">(</span><span class="n">j</span><span class="p">.</span><span class="n">tags</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&lt;tag&gt;&#39;</span><span class="p">)</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="k">and</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="k">type</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;manual&#39;</span><span class="p">);</span>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">create</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="k">replace</span><span class="w"> </span><span class="k">view</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="o">&lt;</span><span class="n">schedule_name</span><span class="o">&gt;</span><span class="n">_schedule</span><span class="w"> </span><span class="k">as</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">select</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="o">*</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">from</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="n">jobs</span><span class="w"> </span><span class="n">j</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="cm">/* optional: if options.view is provided */</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="k">inner</span><span class="w"> </span><span class="k">join</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="o">&lt;</span><span class="k">options</span><span class="p">.</span><span class="k">view</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="n">job_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">job_id</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="k">where</span><span class="w"> </span><span class="k">true</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="cm">/* optional: if options.steps is provided */</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="k">and</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="n">step</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;bronze&#39;</span><span class="p">,</span><span class="s1">&#39;silver&#39;</span><span class="p">,</span><span class="s1">&#39;gold&#39;</span><span class="w"> </span><span class="cm">/* ... */</span><span class="p">)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="cm">/* optional: if options.tag is provided (array of tags on the job) */</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="k">and</span><span class="w"> </span><span class="n">array_contains</span><span class="p">(</span><span class="n">j</span><span class="p">.</span><span class="n">tags</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&lt;tag&gt;&#39;</span><span class="p">)</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="k">and</span><span class="w"> </span><span class="n">j</span><span class="p">.</span><span class="k">type</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;manual&#39;</span><span class="p">);</span>
 </span></code></pre></div>
 <p>Notes:
 - The inner join requires the data view to expose <code>job_id</code>. Returning <code>j.*</code> from <code>fabricks.jobs</code> guarantees this.
 - Manual jobs are excluded from schedule views by design.</p>
 <p>Quick validation:
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">select</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="n">run</span><span class="o">-</span><span class="n">monarch_schedule</span><span class="p">;</span><span class="w">         </span><span class="c1">-- schedule membership size</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">select</span><span class="w"> </span><span class="n">step</span><span class="p">,</span><span class="w"> </span><span class="n">topic</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="n">run</span><span class="o">-</span><span class="n">monarch_schedule</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">select</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="n">run</span><span class="o">-</span><span class="n">monarch_schedule</span><span class="p">;</span><span class="w">         </span><span class="c1">-- schedule membership size</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">select</span><span class="w"> </span><span class="n">step</span><span class="p">,</span><span class="w"> </span><span class="n">topic</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">fabricks</span><span class="p">.</span><span class="n">run</span><span class="o">-</span><span class="n">monarch_schedule</span><span class="w"> </span><span class="k">limit</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
 </span></code></pre></div></p>
 <hr />
 <h2 id="registration-and-lifecycle">Registration and lifecycle<a class="headerlink" href="#registration-and-lifecycle" title="Permanent link">&para;</a></h2>
@@ -1262,24 +1277,24 @@ path_options:
 <ul>
 <li>
 <p>Data views (from <code>.sql</code> files under <code>path_options.views</code>):
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.views</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">create_or_replace_view</span><span class="p">,</span>   <span class="c1"># single data view by name</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">create_or_replace_views</span><span class="p">,</span>  <span class="c1"># all data views under PATH_VIEWS</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">)</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">create_or_replace_view</span><span class="p">(</span><span class="s2">&quot;monarch&quot;</span><span class="p">)</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">create_or_replace_views</span><span class="p">()</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.views</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">create_or_replace_view</span><span class="p">,</span>   <span class="c1"># single data view by name</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">create_or_replace_views</span><span class="p">,</span>  <span class="c1"># all data views under PATH_VIEWS</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">create_or_replace_view</span><span class="p">(</span><span class="s2">&quot;monarch&quot;</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">create_or_replace_views</span><span class="p">()</span>
 </span></code></pre></div></p>
 </li>
 <li>
 <p>Schedule views (one per schedule defined in runtime):
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.schedules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">create_or_replace_view</span> <span class="k">as</span> <span class="n">create_or_replace_schedule_view</span><span class="p">,</span>  <span class="c1"># single schedule by name</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">create_or_replace_views</span> <span class="k">as</span> <span class="n">create_or_replace_schedule_views</span> <span class="c1"># all schedules</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">)</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">create_or_replace_schedule_view</span><span class="p">(</span><span class="s2">&quot;run-monarch&quot;</span><span class="p">)</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">create_or_replace_schedule_views</span><span class="p">()</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fabricks.core.schedules</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">create_or_replace_view</span> <span class="k">as</span> <span class="n">create_or_replace_schedule_view</span><span class="p">,</span>  <span class="c1"># single schedule by name</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">create_or_replace_views</span> <span class="k">as</span> <span class="n">create_or_replace_schedule_views</span> <span class="c1"># all schedules</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">create_or_replace_schedule_view</span><span class="p">(</span><span class="s2">&quot;run-monarch&quot;</span><span class="p">)</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">create_or_replace_schedule_views</span><span class="p">()</span>
 </span></code></pre></div></p>
 </li>
 <li>
@@ -1293,21 +1308,25 @@ path_options:
 <code>sql title:gold_only.sql
 select *
 from fabricks.jobs j
-where j.step = 'gold'</code>Filter\nby a set of topics:
-<code>sql title:core_topics.sql
-select *
-from fabricks.jobs j
-where j.topic in ('sales', 'finance', 'marketing')</code>Filter\nby both step and topic pattern:
-<code>sql title:gold_sales_like.sql
+where j.step = 'gold'
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Filter by a set of topics:
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>```sql title:core_topics.sql
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>select *
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>from fabricks.jobs j
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>where j.topic in (&#39;sales&#39;, &#39;finance&#39;, &#39;marketing&#39;)
+</span></code></pre></div>
+Filter by both step and topic pattern:</code>sql title:gold_sales_like.sql
 select *
 from fabricks.jobs j
 where j.step = 'gold'
-  and j.topic like 'sales_%'</code>Curate\nexplicit jobs:
-<code>sql title:curated_selection.sql
-select *
-from fabricks.jobs j
-where (j.step = 'silver' and j.topic = 'monarch' and j.item = 'scd1__current')
-   or (j.step = 'gold'   and j.topic = 'monarch' and j.item = 'orders')</code></p>
+  and j.topic like 'sales_%'
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Curate explicit jobs:
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>```sql title:curated_selection.sql
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>select *
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>from fabricks.jobs j
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>where (j.step = &#39;silver&#39; and j.topic = &#39;monarch&#39; and j.item = &#39;scd1__current&#39;)
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>   or (j.step = &#39;gold&#39;   and j.topic = &#39;monarch&#39; and j.item = &#39;orders&#39;)
+</span></code></pre></div></p>
 <p>Tip:
 - You may project specific columns, but for schedules that use <code>options.view</code>, ensure <code>job_id</code> is present in the projection. Returning <code>j.*</code> is simplest.</p>
 <hr />
