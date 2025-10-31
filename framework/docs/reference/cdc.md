@@ -307,5 +307,5 @@ Silver SCD1 with duplicates handling
 
 - Steps: [Silver](../steps/silver.md) | [Gold](../steps/gold.md)
 - Reference: [Table Options](./table-options.md), [Extenders, UDFs & Parsers](./extenders-udfs-parsers.md)
-- Sample runtime: [Sample runtime](../helpers/runtime.md#sample-runtime)
+- Sample runtime: [Sample runtime](../helpers/runtime.md)
 

@@ -103,8 +103,8 @@ Operational guidance
 
 Related
 
-- Next steps: [Silver Step](./SILVER.md), [Table Options](../reference/table-options.md)
+- Next steps: [Silver Step](./silver.md), [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
 - Extensibility: [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
-- Sample runtime: [Sample runtime](../helpers/runtime.md#sample-runtime)
+- Sample runtime: [Sample runtime](../helpers/runtime.md)
 

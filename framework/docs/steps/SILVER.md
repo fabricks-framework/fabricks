@@ -143,8 +143,8 @@ Operational guidance
 - Manual workflows: use 	ype: manual to avoid automatic schema or table changes during operational work.
 
 Related
-- Next steps: [Gold Step](./GOLD.md), [Table Options](../reference/table-options.md)
+- Next steps: [Gold Step](./gold.md), [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
 - Extensibility: [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
-- Sample runtime: [Sample runtime](../helpers/runtime.md#sample-runtime)
+- Sample runtime: [Sample runtime](../helpers/runtime.md)
 

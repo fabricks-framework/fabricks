@@ -108,7 +108,7 @@ Tips:
 ## Examples
 
 - Working scenarios are available in the sample runtime:
-  - Browsable: [Sample runtime](../helpers/runtime.md#sample-runtime)
+  - Browsable: [Sample runtime](../helpers/runtime.md)
 - Rich integration scenarios (repository layout):
   - `framework/tests/integration/runtime/gold/gold/`
 
