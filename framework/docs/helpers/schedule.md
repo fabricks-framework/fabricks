@@ -1,24 +1,24 @@
-# Schedules
+﻿# Schedules
 
 Views provide a simple, declarative way to define a set of jobs to run in a schedule. Instead of listing jobs manually, you create a SQL view that filters the canonical `fabricks.jobs` table, and then reference that view by name from a schedule.
 
 Typical use cases:
 - Run all jobs for a given domain/topic (e.g., monarch)
 - Run only certain steps (e.g., all Gold jobs)
-- Run a curated subset of jobs for ad‑hoc backfills or smoke tests
+- Run a curated subset of jobs for adâ€'hoc backfills or smoke tests
 
 ---
 
 ## Types of views in Fabricks
 
-- Data views (user‑authored):
+- Data views (userâ€'authored):
   - You place `.sql` files under your runtime `views` path (see below).
   - Each file defines one SQL view created under the `fabricks` schema.
   - These are typically simple filters over `fabricks.jobs`.
 
-- Schedule views (framework‑generated):
+- Schedule views (frameworkâ€'generated):
   - For each `schedule` defined in your runtime YAML, Fabricks can generate a companion view named `fabricks.<schedule_name>_schedule`.
-  - A schedule view selects `j.*` from `fabricks.jobs` and applies optional filters from the schedule’s options (`view`, `steps`, `tag`), excluding manual jobs.
+  - A schedule view selects `j.*` from `fabricks.jobs` and applies optional filters from the scheduleâ€™s options (`view`, `steps`, `tag`), excluding manual jobs.
 
 Both kinds of views are useful: data views define job subsets; schedule views expose the final, resolved set for each schedule.
 
@@ -30,7 +30,7 @@ Both kinds of views are useful: data views define job subsets; schedule views ex
 - Data views: Your SQL selects a subset from `fabricks.jobs` (recommended: `select *`).
 - Schedules:
   - In `schedule.yml`, you can set `options.view: <data_view_name>`.
-  - Fabricks resolves the schedule’s membership via the data view (and optional `steps` / `tag` filters).
+  - Fabricks resolves the scheduleâ€™s membership via the data view (and optional `steps` / `tag` filters).
   - Fabricks can also materialize a schedule view `fabricks.<schedule_name>_schedule` for inspection and tooling.
 
 ---
@@ -59,9 +59,7 @@ Create a file `monarch.sql` in your runtime `views` directory:
 select *
 from fabricks.jobs j
 where j.topic = 'monarch'
-```
-
-This will create a view called `fabricks.monarch`. You can then reference this view in a schedule.
+```This\nwill create a view called `fabricks.monarch`. You can then reference this view in a schedule.
 
 ---
 
@@ -79,7 +77,7 @@ This will create a view called `fabricks.monarch`. You can then reference this v
 
 Behavior:
 - Fabricks loads all jobs returned by `fabricks.monarch` and further filters by `steps` and `tag` if provided.
-- Schedule‑level options like `variables`, `timeouts`, etc., still apply to execution.
+- Scheduleâ€'level options like `variables`, `timeouts`, etc., still apply to execution.
 - In most cases the view alone defines the job set; `steps`/`tag` refine it.
 
 ---
@@ -141,7 +139,7 @@ You can (re)create both data views and schedule views programmatically.
   ```
 
 - Initialization path:
-  - The bootstrap script (“armageddon”) calls both data view and schedule view builders so your environment is in sync with runtime configs and SQL view files.
+  - The bootstrap script (â€œarmageddonâ€) calls both data view and schedule view builders so your environment is in sync with runtime configs and SQL view files.
 
 ---
 
@@ -152,24 +150,18 @@ Filter by step:
 select *
 from fabricks.jobs j
 where j.step = 'gold'
-```
-
-Filter by a set of topics:
+```Filter\nby a set of topics:
 ```sql title:core_topics.sql
 select *
 from fabricks.jobs j
 where j.topic in ('sales', 'finance', 'marketing')
-```
-
-Filter by both step and topic pattern:
+```Filter\nby both step and topic pattern:
 ```sql title:gold_sales_like.sql
 select *
 from fabricks.jobs j
 where j.step = 'gold'
   and j.topic like 'sales_%'
-```
-
-Curate explicit jobs:
+```Curate\nexplicit jobs:
 ```sql title:curated_selection.sql
 select *
 from fabricks.jobs j
@@ -186,7 +178,7 @@ Tip:
 
 - Keep view logic simple: use filters, avoid heavy joins or transformations.
 - Align views with business domains or execution scopes (by step, topic family, tags).
-- Use explicit OR lists for one‑off backfills to keep intent clear and auditable.
+- Use explicit OR lists for oneâ€'off backfills to keep intent clear and auditable.
 - Favor stable view names; schedules reference the view name.
 
 ## Related topics
@@ -196,3 +188,4 @@ Tip:
 - Steps overview (Bronze/Silver/Gold): ../steps/gold.md and siblings
 - Data quality checks: ./checks-data-quality.md
 - Table options and storage layout: ./table-options.md
+

@@ -1,4 +1,4 @@
-# Key Concepts Overview
+﻿# Key Concepts Overview
 
 This page introduces Fabricks core concepts so you can read and write pipelines with confidence.
 
@@ -15,11 +15,11 @@ This page introduces Fabricks core concepts so you can read and write pipelines 
 - *Step*: A processing layer/type that defines behavior and defaults (Bronze, Silver, Gold).
 - *Job*: A concrete unit of work within a step (identified by topic + item) that you schedule/run.
 
-**Layers (Bronze → Silver → Gold)**
+**Layers (Bronze â†' Silver â†' Gold)**
 
-- Bronze: Land raw data (append/register/memory). Keep logic light.
+- Bronze: Land raw data (``append``/``register``/``memory``). Keep logic light.
 - Silver: Standardize/clean/enrich. Optional CDC (SCD1/SCD2) and convenience views.
-- Gold: Consumption models and marts. Supports merge/update and SCD patterns.
+- Gold: Consumption models and marts. Supports merge/``update`` and SCD patterns.
 
 **Change Data Capture (CDC)**
 
@@ -40,9 +40,10 @@ This page introduces Fabricks core concepts so you can read and write pipelines 
 
 Navigation
 
-- Layers guide: Layers (Bronze/Silver/Gold) → [Layers](./layers.md)
-- CDC strategies and contracts → [CDC](../reference/cdc.md)
-- Step references → [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
-- Data Quality → [Checks & Data Quality](../reference/checks-data-quality.md)
-- Table and storage options → [Table Options](../reference/table-options.md)
-- Extensibility → [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
+- Layers guide: Layers (Bronze/Silver/Gold) â†' [Layers](./layers.md)
+- CDC strategies and contracts â†' [CDC](../reference/cdc.md)
+- Step references â†' [Bronze](../steps/bronze.md) â€¢ [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
+- Data Quality â†' [Checks & Data Quality](../reference/checks-data-quality.md)
+- Table and storage options â†' [Table Options](../reference/table-options.md)
+- Extensibility â†' [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
+

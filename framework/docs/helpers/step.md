@@ -1,4 +1,4 @@
-# Step Helper (Databricks Notebook)
+﻿# Step Helper (Databricks Notebook)
 
 This helper describes a widget-driven approach in a Databricks notebook to manage a Fabricks step (bronze, silver, gold). 
 
@@ -28,8 +28,7 @@ s.update_dependencies(progress_bar=False)
 
 ## Helper Notebook
 
-``` python
-# Databricks notebook source
+```python\n# Databricks notebook source
 import os
 from multiprocessing import Pool
 from typing import Callable, List
@@ -41,15 +40,15 @@ from databricks.sdk.runtime import dbutils, spark
 dbutils.widgets.text("steps", "---", label="6 - Step(s)")
 dbutils.widgets.multiselect(
     "actions",
-    "update-configurations",
+    "``update``-configurations",
     [
-        "update-configurations",    -- Update job configurations
+        "``update``-configurations",    -- Update job configurations
         "add-missing-jobs",         -- Create any missing jobs
-        "update-dependencies",      -- Update job dependencies
-        "update-lists",             -- Update lists of jobs/tables/views
-        "update-tables-list",       -- Update the list of tables
-        "update-views-list",        -- Update the list of views
-        "update"                    -- Update the step
+        "``update``-dependencies",      -- Update job dependencies
+        "``update``-lists",             -- Update lists of jobs/tables/views
+        "``update``-tables-list",       -- Update the list of tables
+        "``update``-views-list",        -- Update the list of views
+        "``update``"                    -- Update the step
     ],
     label="5 - Action(s)"
 )
@@ -103,30 +102,27 @@ from fabricks.api.log import DEFAULT_LOGGER  # noqa: E402
 actions = dbutils.widgets.get("actions").split(",")
 actions = [a.strip() for a in actions]
 
-# COMMAND ----------
-
-
-def do(step: str) -> None:
+# COMMAND ----------`n`ndef do(step: str) -> None:
     s = get_step(step=step)
     todos: dict[str, Callable] = {}
 
-    if "update-configurations" in actions:
-        todos["update-configurations"] = s.update_jobs
+    if "``update``-configurations" in actions:
+        todos["``update``-configurations"] = s.update_jobs
 
     if "add-missing-jobs" in actions:
         todos["add-missing-jobs"] = s.create_jobs
 
-    if "update-views-list" in actions or "update-lists" in actions:
-        todos["update-views-list"] = s.update_views
+    if "``update``-views-list" in actions or "``update``-lists" in actions:
+        todos["``update``-views-list"] = s.update_views
 
-    if "update-tables-list" in actions or "update-lists" in actions:
-        todos["update-tables-list"] = s.update_tables
+    if "``update``-tables-list" in actions or "``update``-lists" in actions:
+        todos["``update``-tables-list"] = s.update_tables
 
-    if "update" in actions and len(actions) == 1:
-        todos["update"] = s.update
+    if "``update``" in actions and len(actions) == 1:
+        todos["``update``"] = s.``update``
 
-    if "update-dependencies" in actions:
-        todos["update-dependencies"] = s.update_dependencies
+    if "``update``-dependencies" in actions:
+        todos["``update``-dependencies"] = s.update_dependencies
 
     for key, func in todos.items():
         func()
@@ -158,8 +154,9 @@ dbutils.notebook.exit("exit (0)")  # type: ignore
 
 ## Related topics
 
-- Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
+- Steps: [Bronze](../steps/bronze.md) â€¢ [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
 - Runtime overview and sample runtime: [Runtime](../helpers/runtime.md)
 - Checks & Data Quality: [Checks and Data Quality](../reference/checks-data-quality.md)
 - Table options and storage layout: [Table Options](../reference/table-options.md)
 - Extenders, UDFs & Views: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
+

@@ -1,4 +1,4 @@
-# Runtime Configuration
+﻿# Runtime Configuration
 
 The Fabricks runtime is the folder where your Lakehouse project lives (configs, SQL, jobs, UDFs, extenders, views). This page explains how to point Fabricks to your runtime, how to structure it, and how to configure schedules and step paths.
 
@@ -19,7 +19,7 @@ This quick path gets a working runtime running end-to-end using the sample inclu
   ```
 
 2) Inspect the sample runtime
-- Directory: `examples/runtime` (see structure in “Sample runtime” below).
+- Directory: `examples/runtime` (see structure in â€œSample runtimeâ€ below).
 - It contains a minimal schedule and a Gold `hello_world.sql` full-refresh job.
 
 3) Run a schedule
@@ -29,11 +29,11 @@ This quick path gets a working runtime running end-to-end using the sample inclu
 Expected outputs
 - Tables/views:
   - A Gold table for the `hello_world` job (full refresh).
-  - If using memory mode jobs, temporary views are registered for downstream steps.
+  - If using ``memory`` mode jobs, temporary views are registered for downstream steps.
 - Logs:
   - A completion line indicating job success; warnings/errors surfaced from checks/contracts if configured.
 - Data quality (if enabled):
-  - Built-in bound violations or contract `__action = 'fail'` causes a non‑zero exit and, for physical tables, an automatic rollback to the last successful version.
+  - Built-in bound violations or contract `__action = 'fail'` causes a nonâ€'zero exit and, for physical tables, an automatic rollback to the last successful version.
   - Contract `__action = 'warning'` logs the message and the run continues.
 
 Tip: If your environment uses different storage locations or workspace setup, adjust `path_options` and `spark_options` in the runtime YAML before running.
@@ -99,9 +99,7 @@ gold:
     path_options:
       runtime: src/steps/gold
       storage: abfss://gold@youraccount.blob.core.windows.net
-```
-
-Key concepts:
+```Key\nconcepts:
 - options: global project config (secrets, timeouts, worker count)
 - path_options: shared storage/config paths
 - spark_options: default Spark SQL options applied for jobs
@@ -136,9 +134,7 @@ Schedules group jobs and define step order. Place schedules in your runtime (com
       variables:
         var1: 1
         var2: 2
-```
-
-Pass the schedule name when running the shipped notebooks or the Databricks bundle job.
+```Pass\nthe schedule name when running the shipped notebooks or the Databricks bundle job.
 
 ## Typical runtime structure
 
@@ -191,9 +187,7 @@ examples/runtime/
       hello_world.sql
   semantic/
     _config.example.yml
-```
-
-Key files and purpose
+```Key\nfiles and purpose
 - `fabricks/conf.fabricks.yml`: project-level configuration (secret scope, timeouts, workers, storage paths, schedules path)
 - `fabricks/schedules/schedule.yml`: minimal schedule to run the gold step
 - `gold/gold/_config.example.yml`: defines a simple Gold job
@@ -207,7 +201,8 @@ How to use this sample
 
 ## Related topics
 
-- Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
+- Steps: [Bronze](../steps/bronze.md) â€¢ [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
 - Data quality checks and contracts: [Checks & Data Quality](../reference/checks-data-quality.md)
 - Table properties and physical layout: [Table Options](../reference/table-options.md)
 - Custom logic integration: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
+

@@ -1,4 +1,4 @@
-# Checks and Data Quality
+﻿# Checks and Data Quality
 
 Fabricks provides built-in mechanisms to validate data before and/or after a job runs. Checks can enforce row counts, equality constraints, and custom SQL contracts that return actions and messages.
 
@@ -11,7 +11,7 @@ Enable checks per job using `check_options`:
     step: gold
     topic: check
     item: max_rows
-    options: { mode: complete }
+    options: { mode: `complete` }
     check_options:
       pre_run: true         # run checks before writing
       post_run: true        # run checks after writing
@@ -19,9 +19,7 @@ Enable checks per job using `check_options`:
       max_rows: 10000       # maximum expected row count
       count_must_equal: fabricks.dummy  # enforce row count equality with another table
       skip: false           # skip all checks if true
-```
-
-Supported options:
+```Supported\noptions:
 - pre_run/post_run: Run checks around the execution of the job.
 - min_rows/max_rows: Row count bounds.
 - count_must_equal: Assert row count equals a reference table.
@@ -48,17 +46,13 @@ check_options:
   pre_run: true
   min_rows: 10
   max_rows: 100000
-```
-
-Equality against a reference:
+```Equality\nagainst a reference:
 ```yaml
 check_options:
   post_run: true
   count_must_equal: analytics.dim_customer
-```
-
-Mixing built-ins with SQL contracts:
-- Use `pre_run`/`post_run` to enable contract execution and add your contract SQL files (see “SQL contracts” below).
+```Mixing\nbuilt-ins with SQL contracts:
+- Use `pre_run`/`post_run` to enable contract execution and add your contract SQL files (see â€œSQL contractsâ€ below).
 ## SQL contracts
 
 When `pre_run` or `post_run` checks are enabled, provide SQL files named after the table or job:
@@ -81,23 +75,23 @@ select "warning" as __action, "I want you to warn me !" as __message;
 
 ## Behavior and rollback
 
-- For physical tables (append/complete/update modes), a failed check triggers an automatic rollback to the previous successful version.
-- For `memory` mode (views), results are not persisted and failures are logged only.
+- For physical tables (`append`/`complete`/`update` modes), a failed check triggers an automatic rollback to the previous successful version.
+- For ``memory`` mode (views), results are not persisted and failures are logged only.
 
 ## CI integration
 
 Checks produce two observable signals that are useful in CI and orchestration systems:
 
 - Exit code
-  - Any hard failure (built-in bound violations or a contract returning `__action = 'fail'`) causes the job to exit with a non‑zero status.
-  - For physical tables (append/complete/update modes), failures also trigger an automatic rollback to the previous successful version.
-  - Most CI systems will mark the pipeline as failed automatically on non‑zero exit codes.
+  - Any hard failure (built-in bound violations or a contract returning `__action = 'fail'`) causes the job to exit with a nonâ€'zero status.
+  - For physical tables (`append`/`complete`/`update` modes), failures also trigger an automatic rollback to the previous successful version.
+  - Most CI systems will mark the pipeline as failed automatically on nonâ€'zero exit codes.
 
 - Log messages
   - Contracts should emit a single row with `__action` and `__message`. These are logged so you can surface them in CI logs and artifacts.
   - When `__action = 'warning'`, the job continues and exits with code 0. Ensure your CI surfaces logs so warnings are visible in pull requests.
 
-Example contract outputs (see “SQL contracts”):
+Example contract outputs (see â€œSQL contractsâ€):
 ```sql
 -- Fails the job and rolls back (physical tables)
 select 'fail'    as __action, 'Row count below threshold' as __message;
@@ -120,6 +114,7 @@ Tips:
 
 ## Related topics
 
-- Steps: [Bronze](../steps/bronze.md) • [Silver](../steps/silver.md) • [Gold](../steps/gold.md)
+- Steps: [Bronze](../steps/bronze.md) â€¢ [Silver](../steps/silver.md) â€¢ [Gold](../steps/gold.md)
 - Table properties and physical layout: [Table Options](./table-options.md)
 - Custom logic integration: [Extenders, UDFs & Parsers](./extenders-udfs-parsers.md)
+

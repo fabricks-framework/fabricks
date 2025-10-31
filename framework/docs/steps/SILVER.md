@@ -1,260 +1,150 @@
-# Silver Step Reference
+﻿# Silver Step Reference
 
-The Silver step standardizes and enriches data, and applies CDC (SCD1/SCD2) if configured.
+The Silver step standardizes, cleans, and enriches landed Bronze data. It is the layer where business logic, schema conformance, deduplication, and optional Change Data Capture (CDC) are applied so Gold jobs receive consistent, analytics-ready inputs.
 
-## Modes
+Key responsibilities
 
-| Mode    | Description                                                                              |
-|---------|------------------------------------------------------------------------------------------|
-| memory  | View-only; no table written.                                                             |
-| append  | Append-only table.                                                                       |
-| latest  | Keep only the latest row per key within the batch.                                       |
-| update  | Merge/upsert semantics; typically used with CDC.                                         |
-| combine | Combine/union outputs from parent jobs into one result.                                  |
+- Ingest and unify upstream outputs (from Bronze or other Silver jobs).
+- Enforce schema, apply business keys, and compute derived columns.
+- Deduplicate, order, and resolve conflicting records.
+- Optionally apply CDC semantics (scd1 or scd2) and produce convenience views such as {table}__current.
+- Write conformed Delta tables or register transient views for consumption.
 
-### Behavior notes
+Modes
 
-- Deduplication and ordering
-  - `deduplicate` drops duplicate keys within the current batch.
-  - If `order_duplicate_by` is provided, rows are ordered by the specified sort before deduplication; the first row per key is kept.
-  - In `latest` mode, only within-batch keys are considered (historical rows are not consulted). In `update` mode, winners are merged against the existing table.
+| Mode      | When to use / behavior |
+|-----------|------------------------|
+| memory  | In-session temporary view only. Use for ad-hoc runs and tests; no persisted table is written. |
+| append  | Append-only writes. Ideal for additive feeds where merges are not required. |
+| latest  | Keep only the latest row per business key within the incoming batch (batch-local). |
+| update  | Merge/upsert semantics against an existing target; used for CDC and idempotent updates. |
+| combine | Union results from multiple parents into a single logical output. Useful for multi-source catalogs. |
 
-- Streaming constraints
-  - `stream: true` is supported where your connectors/environment support streaming.
-  - In `append` mode it appends micro-batches; in `latest`/`update` modes semantics rely on deterministic keys and, if used, stable ordering columns.
-  - With streaming, `pre_run` counts can be zero; prefer `post_run` checks for row count bounds.
+Behavior notes
 
-- Combine behavior
-  - `combine` mode unions all parent outputs into a single logical result.
-  - Parents should be schema-compatible; columns are aligned by name. No de-duplication is performed unless `deduplicate` is enabled.
+- Deduplication & ordering
+  - Use deduplicate to drop duplicate keys in the incoming batch.
+  - order_duplicate_by accepts a sort spec to select the preferred row when duplicates exist.
+  - latest applies only to the incoming batch; it does not inspect historical rows. Use update to merge winners into history.
 
-## CDC strategies
+- Streaming
+  - stream: true is supported when your connectors and environment support streaming execution.
+  - For stable results in streaming, provide deterministic keys and stable ordering columns. Prefer post_run checks for accuracy.
 
-| Strategy | What it does                                                                                         | Convenience views |
-|----------|-------------------------------------------------------------------------------------------------------|-------------------|
-| nocdc    | No CDC flags; writes the result as-is.                                                                | —                 |
-| scd1     | Tracks current vs deleted; adds flags `__is_current`, `__is_deleted`.                                 | `TABLE__current`  |
-| scd2     | Maintains validity windows with `__valid_from`, `__valid_to` and historical rows.                     | `TABLE__current`  |
+- Combine
+  - combine unions parent outputs. Parents must be schema-compatible; enable deduplicate if you need to collapse duplicates across parents.
 
-## Options at a glance
+CDC strategies
 
-| Option              | Purpose                                                                                     |
-|---------------------|---------------------------------------------------------------------------------------------|
-| type                | `default` vs `manual` (manual: you manage persistence yourself).                            |
-| mode                | One of the modes listed above.                                                              |
-| change_data_capture | CDC strategy: `nocdc` \| `scd1` \| `scd2`.                                                  |
-| parents             | Upstream job identifiers (e.g., `bronze.demo_source`).                                      |
-| filter_where        | SQL predicate applied at transform time.                                                    |
-| deduplicate         | Drop duplicate keys within the batch.                                                       |
-| stream              | Enable streaming semantics where supported.                                                 |
-| order_duplicate_by  | Choose preferred row when duplicates exist (e.g., `{ order_by: desc }`).                    |
-| timeout             | Per-job timeout seconds (overrides step default).                                           |
-| extender            | Name of a Python extender to apply (see Extenders).                                         |
-| extender_options    | Arguments for the extender (mapping).                                                       |
-| check_options       | Configure DQ checks (pre_run, post_run, max_rows, min_rows, count_must_equal, skip).        |
+| Strategy | Effect | Output convention |
+|----------|--------|------------------|
+| nocdc  | No CDC metadata; write the result as-is. | — |
+| scd1   | Current-state model with __is_current, __is_deleted flags. | {table}__current view available. |
+| scd2   | Full-history model with validity windows __valid_from, __valid_to. | {table}__current view available. |
 
-#### Option matrix (types • defaults • required)
+Common options (summary)
 
-| Option              | Type                                  | Default | Required | Description                                                                                 |
-|---------------------|---------------------------------------|---------|----------|---------------------------------------------------------------------------------------------|
-| type                | enum: default, manual                 | default | no       | `manual` disables auto DDL/DML; you manage persistence yourself.                            |
-| mode                | enum: memory, append, latest, update, combine | —       | yes      | Processing behavior.                                                                        |
-| change_data_capture | enum: nocdc, scd1, scd2               | nocdc   | no       | CDC strategy applied when writing.                                                          |
-| parents             | array[string]                         | —       | no       | Upstream job identifiers to enforce ordering.                                               |
-| filter_where        | string (SQL predicate)                 | —       | no       | Predicate applied at transform time.                                                        |
-| deduplicate         | boolean                                | false   | no       | Drop duplicate keys within the current batch.                                               |
-| order_duplicate_by  | map (e.g., { columns: [ts], order_by: desc }) | — | no       | Choose preferred row for duplicates before `deduplicate`.                                   |
-| stream              | boolean                                | false   | no       | Enable streaming semantics where supported.                                                 |
-| timeout             | integer (seconds)                      | —       | no       | Per-job timeout; overrides step default.                                                    |
-| extender            | string                                 | —       | no       | Python extender to transform the DataFrame.                                                 |
-| extender_options    | map[string,any]                        | {}      | no       | Arguments passed to the extender.                                                           |
-| check_options       | map                                     | —       | no       | Data quality checks (see Checks & Data Quality).                                            |
+- type: default or manual. manual disables Fabricks auto-DDL/DML; you manage persistence.
+- mode: One of memory, append, latest, update, combine (required).
+- change_data_capture: nocdc, scd1, or scd2 (optional).
+- parents: List upstream job identifiers (recommended for lineage and ordering).
+- keys: Business keys used for deduplication and downstream CDC (recommended where available).
+- deduplicate: Boolean to drop duplicates within the batch.
+- order_duplicate_by: Sort specification to pick the preferred record among duplicates.
+- filter_where: SQL predicate applied during transform to filter rows.
+- extender / extender_options: Python extender and its arguments for advanced transforms.
+- check_options: Data-quality checks (pre_run, post_run, min_rows, max_rows, etc.).
+- stream: Enable streaming semantics when supported.
+- timeout: Per-job timeout in seconds (overrides step default).
 
-Notes:
-- If both `order_duplicate_by` and `deduplicate` are set, ordering is applied first, then the first row per key is retained.
-- `latest` considers only the current batch; use `update` if you need to merge winners against an existing table.
+Options guidance
 
-## Field reference
+- Always set mode to reflect the write semantics you need.
+- Use change_data_capture when you need SCD semantics; choose scd1 for current-state and scd2 for historical windows.
+- Provide parents to make dependencies explicit and reduce ambiguous scheduling.
+- Use keys, deduplicate, and order_duplicate_by to handle noisy upstream data.
+- Use type: manual for precise control of DDL/DML and when performing backfills or manual migrations.
 
-- *Core*
-    - **type**: `default` vs `manual`. Manual means Fabricks won’t auto-generate DDL/DML; you control persistence.
-    - **mode**: Processing behavior (`memory`, `append`, `latest`, `update`, `combine`).
-    - **timeout**: Per-job timeout; overrides step defaults.
+**Examples**
 
-- *CDC*
-    - **change_data_capture**: `nocdc`, `scd1`, or `scd2`.
-    - **scd1 flags**: `__is_current`, `__is_deleted` and a `{table}__current` convenience view.
-    - **scd2 windows**: `__valid_from`, `__valid_to` and a `{table}__current` convenience view.
-
-- *Dependencies & ordering*
-    - **parents**: Explicit upstream jobs (e.g., `bronze.topic_item`).
-    - **deduplicate**: Drop duplicate keys within the batch.
-    - **order_duplicate_by**: Pick a preferred row when duplicates exist (e.g., `{ order_by: desc }`).
-
-- *Streaming*
-    - **stream**: Where supported, use streaming semantics for incremental processing.
-
-- *Extensibility*
-    - **extender**: Apply a Python extender to the DataFrame.
-    - **extender_options**: Mapping of arguments passed to the extender.
-  - See also: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
-
-- Checks
-  - check_options: Configure DQ checks (e.g., `pre_run`, `post_run`, `max_rows`, `min_rows`, `count_must_equal`, `skip`). See [Checks & Data Quality](../reference/checks-data-quality.md)
-
-Minimal example
+Basic SCD2 update
 ```yaml
 - job:
     step: silver
-    topic: demo
-    item: scd1
-    options:
-      mode: update
-      change_data_capture: scd1
-      parents: [bronze.demo_source]
-```
-
----
-
-### Silver options
-
-See Options at a glance and Field reference above.
-### Silver jobs
-
-- Combine outputs example:
-  ```yaml
-  - job:
-      step: silver
-      topic: princess
-      item: combine
-      options:
-        mode: combine
-        parents:
-          - silver.princess_extend
-          - silver.princess_latest
-  ```
-
-- Monarchs with SCD1/SCD2 and delta/memory flavors:
-
-```yaml
-- job:
-    step: silver
-    topic: monarch
-    item: scd1
-    options:
-      mode: update
-      change_data_capture: scd1
-- job:
-    step: silver
-    topic: monarch
-    item: scd2
+    topic: orders
+    item: orders_scd2
     options:
       mode: update
       change_data_capture: scd2
+      parents: [bronze.orders_raw]
+      keys: [order_id]
+`
+
+Latest-per-key within a batch
+`yaml
 - job:
     step: silver
-    topic: monarch
-    item: delta
-    options:
-      mode: update
-      change_data_capture: scd2
-- job:
-    step: silver
-    topic: monarch
-    item: memory
-    options:
-      mode: memory
-      change_data_capture: nocdc
-```
-
-- Multi-parent example (kings and queens):
-
-```yaml
-- job:
-    step: silver
-    topic: king_and_queen
-    item: scd1
-    options:
-      mode: update
-      change_data_capture: scd1
-      parents: [bronze.queen_scd1, bronze.king_scd1]
-```
-
-- Princess patterns: latest, append, calculated columns, duplicate ordering, manual type, schema drift, extend with extenders:
-
-```yaml
-- job:
-    step: silver
-    topic: princess
-    item: latest
+    topic: customers
+    item: customers_latest
     options:
       mode: latest
-- job:
-    step: silver
-    topic: princess
-    item: append
-    options:
-      mode: append
-- job:
-    step: silver
-    topic: princess
-    item: order_duplicate
-    options:
-      mode: update
-      change_data_capture: scd1
+      deduplicate: true
       order_duplicate_by:
         order_by: desc
+      keys: [customer_id]
+`
+
+Combine multiple parents (union)
+`yaml
+- job:
+    step: silver
+    topic: product_catalog
+    item: union_all
+    options:
+      mode: combine
+      parents: [bronze.catalog_a, bronze.catalog_b]
+      deduplicate: false
+`
+
+Extender example
+`yaml
+- job:
+    step: silver
+    topic: enrich
+    item: add_geo
+    options:
+      mode: update
+      extender: enrich_with_geo
+      extender_options:
+        country_field: country_code
+`
+
+Quality gate example
+`yaml
 - job:
     step: silver
     topic: princess
-    item: calculated_column
+    item: quality_gate
     options:
       mode: update
       change_data_capture: scd1
-      order_duplicate_by:
-        order_by: asc
-- job:
-    step: silver
-    topic: princess
-    item: manual
-    options:
-      type: manual
-      mode: update
-      change_data_capture: scd1
-- job:
-    step: silver
-    topic: princess
-    item: extend
-    options:
-      mode: update
-      change_data_capture: scd1
-    extender_options:
-        - extender: add_country
-        arguments:
-          country: Belgium
-```
+      parents: [silver.princess_latest]
+    check_options:
+      post_run: true
+      min_rows: 1
+      max_rows: 100000
+`
 
-- Quality gate with `check_options`:
-  ```yaml
-  - job:
-      step: silver
-      topic: princess
-      item: quality_gate
-      options:
-        mode: update
-        change_data_capture: scd1
-        parents: [silver.princess_latest]
-      check_options:
-        post_run: true
-        min_rows: 1
-        max_rows: 100000
-  ```
+Operational guidance
 
-## Related
+- Lineage & observability: set parents, source, and keys to aid debugging and monitoring.
+- Data quality: prefer check_options to fail fast on contract violations.
+- Streaming: ensure deterministic keys and ordering columns for repeatable results.
+- Manual workflows: use 	ype: manual to avoid automatic schema or table changes during operational work.
 
-- Next steps: [Gold Step](./gold.md), [Table Options](../reference/table-options.md)
+Related
+- Next steps: [Gold Step](./GOLD.md), [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
-- Extensibility: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
+- Extensibility: [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
 - Sample runtime: [Sample runtime](../helpers/runtime.md#sample-runtime)
 
-Special characters in column names are preserved (see `prince.special_char`).
