@@ -113,6 +113,7 @@
     step: gold
     topic: fact
     item: masker_and_commenter
+    tags: [test]
     options:
       mode: complete
     table_options:
