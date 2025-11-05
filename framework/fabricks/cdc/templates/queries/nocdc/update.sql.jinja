@@ -16,7 +16,7 @@
                 {% for output in outputs %} c.`{{ output }}`, {% endfor %}
             from __current c
             left anti join
-                {{ parent_cdc }} s on s.__key == c.__key and s.__hash == c.__hash
+                {{ parent_cdc }} s on s.__key == c.__key
                 {% if has_source %} and s.__source = c.__source {% endif %}
         {% endif %}
     ),

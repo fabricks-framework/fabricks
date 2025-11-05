@@ -4,7 +4,7 @@ import fabricks.context.config as c
 import fabricks.context.runtime as r
 
 
-def pprint_runtime():
+def pprint_runtime(extended: bool = False) -> None:
     print("=" * 60)
     print("FABRICKS RUNTIME CONFIGURATION")
     print("=" * 60)
@@ -50,27 +50,31 @@ def pprint_runtime():
     print("\n🔐 SECURITY:")
     print(f"   Secret Scope: {r.SECRET_SCOPE}")
 
-    # Component Paths Section
-    print("\n🛠️ COMPONENT PATHS:")
-    components = [
-        ("UDFs", r.PATH_UDFS),
-        ("Parsers", r.PATH_PARSERS),
-        ("Extenders", r.PATH_EXTENDERS),
-        ("Views", r.PATH_VIEWS),
-        ("Schedules", r.PATH_SCHEDULES),
-    ]
+    print("\n🌐 ADDITIONAL SETTINGS:")
+    print(f"   Timezone: {r.TIMEZONE}")
 
-    for name, path in components:
-        print(f"   {name}: {path.string}")
+    if extended:
+        # Component Paths Section
+        print("\n🛠️ COMPONENT PATHS:")
+        components = [
+            ("UDFs", r.PATH_UDFS),
+            ("Parsers", r.PATH_PARSERS),
+            ("Extenders", r.PATH_EXTENDERS),
+            ("Views", r.PATH_VIEWS),
+            ("Schedules", r.PATH_SCHEDULES),
+        ]
 
-    # Storage Paths Section
-    print("\n📦 STORAGE PATHS:")
-    for name, path in sorted(r.PATHS_STORAGE.items()):
-        icon = "🏭" if name == "fabricks" else "📊"
-        print(f"   {icon} {name}: {path.string}")
+        for name, path in components:
+            print(f"   {name}: {path.string}")
 
-    # Runtime Paths Section
-    if r.PATHS_RUNTIME:
-        print("\n⚡ RUNTIME PATHS:")
-        for name, path in sorted(r.PATHS_RUNTIME.items()):
-            print(f"   📂 {name}: {path.string}")
+        # Storage Paths Section
+        print("\n📦 STORAGE PATHS:")
+        for name, path in sorted(r.PATHS_STORAGE.items()):
+            icon = "🏭" if name == "fabricks" else "📊"
+            print(f"   {icon} {name}: {path.string}")
+
+        # Runtime Paths Section
+        if r.PATHS_RUNTIME:
+            print("\n⚡ RUNTIME PATHS:")
+            for name, path in sorted(r.PATHS_RUNTIME.items()):
+                print(f"   📂 {name}: {path.string}")

@@ -10,7 +10,7 @@ DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(501)
-def test_step_gold():
+def test_update_dependencies():
     step = get_step("gold")
 
     deps, error = step.get_dependencies(loglevel=ERROR)
@@ -35,7 +35,7 @@ def test_step_gold():
 
 
 @pytest.mark.order(502)
-def test_step_transf():
+def test_create_db_objects():
     step = get_step("transf")
 
     SPARK.sql("drop view if exists transf.fact_memory")
@@ -48,3 +48,26 @@ def test_step_transf():
 
     df = SPARK.sql("select * from fabricks.transf_views")
     assert df.count() == 1, f"{df.count()} view(s) <> 1"
+
+
+@pytest.mark.order(503)
+def test_update_configurations():
+    step = get_step("gold")
+
+    df = SPARK.sql("select * from fabricks.gold_jobs")
+    assert df.count() == 51, f"{df.count()} job(s) <> 51"
+
+    SPARK.sql("update fabricks.gold_jobs set options = null")
+
+    df = SPARK.sql("select * from fabricks.gold_jobs where options is null")
+    assert df.count() == 51, f"{df.count()} job(s) without options <> 51"
+
+    SPARK.sql("delete from fabricks.gold_jobs where topic == 'scd1'")
+
+    step.update_configurations()
+
+    df = SPARK.sql("select * from fabricks.gold_jobs")
+    assert df.count() == 51, f"{df.count()} job(s) <> 51"
+
+    df = SPARK.sql("select * from fabricks.gold_jobs where options is null")
+    assert df.count() == 0, f"{df.count()} job(s) without options <> 0"
