@@ -146,7 +146,7 @@ def test_gold_fact_no_drop():
 
 @pytest.mark.order(131)
 def test_gold_fact_masker_and_commenter():
-    df = SPARK.sql("select dummy from gold.fact_masker_and_commenter")
+    df = SPARK.sql("select dummy from gold.fact_masker_and_commenter order by 1 asc")
 
     masked_value = df.select("dummy").collect()[0][0]
     assert masked_value == "***", f"dummy {masked_value} <> ***"
