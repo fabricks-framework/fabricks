@@ -142,3 +142,14 @@ def test_gold_fact_no_drop():
         assert False, "drop is allowed while no_drop is set"
     except ValueError:
         assert True, "drop not allowed while no_drop is set"
+
+
+@pytest.mark.order(131)
+def test_gold_fact_masker_and_commenter():
+    df = SPARK.sql("select dummy from gold.fact_masker_and_commenter order by 1 asc")
+
+    masked_value = df.select("dummy").collect()[0][0]
+    assert masked_value == "***", f"dummy {masked_value} <> ***"
+
+    masked_value = df.select("dummy").collect()[1][0]
+    assert masked_value == "2", f"dummy {masked_value} <> 2"
