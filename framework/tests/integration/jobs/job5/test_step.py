@@ -54,6 +54,8 @@ def test_create_db_objects():
 def test_update_configurations():
     step = get_step("gold")
 
+    step.update_configurations()
+
     df = SPARK.sql("select * from fabricks.gold_jobs")
     assert df.count() == 51, f"{df.count()} job(s) <> 51"
 
