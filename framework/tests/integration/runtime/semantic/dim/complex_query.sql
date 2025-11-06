@@ -1,3 +1,10 @@
+/*
+|0|Not Royal Stock|
+|1|Royal Stock|
+|2|Rarely Visited|
+|3|Forgotten in Tower|
+|4|Royal Clearance|
+*/
 select *
 from
 values
