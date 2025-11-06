@@ -1,0 +1,8 @@
+---
+# yaml-language-server: $schema=../../../job-schema.json
+- job:
+    step: semantic
+    topic: dim
+    item: complex_query
+    options:
+      mode: memory

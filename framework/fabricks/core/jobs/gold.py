@@ -13,7 +13,7 @@ from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.path import Path
-from fabricks.utils.sqlglot import get_tables
+from fabricks.utils.sqlglot import get_tables, fix
 
 
 class Gold(BaseJob):
@@ -68,7 +68,8 @@ class Gold(BaseJob):
 
     @property
     def sql(self) -> str:
-        return self.paths.runtime.get_sql()
+        sql = self.paths.runtime.get_sql()
+        return fix(sql)
 
     @deprecated("use sql instead")
     def get_sql(self) -> str:
