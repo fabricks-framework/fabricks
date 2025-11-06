@@ -13,7 +13,7 @@ from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils.path import Path
-from fabricks.utils.sqlglot import get_tables, fix
+from fabricks.utils.sqlglot import fix, get_tables
 
 
 class Gold(BaseJob):
