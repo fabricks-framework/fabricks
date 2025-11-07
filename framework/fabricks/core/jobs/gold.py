@@ -69,7 +69,7 @@ class Gold(BaseJob):
     @property
     def sql(self) -> str:
         sql = self.paths.runtime.get_sql()
-        return fix(sql)
+        return fix(sql, keep_comments=False)
 
     @deprecated("use sql instead")
     def get_sql(self) -> str:
