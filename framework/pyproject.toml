@@ -1,6 +1,6 @@
 [project]
 name = "fabricks"
-version = "3.0.9"
+version = "3.0.10"
 description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },
@@ -16,6 +16,7 @@ dependencies = [
     "databricks-sdk >=0.20.0",
     "importlib-metadata>=8.6.1",
     "jinja2 >=2.11.3",
+    "mermaid-magic>=0.1.4",
     "pydantic>=1.10.21",
     "pydantic-settings",
     "pydantic-yaml>=1.4.0",
