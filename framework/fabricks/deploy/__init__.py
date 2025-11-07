@@ -4,9 +4,7 @@ from typing import List, Optional, Union, cast
 from fabricks.context import FABRICKS_STORAGE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import Steps, TStep
-from fabricks.core.schedules import create_or_replace_views as create_or_replace_schedules_views
 from fabricks.core.steps.base import BaseStep
-from fabricks.core.views import create_or_replace_views as create_or_replace_custom_views
 from fabricks.deploy.masks import deploy_masks
 from fabricks.deploy.notebooks import deploy_notebooks
 from fabricks.deploy.schedules import deploy_schedules
@@ -25,9 +23,6 @@ class Deploy:
     @staticmethod
     def views():
         deploy_views()
-
-        create_or_replace_custom_views()
-        create_or_replace_schedules_views()
 
     @staticmethod
     def udfs():
