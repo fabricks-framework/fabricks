@@ -16,6 +16,7 @@ dependencies = [
     "databricks-sdk >=0.20.0",
     "importlib-metadata>=8.6.1",
     "jinja2 >=2.11.3",
+    "mermaid-magic>=0.1.4",
     "pydantic>=1.10.21",
     "pydantic-settings",
     "pydantic-yaml>=1.4.0",

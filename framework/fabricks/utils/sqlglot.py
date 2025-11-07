@@ -22,7 +22,7 @@ def fix(sql: str, keep_comments: bool = True):
         normalize_functions="lower",
         leading_comma=True,
         max_text_width=119,
-        comments=keep_comments
+        comments=keep_comments,
     )[0]
     return sql
 
