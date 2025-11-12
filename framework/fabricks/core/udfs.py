@@ -1,4 +1,3 @@
-import importlib.util
 import os
 import re
 from typing import Callable, List, Optional
@@ -7,6 +6,7 @@ from pyspark.sql import SparkSession
 
 from fabricks.context import CATALOG, IS_UNITY_CATALOG, PATH_UDFS, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.utils.helpers import load_module_from_path
 
 UDFS: dict[str, Callable] = {}
 
@@ -84,12 +84,7 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
             else:
                 DEFAULT_LOGGER.debug(f"could not check if udf exists ({path.string})")
 
-            spec = importlib.util.spec_from_file_location(udf, path.string)
-            assert spec, f"no valid udf found ({path.string})"
-            assert spec.loader is not None
-
-            mod = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(mod)
+            load_module_from_path(udf, path)
 
             u = UDFS[udf]
             u(spark)

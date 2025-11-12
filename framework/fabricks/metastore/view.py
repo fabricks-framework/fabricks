@@ -19,7 +19,7 @@ class View(DbObject):
     ) -> str:
         if spark is None:
             if isinstance(df, DataFrameLike):
-                spark = df.sparkSession
+                spark = df.sparkSession  # type: ignore
             else:
                 spark = SPARK
 

@@ -60,7 +60,7 @@ class LogFormatter(logging.Formatter):
         extra = ""
         if hasattr(record, "exc_info") and record.exc_info:
             exc_info = record.__dict__.get("exc_info", None)
-            extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
+            extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"  # type: ignore
 
         if self.debugmode:
             if hasattr(record, "sql"):
