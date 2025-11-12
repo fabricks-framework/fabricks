@@ -40,7 +40,7 @@ def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
     if not _scopes or secret_scope not in _scopes:  # we get the scopes only once, unless you search for something new
         _scopes = [s.name for s in dbutils.secrets.listScopes()]
 
-    assert secret_scope in _scopes, "scope {secret_scope} not found"
+    assert secret_scope in _scopes, f"scope {secret_scope} not found"
 
     return dbutils.secrets.get(scope=secret_scope, key=name)
 
