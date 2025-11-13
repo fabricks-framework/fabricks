@@ -9,6 +9,7 @@ EXTENDERS: dict[str, Callable] = {}
 
 def get_extender(name: str) -> Callable:
     path = PATH_EXTENDERS.joinpath(f"{name}.py")
+
     if not IS_UNITY_CATALOG:
         assert path.exists(), "no valid extender found in {path.string}"
     else:
