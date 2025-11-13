@@ -15,7 +15,7 @@ def get_extender(name: str) -> Callable:
     else:
         DEFAULT_LOGGER.debug(f"could not check if extender exists ({path.string})")
 
-    load_module_from_path(name, path)
+    load_module_from_path(name, path, parent=True)
 
     e = EXTENDERS[name]
 
