@@ -228,7 +228,7 @@ def md5(s: Any) -> str:
     return md5.hexdigest()
 
 
-def load_module_from_path(name: str, path: Path, add: bool = False):
+def load_module_from_path(name: str, path: Path, parent: bool = False):
     from importlib.util import module_from_spec, spec_from_file_location
 
     spec = spec_from_file_location(name, path.string)
@@ -237,3 +237,10 @@ def load_module_from_path(name: str, path: Path, add: bool = False):
 
     textwrap_module = module_from_spec(spec)
     spec.loader.exec_module(textwrap_module)
+
+    if parent:
+        load_module_from_path(
+            name=".".join(name.split(".")[:-1]),
+            path=path.parent(),
+            parent=False,
+        )
