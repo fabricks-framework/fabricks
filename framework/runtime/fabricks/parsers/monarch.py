@@ -2,7 +2,8 @@ from pyspark.sql import DataFrame, SparkSession
 
 from fabricks.core.parsers import parser
 from fabricks.utils.path import Path
-from runtime.fabricks.parsers.delete_log import DeleteLogBaseParser
+
+from .delete_log import DeleteLogBaseParser
 
 
 @parser(name="monarch")

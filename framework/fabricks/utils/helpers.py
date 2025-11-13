@@ -231,8 +231,6 @@ def md5(s: Any) -> str:
 def load_module_from_path(name: str, path: Path, add: bool = False):
     from importlib.util import module_from_spec, spec_from_file_location
 
-    print(f"loading {name} from {path.string}")
-
     spec = spec_from_file_location(name, path.string)
     assert spec, f"no valid module found in {path.string}"
     assert spec.loader is not None
