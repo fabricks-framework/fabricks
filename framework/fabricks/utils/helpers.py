@@ -239,8 +239,10 @@ def load_module_from_path(name: str, path: Path, parent: bool = False):
     spec.loader.exec_module(textwrap_module)
 
     if parent:
-        load_module_from_path(
-            name=".".join(name.split(".")[:-1]),
-            path=path.parent(),
-            parent=False,
-        )
+        import sys
+        
+        root = path.parent()
+        print(f"adding {root} to sys.path")
+        if str(root) not in sys.path:
+            sys.path.insert(0, str(root))
+    
