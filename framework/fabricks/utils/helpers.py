@@ -229,32 +229,13 @@ def md5(s: Any) -> str:
 
 
 def load_module_from_path(name: str, path: Path, add: bool = False):
+    from importlib.util import module_from_spec, spec_from_file_location
+
     print(f"loading {name} from {path.string}")
 
-    if add:
-        import sys
+    spec = spec_from_file_location(name, path.string)
+    assert spec, f"no valid module found in {path.string}"
+    assert spec.loader is not None
 
-        p = path.pathlibpath
-        while not (p / "pyproject.toml").exists():
-            p = p.parent
-
-        root = p.absolute()
-        if str(root) not in sys.path:
-            print(f"adding {root} to sys.path")
-            sys.path.insert(0, str(root))
-
-    try:
-        from importlib.util import module_from_spec, spec_from_file_location
-
-        spec = spec_from_file_location(name, path.string)
-        assert spec, f"no valid module found in {path.string}"
-        assert spec.loader is not None
-
-        mod = module_from_spec(spec)
-        spec.loader.exec_module(mod)
-
-    except ModuleNotFoundError as e:
-        if not add:
-            return load_module_from_path(name, path, add=True)
-        else:
-            raise e
+    textwrap_module = module_from_spec(spec)
+    spec.loader.exec_module(textwrap_module)
