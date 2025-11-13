@@ -102,10 +102,10 @@ docs = [
 python_files = ["test_*.py"]
 
 [tool.fabricks]
-runtime = "tests/integration/runtime"
-notebooks = "tests/integration/runtime/fabricks/notebooks"
+runtime = "runtime"
+notebooks = "runtime/fabricks/notebooks"
 job_config_from_yaml = true
 loglevel = "debug"
 debugmode = true
-config = "tests/integration/runtime/fabricks/conf.uc.fabricks.yml"
+config = "runtime/fabricks/conf.uc.fabricks.yml"
 devmode = true
