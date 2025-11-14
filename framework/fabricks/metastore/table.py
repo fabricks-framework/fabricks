@@ -666,7 +666,45 @@ class Table(DbObject):
             """
         )
 
-    def add_comment(self, comment: str):
+    def drop_comments(self):
+        self.drop_table_comment()
+        for col in self.columns:
+            self.drop_column_comment(col)
+
+    def drop_table_comment(self):
+        assert self.registered, f"{self} not registered"
+
+        DEFAULT_LOGGER.debug("drop table comment", extra={"label": self})
+        self.spark.sql(
+            f"""
+            comment on table {self.qualified_name}
+            is null;
+            """
+        )
+
+    def drop_column_comment(self, column: str):
+        assert self.registered, f"{self} not registered"
+
+        DEFAULT_LOGGER.debug(f"drop comment from column {column}", extra={"label": self})
+        self.spark.sql(
+            f"""
+            comment on column {self.qualified_name}.`{column}`
+            is null;
+            """
+        )
+
+    def add_column_comment(self, column: str, comment: str):
+        assert self.registered, f"{self} not registered"
+
+        DEFAULT_LOGGER.debug(f"add comment '{comment}' to column {column}", extra={"label": self})
+        self.spark.sql(
+            f"""
+            comment on column {self.qualified_name}.`{column}`
+            is '{comment}';
+            """
+        )
+
+    def add_table_comment(self, comment: str):
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug(f"add comment '{comment}'", extra={"label": self})

@@ -336,7 +336,7 @@ class Generator(Configurator):
 
                 comment = self.options.table.get("comment")
                 if comment:
-                    self.table.add_comment(comment=comment)
+                    self.table.add_table_comment(comment=comment)
 
         else:
             DEFAULT_LOGGER.debug("table exists, skip creation", extra={"label": self})
@@ -388,6 +388,24 @@ class Generator(Configurator):
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         self._update_schema(df=df, overwrite=True)
+
+    def update_comments(self, table: Optional[bool] = True, columns: Optional[bool] = True):
+        if self.virtual:
+            return
+
+        if self.persist:
+            self.table.drop_comments()
+
+            if table:
+                comment = self.options.table.get("comment")
+                if comment:
+                    self.table.add_table_comment(comment=comment)
+
+            if columns:
+                comments = self.options.table.get_dict("comments")
+                if comments:
+                    for col, comment in comments.items():
+                        self.table.add_column_comment(column=col, comment=comment)
 
     def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
         if df is None:
