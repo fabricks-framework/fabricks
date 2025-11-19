@@ -276,6 +276,7 @@ def create_or_replace_logs_pivot_view():
         l.step,
         l.job,
         l.job_id,
+        -- flags
         collect_set(l.status) as statuses,
         array_contains(statuses, 'skipped') as skipped,
         array_contains(statuses, 'warned') as warned,
@@ -283,15 +284,19 @@ def create_or_replace_logs_pivot_view():
         array_contains(statuses, 'failed') or (not done and not skipped) as failed,
         not done and not failed and not skipped and array_contains(statuses, 'running') as timed_out,
         not array_contains(statuses, 'running') as cancelled,
+        --
         max(l.notebook_id) as notebook_id,
+        --
+        max(l.timestamp) filter (where l.status = 'running') as start_time,
+        max(l.timestamp) filter (where l.status in ('done', 'ok')) as end_time,
+        --
         max(l.timestamp) filter (where l.status = 'scheduled' ) as scheduled_time,
         max(l.timestamp) filter (where l.status = 'waiting' ) as waiting_time,
-        max(l.timestamp) filter (where l.status = 'running') as start_time,
         max(l.timestamp) filter (where l.status = 'running' ) as running_time,
         max(l.timestamp) filter (where l.status = 'done' ) as done_time,
         max(l.timestamp) filter (where l.status = 'failed' ) as failed_time,
-        max(l.timestamp) filter(where l.status = 'ok') as end_time,
-        max(l.timestamp) filter(where l.status = 'ok') as ok_time,
+        max(l.timestamp) filter (where l.status = 'ok') as ok_time,
+        --
         max(l.exception) as exception
       from
         fabricks.logs l
