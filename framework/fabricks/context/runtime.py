@@ -1,8 +1,9 @@
-from typing import Final, List, Optional
+from typing import Final, Optional
 
 import yaml
 
 from fabricks.context.config import PATH_CONFIG, PATH_RUNTIME
+from fabricks.context.helpers import get_runtime_path, get_storage_paths
 from fabricks.utils.path import Path
 
 with open(str(PATH_CONFIG)) as f:
@@ -77,41 +78,16 @@ path_masks = path_options.get("masks", "fabricks/masks")
 assert path_masks, "path to masks mandatory"
 PATH_MASKS: Final[Path] = PATH_RUNTIME.joinpath(path_masks)
 
-
-def _get_storage_paths(objects: List[dict]) -> dict:
-    d = {}
-    for o in objects:
-        if o:
-            name = o.get("name")
-            assert name
-            uri = o.get("path_options", {}).get("storage")
-            assert uri
-            d[name] = Path.from_uri(uri, regex=variables)
-    return d
-
-
 PATHS_STORAGE: Final[dict[str, Path]] = {
     "fabricks": FABRICKS_STORAGE,
-    **_get_storage_paths(BRONZE),
-    **_get_storage_paths(SILVER),
-    **_get_storage_paths(GOLD),
-    **_get_storage_paths(databases),
+    **get_storage_paths(BRONZE, variables),
+    **get_storage_paths(SILVER, variables),
+    **get_storage_paths(GOLD, variables),
+    **get_storage_paths(databases, variables),
 }
 
-
-def _get_runtime_path(objects: List[dict]) -> dict:
-    d = {}
-    for o in objects:
-        name = o.get("name")
-        assert name
-        uri = o.get("path_options", {}).get("runtime")
-        assert uri
-        d[name] = PATH_RUNTIME.joinpath(uri)
-    return d
-
-
 PATHS_RUNTIME: Final[dict[str, Path]] = {
-    **_get_runtime_path(BRONZE),
-    **_get_runtime_path(SILVER),
-    **_get_runtime_path(GOLD),
+    **get_runtime_path(BRONZE, PATH_RUNTIME),
+    **get_runtime_path(SILVER, PATH_RUNTIME),
+    **get_runtime_path(GOLD, PATH_RUNTIME),
 }

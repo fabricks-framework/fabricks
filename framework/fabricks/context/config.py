@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Final
 
-from fabricks.context.utils import get_config_from_file
+from fabricks.context.helpers import get_config_from_file
 from fabricks.utils.path import Path
 from fabricks.utils.spark import spark
 
@@ -80,10 +80,8 @@ if path_config is None:
     if path_config := file_config.get("config"):
         assert file_path is not None
         path_config = file_path.joinpath(path_config)
-else:
-    path_config = PATH_RUNTIME.joinpath(path_config).string if path_config else None
 
-if not path_config:
+if path_config is None:
     path_config = PATH_RUNTIME.joinpath(
         "fabricks",
         f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
