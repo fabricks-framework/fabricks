@@ -390,11 +390,12 @@ class Processor(Generator):
         try:
             sql = template.render(**context)
             if fix:
-                DEFAULT_LOGGER.debug("fix context", extra={"label": self, "sql": sql})
                 sql = self.fix_sql(sql)
+            else:
+                DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql})
 
         except (Exception, TypeError) as e:
-            DEFAULT_LOGGER.exception("fail to execute sql query", extra={"label": self, "context": context})
+            DEFAULT_LOGGER.exception("fail to render sql query", extra={"label": self, "context": context})
             raise e
 
         row = self.spark.sql(sql).collect()[0]
@@ -425,7 +426,7 @@ class Processor(Generator):
 
         except (Exception, TypeError) as e:
             DEFAULT_LOGGER.debug("context", extra={"label": self, "context": context})
-            DEFAULT_LOGGER.exception("fail to generate sql query", extra={"label": self, "context": context})
+            DEFAULT_LOGGER.exception("fail to render sql query", extra={"label": self, "context": context})
             raise e
 
         return sql
