@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Final
 
-from fabricks.context.config.utils import get_config_from_file
+from fabricks.context.utils import get_config_from_file
 from fabricks.utils.path import Path
 from fabricks.utils.spark import spark
 
