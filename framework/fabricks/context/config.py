@@ -10,6 +10,9 @@ from fabricks.utils.spark import spark
 logger, _ = get_logger("logs", level=logging.DEBUG)
 file_path, file_config, origin = get_config_from_file()
 
+if file_path:
+    logger.debug(f"found {origin} config ({file_path})", extra={"label": "config"})
+
 # path to runtime
 runtime = os.environ.get("FABRICKS_RUNTIME", "none")
 runtime = None if runtime.lower() == "none" else runtime
