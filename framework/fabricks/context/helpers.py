@@ -49,13 +49,13 @@ def get_config_from_json():
 def get_config_from_file():
     json_path, json_config = get_config_from_json()
     if json_config:
-        return json_path, json_config
+        return json_path, json_config, "json"
 
     pyproject_path, pyproject_config = get_config_from_toml()
     if pyproject_config:
-        return pyproject_path, pyproject_config
+        return pyproject_path, pyproject_config, "pyproject"
 
-    return None, {}
+    return None, {}, None
 
 
 def get_storage_paths(objects: List[dict], variables: dict) -> dict:

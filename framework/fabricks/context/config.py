@@ -6,7 +6,8 @@ from fabricks.context.helpers import get_config_from_file
 from fabricks.utils.path import Path
 from fabricks.utils.spark import spark
 
-file_path, file_config = get_config_from_file()
+logger = logging.getLogger(__name__)
+file_path, file_config, origin = get_config_from_file()
 
 runtime = os.environ.get("FABRICKS_RUNTIME", "none")
 runtime = None if runtime.lower() == "none" else runtime
@@ -14,10 +15,14 @@ if runtime is None:
     if runtime := file_config.get("runtime"):
         assert file_path is not None
         runtime = file_path.joinpath(runtime)
+        logger.debug(f"resolved runtime from {origin} file")
+else:
+    logger.debug("resolved runtime from env")
 
 if runtime is None:
     if file_path is not None:
         runtime = file_path
+        logger.debug(f"resolved runtime from {origin} file")
     else:
         raise ValueError(
             "could not resolve runtime (could not find pyproject.toml nor fabricksconfig.json nor FABRICKS_RUNTIME)"
@@ -32,32 +37,46 @@ if notebooks is None:
     if notebooks := file_config.get("notebooks"):
         assert file_path is not None
         notebooks = file_path.joinpath(notebooks)
+        logger.debug(f"resolved notebooks from {origin} file")
+else:
+    logger.debug("resolved notebooks from env")
 
 notebooks = notebooks if notebooks else path_runtime.joinpath("notebooks")
 PATH_NOTEBOOKS: Final[Path] = Path(str(notebooks), assume_git=True)
 
 is_job_config_from_yaml = os.environ.get("FABRICKS_IS_JOB_CONFIG_FROM_YAML", None)
 if is_job_config_from_yaml is None:
-    assert file_path is not None
-    is_job_config_from_yaml = file_config.get("job_config_from_yaml")
+    if is_job_config_from_yaml := file_config.get("job_config_from_yaml"):
+        logger.debug(f"resolved job_config_from_yaml from {origin} file")
+else:
+    logger.debug("resolved job_config_from_yaml from env")
 
 IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1", "yes")
 
 is_debugmode = os.environ.get("FABRICKS_IS_DEBUGMODE", None)
 if is_debugmode is None:
-    is_debugmode = file_config.get("debugmode")
+    if is_debugmode := file_config.get("debugmode"):
+        logger.debug(f"resolved debugmode from {origin} file")
+else:
+    logger.debug("resolved debugmode from env")
 
 IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1", "yes")
 
 is_devmode = os.environ.get("FABRICKS_IS_DEVMODE", None)
 if is_devmode is None:
-    is_devmode = file_config.get("devmode")
+    if is_devmode := file_config.get("devmode"):
+        logger.debug(f"resolved devmode from {origin} file")
+else:
+    logger.debug("resolved devmode from env")
 
 IS_DEVMODE: Final[bool] = str(is_devmode).lower() in ("true", "1", "yes")
 
 loglevel = os.environ.get("FABRICKS_LOGLEVEL", None)
 if loglevel is None:
-    loglevel = file_config.get("loglevel")
+    if loglevel := file_config.get("loglevel"):
+        logger.debug(f"resolved loglevel from {origin} file")
+else:
+    logger.debug("resolved loglevel from env")
 
 loglevel = loglevel.upper() if loglevel else "INFO"
 if loglevel == "DEBUG":
@@ -80,6 +99,9 @@ if path_config is None:
     if path_config := file_config.get("config"):
         assert file_path is not None
         path_config = file_path.joinpath(path_config)
+        logger.debug(f"resolved config from {origin} file")
+else:
+    logger.debug("resolved config from env")
 
 if path_config is None:
     path_config = PATH_RUNTIME.joinpath(
