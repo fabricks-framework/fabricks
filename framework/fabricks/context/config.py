@@ -20,14 +20,14 @@ if runtime is None:
     if runtime := file_config.get("runtime"):
         assert file_path is not None
         runtime = file_path.joinpath(runtime)
-        logger.debug(f"resolved runtime from {origin} file", extra={"label": "config"})
+        logger.debug(f"resolve runtime from {origin} file", extra={"label": "config"})
 else:
-    logger.debug("resolved runtime from env", extra={"label": "config"})
+    logger.debug("resolve runtime from env", extra={"label": "config"})
 
 if runtime is None:
     if file_path is not None:
         runtime = file_path
-        logger.debug(f"resolved runtime from {origin} file", extra={"label": "config"})
+        logger.debug(f"resolve runtime from {origin} file", extra={"label": "config"})
     else:
         raise ValueError(
             "could not resolve runtime (could not find pyproject.toml nor fabricksconfig.json nor FABRICKS_RUNTIME)"
@@ -41,12 +41,12 @@ if config is None:
     if config := file_config.get("config"):
         assert file_path is not None
         config = file_path.joinpath(config)
-        logger.debug(f"resolved config from {origin} file", extra={"label": "config"})
+        logger.debug(f"resolve config from {origin} file", extra={"label": "config"})
 else:
-    logger.debug("resolved config from env", extra={"label": "config"})
+    logger.debug("resolve config from env", extra={"label": "config"})
 
 if config is None:
-    logger.debug("resolved config from default path", extra={"label": "config"})
+    logger.debug("resolve config from default path", extra={"label": "config"})
     config = path_runtime.joinpath(
         "fabricks",
         f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
@@ -61,12 +61,12 @@ if notebooks is None:
     if notebooks := file_config.get("notebooks"):
         assert file_path is not None
         notebooks = file_path.joinpath(notebooks)
-        logger.debug(f"resolved notebooks from {origin} file", extra={"label": "config"})
+        logger.debug(f"resolve notebooks from {origin} file", extra={"label": "config"})
 else:
-    logger.debug("resolved notebooks from env", extra={"label": "config"})
+    logger.debug("resolve notebooks from env", extra={"label": "config"})
 
 if notebooks is None:
-    logger.debug("resolved notebooks from default path", extra={"label": "config"})
+    logger.debug("resolve notebooks from default path", extra={"label": "config"})
     notebooks = path_runtime.joinpath("notebooks")
 
 path_notebooks = Path(str(notebooks), assume_git=True)
@@ -75,33 +75,33 @@ path_notebooks = Path(str(notebooks), assume_git=True)
 is_job_config_from_yaml = os.environ.get("FABRICKS_IS_JOB_CONFIG_FROM_YAML", None)
 if is_job_config_from_yaml is None:
     if is_job_config_from_yaml := file_config.get("job_config_from_yaml"):
-        logger.debug(f"resolved job_config_from_yaml from {origin} file", extra={"label": "config"})
+        logger.debug(f"resolve job_config_from_yaml from {origin} file", extra={"label": "config"})
 else:
-    logger.debug("resolved job_config_from_yaml from env", extra={"label": "config"})
+    logger.debug("resolve job_config_from_yaml from env", extra={"label": "config"})
 
 # debug mode
 is_debugmode = os.environ.get("FABRICKS_IS_DEBUGMODE", None)
 if is_debugmode is None:
     if is_debugmode := file_config.get("debugmode"):
-        logger.debug(f"resolved debugmode from {origin} file", extra={"label": "config"})
+        logger.debug(f"resolve debugmode from {origin} file", extra={"label": "config"})
 else:
-    logger.debug("resolved debugmode from env", extra={"label": "config"})
+    logger.debug("resolve debugmode from env", extra={"label": "config"})
 
 # dev mode
 is_devmode = os.environ.get("FABRICKS_IS_DEVMODE", None)
 if is_devmode is None:
     if is_devmode := file_config.get("devmode"):
-        logger.debug(f"resolved devmode from {origin} file", extra={"label": "config"})
+        logger.debug(f"resolve devmode from {origin} file", extra={"label": "config"})
 else:
-    logger.debug("resolved devmode from env", extra={"label": "config"})
+    logger.debug("resolve devmode from env", extra={"label": "config"})
 
 # log level
 loglevel = os.environ.get("FABRICKS_LOGLEVEL", None)
 if loglevel is None:
     if loglevel := file_config.get("loglevel"):
-        logger.debug(f"resolved loglevel from {origin} file", extra={"label": "config"})
+        logger.debug(f"resolve loglevel from {origin} file", extra={"label": "config"})
 else:
-    logger.debug("resolved loglevel from env", extra={"label": "config"})
+    logger.debug("resolve loglevel from env", extra={"label": "config"})
 
 loglevel = loglevel.upper() if loglevel else "INFO"
 if loglevel == "DEBUG":
