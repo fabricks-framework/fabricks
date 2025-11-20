@@ -89,6 +89,7 @@ class Merger(Processor):
                 sql = sql.replace("{src}", "src")
                 sql = fix_sql(sql)
                 sql = sql.replace("`src`", "{src}")
+
                 DEFAULT_LOGGER.debug("merge", extra={"label": self, "sql": sql})
 
             except Exception as e:

@@ -271,11 +271,7 @@ with
     from dates d
     left join newkey r on d.__timestamp between r.__valid_from and r.__valid_to and d.only_offer_id = r.only_offer_id
     group by d.only_offer_id, __timestamp, __operation
-    
 ```
-
-
-
 
 ## 🧾 Conclusion
 

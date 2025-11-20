@@ -1,11 +1,12 @@
-from typing import Final, List, Optional
+from typing import Final, Optional
 
 import yaml
 
-from fabricks.context.config import path_config, path_runtime
+from fabricks.context.config import PATH_CONFIG, PATH_RUNTIME
+from fabricks.context.helpers import get_runtime_path, get_storage_paths
 from fabricks.utils.path import Path
 
-with open(str(path_config)) as f:
+with open(str(PATH_CONFIG)) as f:
     data = yaml.safe_load(f)
 
 conf: dict = [d["conf"] for d in data][0]
@@ -51,67 +52,42 @@ FABRICKS_STORAGE_CREDENTIAL: Final[Optional[str]] = path_options.get("storage_cr
 
 path_udfs = path_options.get("udfs", "fabricks/udfs")
 assert path_udfs, "path to udfs mandatory"
-PATH_UDFS: Final[Path] = path_runtime.joinpath(path_udfs)
+PATH_UDFS: Final[Path] = PATH_RUNTIME.joinpath(path_udfs)
 
 path_parsers = path_options.get("parsers", "fabricks/parsers")
 assert path_parsers, "path to parsers mandatory"
-PATH_PARSERS: Final[Path] = path_runtime.joinpath(path_parsers)
+PATH_PARSERS: Final[Path] = PATH_RUNTIME.joinpath(path_parsers)
 
 path_extenders = path_options.get("extenders", "fabricks/extenders")
 assert path_extenders, "path to extenders mandatory"
-PATH_EXTENDERS: Final[Path] = path_runtime.joinpath(path_extenders)
+PATH_EXTENDERS: Final[Path] = PATH_RUNTIME.joinpath(path_extenders)
 
 path_views = path_options.get("views", "fabricks/views")
 assert path_views, "path to views mandatory"
-PATH_VIEWS: Final[Path] = path_runtime.joinpath(path_views)
+PATH_VIEWS: Final[Path] = PATH_RUNTIME.joinpath(path_views)
 
 path_schedules = path_options.get("schedules", "fabricks/schedules")
 assert path_schedules, "path to schedules mandatory"
-PATH_SCHEDULES: Final[Path] = path_runtime.joinpath(path_schedules)
+PATH_SCHEDULES: Final[Path] = PATH_RUNTIME.joinpath(path_schedules)
 
 path_requirements = path_options.get("requirements", "fabricks/requirements")
 assert path_requirements, "path to requirements mandatory"
-PATH_REQUIREMENTS: Final[Path] = path_runtime.joinpath(path_requirements)
+PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.joinpath(path_requirements)
 
 path_masks = path_options.get("masks", "fabricks/masks")
 assert path_masks, "path to masks mandatory"
-PATH_MASKS: Final[Path] = path_runtime.joinpath(path_masks)
-
-
-def _get_storage_paths(objects: List[dict]) -> dict:
-    d = {}
-    for o in objects:
-        if o:
-            name = o.get("name")
-            assert name
-            uri = o.get("path_options", {}).get("storage")
-            assert uri
-            d[name] = Path.from_uri(uri, regex=variables)
-    return d
-
+PATH_MASKS: Final[Path] = PATH_RUNTIME.joinpath(path_masks)
 
 PATHS_STORAGE: Final[dict[str, Path]] = {
     "fabricks": FABRICKS_STORAGE,
-    **_get_storage_paths(BRONZE),
-    **_get_storage_paths(SILVER),
-    **_get_storage_paths(GOLD),
-    **_get_storage_paths(databases),
+    **get_storage_paths(BRONZE, variables),
+    **get_storage_paths(SILVER, variables),
+    **get_storage_paths(GOLD, variables),
+    **get_storage_paths(databases, variables),
 }
 
-
-def _get_runtime_path(objects: List[dict]) -> dict:
-    d = {}
-    for o in objects:
-        name = o.get("name")
-        assert name
-        uri = o.get("path_options", {}).get("runtime")
-        assert uri
-        d[name] = path_runtime.joinpath(uri)
-    return d
-
-
 PATHS_RUNTIME: Final[dict[str, Path]] = {
-    **_get_runtime_path(BRONZE),
-    **_get_runtime_path(SILVER),
-    **_get_runtime_path(GOLD),
+    **get_runtime_path(BRONZE, PATH_RUNTIME),
+    **get_runtime_path(SILVER, PATH_RUNTIME),
+    **get_runtime_path(GOLD, PATH_RUNTIME),
 }

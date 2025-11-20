@@ -34,7 +34,7 @@ For the latest releases and detailed changelogs, please visit the [Fabricks Rele
 
 ### Runtime Requirements
 
-`Fabricks 2.4.0` was successfully tested on Databricks Runtime `16.4 LTS`.
+`Fabricks 3.0.12` was successfully tested on Databricks Runtime `16.4 LTS`.
 
 ## Related Projects 🔗
 - We use [odbc2deltalake](https://github.com/bmsuisse/odbc2deltalake) for extensive SQL Server data ingestion in a pre_run notebook. 🔌🏊‍♂️

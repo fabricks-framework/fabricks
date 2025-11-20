@@ -10,7 +10,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.core.dags.base import BaseDags
-from fabricks.core.dags.log import LOGGER
+from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 from fabricks.core.dags.run import run
 from fabricks.core.jobs.base._types import TStep
 from fabricks.core.steps.get_step import get_step
@@ -148,7 +148,9 @@ class DagProcessor(BaseDags):
                 finally:
                     j["Status"] = "ok"
                     self.table.upsert(j)
+
                     LOGGER.info("end", extra=self.extra(j))
+                    TABLE_LOG_HANDLER.flush()
 
                 dependencies = self.table.query(f"PartitionKey eq 'dependencies' and ParentId eq '{j.get('JobId')}'")
                 self.table.delete(dependencies)

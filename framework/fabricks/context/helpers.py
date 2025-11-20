@@ -1,3 +1,8 @@
+from typing import List
+
+from fabricks.utils.path import Path
+
+
 def get_config_from_toml():
     import os
     import pathlib
@@ -44,10 +49,33 @@ def get_config_from_json():
 def get_config_from_file():
     json_path, json_config = get_config_from_json()
     if json_config:
-        return json_path, json_config
+        return json_path, json_config, "json"
 
     pyproject_path, pyproject_config = get_config_from_toml()
     if pyproject_config:
-        return pyproject_path, pyproject_config
+        return pyproject_path, pyproject_config, "pyproject"
 
-    return None, {}
+    return None, {}, None
+
+
+def get_storage_paths(objects: List[dict], variables: dict) -> dict:
+    d = {}
+    for o in objects:
+        if o:
+            name = o.get("name")
+            assert name
+            uri = o.get("path_options", {}).get("storage")
+            assert uri
+            d[name] = Path.from_uri(uri, regex=variables)
+    return d
+
+
+def get_runtime_path(objects: List[dict], root: Path) -> dict:
+    d = {}
+    for o in objects:
+        name = o.get("name")
+        assert name
+        uri = o.get("path_options", {}).get("runtime")
+        assert uri
+        d[name] = root.joinpath(uri)
+    return d
