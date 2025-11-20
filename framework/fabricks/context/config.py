@@ -3,12 +3,14 @@ import os
 from typing import Final
 
 from fabricks.context.helpers import get_config_from_file
+from fabricks.utils.log import get_logger
 from fabricks.utils.path import Path
 from fabricks.utils.spark import spark
 
-logger = logging.getLogger(__name__)
+logger, _ = get_logger("logs", level=logging.DEBUG)
 file_path, file_config, origin = get_config_from_file()
 
+# path to runtime
 runtime = os.environ.get("FABRICKS_RUNTIME", "none")
 runtime = None if runtime.lower() == "none" else runtime
 if runtime is None:
@@ -29,8 +31,27 @@ if runtime is None:
         )
 
 path_runtime = Path(runtime, assume_git=True)
-PATH_RUNTIME: Final[Path] = path_runtime
 
+# path to config
+config = os.environ.get("FABRICKS_CONFIG")
+if config is None:
+    if config := file_config.get("config"):
+        assert file_path is not None
+        config = file_path.joinpath(config)
+        logger.debug(f"resolved config from {origin} file")
+else:
+    logger.debug("resolved config from env")
+
+if config is None:
+    logger.debug("resolved config from default path")
+    config = path_runtime.joinpath(
+        "fabricks",
+        f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
+    ).string
+
+path_config = Path(config, assume_git=True)
+
+# path to notebooks
 notebooks = os.environ.get("FABRICKS_NOTEBOOKS", "none")
 notebooks = None if notebooks.lower() == "none" else notebooks
 if notebooks is None:
@@ -41,9 +62,13 @@ if notebooks is None:
 else:
     logger.debug("resolved notebooks from env")
 
-notebooks = notebooks if notebooks else path_runtime.joinpath("notebooks")
-PATH_NOTEBOOKS: Final[Path] = Path(str(notebooks), assume_git=True)
+if notebooks is None:
+    logger.debug("resolved notebooks from default path")
+    notebooks = path_runtime.joinpath("notebooks")
 
+path_notebooks = Path(str(notebooks), assume_git=True)
+
+# job config from yaml
 is_job_config_from_yaml = os.environ.get("FABRICKS_IS_JOB_CONFIG_FROM_YAML", None)
 if is_job_config_from_yaml is None:
     if is_job_config_from_yaml := file_config.get("job_config_from_yaml"):
@@ -51,8 +76,7 @@ if is_job_config_from_yaml is None:
 else:
     logger.debug("resolved job_config_from_yaml from env")
 
-IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1", "yes")
-
+# debug mode
 is_debugmode = os.environ.get("FABRICKS_IS_DEBUGMODE", None)
 if is_debugmode is None:
     if is_debugmode := file_config.get("debugmode"):
@@ -60,8 +84,7 @@ if is_debugmode is None:
 else:
     logger.debug("resolved debugmode from env")
 
-IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1", "yes")
-
+# dev mode
 is_devmode = os.environ.get("FABRICKS_IS_DEVMODE", None)
 if is_devmode is None:
     if is_devmode := file_config.get("devmode"):
@@ -69,8 +92,7 @@ if is_devmode is None:
 else:
     logger.debug("resolved devmode from env")
 
-IS_DEVMODE: Final[bool] = str(is_devmode).lower() in ("true", "1", "yes")
-
+# log level
 loglevel = os.environ.get("FABRICKS_LOGLEVEL", None)
 if loglevel is None:
     if loglevel := file_config.get("loglevel"):
@@ -92,21 +114,11 @@ elif loglevel == "CRITICAL":
 else:
     raise ValueError(f"could not resolve {loglevel} (DEBUG, INFO, WARNING, ERROR or CRITICAL)")
 
+# Constants
+PATH_CONFIG: Final[Path] = path_config
+PATH_RUNTIME: Final[Path] = path_runtime
+PATH_NOTEBOOKS: Final[Path] = path_notebooks
+IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1", "yes")
+IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1", "yes")
+IS_DEVMODE: Final[bool] = str(is_devmode).lower() in ("true", "1", "yes")
 LOGLEVEL: Final[int] = _loglevel
-
-path_config = os.environ.get("FABRICKS_CONFIG")
-if path_config is None:
-    if path_config := file_config.get("config"):
-        assert file_path is not None
-        path_config = file_path.joinpath(path_config)
-        logger.debug(f"resolved config from {origin} file")
-else:
-    logger.debug("resolved config from env")
-
-if path_config is None:
-    path_config = PATH_RUNTIME.joinpath(
-        "fabricks",
-        f"conf.{spark.conf.get('spark.databricks.clusterUsageTags.clusterOwnerOrgId')}.yml",
-    ).string
-
-PATH_CONFIG: Final[Path] = Path(path_config, assume_git=True)
