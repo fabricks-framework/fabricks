@@ -1,13 +1,3 @@
-if [[ "$OSTYPE" == "linux-gnu"* ]] 
-then
-    source ./.venv/bin/activate
-elif [[ "$OSTYPE" == "darwin23" ]]
-then
-    source ./.venv/bin/activate
-else
-    source ./.venv/Scripts/activate
-fi
-
 while getopts :f:p:s:y:g:c:a:b option
 do
     case $option in
