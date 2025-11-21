@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 from functools import reduce
 from queue import Queue
