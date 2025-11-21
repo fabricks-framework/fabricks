@@ -9,7 +9,7 @@ from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
-from tests.integration._types import paths
+from _types import paths
 
 
 def create_random_tables():
