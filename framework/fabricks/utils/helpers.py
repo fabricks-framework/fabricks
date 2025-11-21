@@ -1,4 +1,6 @@
 import logging
+import os
+import sys
 from functools import reduce
 from queue import Queue
 from typing import Any, Callable, Iterable, List, Literal, Optional, Union
@@ -230,6 +232,8 @@ def md5(s: Any) -> str:
 
 def load_module_from_path(name: str, path: Path):
     from importlib.util import module_from_spec, spec_from_file_location
+
+    sys.path.append(str(path.parent))
 
     spec = spec_from_file_location(name, path.string)
     assert spec, f"no valid module found in {path.string}"
