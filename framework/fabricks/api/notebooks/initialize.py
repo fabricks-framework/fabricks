@@ -1,8 +1,4 @@
 # Databricks notebook source
-# MAGIC %run ./add_missing_modules
-
-# COMMAND ----------
-
 from databricks.sdk.runtime import dbutils, display
 
 from fabricks.core.schedules import generate

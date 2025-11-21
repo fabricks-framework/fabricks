@@ -1,8 +1,4 @@
 # Databricks notebook source
-# MAGIC %run ./add_missing_modules
-
-# COMMAND ----------
-
 import sys
 from logging import ERROR, INFO
 

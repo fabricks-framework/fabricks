@@ -8,7 +8,7 @@ else
     source ./.venv/Scripts/activate
 fi
 
-while getopts :f:p:s:y:g:c:a option
+while getopts :f:p:s:y:g:c:a:b option
 do
     case $option in
         a) all="true";;
@@ -17,6 +17,7 @@ do
         s) sql="true";;
         y) yaml="true";;
         g) git="true";;
+        b) build="true";;
     esac
 done
 
@@ -50,13 +51,18 @@ then
     git="true"
 fi
 
+if [ -z "$build" ]
+then
+    build="true"
+fi
+
 if [ "$all" = "true" ] || [ "$python" = "true" ]
 then
-    echo "🌟 autoflake(ing) 🌟"
+    echo "🖌️ autoflake(ing) 🖌️"
     uv run autoflake -r -i .
-    echo "🌟 isort(ing) 🌟"
+    echo "🖌️ isort(ing) 🖌️"
     uv run isort .
-    echo "🌟 pycln(ing) 🌟"
+    echo "🖌️ pycln(ing) 🖌️"
     uv run pycln .
 fi
 
@@ -69,24 +75,32 @@ fi
 
 if [ "$all" = "true" ] || [ "$python" = "true" ]
 then
-    echo "🌟 pyright(ing) 🌟"
+    echo "🔎 pyright(ing) 🔎"
     uv run pyright .
 fi
 
 if [ "$all" = "true" ] || [ "$sql" = "true" ]
 then
-    echo "🌟 sqlfmt(ing) 🌟"
+    echo "🧼 sqlfmt(ing) 🧼"
     uv run sqlfmt .
 fi
 
 if [ "$all" = "true" ] || [ "$yaml" = "true" ]
 then
-    echo "🌟 yamlfix(ing) 🌟"
+    echo "🧼 yamlfix(ing) 🧼"
     uv run yamlfix . --exclude .venv --exclude .dev --exclude .idea --include *.yml
 fi
 
 if [ "$all" = "true" ] || [ "$git" = "true" ]
 then
-    echo "🌟 git add(ing) 🌟"
+    echo "✅ git add(ing) ✅"
     git add .
 fi
+
+if [ "$all" = "true" ] || [ "$build" = "true" ]
+then
+    echo "🏗️ build wheel 🏗️"
+    uv build
+fi
+
+echo "🎉 All done 🎉"

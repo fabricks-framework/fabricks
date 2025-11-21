@@ -1,8 +1,4 @@
 # Databricks notebook source
-# MAGIC %run ./add_missing_modules
-
-# COMMAND ----------
-
 from logging import DEBUG
 from typing import Any, cast
 

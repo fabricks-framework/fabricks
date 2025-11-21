@@ -1,8 +1,4 @@
 # Databricks notebook source
-# MAGIC %run ./add_missing_modules
-
-# COMMAND ----------
-
 from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
