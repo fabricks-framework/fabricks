@@ -5,7 +5,7 @@ from databricks.sdk.runtime import dbutils
 
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.deploy import Deploy
-from tests.integration._types import steps
+from _types import steps
 
 # COMMAND ----------
 

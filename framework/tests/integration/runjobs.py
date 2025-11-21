@@ -6,8 +6,8 @@ from databricks.sdk.runtime import dbutils, spark
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
-from tests.integration._types import paths
-from tests.integration.utils import git_to_landing, landing_to_raw
+from _types import paths
+from utils import git_to_landing, landing_to_raw
 
 # COMMAND ----------
 
@@ -86,5 +86,3 @@ for iter in range(1, i + 1):
 # COMMAND ----------
 
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
-
-# COMMAND ----------
