@@ -2,6 +2,7 @@ import os
 from typing import Any, List, Union, cast
 
 import pandas as pd
+from _types import paths
 from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql.functions import expr
 
@@ -9,7 +10,6 @@ from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
-from _types import paths
 
 
 def create_random_tables():

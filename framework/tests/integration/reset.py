@@ -1,14 +1,14 @@
 # Databricks notebook source
 from logging import DEBUG
 
+from _types import paths
 from databricks.sdk.runtime import dbutils, spark
 from pyspark.sql.types import Row
+from utils import landing_to_raw
 
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 from fabricks.utils.helpers import run_in_parallel
-from _types import paths
-from utils import landing_to_raw
 
 # COMMAND ----------
 

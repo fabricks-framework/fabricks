@@ -2,11 +2,11 @@
 import logging
 
 from databricks.sdk.runtime import dbutils
+from utils import landing_to_raw
 
 from fabricks.context.log import DEFAULT_LOGGER, LOGLEVEL
 from fabricks.core import get_job
 from fabricks.utils.helpers import run_in_parallel
-from utils import landing_to_raw
 
 # COMMAND ----------
 

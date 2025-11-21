@@ -1,13 +1,13 @@
 # Databricks notebook source
 import logging
 
+from _types import paths
 from databricks.sdk.runtime import dbutils, spark
+from utils import git_to_landing, landing_to_raw
 
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
-from _types import paths
-from utils import git_to_landing, landing_to_raw
 
 # COMMAND ----------
 

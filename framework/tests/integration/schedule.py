@@ -2,6 +2,7 @@
 from logging import DEBUG
 from typing import Any, cast
 
+from _types import steps
 from databricks.sdk.runtime import dbutils, display
 
 import fabricks.core.schedules as s
@@ -10,7 +11,6 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_step
 from fabricks.core.jobs.base._types import TStep
 from fabricks.utils.helpers import run_in_parallel, run_notebook
-from _types import steps
 
 # COMMAND ----------
 

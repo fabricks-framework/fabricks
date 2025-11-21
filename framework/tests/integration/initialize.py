@@ -1,13 +1,13 @@
 # Databricks notebook source
 from logging import DEBUG
 
+from _types import paths
 from databricks.sdk.runtime import dbutils, spark
+from utils import create_expected_views, create_random_tables, git_to_landing, landing_to_raw
 
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
-from _types import paths
-from utils import create_expected_views, create_random_tables, git_to_landing, landing_to_raw
 
 # COMMAND ----------
 
