@@ -339,7 +339,7 @@ class Generator(Configurator):
                     self.table.add_table_comment(comment=comment)
 
         else:
-            DEFAULT_LOGGER.debug("table exists, skip creation", extra={"label": self})
+            DEFAULT_LOGGER.debug("table already exists, skipped creation", extra={"label": self})
 
     def _update_schema(
         self,

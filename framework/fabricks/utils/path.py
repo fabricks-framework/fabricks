@@ -1,4 +1,5 @@
 import os
+import posixpath
 from pathlib import Path as PathlibPath
 from typing import List, Optional, Union
 
@@ -120,8 +121,13 @@ class Path:
             return False
 
     def joinpath(self, *other):
-        new_path = self.pathlibpath.joinpath(*other)
-        return Path(path=new_path, assume_git=self.assume_git)
+        parts = [str(o) for o in other]
+        base = self.string
+
+        joined = posixpath.join(base, *parts)
+        new = posixpath.normpath(joined)
+
+        return Path(path=new, assume_git=self.assume_git)
 
     def append(self, other: str):
         new_path = self.string + other
