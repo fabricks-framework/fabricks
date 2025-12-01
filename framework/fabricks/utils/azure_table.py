@@ -1,5 +1,4 @@
-import time
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from azure.data.tables import TableClient, TableServiceClient
 from pyspark.sql import DataFrame
@@ -99,27 +98,29 @@ class AzureTable:
         if self._table_client is not None:
             self._table_client.close()
 
-    def submit(self, operations: List, retry: Optional[bool] = True):
-        try:
-            partitions = set()
-            for d in operations:
-                partitions.add(d[1]["PartitionKey"])
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((Exception)),
+        reraise=True,
+    )
+    def _submit_with_retry(self, data: Any):
+        self.table.submit_transaction(data)
 
-            for p in partitions:
-                _operations = [d for d in operations if d[1].get("PartitionKey") == p]
-                t = 50
-                if len(_operations) < t:
-                    self.table.submit_transaction(_operations)
-                else:
-                    transactions = [_operations[i : i + t] for i in range(0, len(_operations), t)]
-                    for transaction in transactions:
-                        self.table.submit_transaction(transaction)
-        except Exception as e:
-            if retry:
-                time.sleep(10)
-                self.submit(operations, retry=False)
+    def submit(self, operations: List):
+        partitions = set()
+        for d in operations:
+            partitions.add(d[1]["PartitionKey"])
+
+        for p in partitions:
+            _operations = [d for d in operations if d[1].get("PartitionKey") == p]
+            t = 50
+            if len(_operations) < t:
+                self._submit_with_retry(_operations)
             else:
-                raise e
+                transactions = [_operations[i : i + t] for i in range(0, len(_operations), t)]
+                for transaction in transactions:
+                    self._submit_with_retry(transaction)
 
     def delete(self, data: Union[List, DataFrame, dict]):
         if isinstance(data, DataFrameLike):
