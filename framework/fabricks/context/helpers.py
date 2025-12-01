@@ -1,59 +1,36 @@
+import os
+import pathlib
 from typing import List
 
 from fabricks.utils.path import Path
 
 
-def get_config_from_toml():
-    import os
-    import pathlib
-    import sys
-
-    if sys.version_info >= (3, 11):
-        import tomllib
-    else:
-        import tomli as tomllib  # type: ignore
-
+def get_config_from_file():
     path = pathlib.Path(os.getcwd())
-    while path is not None and not (path / "pyproject.toml").exists():
-        if path == path.parent:
-            break
-        path = path.parent
 
-    if (path / "pyproject.toml").exists():
-        with open((path / "pyproject.toml"), "rb") as f:
-            config = tomllib.load(f)
-            return path, config.get("tool", {}).get("fabricks", {})
-
-    return None, {}
-
-
-def get_config_from_json():
-    import json
-    import os
-    import pathlib
-
-    path = pathlib.Path(os.getcwd())
-    while path is not None and not (path / "fabricksconfig.json").exists():
+    while path is not None and (not (path / "pyproject.toml").exists() or (path / "fabricksconfig.json").exists()):
         if path == path.parent:
             break
         path = path.parent
 
     if (path / "fabricksconfig.json").exists():
+        import json
+
         with open((path / "fabricksconfig.json"), "r") as f:
             config = json.load(f)
-            return path, config
+            return path, config, "json"
 
-    return None, {}
+    if (path / "pyproject.toml").exists():
+        import sys
 
+        if sys.version_info >= (3, 11):
+            import tomllib
+        else:
+            import tomli as tomllib  # type: ignore
 
-def get_config_from_file():
-    json_path, json_config = get_config_from_json()
-    if json_config:
-        return json_path, json_config, "json"
-
-    pyproject_path, pyproject_config = get_config_from_toml()
-    if pyproject_config:
-        return pyproject_path, pyproject_config, "pyproject"
+        with open((path / "pyproject.toml"), "rb") as f:
+            config = tomllib.load(f)
+            return path, config.get("tool", {}).get("fabricks", {}), "pyproject"
 
     return None, {}, None
 

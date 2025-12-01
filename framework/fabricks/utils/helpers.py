@@ -1,4 +1,5 @@
 import logging
+import sys
 from functools import reduce
 from queue import Queue
 from typing import Any, Callable, Iterable, List, Literal, Optional, Union
@@ -216,13 +217,28 @@ def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
     dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs})  # type: ignore
 
 
-def xxhash64(s: Any):
+def xxhash64(s: Any) -> int:
     df = spark.sql(f"select xxhash64(cast('{s}' as string)) as xxhash64")
     return df.collect()[0][0]
 
 
-def md5(s: Any):
+def md5(s: Any) -> str:
     from hashlib import md5
 
     md5 = md5(str(s).encode())
     return md5.hexdigest()
+
+
+def load_module_from_path(name: str, path: Path):
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    sys.path.append(str(path.parent))
+
+    spec = spec_from_file_location(name, path.string)
+    assert spec, f"no valid module found in {path.string}"
+    assert spec.loader is not None
+
+    textwrap_module = module_from_spec(spec)
+    spec.loader.exec_module(textwrap_module)
+
+    return textwrap_module

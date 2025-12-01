@@ -228,15 +228,22 @@ class BaseStep:
             DEFAULT_LOGGER.exception("fail to get jobs", extra={"label": self})
             raise e
 
-    def create_db_objects(self, retry: Optional[bool] = True) -> List[Dict]:
+    def create_db_objects(
+        self,
+        retry: Optional[bool] = True,
+        update_lists: Optional[bool] = True,
+        incremental: Optional[bool] = False,
+    ) -> List[Dict]:
         DEFAULT_LOGGER.info("create db objects", extra={"label": self})
 
         df = self.get_jobs()
-        table_df = self.database.get_tables()
-        view_df = self.database.get_views()
 
-        df = df.join(table_df, "job_id", how="left_anti")
-        df = df.join(view_df, "job_id", how="left_anti")
+        if incremental:
+            table_df = self.database.get_tables()
+            view_df = self.database.get_views()
+
+            df = df.join(table_df, "job_id", how="left_anti")
+            df = df.join(view_df, "job_id", how="left_anti")
 
         if df:
             results = run_in_parallel(
@@ -248,15 +255,16 @@ class BaseStep:
                 loglevel=logging.CRITICAL,
             )
 
-        self.update_tables_list()
-        self.update_views_list()
+        if update_lists:
+            self.update_tables_list()
+            self.update_views_list()
 
         errors = [res for res in results if res.get("error")]
 
         if errors:
             if retry:
                 DEFAULT_LOGGER.warning("retry to create jobs", extra={"label": self})
-                return self.create_db_objects(retry=False)
+                return self.create_db_objects(retry=False, update_lists=update_lists, incremental=incremental)
 
         return errors
 
