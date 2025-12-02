@@ -8,9 +8,14 @@ from fabricks.utils.path import Path
 def get_config_from_file():
     path = pathlib.Path(os.getcwd())
 
-    while path is not None and (not (path / "pyproject.toml").exists() or (path / "fabricksconfig.json").exists()):
+    while path is not None:
+        if (path / "fabricksconfig.json").exists():
+            break
+        if (path / "pyproject.toml").exists():
+            break
         if path == path.parent:
             break
+        
         path = path.parent
 
     if (path / "fabricksconfig.json").exists():
