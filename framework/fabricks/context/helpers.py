@@ -15,7 +15,7 @@ def get_config_from_file():
             break
         if path == path.parent:
             break
-        
+
         path = path.parent
 
     if (path / "fabricksconfig.json").exists():

@@ -11,7 +11,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 UDFS: dict[str, Callable] = {}
 
 
-def register_all_udfs(extension: Optional[str] = None):
+def register_all_udfs(extension: Optional[str] = None, override: bool = False):
     """
     Register all user-defined functions (UDFs).
     """
@@ -20,7 +20,7 @@ def register_all_udfs(extension: Optional[str] = None):
     for udf in get_udfs(extension=extension):
         split = udf.split(".")
         try:
-            register_udf(udf=split[0], extension=split[1])
+            register_udf(udf=split[0], extension=split[1], override=override)
         except Exception as e:
             DEFAULT_LOGGER.exception(f"could not register udf {udf}", exc_info=e)
 
@@ -57,7 +57,12 @@ def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
     return not df.isEmpty()
 
 
-def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[SparkSession] = None):
+def register_udf(
+    udf: str,
+    extension: Optional[str] = None,
+    spark: Optional[SparkSession] = None,
+    override: bool = False,
+):
     """
     Register a user-defined function (UDF).
     """
@@ -65,8 +70,11 @@ def register_udf(udf: str, extension: Optional[str] = None, spark: Optional[Spar
         spark = SPARK
     assert spark is not None
 
-    if not is_registered(udf, spark):
-        DEFAULT_LOGGER.debug(f"register udf {udf}")
+    if not is_registered(udf, spark) or override:
+        if override:
+            DEFAULT_LOGGER.debug(f"override udf {udf}")
+        else:
+            DEFAULT_LOGGER.debug(f"register udf {udf}")
 
         if extension is None:
             extension = get_extension(udf)
