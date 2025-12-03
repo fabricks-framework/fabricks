@@ -25,12 +25,12 @@ class Deploy:
         deploy_views()
 
     @staticmethod
-    def udfs():
-        deploy_udfs()
+    def udfs(override: bool = True):
+        deploy_udfs(override=override)
 
     @staticmethod
-    def masks():
-        deploy_masks()
+    def masks(override: bool = True):
+        deploy_masks(override=override)
 
     @staticmethod
     def notebooks():

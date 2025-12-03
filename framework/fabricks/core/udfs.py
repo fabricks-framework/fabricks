@@ -60,8 +60,8 @@ def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
 def register_udf(
     udf: str,
     extension: Optional[str] = None,
+    override: Optional[bool] = False,
     spark: Optional[SparkSession] = None,
-    override: bool = False,
 ):
     """
     Register a user-defined function (UDF).
