@@ -9,9 +9,9 @@ from fabricks.metastore.table import Table
 def deploy_tables(drop: bool = False):
     DEFAULT_LOGGER.info("create or replace fabricks (default) tables")
 
-    create_table_log(drop)
-    create_table_dummy(drop)
-    create_table_step(drop)
+    create_table_log(drop=drop)
+    create_table_dummy(drop=drop)
+    create_table_step(drop=drop)
 
 
 def create_table_step(drop: bool = False):

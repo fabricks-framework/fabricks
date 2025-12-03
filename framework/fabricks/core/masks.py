@@ -7,7 +7,7 @@ from fabricks.context import CATALOG, PATH_MASKS, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 
 
-def register_all_masks():
+def register_all_masks(override: bool = False):
     """
     Register all masks.
     """
@@ -16,7 +16,7 @@ def register_all_masks():
     for mask in get_masks():
         split = mask.split(".")
         try:
-            register_mask(mask=split[0])
+            register_mask(mask=split[0], override=override)
         except Exception as e:
             DEFAULT_LOGGER.exception(f"could not register mask {mask}", exc_info=e)
 
@@ -40,13 +40,16 @@ def is_registered(mask: str, spark: Optional[SparkSession] = None) -> bool:
     return not df.isEmpty()
 
 
-def register_mask(mask: str, spark: Optional[SparkSession] = None):
+def register_mask(mask: str, override: Optional[bool] = False, spark: Optional[SparkSession] = None):
     if spark is None:
         spark = SPARK
     assert spark is not None
 
-    if not is_registered(mask, spark):
-        DEFAULT_LOGGER.debug(f"register mask {mask}")
+    if not is_registered(mask, spark) or override:
+        if override:
+            DEFAULT_LOGGER.debug(f"override mask {mask}")
+        else:
+            DEFAULT_LOGGER.debug(f"register mask {mask}")
 
         path = PATH_MASKS.joinpath(f"{mask}.sql")
         spark.sql(path.get_sql())
