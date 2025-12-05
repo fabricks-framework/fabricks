@@ -23,7 +23,7 @@
     topic: prince
     item: scd2
     options:
-      mode: memory
-      uri: abfss://test@$datahub/raw/3/prince
+      mode: register
+      uri: abfss://test@$datahub/raw/2/delta/prince
       parser: monarch
       keys: ['@Id']
