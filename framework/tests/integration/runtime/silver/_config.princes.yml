@@ -16,3 +16,11 @@
     options:
       mode: update
       change_data_capture: scd1
+- job:
+    step: silver
+    topic: prince
+    item: scd2
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd2
