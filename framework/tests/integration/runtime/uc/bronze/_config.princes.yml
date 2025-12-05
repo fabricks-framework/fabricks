@@ -18,3 +18,12 @@
       uri: abfss://test@$datahub/raw/2/prince
       parser: monarch
       keys: ['@Id']
+- job:
+    step: bronze
+    topic: prince
+    item: scd2
+    options:
+      mode: memory
+      uri: abfss://test@$datahub/raw/3/prince
+      parser: monarch
+      keys: ['@Id']
