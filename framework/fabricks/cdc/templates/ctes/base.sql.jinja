@@ -12,7 +12,7 @@ with
                     {% for key, value in cast.items() %} {{ key }}, {% endfor %}
                 )
             {% endif %},
-            {% for key, value in cast.items() %} cast({{ key }} as value), {% endfor %}
+            {% for key, value in cast.items() %} cast({{ key }} as {{ value }}) as {{ key }}, {% endfor %}
             {% if add_calculated_columns %} {% for c in add_calculated_columns %} {{ c }}, {% endfor %} {% endif %}
             {% if add_timestamp %} cast(current_date() as timestamp) as __timestamp, {% endif %}
             {% if add_operation %} cast('{{ add_operation }}' as string) as __operation, {% endif %}
