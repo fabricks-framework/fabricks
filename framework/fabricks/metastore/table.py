@@ -579,6 +579,14 @@ class Table(DbObject):
 
         return self.spark.sql(f"describe detail {self.qualified_name}")
 
+    def get_partitions(self) -> List[str]:
+        assert self.registered, f"{self} not registered"
+
+        try:
+            return self.spark.sql(f"show partitions {self.qualified_name}").columns
+        except AnalysisException:
+            return []
+
     def get_properties(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
 
