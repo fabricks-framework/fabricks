@@ -42,6 +42,7 @@
       mode: complete
     table_options:
       powerbi: true
+      partition_by: [Monarch]
 - job:
     step: semantic
     topic: fact
