@@ -142,7 +142,7 @@ class Processor(Generator):
         if add_timestamp and "__timestamp" in inputs:
             overwrite.append("__timestamp")
         elif "__timestamp" in inputs:
-            cast.append("__timestamp")
+            cast["__timestamp"] = "timestamp"
 
         # override key if added and found in df (key needed for merge)
         if add_key and "__key" in inputs:

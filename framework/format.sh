@@ -45,7 +45,7 @@ fi
 
 if [ -z "$build" ]
 then
-    build="true"
+    build="false"
 fi
 
 if [ "$all" = "true" ] || [ "$python" = "true" ]

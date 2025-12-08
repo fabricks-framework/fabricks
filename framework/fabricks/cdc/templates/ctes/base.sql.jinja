@@ -7,9 +7,12 @@ with
             *
             {% if overwrite or cast %}
                 -- will be overwritten below
-                except ({% for o in overwrite %}{{ o }}, {% endfor %} {% for c in cast %} {{ c }}, {% endfor %})
+                except (
+                    {% for o in overwrite %}{{ o }}, {% endfor %}
+                    {% for key, value in cast.items() %} {{ key }}, {% endfor %}
+                )
             {% endif %},
-            {% for c in cast %} cast({{ c }} as timestamp), {% endfor %}
+            {% for key, value in cast.items() %} cast({{ key }} as value), {% endfor %}
             {% if add_calculated_columns %} {% for c in add_calculated_columns %} {{ c }}, {% endfor %} {% endif %}
             {% if add_timestamp %} cast(current_date() as timestamp) as __timestamp, {% endif %}
             {% if add_operation %} cast('{{ add_operation }}' as string) as __operation, {% endif %}
