@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Any, List, Union, cast
 
 import pandas as pd
@@ -22,7 +23,7 @@ def create_random_tables():
     spark.sql(f"create table if not exists bronze.princess_no_column using delta location '{uri}'")
 
 
-def convert_parquet_to_delta(topic: str):
+def convert_parquet_to_delta(topic: str, deletelog: bool = True):
     for i in range(1, 4):
         dfs = []
 
@@ -30,7 +31,11 @@ def convert_parquet_to_delta(topic: str):
         if i > 1:
             root = root.joinpath(str(i))
 
-        for p in [f"{topic}__deletelog", topic]:
+        _paths = [topic]
+        if deletelog:
+            _paths.append(f"{topic}__deletelog")
+
+        for p in _paths:
             df = (
                 spark.read.option("pathGlobFilter", "*.parquet")
                 .option("recursiveFileLookup", "True")
@@ -59,7 +64,13 @@ def convert_parquet_to_delta(topic: str):
         )
         df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
         df = df.drop("__split", "__split_size", "__file_path", "__file_name")
-        df.write.mode("append").option("mergeSchema", "True").format("delta").save(f"{root}/delta/{topic}")
+
+        writer = df.write.mode("append").option("mergeSchema", "True").format("delta")
+
+        if any(not re.match(r'^[a-zA-Z0-9_]+$', c) for c in df.columns):
+            writer = writer.option("delta.columnMapping.mode", "name")
+
+        writer.save(f"{root}/delta/{topic}")
 
 
 def convert_json_to_parquet(from_dir: Path, to_dir: Path):
@@ -128,6 +139,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
     convert_parquet_to_delta("regent")
     convert_parquet_to_delta("monarch")
+    convert_parquet_to_delta("prince", deletelog=False)
 
 
 def create_expected_views():
