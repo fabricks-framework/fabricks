@@ -141,6 +141,9 @@
 {%- if overwrite %}
 ☐ overwrite: {{ overwrite | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
+{%- if cast %}
+☐ cast: {{ cast | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
 
 👨‍👩‍👧 PARENTS
 {%- if parent_slice %}

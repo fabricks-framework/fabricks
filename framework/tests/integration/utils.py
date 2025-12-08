@@ -67,7 +67,7 @@ def convert_parquet_to_delta(topic: str, deletelog: bool = True):
 
         writer = df.write.mode("append").option("mergeSchema", "True").format("delta")
 
-        if any(not re.match(r'^[a-zA-Z0-9_]+$', c) for c in df.columns):
+        if any(not re.match(r"^[a-zA-Z0-9_]+$", c) for c in df.columns):
             writer = writer.option("delta.columnMapping.mode", "name")
 
         writer.save(f"{root}/delta/{topic}")
