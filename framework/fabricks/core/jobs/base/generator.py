@@ -255,7 +255,7 @@ class Generator(Configurator):
 
                     if not cluster_by:
                         DEFAULT_LOGGER.debug("could not determine clustering column", extra={"label": self})
-                        liquid_clustering = False
+                        liquid_clustering = None
                         cluster_by = None
 
             if liquid_clustering is None:
