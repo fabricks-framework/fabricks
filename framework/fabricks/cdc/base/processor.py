@@ -51,6 +51,7 @@ class Processor(Generator):
 
         overwrite = []
         exclude = kwargs.get("exclude", [])  # used by silver to exclude __operation from output if not update
+        cast = kwargs.get("cast", {})  # used by silver to cast columns to target types
 
         order_duplicate_by = kwargs.get("order_duplicate_by", None)
         if order_duplicate_by:
@@ -140,6 +141,8 @@ class Processor(Generator):
         # override timestamp if added and found in df
         if add_timestamp and "__timestamp" in inputs:
             overwrite.append("__timestamp")
+        elif "__timestamp" in inputs:
+            cast["__timestamp"] = "timestamp"
 
         # override key if added and found in df (key needed for merge)
         if add_key and "__key" in inputs:
@@ -356,6 +359,8 @@ class Processor(Generator):
             "correct_valid_from": correct_valid_from,
             # overwrite
             "overwrite": overwrite,
+            # cast
+            "cast": cast,
             # filter
             "slices": None,
             "sources": None,

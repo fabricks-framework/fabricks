@@ -2,7 +2,7 @@ from typing import Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit, md5
-from pyspark.sql.types import Row
+from pyspark.sql.types import Row, TimestampType
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES
@@ -91,6 +91,11 @@ class Bronze(BaseJob):
         try:
             df = self.spark.sql(f"select * from {file_format}.`{self.data_path}`")
             assert len(df.columns) > 1, "external table must have at least one column"
+            if "__timestamp" in df.columns:
+                assert isinstance(df.schema["__timestamp"].dataType, TimestampType), (
+                    "__timestamp must be of type timestamp"
+                )
+
         except Exception as e:
             DEFAULT_LOGGER.exception("read external table failed", extra={"label": self})
             raise e

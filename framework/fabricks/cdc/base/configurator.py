@@ -90,6 +90,7 @@ class Configurator(ABC):
             "__identity",
             "__source",
             "__key",
+            "__hash",
             "__timestamp",
             "__valid_from",
             "__valid_to",
@@ -110,7 +111,6 @@ class Configurator(ABC):
         cols = [
             "__operation",
             "__metadata",
-            "__hash",
             "__rescued_data",
         ]
 
@@ -126,6 +126,7 @@ class Configurator(ABC):
             "__identity",
             "__source",
             "__key",
+            "__hash",
             "__timestamp",
             "__valid_from",
             "__valid_to",
@@ -134,7 +135,6 @@ class Configurator(ABC):
             # Trailing
             "__operation",
             "__metadata",
-            "__hash",
             "__rescued_data",
         ]
 
@@ -191,11 +191,6 @@ class Configurator(ABC):
 
         leading = self.allowed_ouput_leading__columns
         trailing = self.allowed_output_trailing__columns
-
-        # move __hash to the front of the table to ensure statistics are present
-        if "__key" not in columns and "__hash" in columns:
-            leading = ["__hash" if c == "__key" else c for c in leading]
-            trailing = [c for c in trailing if c != "__hash"]
 
         __leading = [c for c in leading if c in columns]
         __trailing = [c for c in trailing if c in columns]

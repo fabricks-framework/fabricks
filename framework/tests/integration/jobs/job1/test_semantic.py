@@ -65,6 +65,7 @@ def test_semantic_fact_zstd():
 @pytest.mark.order(139)
 def test_semantic_fact_powerbi():
     j = get_job(step="semantic", topic="fact", item="powerbi")
+
     props_df = j.table.show_properties()
     assert props_df.where("key == 'delta.minReaderVersion'").select("value").collect()[0][0] == "2", (
         "minReaderVersion <> 2"
@@ -72,3 +73,7 @@ def test_semantic_fact_powerbi():
     assert props_df.where("key == 'delta.minWriterVersion'").select("value").collect()[0][0] == "5", (
         "minWriterVersion <> 5"
     )
+
+    partitions = j.table.get_partitions()
+    assert len(partitions) == 1, "partition not found"
+    assert partitions[0].lower() == "monarch", "partition <> monarch"
