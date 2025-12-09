@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Optional, Sequence, Union, cast
+from typing import List, Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
@@ -166,6 +166,31 @@ class Generator(Configurator):
         """
         ...
 
+    def _get_clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
+        columns = self.options.table.get_list("cluster_by")
+        if columns:
+            return columns
+
+        columns = []
+
+        if "__source" in df.columns:
+            columns = ["__source"]
+        if "__is_current" in df.columns:
+            columns.append("__is_current")
+
+        if "__key" in df.columns:
+            columns.append("__key")
+        elif "__hash" in df.columns:
+            columns.append("__hash")
+
+        if columns:
+            DEFAULT_LOGGER.debug(f"found clustering columns ({', '.join(columns)})", extra={"label": self})
+            return columns
+
+        else:
+            DEFAULT_LOGGER.debug("could not determine any clustering column", extra={"label": self})
+            return None
+
     def create_table(self):
         def _create_table(df: DataFrame, batch: Optional[int] = 0):
             df = self.base_transform(df)
@@ -242,19 +267,12 @@ class Generator(Configurator):
                     cluster_by = []
 
                 else:
-                    cluster_by = self.options.table.get_list("cluster_by") or []
-                    if not cluster_by:
-                        if "__source" in df.columns:
-                            cluster_by.append("__source")
-                        if "__is_current" in df.columns:
-                            cluster_by.append("__is_current")
-                        if "__key" in df.columns:
-                            cluster_by.append("__key")
-                        elif "__hash" in df.columns:
-                            cluster_by.append("__hash")
+                    cluster_by = self._get_clustering_columns(df)
 
-                    if not cluster_by:
-                        DEFAULT_LOGGER.debug("could not determine clustering column", extra={"label": self})
+                    if cluster_by:
+                        liquid_clustering = True
+
+                    else:
                         liquid_clustering = None
                         cluster_by = None
 
@@ -446,20 +464,12 @@ class Generator(Configurator):
             enable = enable_step
 
         if enable:
-            cluster_by = self.options.table.get_list("cluster_by") or []
-            if not cluster_by:
-                if "__source" in df.columns:
-                    cluster_by.append("__source")
-                if "__is_current" in df.columns:
-                    cluster_by.append("__is_current")
-                if "__key" in df.columns:
-                    cluster_by.append("__key")
-                elif "__hash" in df.columns:
-                    cluster_by.append("__hash")
+            cluster_by = self._get_clustering_columns(df)
 
-                if len(cluster_by) > 0:
-                    self.table.enable_liquid_clustering(cluster_by, auto=False)
-                else:
-                    self.table.enable_liquid_clustering(auto=True)
+            if cluster_by and len(cluster_by) > 0:
+                self.table.enable_liquid_clustering(cluster_by, auto=False)
+            else:
+                self.table.enable_liquid_clustering(auto=True)
+
         else:
-            DEFAULT_LOGGER.debug("could not enable liquid clustering", extra={"label": self})
+            DEFAULT_LOGGER.debug("liquid clustering disabled", extra={"label": self})
