@@ -161,14 +161,17 @@ class GoldOptions(TypedDict):
     deduplicate: Optional[bool]  # remove duplicates on the keys and on the hash
     rectify_as_upserts: Optional[bool]  # convert reloads into upserts and deletes
     correct_valid_from: Optional[bool]  # update valid_from to '1900-01-01' for the first timestamp
-    persist_last_timestamp: Optional[bool]  # persist the last timestamp to be used as a watermark for the next run
+    # persist timestamp to be used as a watermark for the next run
+    persist_last_timestamp: Optional[bool]
+    persist_last_updated_timestamp: Optional[bool]
     # delete_missing: Optional[bool]  # delete missing records on update (to be implemented)
-    # else
     table: Optional[str]
     notebook: Optional[bool]
     requirements: Optional[bool]
     timeout: Optional[int]
+    # tracking
     metadata: Optional[bool]
+    last_updated: Optional[bool]
 
 
 StepOptions = Union[BronzeOptions, SilverOptions, GoldOptions]

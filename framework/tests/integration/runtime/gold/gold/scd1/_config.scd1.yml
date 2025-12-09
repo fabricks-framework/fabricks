@@ -49,3 +49,4 @@
     options:
       change_data_capture: scd1
       mode: update
+      persist_last_updated_timestamp: True

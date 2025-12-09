@@ -1,6 +1,6 @@
 import re
 from collections.abc import Sequence
-from typing import List, Optional, Union, cast
+from typing import List, Literal, Optional, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.types import Row
@@ -288,6 +288,14 @@ class Gold(BaseJob):
                 if "__valid_from" not in df.columns:
                     context["add_timestamp"] = True
 
+        # add __updated
+        if self.options.job.get_boolean("persist_last_updated_timestamp"):
+            if "__last_updated" not in df.columns:
+                context["add_last_updated"] = True
+        if self.options.job.get_boolean("last_updated"):
+            if "__last_updated" not in df.columns:
+                context["add_last_updated"] = True
+
         if "__order_duplicate_by_asc" in df.columns:
             context["order_duplicate_by"] = {"__order_duplicate_by_asc": "asc"}
         elif "__order_duplicate_by_desc" in df.columns:
@@ -334,7 +342,10 @@ class Gold(BaseJob):
 
     def for_each_run(self, **kwargs):
         last_version = None
+
         if self.options.job.get_boolean("persist_last_timestamp"):
+            last_version = self.table.get_last_version()
+        if self.options.job.get_boolean("persist_last_updated_timestamp"):
             last_version = self.table.get_last_version()
 
         if self.mode == "invoke":
@@ -344,7 +355,10 @@ class Gold(BaseJob):
             super().for_each_run(**kwargs)
 
         if self.options.job.get_boolean("persist_last_timestamp"):
-            self._update_last_timestamp(last_version=last_version)
+            self._persist_timestamp(field="__timestamp", last_version=last_version)
+
+        if self.options.job.get_boolean("persist_last_updated_timestamp"):
+            self._persist_timestamp(field="__last_updated", last_version=last_version)
 
     def create(self):
         if self.mode == "invoke":
@@ -353,7 +367,7 @@ class Gold(BaseJob):
             self.register_udfs()
             super().create()
             if self.options.job.get_boolean("persist_last_timestamp"):
-                self._update_last_timestamp(create=True)
+                self._persist_timestamp(create=True)
 
     def register(self):
         if self.options.job.get_boolean("persist_last_timestamp"):
@@ -378,14 +392,25 @@ class Gold(BaseJob):
         cdc = NoCDC(self.step, self.topic, f"{self.item}__last_timestamp")
         return cdc
 
-    def _update_last_timestamp(self, last_version: Optional[int] = None, create: bool = False):
+    def _persist_timestamp(
+        self,
+        field: Literal["__timestamp", "__last_updated"] = "__timestamp",
+        last_version: Optional[int] = None,
+        create: bool = False,
+    ):
         df = self.spark.sql(f"select * from {self} limit 1")
 
         fields = []
-        if self.change_data_capture == "scd1":
-            fields.append("max(__timestamp) :: timestamp as __timestamp")
-        elif self.change_data_capture == "scd2":
-            fields.append("max(__valid_from) :: timestamp as __timestamp")
+
+        if field == "__last_updated":
+            fields.append("max(__last_updated) :: timestamp as __last_updated")
+
+        elif field == "__timestamp":
+            if self.change_data_capture == "scd1":
+                fields.append("max(__timestamp) :: timestamp as __timestamp")
+            elif self.change_data_capture == "scd2":
+                fields.append("max(__valid_from) :: timestamp as __timestamp")
+
         if "__source" in df.columns:
             fields.append("__source")
 

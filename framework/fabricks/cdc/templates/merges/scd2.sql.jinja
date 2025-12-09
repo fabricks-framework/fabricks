@@ -28,6 +28,9 @@
 {% if has_metadata %}
     __metadata.updated = cast(current_timestamp() as timestamp),
 {% endif %}
+{% if has_last_updated %}
+    __last_updated = s.__last_updated,
+{% endif %}
   when matched
   and __merge_condition == 'delete' then
   update
@@ -39,6 +42,9 @@
 {% endif %}
 {% if has_metadata %}
     __metadata.updated = cast(current_timestamp() as timestamp),
+{% endif %}
+{% if has_last_updated %}
+    __last_updated = s.__last_updated,
 {% endif %}
   when not matched
   and __merge_condition == 'insert' then

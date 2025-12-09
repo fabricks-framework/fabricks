@@ -26,6 +26,9 @@
 {% if has_timestamp %}
     __timestamp = s.__timestamp,
 {% endif %}
+{% if has_last_updated %}
+    __last_updated = s.__last_updated,
+{% endif %}
 {% if has_metadata %}
     __metadata.updated = cast(current_timestamp() as timestamp),    
 {% endif %}
@@ -49,6 +52,9 @@
     __is_deleted = True,
     {% if has_timestamp %}
     __timestamp = s.__timestamp,
+    {% endif %}
+    {% if has_last_updated %}
+    __last_updated = s.__last_updated,
     {% endif %}
     {% if has_metadata %}
     __metadata.updated = cast(current_timestamp() as timestamp),

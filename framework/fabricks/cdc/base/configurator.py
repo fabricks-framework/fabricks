@@ -111,6 +111,7 @@ class Configurator(ABC):
         cols = [
             "__operation",
             "__metadata",
+            "__last_updated",
             "__rescued_data",
         ]
 
@@ -135,6 +136,7 @@ class Configurator(ABC):
             # Trailing
             "__operation",
             "__metadata",
+            "__last_updated",
             "__rescued_data",
         ]
 
