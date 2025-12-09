@@ -8,6 +8,7 @@
     options:
       change_data_capture: scd2
       mode: update
+      last_updated: True
 - job:
     step: gold
     topic: scd2
@@ -17,7 +18,6 @@
       change_data_capture: scd2
       mode: update
       persist_last_timestamp: True
-      persist_last_updated_timestamp: True
 - job:
     step: gold
     topic: scd2
