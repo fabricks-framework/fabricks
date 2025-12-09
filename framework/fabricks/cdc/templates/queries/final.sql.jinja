@@ -1,5 +1,4 @@
 select
     *
     {% if all_except %} except ({% for e in all_except %}{{ e }}, {% endfor %}), {% endif %}
-    {% if add_last_updated %} current_timestamp() as __last_updated {% endif %}
 from __final
