@@ -1481,43 +1481,60 @@ Quality checks can run at different stages:
 
 ---
 
-## Best Practices
+## 🎯 Best Practices
 
-### 1. Bronze Layer
-- Use `mode="append"` for raw data ingestion
-- Set `operation="upsert"` or `"reload"` for CDC tracking
-- Enable `optimize=True` for large datasets
-- Use `encrypted_columns` for sensitive data
-- Keep retention short (`retention_days=30`)
+### 🥉 Bronze Layer
 
-### 2. Silver Layer
-- Always use CDC strategy (`scd1` or `scd2`)
-- Enable `deduplicate=True` to ensure data quality
-- Use `mode="update"` for incremental processing
-- Set up data quality checks with `check_options`
-- Use longer retention (`retention_days=90`)
+| ✅ Best Practice | 💡 Recommendation | 📝 Rationale |
+|-----------------|-------------------|--------------|
+| **Mode Selection** | Use `mode="append"` | Capture all raw data without loss |
+| **CDC Operation** | Set `operation="upsert"` or `"reload"` | Enable change tracking for downstream processing |
+| **Performance** | Enable `optimize=True` for large datasets | Compact small files, improve query speed |
+| **Security** | Use `encrypted_columns` for sensitive fields | Protect PII during ingestion |
+| **Retention** | Keep short (`retention_days=30`) | Bronze is transient; Silver is source of truth |
 
-### 3. Gold Layer
-- Choose CDC based on business needs
-- Enable `rectify_as_upserts=True` for historical consistency
-- Use `persist_last_timestamp=True` for incremental loads
-- Enable `metadata=True` and `last_updated=True` for tracking
-- Optimize for BI tools with `powerbi=True`
-- Use extenders for ML scoring and enrichment
+### 🥈 Silver Layer
 
-### 4. Performance
-- Use `liquid_clustering=True` for modern workloads
-- Set `partition_by` for time-based queries
-- Use `zorder_by` for high-cardinality filter columns
-- Enable `bloomfilter_by` for equality lookups
-- Configure appropriate Spark resources via `spark_options`
+| ✅ Best Practice | 💡 Recommendation | 📝 Rationale |
+|-----------------|-------------------|--------------|
+| **CDC Strategy** | Always use `scd1` or `scd2` | Systematic change tracking required |
+| **Data Quality** | Enable `deduplicate=True` | Remove duplicates for clean data |
+| **Processing Mode** | Use `mode="update"` | Efficient incremental processing |
+| **Validation** | Configure `check_options` | Enforce data quality standards |
+| **Retention** | Use longer period (`retention_days=90`) | Silver is the authoritative source |
 
-### 5. Data Governance
-- Add comprehensive `comments` for documentation
-- Use `constraints` for data validation
-- Set `properties` for metadata tracking
-- Use `masks` for PII protection
-- Tag jobs appropriately with `tags`
+### 🥇 Gold Layer
+
+| ✅ Best Practice | 💡 Recommendation | 📝 Rationale |
+|-----------------|-------------------|--------------|
+| **CDC Strategy** | Choose based on business needs | Balance history requirements vs performance |
+| **Rectification** | Enable `rectify_as_upserts=True` | Ensure historical data consistency |
+| **Watermarking** | Use `persist_last_timestamp=True` | Enable efficient incremental loads |
+| **Audit Tracking** | Enable `metadata=True` + `last_updated=True` | Support troubleshooting and audits |
+| **BI Optimization** | Set `powerbi=True` for analytics workloads | Optimize for business intelligence tools |
+| **Enrichment** | Use extenders for ML scoring | Add predictive intelligence |
+
+### ⚡ Performance Optimization
+
+| 🚀 Technique | 💡 Implementation | 🎯 Use Case |
+|-------------|-------------------|-------------|
+| **Liquid Clustering** | `liquid_clustering=True` | Modern Delta tables with auto-optimization |
+| **Partitioning** | `partition_by=["year", "month"]` | Time-series data and date-based queries |
+| **Z-Ordering** | `zorder_by=["customer_id"]` | High-cardinality columns in WHERE clauses |
+| **Bloom Filters** | `bloomfilter_by=["email"]` | Fast equality lookups on strings |
+| **Spark Tuning** | Configure `spark_options` | Match cluster resources to workload |
+
+> **💡 Pro Tip:** Liquid clustering is self-optimizing and recommended for new tables over manual partitioning.
+
+### 🔒 Data Governance
+
+| 📋 Area | 💡 Recommendation | ✅ Benefit |
+|---------|-------------------|------------|
+| **Documentation** | Add detailed `comments` and `comment` | Enable knowledge sharing and understanding |
+| **Validation** | Define `constraints` for business rules | Enforce data quality at write-time |
+| **Metadata** | Set `properties` for classification | Improve discoverability and compliance |
+| **Privacy** | Use `masks` for PII fields | Protect sensitive data, meet regulations |
+| **Organization** | Apply meaningful `tags` | Enable filtering, cost tracking, ownership |
 
 ---
 
