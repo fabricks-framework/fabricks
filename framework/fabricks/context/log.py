@@ -5,7 +5,7 @@ from typing import Final, Literal, Optional
 
 import requests
 
-from fabricks.context import IS_DEBUGMODE, LOGLEVEL, SECRET_SCOPE, TIMEZONE
+from fabricks.context import IS_DEBUGMODE, LOGLEVEL, SECRET_SCOPE, TIMEZONE, IS_FUNMODE
 from fabricks.utils.log import get_logger
 
 logger, _ = get_logger(
@@ -19,22 +19,23 @@ logging.getLogger("SQLQueryContextLogger").setLevel(logging.CRITICAL)
 
 DEFAULT_LOGGER: Final[logging.Logger] = logger
 
-# 🎄 Christmas Easter Egg 🎅
-_now = datetime.now()
-if _now.month == 12:
-    _day = _now.day
-    if _day <= 24:
-        _days_until = 25 - _day
-        if _days_until == 1:
-            logger.info("🎄 Ho ho ho! Only 1 day until Christmas! Happy data processing! 🎅")
-        elif _days_until <= 7:
-            logger.info(f"🎄 'Tis the season! {_days_until} days until Christmas! May your pipelines run smoothly! 🎁")
+if IS_FUNMODE:
+    # 🎄 Christmas Easter Egg 🎅
+    _now = datetime.now()
+    if _now.month == 12:
+        _day = _now.day
+        if _day <= 24:
+            _days_until = 25 - _day
+            if _days_until == 1:
+                DEFAULT_LOGGER.info("🎄 Ho ho ho! Only 1 day until Christmas! Happy data processing! 🎅")
+            elif _days_until <= 7:
+                DEFAULT_LOGGER.info(f"🎄 'Tis the season! {_days_until} days until Christmas! May your pipelines run smoothly! 🎁")
+            else:
+                DEFAULT_LOGGER.info("🎄 Merry December! Wishing you bug-free data pipelines this holiday season! ⛄")
+        elif _day == 25:
+            DEFAULT_LOGGER.info("🎄🎅 MERRY CHRISTMAS! May all your queries be optimized and your data be clean! 🎁✨")
         else:
-            logger.info("🎄 Merry December! Wishing you bug-free data pipelines this holiday season! ⛄")
-    elif _day == 25:
-        logger.info("🎄🎅 MERRY CHRISTMAS! May all your queries be optimized and your data be clean! 🎁✨")
-    else:
-        logger.info("🎄 Happy Holidays! Hope you're enjoying the festive season between data runs! 🎉")
+            DEFAULT_LOGGER.info("🎄 Happy Holidays! Hope you're enjoying the festive season between data runs! 🎉")
 
 
 def send_message_to_channel(

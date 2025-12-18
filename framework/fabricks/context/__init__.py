@@ -1,6 +1,7 @@
 from fabricks.context.config import (
     IS_DEBUGMODE,
     IS_DEVMODE,
+    IS_FUNMODE,
     IS_JOB_CONFIG_FROM_YAML,
     LOGLEVEL,
     PATH_CONFIG,
@@ -46,6 +47,7 @@ __all__ = [
     "init_spark_session",
     "IS_DEBUGMODE",
     "IS_DEVMODE",
+    "IS_FUNMODE",
     "IS_JOB_CONFIG_FROM_YAML",
     "IS_TYPE_WIDENING",
     "IS_UNITY_CATALOG",

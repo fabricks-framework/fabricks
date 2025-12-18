@@ -87,6 +87,11 @@ if is_debugmode is None:
 else:
     logger.debug("resolve debugmode from env", extra={"label": "config"})
 
+# fun mode
+is_funmode = os.environ.get("FABRICKS_IS_FUNMODE", None)
+if is_funmode is None:
+    is_funmode = file_config.get("funmode")
+
 # dev mode
 is_devmode = os.environ.get("FABRICKS_IS_DEVMODE", None)
 if is_devmode is None:
@@ -124,4 +129,5 @@ PATH_NOTEBOOKS: Final[Path] = path_notebooks
 IS_JOB_CONFIG_FROM_YAML: Final[bool] = str(is_job_config_from_yaml).lower() in ("true", "1", "yes")
 IS_DEBUGMODE: Final[bool] = str(is_debugmode).lower() in ("true", "1", "yes")
 IS_DEVMODE: Final[bool] = str(is_devmode).lower() in ("true", "1", "yes")
+IS_FUNMODE: Final[bool] = str(is_funmode).lower() in ("true", "1", "yes")
 LOGLEVEL: Final[int] = _loglevel
