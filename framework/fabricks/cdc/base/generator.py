@@ -145,6 +145,7 @@ class Generator(Configurator):
         d = self.get_schema_differences(src, **kwargs)
         if d is None:
             return None
+
         return len(d) > 0
 
     def _update_schema(

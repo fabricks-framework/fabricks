@@ -74,10 +74,10 @@ class Silver(BaseJob):
             self._parent_step = _parent_step
         return self._parent_step
 
-    def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extend)
-
+    def update_metadata(self, df: DataFrame) -> DataFrame:
         if "__metadata" in df.columns:
+            DEFAULT_LOGGER.debug("update metadata", extra={"label": self})
+
             df = df.withColumn(
                 "__metadata",
                 expr(
@@ -88,11 +88,18 @@ class Silver(BaseJob):
                         __metadata.file_size as file_size,            
                         __metadata.file_modification_time as file_modification_time,
                         __metadata.inserted as inserted,
-                    cast(current_timestamp() as timestamp) as updated
+                        cast(current_timestamp() as timestamp) as updated
                     )
                     """
                 ),
             )
+
+        return df
+
+    def base_transform(self, df: DataFrame) -> DataFrame:
+        df = df.transform(self.extend)
+        df = self.update_metadata(df)
+
         return df
 
     def get_data(

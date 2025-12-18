@@ -263,15 +263,10 @@ class Bronze(BaseJob):
 
         return df
 
-    def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extend)
-        df = df.transform(self.add_calculated_columns)
-        df = df.transform(self.add_hash)
-        df = df.transform(self.add_operation)
-        df = df.transform(self.add_source)
-        df = df.transform(self.add_key)
-
+    def add_metadata(self, df: DataFrame) -> DataFrame:
         if "__metadata" in df.columns:
+            DEFAULT_LOGGER.debug("add metadata", extra={"label": self})
+
             if self.mode == "register":
                 #  https://github.com/delta-io/delta/issues/2014 (BUG)
                 df = df.withColumn(
@@ -304,6 +299,17 @@ class Bronze(BaseJob):
                         """
                     ),
                 )
+
+        return df
+
+    def base_transform(self, df: DataFrame) -> DataFrame:
+        df = df.transform(self.extend)
+        df = df.transform(self.add_calculated_columns)
+        df = df.transform(self.add_hash)
+        df = df.transform(self.add_operation)
+        df = df.transform(self.add_source)
+        df = df.transform(self.add_key)
+        df = df.transform(self.add_metadata)
 
         return df
 

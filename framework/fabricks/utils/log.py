@@ -62,6 +62,11 @@ class LogFormatter(logging.Formatter):
             exc_info = record.__dict__.get("exc_info", None)
             extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
 
+        if hasattr(record, "df"):
+            df = record.__dict__.get("df")
+            if isinstance(df, DataFrame):
+                extra += f"\n---\n%df\n{df.toPandas().to_string(index=True)}\n---"
+
         if self.debugmode:
             if hasattr(record, "sql"):
                 extra += f"\n---\n%sql\n{record.__dict__.get('sql')}\n---"
@@ -71,11 +76,6 @@ class LogFormatter(logging.Formatter):
 
             if hasattr(record, "context"):
                 extra += f"\n---\n{json.dumps(record.__dict__.get('context'), indent=2, default=str)}\n---"
-
-            if hasattr(record, "df"):
-                df = record.__dict__.get("df")
-                if isinstance(df, DataFrame):
-                    extra += f"\n---\n%df\n{df.toPandas().to_string(index=True)}\n---"
 
         record.levelname = levelname_formatted
         record.prefix = prefix

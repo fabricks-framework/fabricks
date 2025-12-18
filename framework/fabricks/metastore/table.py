@@ -329,13 +329,17 @@ class Table(DbObject):
         self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
-    def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: Optional[str] = None) -> bool:
+    def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: Optional[List[str]] = None) -> bool:
         assert self.registered, f"{self} not registered"
 
-        diffs = self.get_schema_differences(df)
+        diffs = self.get_schema_differences(df, exclude_columns_with_prefix=exclude_columns_with_prefix)
         return len(diffs) > 0
 
-    def get_schema_differences(self, df: DataFrame) -> Sequence[SchemaDiff]:
+    def get_schema_differences(
+        self,
+        df: DataFrame,
+        exclude_columns_with_prefix: Optional[List[str]] = None,
+    ) -> Sequence[SchemaDiff]:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug("get schema differences", extra={"label": self, "df": df})
@@ -346,11 +350,14 @@ class Table(DbObject):
                 df1 = df1.drop("__identity")
 
         all_columns = set(df1.columns).union(set(df.columns))
+        if exclude_columns_with_prefix:
+            for excluded in exclude_columns_with_prefix:
+                all_columns = {c for c in all_columns if not c.startswith(excluded)}
 
         df1_dict = {name: dtype for name, dtype in df1.dtypes}
         df2_dict = {name: dtype for name, dtype in df.dtypes}
 
-        diffs: list[SchemaDiff] = []
+        diffs: List[SchemaDiff] = []
 
         for c in all_columns:
             old_datatype = df1_dict.get(c)
