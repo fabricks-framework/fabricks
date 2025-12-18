@@ -2,6 +2,7 @@
 ================================================================================
   FABRICKS CDC QUERY CONTEXT
 ================================================================================
+{%- if cdc or mode %}
 
 ⚙️  CONFIGURATION
 {%- if cdc %}
@@ -10,6 +11,8 @@
 {%- if mode %}
     Mode                    : {{ mode }}
 {%- endif %}
+{%- endif %}
+{%- if format or src or tgt %}
 
 --------------------------------------------------------------------------------
 🎯  SOURCE & TARGET
@@ -22,6 +25,8 @@
 {%- if tgt %}
     Target                  : {{ tgt }}
 {%- endif %}
+{%- endif %}
+{%- if slice or deduplicate_key or deduplicate_hash or rectify or correct_valid_from or advanced_deduplication or order_duplicate_by %}
 
 --------------------------------------------------------------------------------
 📊  DATA PROCESSING PIPELINE
@@ -48,6 +53,8 @@
 {%- if order_duplicate_by %}
         ✓ Order Duplicate By
 {%- endif %}
+{%- endif %}
+{%- if filter_where or update_where or slices or sources %}
 
 --------------------------------------------------------------------------------
 🔍  FILTERING & CONDITIONS
@@ -63,6 +70,8 @@
 {%- if sources %}
     Sources                 : {{ sources }}
 {%- endif %}
+{%- endif %}
+{%- if delete_missing or soft_delete %}
 
 --------------------------------------------------------------------------------
 🗑️  DELETE OPTIONS
@@ -72,22 +81,30 @@
 {%- if soft_delete %}
     Soft Delete             : ✓ Enabled
 {%- endif %}
+{%- endif %}
+{%- if has_no_data is defined or has_rows is defined or has_source %}
 
 --------------------------------------------------------------------------------
 ✅  DATA STATE
+{%- if has_no_data is defined %}
 {%- if has_no_data %}
     Has Data                : ✗ No data
 {%- else %}
     Has Data                : ✓ Yes
 {%- endif %}
+{%- endif %}
+{%- if has_rows is defined %}
 {%- if has_rows %}
     Has Rows                : ✓ Target has existing rows
 {%- else %}
     Has Rows                : ✗ Target is empty
 {%- endif %}
+{%- endif %}
 {%- if has_source %}
     Source Tracking         : ✓ Enabled
 {%- endif %}
+{%- endif %}
+{%- if has_metadata or has_timestamp or has_last_updated or has_key or has_hash or has_operation or has_identity or has_rescued_data or has_order_by %}
 
 --------------------------------------------------------------------------------
 🏷️  SYSTEM COLUMNS (Existing)
@@ -118,6 +135,8 @@
 {%- if has_order_by %}
     Order By                : ✓
 {%- endif %}
+{%- endif %}
+{%- if add_metadata or add_timestamp or add_last_updated or add_key or add_hash or add_operation or add_source or add_calculated_columns %}
 
 --------------------------------------------------------------------------------
 ➕  SYSTEM COLUMNS (Adding)
@@ -145,6 +164,8 @@
 {%- if add_calculated_columns %}
     Calculated Columns      : {{ add_calculated_columns }}
 {%- endif %}
+{%- endif %}
+{%- if all_except or all_overwrite or overwrite or cast %}
 
 --------------------------------------------------------------------------------
 🔄  COLUMN TRANSFORMATIONS
@@ -160,6 +181,8 @@
 {%- if cast %}
     Cast                    : {{ cast | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
+{%- endif %}
+{%- if parent_slice or parent_deduplicate_key or parent_deduplicate_hash or parent_rectify or parent_cdc or parent_final %}
 
 --------------------------------------------------------------------------------
 🔗  CTE DEPENDENCIES
@@ -181,6 +204,8 @@
 {%- if parent_final %}
     parent_final            : {{ parent_final }}
 {%- endif %}
+{%- endif %}
+{%- if keys or hashes or inputs or intermediates or outputs or columns %}
 
 --------------------------------------------------------------------------------
 📦  COLUMN LAYOUT
@@ -201,6 +226,7 @@
 {%- endif %}
 {%- if columns %}
     All Columns             : {{ columns | join(", ") | truncate(100, killwords=True) }}
+{%- endif %}
 {%- endif %}
 
 ================================================================================
