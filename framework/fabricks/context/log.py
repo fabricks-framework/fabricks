@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from typing import Final, Literal, Optional
 
 import requests
@@ -17,6 +18,23 @@ logger, _ = get_logger(
 logging.getLogger("SQLQueryContextLogger").setLevel(logging.CRITICAL)
 
 DEFAULT_LOGGER: Final[logging.Logger] = logger
+
+# 🎄 Christmas Easter Egg 🎅
+_now = datetime.now()
+if _now.month == 12:
+    _day = _now.day
+    if _day <= 24:
+        _days_until = 25 - _day
+        if _days_until == 1:
+            logger.info("🎄 Ho ho ho! Only 1 day until Christmas! Happy data processing! 🎅")
+        elif _days_until <= 7:
+            logger.info(f"🎄 'Tis the season! {_days_until} days until Christmas! May your pipelines run smoothly! 🎁")
+        else:
+            logger.info("🎄 Merry December! Wishing you bug-free data pipelines this holiday season! ⛄")
+    elif _day == 25:
+        logger.info("🎄🎅 MERRY CHRISTMAS! May all your queries be optimized and your data be clean! 🎁✨")
+    else:
+        logger.info("🎄 Happy Holidays! Hope you're enjoying the festive season between data runs! 🎉")
 
 
 def send_message_to_channel(
