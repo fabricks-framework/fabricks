@@ -9,13 +9,13 @@ from typing_extensions import deprecated
 from fabricks.cdc import NoCDC
 from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.helpers import run_in_parallel
 from fabricks.core.jobs.base._types import Bronzes, Golds, SchemaDependencies, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
-from fabricks.utils.helpers import run_in_parallel
 from fabricks.utils.read.read_yaml import read_yaml
 from fabricks.utils.schema import get_schema_for_type
 

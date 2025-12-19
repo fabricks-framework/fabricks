@@ -5,7 +5,7 @@ from typing import Final, Literal, Optional
 
 import requests
 
-from fabricks.context import IS_DEBUGMODE, LOGLEVEL, SECRET_SCOPE, TIMEZONE, IS_FUNMODE
+from fabricks.context import IS_DEBUGMODE, IS_FUNMODE, LOGLEVEL, SECRET_SCOPE, TIMEZONE
 from fabricks.utils.log import get_logger
 
 logger, _ = get_logger(
@@ -29,7 +29,9 @@ if IS_FUNMODE:
             if _days_until == 1:
                 DEFAULT_LOGGER.info("🎄 Ho ho ho! Only 1 day until Christmas! Happy data processing! 🎅")
             elif _days_until <= 7:
-                DEFAULT_LOGGER.info(f"🎄 'Tis the season! {_days_until} days until Christmas! May your pipelines run smoothly! 🎁")
+                DEFAULT_LOGGER.info(
+                    f"🎄 'Tis the season! {_days_until} days until Christmas! May your pipelines run smoothly! 🎁"
+                )
             else:
                 DEFAULT_LOGGER.info("🎄 Merry December! Wishing you bug-free data pipelines this holiday season! ⛄")
         elif _day == 25:
