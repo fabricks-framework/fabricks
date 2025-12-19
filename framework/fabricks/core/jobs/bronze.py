@@ -9,7 +9,6 @@ from fabricks.context import VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base._types import JobDependency, TBronze
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.parsers import BaseParser
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -36,7 +35,7 @@ class Bronze(BaseJob):
             conf=conf,
         )
 
-    _parser: Optional[BaseParser] = None
+    _parser: Optional[str] = None
 
     @property
     def stream(self) -> bool:
@@ -136,17 +135,14 @@ class Bronze(BaseJob):
             self.compute_statistics_external_table()
 
     @property
-    def parser(self) -> BaseParser:
+    def parser(self) -> str:
         if not self._parser:
             assert self.mode not in ["register"], f"{self.mode} not allowed"
 
-            name = self.options.job.get("parser")
-            assert name is not None, "parser not found"
+            parser = self.options.job.get("parser")
+            assert parser is not None, "parser not found"
 
-            options = self.conf.parser_options or None  # type: ignore
-            p = get_parser(name, options)
-
-            self._parser = p
+            self._parser = cast(str, parser)
 
         return self._parser
 
@@ -175,7 +171,10 @@ class Bronze(BaseJob):
             df = clean(df)
 
         else:
-            df = self.parser.get_data(
+            options = self.conf.parser_options or None  # type: ignore
+            parser = get_parser(self.parser, options)
+
+            df = parser.get_data(
                 stream=stream,
                 data_path=self.data_path,
                 schema_path=self.paths.schema,
