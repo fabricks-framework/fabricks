@@ -5,6 +5,7 @@ from pyspark.sql import DataFrame
 
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.extenders import get_extender
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.get_schedule import get_schedule
@@ -173,8 +174,6 @@ class Invoker(Checker):
         )
 
     def extend_job(self, df: DataFrame) -> DataFrame:
-        from fabricks.core.extenders import get_extender
-
         extenders = self.options.extenders
         for e in extenders:
             name = e.get("extender")
@@ -187,8 +186,6 @@ class Invoker(Checker):
         return df
 
     def extend_step(self, df: DataFrame) -> DataFrame:
-        from fabricks.core.extenders import get_extender
-
         extenders = self.step_conf.get("extender_options", {})
         for e in extenders:
             name = e.get("extender")

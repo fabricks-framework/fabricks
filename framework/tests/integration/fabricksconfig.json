@@ -5,5 +5,6 @@
     "loglevel": "debug",
     "debugmode": true,
     "config": "runtime/fabricks/conf.uc.fabricks.yml",
-    "devmode": true
+    "devmode": true,
+    "funmode": true
 }
