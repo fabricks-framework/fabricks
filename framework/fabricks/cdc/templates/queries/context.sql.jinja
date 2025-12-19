@@ -1,234 +1,115 @@
 /*
-================================================================================
-  FABRICKS CDC QUERY CONTEXT
-================================================================================
 {%- if cdc or mode %}
-
-⚙️  CONFIGURATION
+⚙️ CONFIGURATION
 {%- if cdc %}
-    CDC Type                : {{ cdc }}
+  CDC Type: {{ cdc }}
 {%- endif %}
 {%- if mode %}
-    Mode                    : {{ mode }}
+  Mode: {{ mode }}
 {%- endif %}
 {%- endif %}
 {%- if format or src or tgt %}
-
---------------------------------------------------------------------------------
-🎯  SOURCE & TARGET
+🎯 SOURCE & TARGET
 {%- if format %}
-    Format                  : {{ format }}
+  Format: {{ format }}
 {%- endif %}
 {%- if src %}
-    Source                  : {{ src | truncate(100, killwords=True) }}
+  Source: {{ src | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if tgt %}
-    Target                  : {{ tgt }}
+  Target: {{ tgt }}
 {%- endif %}
 {%- endif %}
 {%- if slice or deduplicate_key or deduplicate_hash or rectify or correct_valid_from or advanced_deduplication or order_duplicate_by %}
-
---------------------------------------------------------------------------------
-📊  DATA PROCESSING PIPELINE
-
-    CTEs Enabled:
-{%- if slice %}
-        ✓ Slice
-{%- endif %}
-{%- if deduplicate_key %}
-        ✓ Deduplicate Key
-{%- endif %}
-{%- if deduplicate_hash %}
-        ✓ Deduplicate Hash
-{%- endif %}
-{%- if rectify %}
-        ✓ Rectify
-{%- endif %}
-{%- if correct_valid_from %}
-        ✓ Correct Valid From
-{%- endif %}
-{%- if advanced_deduplication %}
-        ✓ Advanced Deduplication
-{%- endif %}
-{%- if order_duplicate_by %}
-        ✓ Order Duplicate By
-{%- endif %}
+📊 PIPELINE CTEs:{% if slice %} Slice{% endif %}{% if deduplicate_key %}, Deduplicate Key{% endif %}{% if deduplicate_hash %}, Deduplicate Hash{% endif %}{% if rectify %}, Rectify{% endif %}{% if correct_valid_from %}, Correct Valid From{% endif %}{% if advanced_deduplication %}, Advanced Deduplication{% endif %}{% if order_duplicate_by %}, Order Duplicate By{% endif %}
 {%- endif %}
 {%- if filter_where or update_where or slices or sources %}
-
---------------------------------------------------------------------------------
-🔍  FILTERING & CONDITIONS
+🔍 FILTERING
 {%- if filter_where %}
-    Filter Where            : {{ filter_where }}
+  Filter Where: {{ filter_where }}
 {%- endif %}
 {%- if update_where %}
-    Update Where            : {{ update_where }}
+  Update Where: {{ update_where }}
 {%- endif %}
 {%- if slices %}
-    Slices                  : {{ slices }}
+  Slices: {{ slices }}
 {%- endif %}
 {%- if sources %}
-    Sources                 : {{ sources }}
+  Sources: {{ sources }}
 {%- endif %}
 {%- endif %}
 {%- if delete_missing or soft_delete %}
-
---------------------------------------------------------------------------------
-🗑️  DELETE OPTIONS
-{%- if delete_missing %}
-    Delete Missing          : ✓ Enabled
-{%- endif %}
-{%- if soft_delete %}
-    Soft Delete             : ✓ Enabled
-{%- endif %}
+🗑️ DELETE
+  {% if delete_missing %} Delete Missing ✓{% endif %}{% if soft_delete %}{% if delete_missing %} |{% endif %} Soft Delete ✓{% endif %}
 {%- endif %}
 {%- if has_no_data is defined or has_rows is defined or has_source %}
-
---------------------------------------------------------------------------------
-✅  DATA STATE
-{%- if has_no_data is defined %}
-{%- if has_no_data %}
-    Has Data                : ✗ No data
-{%- else %}
-    Has Data                : ✓ Yes
-{%- endif %}
-{%- endif %}
-{%- if has_rows is defined %}
-{%- if has_rows %}
-    Has Rows                : ✓ Target has existing rows
-{%- else %}
-    Has Rows                : ✗ Target is empty
-{%- endif %}
-{%- endif %}
-{%- if has_source %}
-    Source Tracking         : ✓ Enabled
-{%- endif %}
+✅ STATE
+  {% if has_no_data is defined %} Data {% if has_no_data %}✗{% else %}✓{% endif %}{% endif %}{% if has_rows is defined %}{% if has_no_data is defined %} |{% endif %} Rows {% if has_rows %}✓{% else %}✗{% endif %}{% endif %}{% if has_source %}{% if has_no_data is defined or has_rows is defined %} |{% endif %} Source ✓{% endif %}
 {%- endif %}
 {%- if has_metadata or has_timestamp or has_last_updated or has_key or has_hash or has_operation or has_identity or has_rescued_data or has_order_by %}
-
---------------------------------------------------------------------------------
-🏷️  SYSTEM COLUMNS (Existing)
-{%- if has_metadata %}
-    __metadata              : ✓
-{%- endif %}
-{%- if has_timestamp %}
-    __timestamp             : ✓
-{%- endif %}
-{%- if has_last_updated %}
-    __last_updated          : ✓
-{%- endif %}
-{%- if has_key %}
-    __key                   : ✓
-{%- endif %}
-{%- if has_hash %}
-    __hash                  : ✓
-{%- endif %}
-{%- if has_operation %}
-    __operation             : ✓
-{%- endif %}
-{%- if has_identity %}
-    __identity              : ✓
-{%- endif %}
-{%- if has_rescued_data %}
-    __rescued_data          : ✓
-{%- endif %}
-{%- if has_order_by %}
-    Order By                : ✓
-{%- endif %}
+🏷️ EXISTING
+  {% if has_metadata %} __metadata{% endif %}{% if has_timestamp %}, __timestamp{% endif %}{% if has_last_updated %}, __last_updated{% endif %}{% if has_key %}, __key{% endif %}{% if has_hash %}, __hash{% endif %}{% if has_operation %}, __operation{% endif %}{% if has_identity %}, __identity{% endif %}{% if has_rescued_data %}, __rescued_data{% endif %}{% if has_order_by %}, Order By{% endif %}
 {%- endif %}
 {%- if add_metadata or add_timestamp or add_last_updated or add_key or add_hash or add_operation or add_source or add_calculated_columns %}
-
---------------------------------------------------------------------------------
-➕  SYSTEM COLUMNS (Adding)
-{%- if add_metadata %}
-    __metadata              : ✓
-{%- endif %}
-{%- if add_timestamp %}
-    __timestamp             : ✓
-{%- endif %}
-{%- if add_last_updated %}
-    __last_updated          : ✓
-{%- endif %}
-{%- if add_key %}
-    __key                   : ✓
-{%- endif %}
-{%- if add_hash %}
-    __hash                  : ✓
-{%- endif %}
-{%- if add_operation %}
-    __operation             : {{ add_operation }}
-{%- endif %}
-{%- if add_source %}
-    __source                : {{ add_source }}
-{%- endif %}
-{%- if add_calculated_columns %}
-    Calculated Columns      : {{ add_calculated_columns }}
-{%- endif %}
+➕ ADDING
+  {% if add_metadata %} __metadata{% endif %}{% if add_timestamp %}, __timestamp{% endif %}{% if add_last_updated %}, __last_updated{% endif %}{% if add_key %}, __key{% endif %}{% if add_hash %}, __hash{% endif %}{% if add_operation %}, __operation={{ add_operation }}{% endif %}{% if add_source %}, __source={{ add_source }}{% endif %}{% if add_calculated_columns %}, Calculated={{ add_calculated_columns }}{% endif %}
 {%- endif %}
 {%- if all_except or all_overwrite or overwrite or cast %}
-
---------------------------------------------------------------------------------
-🔄  COLUMN TRANSFORMATIONS
+🔄 TRANSFORMS
 {%- if all_except %}
-    Exclude All Except      : {{ all_except | join(", ") | truncate(100, killwords=True) }}
+  Exclude All Except: {{ all_except | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if all_overwrite %}
-    Overwrite All           : {{ all_overwrite | join(", ") | truncate(100, killwords=True) }}
+  Overwrite All: {{ all_overwrite | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if overwrite %}
-    Overwrite               : {{ overwrite | join(", ") | truncate(100, killwords=True) }}
+  Overwrite: {{ overwrite | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if cast %}
-    Cast                    : {{ cast | join(", ") | truncate(100, killwords=True) }}
+  Cast: {{ cast | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- endif %}
 {%- if parent_slice or parent_deduplicate_key or parent_deduplicate_hash or parent_rectify or parent_cdc or parent_final %}
-
---------------------------------------------------------------------------------
-🔗  CTE DEPENDENCIES
+🔗 CTE DEPS
 {%- if parent_slice %}
-    parent_slice            : {{ parent_slice }}
+  parent_slice: {{ parent_slice }}
 {%- endif %}
 {%- if parent_deduplicate_key %}
-    parent_deduplicate_key  : {{ parent_deduplicate_key }}
+  parent_deduplicate_key: {{ parent_deduplicate_key }}
 {%- endif %}
 {%- if parent_deduplicate_hash %}
-    parent_deduplicate_hash : {{ parent_deduplicate_hash }}
+  parent_deduplicate_hash: {{ parent_deduplicate_hash }}
 {%- endif %}
 {%- if parent_rectify %}
-    parent_rectify          : {{ parent_rectify }}
+  parent_rectify: {{ parent_rectify }}
 {%- endif %}
 {%- if parent_cdc %}
-    parent_cdc              : {{ parent_cdc }}
+  parent_cdc: {{ parent_cdc }}
 {%- endif %}
 {%- if parent_final %}
-    parent_final            : {{ parent_final }}
+  parent_final: {{ parent_final }}
 {%- endif %}
 {%- endif %}
 {%- if keys or hashes or inputs or intermediates or outputs or columns %}
-
---------------------------------------------------------------------------------
-📦  COLUMN LAYOUT
+📦 COLUMNS
 {%- if keys %}
-    Keys                    : {{ keys | join(", ") | truncate(100, killwords=True) }}
+  Keys: {{ keys | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if hashes %}
-    Hashes                  : {{ hashes | join(", ") | truncate(100, killwords=True) }}
+  Hashes: {{ hashes | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if inputs %}
-    Inputs                  : {{ inputs | join(", ") | truncate(100, killwords=True) }}
+  Inputs: {{ inputs | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if intermediates %}
-    Intermediates           : {{ intermediates | join(", ") | truncate(100, killwords=True) }}
+  Intermediates: {{ intermediates | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if outputs %}
-    Outputs                 : {{ outputs | join(", ") | truncate(100, killwords=True) }}
+  Outputs: {{ outputs | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- if columns %}
-    All Columns             : {{ columns | join(", ") | truncate(100, killwords=True) }}
+  All Columns: {{ columns | join(", ") | truncate(100, killwords=True) }}
 {%- endif %}
 {%- endif %}
-
-================================================================================
 */
 
