@@ -1,1 +1,4 @@
-select * {% if all_except %} except ({% for e in all_except %}{{ e }}, {% endfor %}), {% endif %} from __final
+select
+    *
+    {% if all_except %} except ({% for e in all_except %}{{ e }}, {% endfor %}), {% endif %}
+from __final

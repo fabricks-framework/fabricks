@@ -36,31 +36,6 @@ def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], worker
     return run_in_parallel(func, iter, workers)
 
 
-def _init_worker_process(paths: Optional[List[str]] = None):
-    """Initialize worker process by adding paths to sys.path."""
-    import sys
-
-    if paths:
-        for path in paths:
-            if path not in sys.path:
-                sys.path.insert(0, path)
-
-
-def _create_wrapper_with_sys_paths(func: Callable, paths: Optional[List[str]]):
-    """Create a wrapper function that initializes sys.path before calling func."""
-
-    def wrapper(item):
-        import sys
-
-        if paths:
-            for path in paths:
-                if path not in sys.path:
-                    sys.path.insert(0, path)
-        return func(item)
-
-    return wrapper
-
-
 def _process_queue_item(func: Callable, task_queue: Queue, result_queue: Queue, stop_signal: Any):
     """Worker function that processes items from a queue."""
     while True:
@@ -83,22 +58,18 @@ def _run_in_parallel_legacy(
     workers: int = 8,
     progress_bar: Optional[bool] = False,
     position: Optional[int] = None,
-    sys_paths: Optional[List[str]] = None,
 ) -> List[Any]:
     from concurrent.futures import ThreadPoolExecutor
 
     iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
 
-    # Wrap the function to inject sys.path if needed
-    wrapped_func = _create_wrapper_with_sys_paths(func, sys_paths) if sys_paths else func
-
     with ThreadPoolExecutor(max_workers=workers) as executor:
         if progress_bar:
             from tqdm import tqdm
 
-            results = list(tqdm(executor.map(wrapped_func, iterable), total=len(iterable), position=position))
+            results = list(tqdm(executor.map(func, iterable), total=len(iterable), position=position))
         else:
-            results = list(executor.map(wrapped_func, iterable))
+            results = list(executor.map(func, iterable))
 
     return results
 
@@ -112,7 +83,6 @@ def run_in_parallel(
     loglevel: int = logging.CRITICAL,
     logger: Optional[logging.Logger] = None,
     run_as: Optional[Literal["ThreadPool", "ProcessPool", "Pool", "Queue", "Legacy"]] = "Legacy",
-    sys_paths: Optional[List[str]] = None,
 ) -> List[Any]:
     """
     Runs the given function in parallel on the elements of the iterable using multiple threads or processes.
@@ -126,7 +96,6 @@ def run_in_parallel(
         loglevel (int, optional): Log level to set during execution. Defaults to logging.CRITICAL.
         logger (Optional[logging.Logger], optional): Logger instance to use. Defaults to None.
         run_as (Optional[Literal["ThreadPool", "ProcessPool", "Pool", "Queue"]], optional): Type of run as to use.
-        sys_paths (Optional[List[str]], optional): List of paths to add to sys.path before execution. Defaults to None.
 
     Returns:
         List[Any]: A list containing the results of the function calls.
@@ -138,12 +107,6 @@ def run_in_parallel(
     current_loglevel = logger.getEffectiveLevel()
     logger.setLevel(loglevel)
 
-    # Add custom paths to sys.path if provided
-    if sys_paths:
-        for path in sys_paths:
-            if path not in sys.path:
-                sys.path.insert(0, path)
-
     if run_as == "Legacy":
         results = _run_in_parallel_legacy(
             func=func,
@@ -151,7 +114,6 @@ def run_in_parallel(
             workers=workers,
             progress_bar=progress_bar,
             position=position,
-            sys_paths=sys_paths,
         )
 
     else:
@@ -160,9 +122,6 @@ def run_in_parallel(
 
         if run_as == "Queue":
             import threading
-
-            # Wrap the function to inject sys.path if needed
-            wrapped_func = _create_wrapper_with_sys_paths(func, sys_paths) if sys_paths else func
 
             task_queue = Queue()
             result_queue = Queue()
@@ -175,9 +134,7 @@ def run_in_parallel(
 
             threads = []
             for _ in range(workers):
-                t = threading.Thread(
-                    target=_process_queue_item, args=(wrapped_func, task_queue, result_queue, stop_signal)
-                )
+                t = threading.Thread(target=_process_queue_item, args=(func, task_queue, result_queue, stop_signal))
                 t.start()
 
                 threads.append(t)
@@ -203,11 +160,7 @@ def run_in_parallel(
         elif run_as == "Pool":
             from multiprocessing import Pool
 
-            # Use initializer to set up sys.path in worker processes
-            init_args = (sys_paths,) if sys_paths else None
-            initializer = _init_worker_process if sys_paths else None
-
-            with Pool(processes=workers, initializer=initializer, initargs=init_args) as p:  # type: ignore
+            with Pool(processes=workers) as p:
                 if progress_bar:
                     from tqdm import tqdm
 
@@ -225,23 +178,19 @@ def run_in_parallel(
             from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
             Executor = ProcessPoolExecutor if run_as == "ProcessPool" else ThreadPoolExecutor
-
-            # Wrap the function to inject sys.path if needed
-            wrapped_func = _create_wrapper_with_sys_paths(func, sys_paths) if sys_paths else func
-
             with Executor(max_workers=workers) as exe:
                 if progress_bar:
                     from tqdm import tqdm
 
                     with tqdm(total=len(iterables), position=position) as t:
-                        for result in exe.map(wrapped_func, iterables):
+                        for result in exe.map(func, iterables):
                             results.append(result)
 
                             t.update()
                             t.refresh()
 
                 else:
-                    results = list(exe.map(wrapped_func, iterables))
+                    results = list(exe.map(func, iterables))
 
     logger.setLevel(current_loglevel)
 
