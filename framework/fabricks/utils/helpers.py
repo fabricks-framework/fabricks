@@ -233,7 +233,7 @@ def load_module_from_path(name: str, path: Path):
     from importlib.util import module_from_spec, spec_from_file_location
 
     if path.parent() not in sys.path:
-        sys.path.insert( 0, str(path.parent()))
+        sys.path.insert(0, str(path.parent()))
 
     spec = spec_from_file_location(name, path.string)
     assert spec, f"no valid module found in {path.string}"

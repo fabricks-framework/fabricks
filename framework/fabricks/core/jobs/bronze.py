@@ -172,9 +172,9 @@ class Bronze(BaseJob):
 
         else:
             options = self.conf.parser_options or None  # type: ignore
-            parser = get_parser(self.parser, options)
+            parse = get_parser(self.parser, options)
 
-            df = parser.get_data(
+            df = parse(
                 stream=stream,
                 data_path=self.data_path,
                 schema_path=self.paths.schema,
