@@ -1,7 +1,3 @@
-from pyspark.sql import DataFrame, SparkSession
-
-from fabricks.core.parsers import parser
-from fabricks.utils.path import Path
 from typing import Optional
 
 from py4j.protocol import Py4JError
@@ -10,7 +6,7 @@ from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, lit, when
 
-from fabricks.core.parsers import BaseParser, ParserOptions
+from fabricks.core.parsers import BaseParser, ParserOptions, parser
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
 from fabricks.utils.read import read
@@ -110,7 +106,6 @@ class DeleteLogBaseParser(BaseParser):
         # avoid fake updates based on the BEL_UpdateDateUtc
         df = df.drop("BEL_IsFullLoad", "BEL_UpdateDateUtc", "BEL_DeleteDateUtc")
         return df
-
 
 
 @parser(name="monarch")
