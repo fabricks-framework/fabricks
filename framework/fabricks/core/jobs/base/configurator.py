@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
-from functools import lru_cache
-from typing import Optional, Union, cast
+from typing import List, Optional, Union, cast
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
@@ -10,11 +9,20 @@ from fabricks.cdc import SCD1, SCD2, AllowedChangeDataCaptures, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
-from fabricks.core.jobs.base._types import AllowedModes, Options, Paths, TStep
+from fabricks.core.jobs.base._types import (
+    AllowedModes,
+    CheckOptions,
+    ExtenderOptions,
+    InvokerOptions,
+    Paths,
+    SparkOptions,
+    TableOptions,
+    TOptions,
+    TStep,
+)
 from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.core.jobs.get_job_id import get_job_id
 from fabricks.metastore.table import Table
-from fabricks.utils.fdict import FDict
 from fabricks.utils.path import Path
 
 
@@ -36,6 +44,7 @@ class Configurator(ABC):
             self.conf = get_job_conf(step=self.step, job_id=self.job_id, row=conf)
             self.topic = self.conf.topic
             self.item = self.conf.item
+
         else:
             assert topic
             assert item
@@ -47,7 +56,6 @@ class Configurator(ABC):
     _step_conf: Optional[dict[str, str]] = None
     _spark: Optional[SparkSession] = None
     _timeout: Optional[int] = None
-    _options: Optional[Options] = None
     _paths: Optional[Paths] = None
     _table: Optional[Table] = None
     _root: Optional[Path] = None
@@ -95,8 +103,8 @@ class Configurator(ABC):
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.conf.set(f"{key}", f"{value}")
 
-            job_sql_options = self.options.spark.get_dict("sql")
-            job_conf_options = self.options.spark.get_dict("conf")
+            job_sql_options = self.spark_options.sql if self.spark_options else None
+            job_conf_options = self.spark_options.conf if self.spark_options else None
             if job_sql_options:
                 for key, value in job_sql_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
@@ -131,7 +139,7 @@ class Configurator(ABC):
     @property
     def timeout(self) -> int:
         if not self._timeout:
-            t = self.options.job.get("timeout")
+            t = self.options.timeout
 
             if t is None:
                 t = self._get_timeout("job")
@@ -166,33 +174,44 @@ class Configurator(ABC):
                 runtime=runtime_root.joinpath(self.topic, self.item),
             )
 
+        assert self._paths is not None
         return self._paths
 
     @property
-    @lru_cache(maxsize=None)
-    def options(self) -> Options:
-        if not self._options:
-            job = self.conf.options or {}
-            table = self.conf.table_options or {}
-            check = self.conf.check_options or {}
-            spark = self.conf.spark_options or {}
-            invokers = self.conf.invoker_options or {}
-            extenders = self.conf.extender_options or []
+    @abstractmethod
+    def options(self) -> TOptions:
+        """Direct access to typed job options."""
+        raise NotImplementedError()
 
-            self._options = Options(
-                job=FDict(job),
-                table=FDict(table),
-                check=FDict(check),
-                spark=FDict(spark),
-                invokers=FDict(invokers),
-                extenders=extenders,
-            )
-        return self._options
+    @property
+    def table_options(self) -> Optional[TableOptions]:
+        """Direct access to typed table options."""
+        return self.conf.table_options
+
+    @property
+    def check_options(self) -> Optional[CheckOptions]:
+        """Direct access to typed check options."""
+        return self.conf.check_options
+
+    @property
+    def spark_options(self) -> Optional[SparkOptions]:
+        """Direct access to typed spark options."""
+        return self.conf.spark_options
+
+    @property
+    def invoker_options(self) -> Optional[InvokerOptions]:
+        """Direct access to typed invoker options."""
+        return self.conf.invoker_options
+
+    @property
+    def extender_options(self) -> Optional[List[ExtenderOptions]]:
+        """Direct access to typed extender options."""
+        return self.conf.extender_options
 
     @property
     def change_data_capture(self) -> AllowedChangeDataCaptures:
         if not self._change_data_capture:
-            cdc: AllowedChangeDataCaptures = self.options.job.get("change_data_capture") or "nocdc"
+            cdc: AllowedChangeDataCaptures = self.options.change_data_capture or "nocdc"
             self._change_data_capture = cdc
         return self._change_data_capture
 
@@ -227,7 +246,7 @@ class Configurator(ABC):
     @property
     def mode(self) -> AllowedModes:
         if not self._mode:
-            _mode = self.options.job.get("mode")
+            _mode = self.options.mode
             assert _mode is not None
             self._mode = cast(AllowedModes, _mode)
         return self._mode
@@ -288,7 +307,7 @@ class Configurator(ABC):
             DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"label": self})
 
         else:
-            job = self.options.table.get("retention_days")
+            job = self.table_options.retention_days if self.table_options else None
             step = self.step_conf.get("table_options", {}).get("retention_days", None)
             runtime = CONF_RUNTIME.get("options", {}).get("retention_days")
 

@@ -6,7 +6,7 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import JobDependency, TBronze, TSilver
+from fabricks.core.jobs.base._types import JobDependency, SilverOptions, TBronze, TSilver
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -45,9 +45,14 @@ class Silver(BaseJob):
         return cls(step=cast(TSilver, step), topic=topic, item=item, conf=conf)
 
     @property
+    def options(self) -> SilverOptions:
+        """Direct access to typed silver job options."""
+        return self.conf.options  # type: ignore
+
+    @property
     def stream(self) -> bool:
         if not self._stream:
-            _stream = self.options.job.get("stream")
+            _stream = self.options.stream
             if _stream is None:
                 _stream = self.step_conf.get("options", {}).get("stream")
             self._stream = _stream if _stream is not None else True
@@ -160,7 +165,6 @@ class Silver(BaseJob):
 
         # transforms
         df = self.filter_where(df)
-        df = self.encrypt(df)
         if transform:
             df = self.base_transform(df)
 
@@ -172,7 +176,7 @@ class Silver(BaseJob):
     def get_dependencies(self) -> Sequence[JobDependency]:
         dependencies = []
 
-        parents = self.options.job.get_list("parents") or []
+        parents = self.options.parents or []
         if parents:
             for p in parents:
                 dependencies.append(JobDependency.from_parts(self.job_id, p, "job"))
@@ -258,7 +262,7 @@ class Silver(BaseJob):
 
         not_append = not self.mode == "append"
         nocdc = self.change_data_capture == "nocdc"
-        order_duplicate_by = self.options.job.get_dict("order_duplicate_by") or {}
+        order_duplicate_by = self.options.order_duplicate_by or {}
 
         rectify = False
         if not_append and not nocdc:
@@ -290,7 +294,7 @@ class Silver(BaseJob):
 
         context = {
             "soft_delete": self.slowly_changing_dimension,
-            "deduplicate": self.options.job.get_boolean("deduplicate", not_append),
+            "deduplicate": self.options.deduplicate if self.options.deduplicate is not None else not_append,
             "rectify": rectify,
             "order_duplicate_by": order_duplicate_by,
         }

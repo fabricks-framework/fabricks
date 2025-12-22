@@ -5,9 +5,9 @@ from pyspark.sql.functions import expr, lit, md5
 from pyspark.sql.types import Row, TimestampType
 
 from fabricks.cdc.nocdc import NoCDC
-from fabricks.context import VARIABLES
+from fabricks.context import IS_UNITY_CATALOG, SECRET_SCOPE, VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import JobDependency, TBronze
+from fabricks.core.jobs.base._types import BronzeOptions, JobDependency, TBronze
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
@@ -53,6 +53,11 @@ class Bronze(BaseJob):
     def virtual(self) -> bool:
         return False
 
+    @property
+    def options(self) -> BronzeOptions:
+        """Direct access to typed bronze job options."""
+        return self.conf.options  # type: ignore
+
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
         return cls(step=cast(TBronze, step), job_id=job_id, conf=conf)
@@ -63,7 +68,7 @@ class Bronze(BaseJob):
 
     @property
     def data_path(self) -> Path:
-        uri = self.options.job.get("uri")
+        uri = self.options.uri
         assert uri is not None, "no uri provided in options"
         path = Path.from_uri(uri, regex=VARIABLES)
         return path
@@ -71,7 +76,7 @@ class Bronze(BaseJob):
     def get_dependencies(self, *s) -> Sequence[JobDependency]:
         dependencies = []
 
-        parents = self.options.job.get_list("parents")
+        parents = self.options.parents or []
         if parents:
             for p in parents:
                 dependencies.append(JobDependency.from_parts(self.job_id, p, "job"))
@@ -139,7 +144,7 @@ class Bronze(BaseJob):
         if not self._parser:
             assert self.mode not in ["register"], f"{self.mode} not allowed"
 
-            parser = self.options.job.get("parser")
+            parser = self.options.parser
             assert parser is not None, "parser not found"
 
             self._parser = cast(str, parser)
@@ -183,6 +188,26 @@ class Bronze(BaseJob):
 
         return df
 
+    def encrypt(self, df: DataFrame) -> DataFrame:
+        encrypted_columns = self.options.encrypted_columns or []
+        if encrypted_columns:
+            if not IS_UNITY_CATALOG:
+                from databricks.sdk.runtime import dbutils
+
+                key = dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
+            else:
+                import os
+
+                key = os.environ["FABRICKS_ENCRYPTION_KEY"]
+
+            assert key, "key not found"
+
+            for col in encrypted_columns:
+                DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"label": self})
+                df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
+
+        return df
+
     def get_data(
         self,
         stream: bool = False,
@@ -203,7 +228,7 @@ class Bronze(BaseJob):
         return df
 
     def add_calculated_columns(self, df: DataFrame) -> DataFrame:
-        calculated_columns = self.options.job.get_dict("calculated_columns")
+        calculated_columns = self.options.calculated_columns or {}
 
         if calculated_columns:
             for key, value in calculated_columns.items():
@@ -229,7 +254,7 @@ class Bronze(BaseJob):
 
     def add_key(self, df: DataFrame) -> DataFrame:
         if "__key" not in df.columns:
-            fields = self.options.job.get_list("keys")
+            fields = self.options.keys or []
             if fields:
                 DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"label": self})
 
@@ -243,7 +268,7 @@ class Bronze(BaseJob):
 
     def add_source(self, df: DataFrame) -> DataFrame:
         if "__source" not in df.columns:
-            source = self.options.job.get("source")
+            source = self.options.source
             if source:
                 DEFAULT_LOGGER.debug(f"add source ({source})", extra={"label": self})
                 df = df.withColumn("__source", lit(source))
@@ -252,7 +277,7 @@ class Bronze(BaseJob):
 
     def add_operation(self, df: DataFrame) -> DataFrame:
         if "__operation" not in df.columns:
-            operation = self.options.job.get("operation")
+            operation = self.options.operation
             if operation:
                 DEFAULT_LOGGER.debug(f"add operation ({operation})", extra={"label": self})
                 df = df.withColumn("__operation", lit(operation))

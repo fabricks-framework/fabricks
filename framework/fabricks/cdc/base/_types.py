@@ -6,5 +6,5 @@ from pyspark.sql import DataFrame
 
 from fabricks.metastore.table import Table
 
-AllowedChangeDataCaptures = Literal["nocdc", "scd1", "scd2"]
+AllowedChangeDataCaptures = Literal["nocdc", "scd1", "scd2", "none"]
 AllowedSources = Union[DataFrame, Table, str]

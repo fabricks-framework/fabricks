@@ -29,7 +29,7 @@ class Invoker(Checker):
         self._invoke_step(position="post_run", schedule=schedule)
 
     def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
-        invokers = self.options.invokers.get_list(position)
+        invokers = getattr(self.invoker_options, position, None) or [] if self.invoker_options else []
         if position == "run":
             invokers = invokers if len(invokers) > 0 else [{}]  # run must work even without run invoker options
 
@@ -41,14 +41,17 @@ class Invoker(Checker):
                 try:
                     path = kwargs.get("path")
                     if path is None:
-                        notebook = invoker.get("notebook")
+                        # Handle both dict (empty {}) and Pydantic model cases
+                        notebook = invoker.get("notebook") if isinstance(invoker, dict) else invoker.notebook
                         assert notebook, "notebook mandatory"
                         path = PATH_RUNTIME.joinpath(notebook)
 
                     assert path is not None, "path mandatory"
 
-                    arguments = invoker.get("arguments") or {}
-                    timeout = invoker.get("timeout")
+                    # Handle both dict (empty {}) and Pydantic model cases
+                    arguments = invoker.get("arguments") if isinstance(invoker, dict) else invoker.arguments
+                    arguments = arguments or {}
+                    timeout = invoker.get("timeout") if isinstance(invoker, dict) else invoker.timeout
 
                     schema_only = kwargs.get("schema_only")
                     if schema_only is not None:
@@ -168,17 +171,17 @@ class Invoker(Checker):
                 "topic": self.topic,
                 "item": self.item,
                 **arguments,
-                "job_options": json.dumps(self.options.job.options),
+                "job_options": json.dumps(self.options.model_dump()),
                 "schedule_variables": json.dumps(variables),
             },
         )
 
     def extend_job(self, df: DataFrame) -> DataFrame:
-        extenders = self.options.extenders
+        extenders = self.extender_options or []
         for e in extenders:
-            name = e.get("extender")
+            name = e.extender
             DEFAULT_LOGGER.debug(f"extend ({name})", extra={"label": self})
-            arguments = e.get("arguments") or {}
+            arguments = e.arguments or {}
 
             extender = get_extender(name)
             df = extender(df, **arguments)

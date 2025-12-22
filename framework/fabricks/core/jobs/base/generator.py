@@ -91,7 +91,7 @@ class Generator(Configurator):
         Returns:
                 None
         """
-        if self.options.job.get("no_drop"):
+        if self.options.no_drop:
             raise ValueError("no_drop is set, cannot drop the job")
 
         try:
@@ -167,7 +167,7 @@ class Generator(Configurator):
         ...
 
     def _get_clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
-        columns = self.options.table.get_list("cluster_by")
+        columns = self.table_options.cluster_by or [] if self.table_options else []
         if columns:
             return columns
 
@@ -205,7 +205,7 @@ class Generator(Configurator):
             identity = False
 
             # first take from job options, then from step options
-            job_powerbi = self.options.table.get_boolean("powerbi", None)
+            job_powerbi = self.table_options.powerbi if self.table_options else None
             step_powerbi = self.step_conf.get("table_options", {}).get("powerbi", None)
             if job_powerbi is not None:
                 powerbi = job_powerbi
@@ -213,7 +213,7 @@ class Generator(Configurator):
                 powerbi = step_powerbi
 
             # first take from job options, then from step options
-            job_masks = self.options.table.get("masks", None)
+            job_masks = self.table_options.masks if self.table_options else None
             step_masks = self.step_conf.get("table_options", {}).get("masks", None)
             if job_masks is not None:
                 masks = job_masks
@@ -222,7 +222,7 @@ class Generator(Configurator):
             else:
                 masks = None
 
-            maximum_compatibility = self.options.table.get_boolean("maximum_compatibility", False)
+            maximum_compatibility = self.table_options.maximum_compatibility if self.table_options else False
 
             if maximum_compatibility:
                 default_properties = {
@@ -251,10 +251,10 @@ class Generator(Configurator):
             if "__identity" in df.columns:
                 identity = False
             else:
-                identity = self.options.table.get_boolean("identity", False)
+                identity = self.table_options.identity if self.table_options else False
 
             # first take from job options, then from step options
-            liquid_clustering_job = self.options.table.get("liquid_clustering", None)
+            liquid_clustering_job = self.table_options.liquid_clustering if self.table_options else None
             liquid_clustering_step = self.step_conf.get("table_options", {}).get("liquid_clustering", None)
             if liquid_clustering_job is not None:
                 liquid_clustering = liquid_clustering_job
@@ -278,24 +278,24 @@ class Generator(Configurator):
 
             if liquid_clustering is None:
                 cluster_by = None
-                partition_by = self.options.table.get_list("partition_by")
+                partition_by = self.table_options.partition_by or [] if self.table_options else []
                 if partition_by:
                     partitioning = True
 
             properties = None
             if not powerbi:
                 # first take from job options, then from step options
-                if self.options.table.get_dict("properties"):
-                    properties = self.options.table.get_dict("properties")
+                if self.table_options and self.table_options.properties:
+                    properties = self.table_options.properties
                 elif self.step_conf.get("table_options", {}).get("properties", {}):
                     properties = self.step_conf.get("table_options", {}).get("properties", {})
 
             if properties is None:
                 properties = default_properties
 
-            primary_key = self.options.table.get_dict("primary_key")
-            foreign_keys = self.options.table.get_dict("foreign_keys")
-            comments = self.options.table.get_dict("comments")
+            primary_key = self.table_options.primary_key or {} if self.table_options else {}
+            foreign_keys = self.table_options.foreign_keys or {} if self.table_options else {}
+            comments = self.table_options.comments or {} if self.table_options else {}
 
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
@@ -347,12 +347,12 @@ class Generator(Configurator):
                 else:
                     _create_table(df)
 
-                constraints = self.options.table.get_dict("constraints")
+                constraints = self.table_options.constraints or {} if self.table_options else {}
                 if constraints:
                     for key, value in constraints.items():
                         self.table.add_constraint(name=key, expr=value)
 
-                comment = self.options.table.get("comment")
+                comment = self.table_options.comment if self.table_options else None
                 if comment:
                     self.table.add_table_comment(comment=comment)
 
@@ -415,12 +415,12 @@ class Generator(Configurator):
             self.table.drop_comments()
 
             if table:
-                comment = self.options.table.get("comment")
+                comment = self.table_options.comment if self.table_options else None
                 if comment:
                     self.table.add_table_comment(comment=comment)
 
             if columns:
-                comments = self.options.table.get_dict("comments")
+                comments = self.table_options.comments or {} if self.table_options else {}
                 if comments:
                     for col, comment in comments.items():
                         self.table.add_column_comment(column=col, comment=comment)
@@ -456,7 +456,7 @@ class Generator(Configurator):
         enable = False
 
         # first take from job options, then from step options
-        enable_job = self.options.table.get_boolean("liquid_clustering", None)
+        enable_job = self.table_options.liquid_clustering if self.table_options else None
         enable_step = self.step_conf.get("table_options", {}).get("liquid_clustering", None)
         if enable_job is not None:
             enable = enable_job

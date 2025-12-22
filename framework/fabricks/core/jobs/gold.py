@@ -8,7 +8,7 @@ from typing_extensions import deprecated
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import JobDependency, TGold
+from fabricks.core.jobs.base._types import GoldOptions, JobDependency, TGold
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -47,6 +47,11 @@ class Gold(BaseJob):
         return cls(step=cast(TGold, step), topic=topic, item=item)
 
     @property
+    def options(self) -> GoldOptions:
+        """Direct access to typed gold job options."""
+        return self.conf.options  # type: ignore
+
+    @property
     def stream(self) -> bool:
         return False
 
@@ -81,11 +86,11 @@ class Gold(BaseJob):
             return []
 
         # udf not allowed in notebook
-        elif self.options.job.get("notebook"):
+        elif self.options.notebook:
             return []
 
         # udf not allowed in table
-        elif self.options.job.get("table"):
+        elif self.options.table:
             return []
 
         else:
@@ -114,7 +119,7 @@ class Gold(BaseJob):
         schema_only: Optional[bool] = False,
         **kwargs,
     ) -> DataFrame:
-        if self.options.job.get_boolean("requirements"):
+        if self.options.requirements:
             import sys
 
             sys.path.append("/dbfs/mnt/fabricks/site-packages")
@@ -122,8 +127,8 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             df = self.spark.createDataFrame([{}])  # type: ignore
 
-        elif self.options.job.get("notebook"):
-            invokers = self.options.invokers.get_list("run")
+        elif self.options.notebook:
+            invokers = self.invoker_options.run or [] if self.invoker_options else []
             assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
 
             global_temp_view = self.invoke(path=self.paths.runtime, schema_only=schema_only, **kwargs)
@@ -131,8 +136,8 @@ class Gold(BaseJob):
 
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
 
-        elif self.options.job.get("table"):
-            table = self.options.job.get("table")
+        elif self.options.table:
+            table = self.options.table
             df = self.spark.read.table(table)  # type: ignore
 
         else:
@@ -157,11 +162,11 @@ class Gold(BaseJob):
 
     def get_dependencies(self) -> Sequence[JobDependency]:
         data = []
-        parents = self.options.job.get_list("parents") or []
+        parents = self.options.parents or []
 
         if self.mode == "invoke":
             dependencies = []
-        elif self.options.job.get("notebook"):
+        elif self.options.notebook:
             dependencies = self._get_notebook_dependencies()
         else:
             dependencies = self._get_sql_dependencies()
@@ -206,11 +211,11 @@ class Gold(BaseJob):
 
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
         # assume no duplicate in gold (to improve performance)
-        deduplicate = self.options.job.get_boolean("deduplicate", None)
+        deduplicate = self.options.deduplicate
         # assume no reload in gold (to improve performance)
-        rectify = self.options.job.get_boolean("rectify_as_upserts", None)
+        rectify = self.options.rectify_as_upserts
 
-        add_metadata = self.options.job.get_boolean("metadata", None)
+        add_metadata = self.options.metadata
         if add_metadata is None:
             add_metadata = self.step_conf.get("options", {}).get("metadata", False)
 
@@ -277,10 +282,12 @@ class Gold(BaseJob):
 
         # correct __valid_from
         if self.change_data_capture == "scd2":
-            context["correct_valid_from"] = self.options.job.get_boolean("correct_valid_from", True)
+            context["correct_valid_from"] = (
+                self.options.correct_valid_from if self.options.correct_valid_from is not None else True
+            )
 
         # add __timestamp
-        if self.options.job.get_boolean("persist_last_timestamp"):
+        if self.options.persist_last_timestamp:
             if self.change_data_capture == "scd1":
                 if "__timestamp" not in df.columns:
                     context["add_timestamp"] = True
@@ -289,10 +296,10 @@ class Gold(BaseJob):
                     context["add_timestamp"] = True
 
         # add __updated
-        if self.options.job.get_boolean("persist_last_updated_timestamp"):
+        if self.options.persist_last_updated_timestamp:
             if "__last_updated" not in df.columns:
                 context["add_last_updated"] = True
-        if self.options.job.get_boolean("last_updated"):
+        if self.options.last_updated:
             if "__last_updated" not in df.columns:
                 context["add_last_updated"] = True
 
@@ -343,9 +350,9 @@ class Gold(BaseJob):
     def for_each_run(self, **kwargs):
         last_version = None
 
-        if self.options.job.get_boolean("persist_last_timestamp"):
+        if self.options.persist_last_timestamp:
             last_version = self.table.get_last_version()
-        if self.options.job.get_boolean("persist_last_updated_timestamp"):
+        if self.options.persist_last_updated_timestamp:
             last_version = self.table.get_last_version()
 
         if self.mode == "invoke":
@@ -354,10 +361,10 @@ class Gold(BaseJob):
         else:
             super().for_each_run(**kwargs)
 
-        if self.options.job.get_boolean("persist_last_timestamp"):
+        if self.options.persist_last_timestamp:
             self._persist_timestamp(field="__timestamp", last_version=last_version)
 
-        if self.options.job.get_boolean("persist_last_updated_timestamp"):
+        if self.options.persist_last_updated_timestamp:
             self._persist_timestamp(field="__last_updated", last_version=last_version)
 
     def create(self):
@@ -366,11 +373,11 @@ class Gold(BaseJob):
         else:
             self.register_udfs()
             super().create()
-            if self.options.job.get_boolean("persist_last_timestamp"):
+            if self.options.persist_last_timestamp:
                 self._persist_timestamp(create=True)
 
     def register(self):
-        if self.options.job.get_boolean("persist_last_timestamp"):
+        if self.options.persist_last_timestamp:
             self.cdc_last_timestamp.table.register()
 
         if self.mode == "invoke":
@@ -379,7 +386,7 @@ class Gold(BaseJob):
             super().register()
 
     def drop(self):
-        if self.options.job.get_boolean("persist_last_timestamp"):
+        if self.options.persist_last_timestamp:
             self.cdc_last_timestamp.drop()
 
         super().drop()

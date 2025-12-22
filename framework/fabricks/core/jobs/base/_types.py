@@ -1,14 +1,12 @@
-from dataclasses import dataclass
-from typing import List, Literal, Optional, TypedDict, Union
+from typing import List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, computed_field, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
 
 from fabricks.cdc.base._types import AllowedChangeDataCaptures
 from fabricks.context import BRONZE, GOLD, SILVER
 from fabricks.core.jobs.get_job_id import get_dependency_id, get_job_id
 from fabricks.core.parsers import ParserOptions
-from fabricks.utils.fdict import FDict
 from fabricks.utils.path import Path
 
 TBronze = Literal["bronze"]
@@ -35,200 +33,224 @@ AllowedConstraintOptions = Literal["not enforced", "deferrable", "initially defe
 AllowedForeignKeyOptions = Literal["match full", "on update no action", "on delete no action"]
 
 
-class SparkOptions(TypedDict):
-    sql: Optional[dict[str, str]]
-    conf: Optional[dict[str, str]]
+class SparkOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    sql: Optional[dict[str, str]] = None
+    conf: Optional[dict[str, str]] = None
 
 
-class ForeignKeyOptions(TypedDict):
-    foreign_key: Optional[AllowedForeignKeyOptions]
-    constraint: Optional[AllowedConstraintOptions]
+class ForeignKeyOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    foreign_key: Optional[AllowedForeignKeyOptions] = None
+    constraint: Optional[AllowedConstraintOptions] = None
 
 
-class PrimaryKeyOptions(TypedDict):
-    constraint: Optional[AllowedConstraintOptions]
+class PrimaryKeyOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    constraint: Optional[AllowedConstraintOptions] = None
 
 
-class ForeignKey(TypedDict):
+class ForeignKey(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     keys: List[str]
     reference: str
-    options: Optional[ForeignKeyOptions]
+    options: Optional[ForeignKeyOptions] = None
 
 
-class PrimaryKey(TypedDict):
+class PrimaryKey(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     keys: List[str]
-    options: Optional[PrimaryKeyOptions]
+    options: Optional[PrimaryKeyOptions] = None
 
 
-class TableOptions(TypedDict):
-    identity: Optional[bool]
-    liquid_clustering: Optional[bool]
-    partition_by: Optional[List[str]]
-    zorder_by: Optional[List[str]]
-    cluster_by: Optional[List[str]]
-    powerbi: Optional[bool]
-    maximum_compatibility: Optional[bool]
-    bloomfilter_by: Optional[List[str]]
-    constraints: Optional[dict[str, str]]
-    properties: Optional[dict[str, str]]
-    comment: Optional[str]
-    calculated_columns: Optional[dict[str, str]]
-    masks: Optional[dict[str, str]]
-    comments: Optional[dict[str, str]]
-    retention_days: Optional[int]
-    primary_key: Optional[dict[str, PrimaryKey]]
-    foreign_keys: Optional[dict[str, ForeignKey]]
+class TableOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    identity: Optional[bool] = None
+    liquid_clustering: Optional[bool] = None
+    partition_by: Optional[List[str]] = None
+    zorder_by: Optional[List[str]] = None
+    cluster_by: Optional[List[str]] = None
+    powerbi: Optional[bool] = None
+    maximum_compatibility: Optional[bool] = None
+    bloomfilter_by: Optional[List[str]] = None
+    constraints: Optional[dict[str, str]] = None
+    properties: Optional[dict[str, str]] = None
+    comment: Optional[str] = None
+    calculated_columns: Optional[dict[str, str]] = None
+    masks: Optional[dict[str, str]] = None
+    comments: Optional[dict[str, str]] = None
+    retention_days: Optional[int] = None
+    primary_key: Optional[dict[str, PrimaryKey]] = None
+    foreign_keys: Optional[dict[str, ForeignKey]] = None
 
 
-class _InvokeOptions(TypedDict):
+class _InvokeOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     notebook: str
     timeout: int
-    arguments: Optional[dict[str, str]]
+    arguments: Optional[dict[str, str]] = None
 
 
-class InvokerOptions(TypedDict):
-    pre_run: Optional[List[_InvokeOptions]]
-    run: Optional[List[_InvokeOptions]]
-    post_run: Optional[List[_InvokeOptions]]
+class InvokerOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    pre_run: Optional[List[_InvokeOptions]] = None
+    run: Optional[List[_InvokeOptions]] = None
+    post_run: Optional[List[_InvokeOptions]] = None
 
 
-class ExtenderOptions(TypedDict):
+class ExtenderOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     extender: str
-    arguments: Optional[dict[str, str]]
+    arguments: Optional[dict[str, str]] = None
 
 
-class CheckOptions(TypedDict):
-    skip: Optional[bool]
-    pre_run: Optional[bool]
-    post_run: Optional[bool]
-    min_rows: Optional[int]
-    max_rows: Optional[int]
-    count_must_equal: Optional[str]
+class CheckOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    skip: Optional[bool] = None
+    pre_run: Optional[bool] = None
+    post_run: Optional[bool] = None
+    min_rows: Optional[int] = None
+    max_rows: Optional[int] = None
+    count_must_equal: Optional[str] = None
 
 
-class BronzeOptions(TypedDict):
-    type: Optional[AllowedTypes]
+class BronzeOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     mode: AllowedModesBronze
+    change_data_capture: AllowedChangeDataCaptures = "none"
+
     uri: str
     parser: str
     source: str
-    keys: Optional[List[str]]
+    type: Optional[AllowedTypes] = None
+    keys: Optional[List[str]] = None
     # default
-    parents: Optional[List[str]]
-    filter_where: Optional[str]
-    optimize: Optional[bool]
-    compute_statistics: Optional[bool]
-    vacuum: Optional[bool]
-    no_drop: Optional[bool]
+    parents: Optional[List[str]] = None
+    filter_where: Optional[str] = None
+    optimize: Optional[bool] = None
+    compute_statistics: Optional[bool] = None
+    vacuum: Optional[bool] = None
+    no_drop: Optional[bool] = None
     # extra
-    encrypted_columns: Optional[List[str]]
-    calculated_columns: Optional[dict[str, str]]
-    operation: Optional[AllowedOperations]
-    timeout: Optional[int]
+    encrypted_columns: Optional[List[str]] = None
+    calculated_columns: Optional[dict[str, str]] = None
+    operation: Optional[AllowedOperations] = None
+    timeout: Optional[int] = None
 
 
-class SilverOptions(TypedDict):
-    type: Optional[AllowedTypes]
+class SilverOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     mode: AllowedModesSilver
     change_data_capture: AllowedChangeDataCaptures
+    type: Optional[AllowedTypes] = None
     # default
-    parents: Optional[List[str]]
-    filter_where: Optional[str]
-    optimize: Optional[bool]
-    compute_statistics: Optional[bool]
-    vacuum: Optional[bool]
-    no_drop: Optional[bool]
+    parents: Optional[List[str]] = None
+    filter_where: Optional[str] = None
+    optimize: Optional[bool] = None
+    compute_statistics: Optional[bool] = None
+    vacuum: Optional[bool] = None
+    no_drop: Optional[bool] = None
     # extra
-    deduplicate: Optional[bool]
-    stream: Optional[bool]
+    deduplicate: Optional[bool] = None
+    stream: Optional[bool] = None
     # else
-    order_duplicate_by: Optional[dict[str, str]]
-    timeout: Optional[int]
+    order_duplicate_by: Optional[dict[str, str]] = None
+    timeout: Optional[int] = None
 
 
-class GoldOptions(TypedDict):
-    type: Optional[AllowedTypes]
+class GoldOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     mode: AllowedModesGold
     change_data_capture: AllowedChangeDataCaptures
-    update_where: Optional[str]
+    type: Optional[AllowedTypes] = None
+    update_where: Optional[str] = None
     # default
-    parents: Optional[List[str]]
-    optimize: Optional[bool]
-    compute_statistics: Optional[bool]
-    vacuum: Optional[bool]
-    no_drop: Optional[bool]
+    parents: Optional[List[str]] = None
+    optimize: Optional[bool] = None
+    compute_statistics: Optional[bool] = None
+    vacuum: Optional[bool] = None
+    no_drop: Optional[bool] = None
     # extra
-    deduplicate: Optional[bool]  # remove duplicates on the keys and on the hash
-    rectify_as_upserts: Optional[bool]  # convert reloads into upserts and deletes
-    correct_valid_from: Optional[bool]  # update valid_from to '1900-01-01' for the first timestamp
+    deduplicate: Optional[bool] = None  # remove duplicates on the keys and on the hash
+    rectify_as_upserts: Optional[bool] = None  # convert reloads into upserts and deletes
+    correct_valid_from: Optional[bool] = None  # update valid_from to '1900-01-01' for the first timestamp
     # persist timestamp to be used as a watermark for the next run
-    persist_last_timestamp: Optional[bool]
-    persist_last_updated_timestamp: Optional[bool]
-    # delete_missing: Optional[bool]  # delete missing records on update (to be implemented)
-    table: Optional[str]
-    notebook: Optional[bool]
-    requirements: Optional[bool]
-    timeout: Optional[int]
+    persist_last_timestamp: Optional[bool] = None
+    persist_last_updated_timestamp: Optional[bool] = None
+    # delete_missing: Optional[bool] = None  # delete missing records on update (to be implemented)
+    table: Optional[str] = None
+    notebook: Optional[bool] = None
+    requirements: Optional[bool] = None
+    timeout: Optional[int] = None
     # tracking
-    metadata: Optional[bool]
-    last_updated: Optional[bool]
+    metadata: Optional[bool] = None
+    last_updated: Optional[bool] = None
 
 
-StepOptions = Union[BronzeOptions, SilverOptions, GoldOptions]
+TOptions = Union[BronzeOptions, SilverOptions, GoldOptions]
 
 
-@dataclass
-class BaseJobConf:
-    job_id: str
+class JobConfBase(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    step: TStep
     topic: str
     item: str
 
+    @computed_field  # type: ignore[misc]
+    @property
+    def job_id(self) -> str:
+        """Computed job_id from step, topic, and item."""
+        return get_job_id(step=self.step, topic=self.topic, item=self.item)
 
-@dataclass
-class JobConfBronze(BaseJobConf):
+    options: TOptions
+    table_options: Optional[TableOptions] = None
+    check_options: Optional[CheckOptions] = None
+    spark_options: Optional[SparkOptions] = None
+    invoker_options: Optional[InvokerOptions] = None
+    extender_options: Optional[List[ExtenderOptions]] = None
+    tags: Optional[List[str]] = None
+    comment: Optional[str] = None
+
+
+class JobConfBronze(JobConfBase):
     step: TBronze
+
     options: BronzeOptions
-    table_options: Optional[TableOptions] = None
     parser_options: Optional[ParserOptions] = None
-    check_options: Optional[CheckOptions] = None
-    spark_options: Optional[SparkOptions] = None
-    invoker_options: Optional[InvokerOptions] = None
-    extender_options: Optional[List[ExtenderOptions]] = None
-    tags: Optional[List[str]] = None
-    comment: Optional[str] = None
 
 
-@dataclass
-class JobConfSilver(BaseJobConf):
+class JobConfSilver(JobConfBase):
     step: TSilver
+
     options: SilverOptions
-    table_options: Optional[TableOptions] = None
-    check_options: Optional[CheckOptions] = None
-    spark_options: Optional[SparkOptions] = None
-    invoker_options: Optional[InvokerOptions] = None
-    extender_options: Optional[List[ExtenderOptions]] = None
-    tags: Optional[List[str]] = None
-    comment: Optional[str] = None
 
 
-@dataclass
-class JobConfGold(BaseJobConf):
+class JobConfGold(JobConfBase):
     step: TGold
-    options: Optional[GoldOptions]
-    table_options: Optional[TableOptions] = None
-    check_options: Optional[CheckOptions] = None
-    spark_options: Optional[SparkOptions] = None
-    invoker_options: Optional[InvokerOptions] = None
-    extender_options: Optional[List[ExtenderOptions]] = None
-    tags: Optional[List[str]] = None
-    comment: Optional[str] = None
+
+    options: GoldOptions
 
 
 JobConf = Union[JobConfBronze, JobConfSilver, JobConfGold]
 
 
-@dataclass
-class Paths:
+class Paths(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     storage: Path
     tmp: Path
     checkpoints: Path
@@ -237,18 +259,9 @@ class Paths:
     runtime: Path
 
 
-@dataclass
-class Options:
-    job: FDict
-    check: FDict
-    table: FDict
-    spark: FDict
-    invokers: FDict
-    extenders: List
-
-
 class JobDependency(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+
     origin: AllowedOrigins
     job_id: str
     parent: str
