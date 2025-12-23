@@ -5,24 +5,30 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
-from fabricks.cdc import SCD1, SCD2, AllowedChangeDataCaptures, NoCDC
+from fabricks.cdc import SCD1, SCD2, NoCDC
 from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
-from fabricks.core.jobs.base._types import (
+from fabricks.core.jobs.get_job_conf import get_job_conf
+from fabricks.core.jobs.get_job_id import get_job_id
+from fabricks.metastore.table import Table
+from fabricks.models import (
+    AllowedChangeDataCaptures,
     AllowedModes,
     CheckOptions,
     ExtenderOptions,
     InvokerOptions,
     Paths,
+    RuntimeOptions,
     SparkOptions,
+    StepBronzeOptions,
+    StepGoldOptions,
+    StepSilverOptions,
+    StepTableOptions,
     TableOptions,
     TOptions,
     TStep,
 )
-from fabricks.core.jobs.get_job_conf import get_job_conf
-from fabricks.core.jobs.get_job_id import get_job_id
-from fabricks.metastore.table import Table
 from fabricks.utils.path import Path
 
 
@@ -54,6 +60,9 @@ class Configurator(ABC):
             self.job_id = get_job_id(step=self.step, topic=self.topic, item=self.item)
 
     _step_conf: Optional[dict[str, str]] = None
+    _step_options: Optional[Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]] = None
+    _step_table_options: Optional[StepTableOptions] = None
+    _runtime_options: Optional[RuntimeOptions] = None
     _spark: Optional[SparkSession] = None
     _timeout: Optional[int] = None
     _paths: Optional[Paths] = None
@@ -91,26 +100,23 @@ class Configurator(ABC):
         if not self._spark:
             spark = build_spark_session(app_name=str(self))
 
-            step_options = self.step_conf.get("spark_options", {})
-            step_sql_options = step_options.get("sql", {})
-            step_conf_options = step_options.get("conf", {})
-            if step_sql_options:
-                for key, value in step_sql_options.items():
+            # Apply step-level spark options if configured
+            step_spark = self.step_spark_options
+            if step_spark:
+                for key, value in step_spark.sql.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.sql(f"set {key} = {value}")
-            if step_conf_options:
-                for key, value in step_conf_options.items():
+                for key, value in step_spark.conf.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.conf.set(f"{key}", f"{value}")
 
-            job_sql_options = self.spark_options.sql if self.spark_options else None
-            job_conf_options = self.spark_options.conf if self.spark_options else None
-            if job_sql_options:
-                for key, value in job_sql_options.items():
+            # Apply job-level spark options if configured
+            job_spark = self.spark_options
+            if job_spark:
+                for key, value in job_spark.sql.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.sql(f"set {key} = {value}")
-            if job_conf_options:
-                for key, value in job_conf_options.items():
+                for key, value in job_spark.conf.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.conf.set(f"{key}", f"{value}")
 
@@ -120,9 +126,9 @@ class Configurator(ABC):
     @property
     def step_conf(self) -> dict:
         if not self._step_conf:
-            _conf = [s for s in STEPS if s.get("name") == self.step][0]
+            _conf = [s for s in STEPS if s.name == self.step][0]
             assert _conf is not None
-            self._step_conf = cast(dict[str, str], _conf)
+            self._step_conf = _conf.model_dump()
         return self._step_conf
 
     @property
@@ -130,9 +136,9 @@ class Configurator(ABC):
         return f"{self.step}.{self.topic}_{self.item}"
 
     def _get_timeout(self, what: str) -> int:
-        t = self.step_conf.get("options", {}).get("timeouts", {}).get(what, None)
+        t = getattr(self.step_options.timeouts, what, None)
         if t is None:
-            t = CONF_RUNTIME.get("options", {}).get("timeouts", {}).get(what)
+            t = getattr(self.runtime_options.timeouts, what)
         assert t is not None
         return t
 
@@ -182,6 +188,47 @@ class Configurator(ABC):
     def options(self) -> TOptions:
         """Direct access to typed job options."""
         raise NotImplementedError()
+
+    @property
+    def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]:
+        """Direct access to typed step-level options from context configuration."""
+        if not self._step_options:
+            _step = [s for s in STEPS if s.name == self.step][0]
+            assert _step is not None
+            self._step_options = _step.options
+        return self._step_options
+
+    @property
+    def step_table_options(self) -> Optional[StepTableOptions]:
+        """Direct access to typed step-level table options from context configuration."""
+        if self._step_table_options is None:
+            _step = [s for s in STEPS if s.name == self.step][0]
+            assert _step is not None
+            self._step_table_options = _step.table_options
+        return self._step_table_options
+
+    @property
+    def runtime_options(self) -> RuntimeOptions:
+        """Direct access to typed runtime options from context configuration."""
+        if not self._runtime_options:
+            self._runtime_options = CONF_RUNTIME.options
+        return self._runtime_options
+
+    @property
+    def step_spark_options(self) -> Optional[SparkOptions]:
+        """Direct access to typed step-level spark options from context configuration.
+        Returns None if not configured at step level."""
+        # Step-level spark options are optional and accessed from step_conf dict
+        # since they're not currently in the Step model types
+        step_spark = self.step_conf.get("spark_options")
+        if step_spark:
+            from fabricks.models import SparkOptions as JobSparkOptions
+
+            # Convert dict to SparkOptions if needed
+            if isinstance(step_spark, dict):
+                return JobSparkOptions(sql=step_spark.get("sql", {}), conf=step_spark.get("conf", {}))
+            return step_spark
+        return None
 
     @property
     def table_options(self) -> Optional[TableOptions]:
@@ -308,8 +355,8 @@ class Configurator(ABC):
 
         else:
             job = self.table_options.retention_days if self.table_options else None
-            step = self.step_conf.get("table_options", {}).get("retention_days", None)
-            runtime = CONF_RUNTIME.get("options", {}).get("retention_days")
+            step = self.step_table_options.retention_days if self.step_table_options else None
+            runtime = self.runtime_options.retention_days
 
             if job is not None:
                 retention_days = job

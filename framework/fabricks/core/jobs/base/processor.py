@@ -6,7 +6,6 @@ from pyspark.sql import DataFrame
 
 from fabricks.context import IS_TYPE_WIDENING
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import BronzeOptions, SilverOptions
 from fabricks.core.jobs.base.exception import (
     PostRunCheckException,
     PostRunCheckWarning,
@@ -18,12 +17,13 @@ from fabricks.core.jobs.base.exception import (
     SkipRunCheckWarning,
 )
 from fabricks.core.jobs.base.invoker import Invoker
+from fabricks.models import JobBronzeOptions, JobSilverOptions
 from fabricks.utils.write import write_stream
 
 
 class Processor(Invoker):
     def filter_where(self, df: DataFrame) -> DataFrame:
-        assert isinstance(self.options, Union[BronzeOptions, SilverOptions])
+        assert isinstance(self.options, Union[JobBronzeOptions, JobSilverOptions])
 
         f = self.options.filter_where
         if f:

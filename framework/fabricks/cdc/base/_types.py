@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Literal, Union
+from typing import Union
 
 from pyspark.sql import DataFrame
 
 from fabricks.metastore.table import Table
 
-AllowedChangeDataCaptures = Literal["nocdc", "scd1", "scd2", "none"]
+# Import from models for consistency
+
 AllowedSources = Union[DataFrame, Table, str]

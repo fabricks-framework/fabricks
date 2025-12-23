@@ -6,10 +6,10 @@ from pyspark.sql.functions import lit
 
 from fabricks.cdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import JobDependency
 from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.table import SchemaDiff
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.models import JobDependency
 
 
 class Generator(Configurator):

@@ -3,7 +3,7 @@ from typing import List, Optional, TypedDict
 from pyspark.sql import DataFrame
 
 from fabricks.context import PATH_SCHEDULES, SPARK
-from fabricks.core.jobs.base._types import TStep
+from fabricks.models import TStep
 from fabricks.utils.read.read_yaml import read_yaml
 from fabricks.utils.schema import get_schema_for_type
 

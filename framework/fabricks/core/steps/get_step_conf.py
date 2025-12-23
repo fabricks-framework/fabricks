@@ -1,6 +1,7 @@
 from typing import Union, cast
 
-from fabricks.core.jobs.base._types import Bronzes, Golds, JobConfBronze, JobConfGold, JobConfSilver, Silvers, TStep
+from fabricks.context import Bronzes, Golds, Silvers
+from fabricks.models import JobConfBronze, JobConfGold, JobConfSilver, TStep
 
 
 def get_step_conf(step: Union[TStep, str]):

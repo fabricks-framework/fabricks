@@ -1,6 +1,5 @@
-from fabricks.context import SPARK
+from fabricks.context import SPARK, Steps
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import Steps
 from fabricks.utils.sqlglot import fix as fix_sql
 
 

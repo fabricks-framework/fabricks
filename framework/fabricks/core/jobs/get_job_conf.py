@@ -2,9 +2,9 @@ from typing import Optional, Union, overload
 
 from pyspark.sql.types import Row
 
-from fabricks.context import IS_JOB_CONFIG_FROM_YAML, SPARK
-from fabricks.core.jobs.base._types import Bronzes, Golds, JobConf, Silvers, TStep
+from fabricks.context import IS_JOB_CONFIG_FROM_YAML, SPARK, Bronzes, Golds, Silvers
 from fabricks.core.jobs.get_job_id import get_job_id
+from fabricks.models import JobConf, TStep
 
 
 def get_job_conf_internal(step: TStep, row: Union[Row, dict]) -> JobConf:
@@ -16,17 +16,17 @@ def get_job_conf_internal(step: TStep, row: Union[Row, dict]) -> JobConf:
 
     # Use Pydantic validation - handles nested models and validation automatically
     if step in Bronzes:
-        from fabricks.core.jobs.base._types import JobConfBronze
+        from fabricks.models import JobConfBronze
 
         return JobConfBronze.model_validate(row)
 
     elif step in Silvers:
-        from fabricks.core.jobs.base._types import JobConfSilver
+        from fabricks.models import JobConfSilver
 
         return JobConfSilver.model_validate(row)
 
     elif step in Golds:
-        from fabricks.core.jobs.base._types import JobConfGold
+        from fabricks.models import JobConfGold
 
         return JobConfGold.model_validate(row)
 

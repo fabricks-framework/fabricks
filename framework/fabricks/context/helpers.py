@@ -1,7 +1,8 @@
 import os
 import pathlib
-from typing import List
+from typing import List, Union
 
+from fabricks.models import BronzeConf, Database, GoldConf, SilverConf
 from fabricks.utils.path import Path
 
 
@@ -40,24 +41,21 @@ def get_config_from_file():
     return None, {}, None
 
 
-def get_storage_paths(objects: List[dict], variables: dict) -> dict:
+def get_storage_paths(
+    objects: Union[List[BronzeConf], List[SilverConf], List[GoldConf], List[Database]],
+    variables: dict,
+) -> dict:
     d = {}
     for o in objects:
-        if o:
-            name = o.get("name")
-            assert name
-            uri = o.get("path_options", {}).get("storage")
-            assert uri
-            d[name] = Path.from_uri(uri, regex=variables)
+        d[o.name] = Path.from_uri(o.path_options.storage, regex=variables)
     return d
 
 
-def get_runtime_path(objects: List[dict], root: Path) -> dict:
+def get_runtime_path(
+    objects: Union[List[BronzeConf], List[SilverConf], List[GoldConf]],
+    root: Path,
+) -> dict:
     d = {}
     for o in objects:
-        name = o.get("name")
-        assert name
-        uri = o.get("path_options", {}).get("runtime")
-        assert uri
-        d[name] = root.joinpath(uri)
+        d[o.name] = root.joinpath(o.path_options.runtime)
     return d

@@ -8,10 +8,10 @@ from typing_extensions import deprecated
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import GoldOptions, JobDependency, TGold
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.models import JobDependency, JobGoldOptions, TGold
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix, get_tables
 
@@ -47,7 +47,7 @@ class Gold(BaseJob):
         return cls(step=cast(TGold, step), topic=topic, item=item)
 
     @property
-    def options(self) -> GoldOptions:
+    def options(self) -> JobGoldOptions:
         """Direct access to typed gold job options."""
         return self.conf.options  # type: ignore
 
@@ -183,7 +183,7 @@ class Gold(BaseJob):
         return data
 
     def _get_sql_dependencies(self) -> List[str]:
-        from fabricks.core.jobs.base._types import Steps
+        from fabricks.context import Steps
 
         steps = [str(s) for s in Steps]
         return get_tables(self.sql, allowed_databases=steps)

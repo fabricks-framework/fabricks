@@ -1,82 +1,60 @@
-from typing import Final, Optional
+from typing import Final, List, Optional
 
 import yaml
 
 from fabricks.context.config import PATH_CONFIG, PATH_RUNTIME
 from fabricks.context.helpers import get_runtime_path, get_storage_paths
+from fabricks.models import BronzeConf, Database, GoldConf, RuntimeConf, SilverConf
 from fabricks.utils.path import Path
 
 with open(str(PATH_CONFIG)) as f:
     data = yaml.safe_load(f)
 
-conf: dict = [d["conf"] for d in data][0]
-assert conf, "conf mandatory"
-CONF_RUNTIME: Final[dict] = conf
+conf_data = [d["conf"] for d in data][0]
+assert conf_data, "conf mandatory"
+CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(conf_data)
 
-BRONZE = CONF_RUNTIME.get("bronze", [{}])
-SILVER = CONF_RUNTIME.get("silver", [{}])
-GOLD = CONF_RUNTIME.get("gold", [{}])
+BRONZE: List[BronzeConf] = CONF_RUNTIME.bronze or []
+SILVER: List[SilverConf] = CONF_RUNTIME.silver or []
+GOLD: List[GoldConf] = CONF_RUNTIME.gold or []
 STEPS = BRONZE + SILVER + GOLD
 
-databases = CONF_RUNTIME.get("databases", [{}])
-credentials = CONF_RUNTIME.get("credentials", {})
-variables = CONF_RUNTIME.get("variables", {})
+databases: List[Database] = CONF_RUNTIME.databases or []
+credentials = CONF_RUNTIME.credentials or []
+variables = CONF_RUNTIME.variables or {}
 VARIABLES: dict = variables
 
-conf_options = CONF_RUNTIME.get("options", {})
-assert conf_options, "options mandatory"
-
-IS_UNITY_CATALOG: Final[bool] = str(conf_options.get("unity_catalog", "False")).lower() in ("true", "1", "yes")
-CATALOG: Optional[str] = conf_options.get("catalog")
+IS_UNITY_CATALOG: Final[bool] = CONF_RUNTIME.options.unity_catalog or False
+CATALOG: Optional[str] = CONF_RUNTIME.options.catalog
 
 if IS_UNITY_CATALOG and not CATALOG:
-    raise ValueError("catalog mandatory in options when unity_catalog is enabled")
+    raise ValueError("catalog mandatory in options if unity catalog is enabled")
 
-secret_scope = conf_options.get("secret_scope")
-assert secret_scope, "secret_scope mandatory in options"
-SECRET_SCOPE: Final[str] = secret_scope
+SECRET_SCOPE: Final[str] = CONF_RUNTIME.options.secret_scope
 
-timezone = conf_options.get("timezone")
-TIMEZONE: Final[str] = timezone
+TIMEZONE: Final[Optional[str]] = CONF_RUNTIME.options.timezone
 
-IS_TYPE_WIDENING: Final[bool] = str(conf_options.get("type_widening", "True")).lower() in ("true", "1", "yes")
+IS_TYPE_WIDENING: Final[bool] = (
+    CONF_RUNTIME.options.type_widening if CONF_RUNTIME.options.type_widening is not None else True
+)
 
-path_options = CONF_RUNTIME.get("path_options", {})
-assert path_options, "options mandatory"
+FABRICKS_STORAGE: Final[Path] = Path.from_uri(CONF_RUNTIME.path_options.storage, regex=variables)
 
-fabricks_uri = path_options.get("storage")
-assert fabricks_uri, "storage mandatory in path options"
-FABRICKS_STORAGE: Final[Path] = Path.from_uri(fabricks_uri, regex=variables)
+FABRICKS_STORAGE_CREDENTIAL: Final[Optional[str]] = CONF_RUNTIME.path_options.storage_credential
 
-FABRICKS_STORAGE_CREDENTIAL: Final[Optional[str]] = path_options.get("storage_credential")
+PATH_UDFS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.udfs)
 
-path_udfs = path_options.get("udfs", "fabricks/udfs")
-assert path_udfs, "path to udfs mandatory"
-PATH_UDFS: Final[Path] = PATH_RUNTIME.joinpath(path_udfs)
+PATH_PARSERS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.parsers)
 
-path_parsers = path_options.get("parsers", "fabricks/parsers")
-assert path_parsers, "path to parsers mandatory"
-PATH_PARSERS: Final[Path] = PATH_RUNTIME.joinpath(path_parsers)
+PATH_EXTENDERS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.extenders or "fabricks/extenders")
 
-path_extenders = path_options.get("extenders", "fabricks/extenders")
-assert path_extenders, "path to extenders mandatory"
-PATH_EXTENDERS: Final[Path] = PATH_RUNTIME.joinpath(path_extenders)
+PATH_VIEWS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.views)
 
-path_views = path_options.get("views", "fabricks/views")
-assert path_views, "path to views mandatory"
-PATH_VIEWS: Final[Path] = PATH_RUNTIME.joinpath(path_views)
+PATH_SCHEDULES: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.schedules)
 
-path_schedules = path_options.get("schedules", "fabricks/schedules")
-assert path_schedules, "path to schedules mandatory"
-PATH_SCHEDULES: Final[Path] = PATH_RUNTIME.joinpath(path_schedules)
+PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.requirements)
 
-path_requirements = path_options.get("requirements", "fabricks/requirements")
-assert path_requirements, "path to requirements mandatory"
-PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.joinpath(path_requirements)
-
-path_masks = path_options.get("masks", "fabricks/masks")
-assert path_masks, "path to masks mandatory"
-PATH_MASKS: Final[Path] = PATH_RUNTIME.joinpath(path_masks)
+PATH_MASKS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.masks or "fabricks/masks")
 
 PATHS_STORAGE: Final[dict[str, Path]] = {
     "fabricks": FABRICKS_STORAGE,
@@ -91,3 +69,8 @@ PATHS_RUNTIME: Final[dict[str, Path]] = {
     **get_runtime_path(SILVER, PATH_RUNTIME),
     **get_runtime_path(GOLD, PATH_RUNTIME),
 }
+
+Bronzes = [b.name for b in BRONZE]
+Silvers = [s.name for s in SILVER]
+Golds = [g.name for g in GOLD]
+Steps = Bronzes + Silvers + Golds

@@ -6,7 +6,8 @@ from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, lit, when
 
-from fabricks.core.parsers import BaseParser, ParserOptions
+from fabricks.core.parsers import BaseParser
+from fabricks.models import ParserOptions
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import Path
 from fabricks.utils.read import read

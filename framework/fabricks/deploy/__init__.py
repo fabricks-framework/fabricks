@@ -1,9 +1,8 @@
 import logging
 from typing import List, Optional, Union, cast
 
-from fabricks.context import FABRICKS_STORAGE
+from fabricks.context import FABRICKS_STORAGE, Steps
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import Steps, TStep
 from fabricks.core.steps.base import BaseStep
 from fabricks.deploy.masks import deploy_masks
 from fabricks.deploy.notebooks import deploy_notebooks
@@ -13,6 +12,7 @@ from fabricks.deploy.udfs import deploy_udfs
 from fabricks.deploy.utils import print_atomic_bomb
 from fabricks.deploy.views import deploy_views
 from fabricks.metastore.database import Database
+from fabricks.models import TStep
 
 
 class Deploy:

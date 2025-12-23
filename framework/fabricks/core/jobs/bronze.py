@@ -7,11 +7,11 @@ from pyspark.sql.types import Row, TimestampType
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import IS_UNITY_CATALOG, SECRET_SCOPE, VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import BronzeOptions, JobDependency, TBronze
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.models import JobBronzeOptions, JobDependency, TBronze
 from fabricks.utils.helpers import concat_ws
 from fabricks.utils.path import Path
 from fabricks.utils.read import read
@@ -54,7 +54,7 @@ class Bronze(BaseJob):
         return False
 
     @property
-    def options(self) -> BronzeOptions:
+    def options(self) -> JobBronzeOptions:
         """Direct access to typed bronze job options."""
         return self.conf.options  # type: ignore
 
@@ -86,7 +86,7 @@ class Bronze(BaseJob):
     def register_external_table(self):
         options = self.conf.parser_options  # type: ignore
         if options:
-            file_format = options.get("file_format")
+            file_format = options.file_format
         else:
             file_format = "delta"
 

@@ -6,10 +6,10 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import JobDependency, SilverOptions, TBronze, TSilver
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.models import JobDependency, JobSilverOptions, TBronze, TSilver
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.read.read import read
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -45,7 +45,7 @@ class Silver(BaseJob):
         return cls(step=cast(TSilver, step), topic=topic, item=item, conf=conf)
 
     @property
-    def options(self) -> SilverOptions:
+    def options(self) -> JobSilverOptions:
         """Direct access to typed silver job options."""
         return self.conf.options  # type: ignore
 

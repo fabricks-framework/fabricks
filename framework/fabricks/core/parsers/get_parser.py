@@ -1,8 +1,8 @@
 from typing import Callable, Optional
 
 from fabricks.context import PATH_PARSERS
-from fabricks.core.parsers._types import ParserOptions
 from fabricks.core.parsers.base import PARSERS, BaseParser
+from fabricks.models import ParserOptions
 from fabricks.utils.helpers import load_module_from_path
 
 
