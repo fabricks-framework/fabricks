@@ -222,11 +222,11 @@ class Configurator(ABC):
         # since they're not currently in the Step model types
         step_spark = self.step_conf.get("spark_options")
         if step_spark:
-            from fabricks.models import SparkOptions as JobSparkOptions
+            from fabricks.models import SparkOptions
 
             # Convert dict to SparkOptions if needed
             if isinstance(step_spark, dict):
-                return JobSparkOptions(sql=step_spark.get("sql", {}), conf=step_spark.get("conf", {}))
+                return SparkOptions(sql=step_spark.get("sql", {}), conf=step_spark.get("conf", {}))
             return step_spark
         return None
 
