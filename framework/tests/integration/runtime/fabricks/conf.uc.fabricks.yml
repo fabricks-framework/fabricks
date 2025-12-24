@@ -79,7 +79,7 @@
           order: 304
           schema_drift: true
         extender_options:  
-          - extender: drop__cols
+          - drop__cols
         table_options:
           properties: 
               delta.minReaderVersion: 1
