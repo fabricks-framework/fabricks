@@ -47,7 +47,7 @@ def register_mask(mask: str, override: Optional[bool] = False, spark: Optional[S
 
     if not is_registered(mask, spark) or override:
         if override:
-            DEFAULT_LOGGER.debug(f"override mask {mask}")
+            DEFAULT_LOGGER.debug(f"drop mask {mask}")
         else:
             DEFAULT_LOGGER.debug(f"register mask {mask}")
 
