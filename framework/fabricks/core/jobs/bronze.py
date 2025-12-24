@@ -85,7 +85,7 @@ class Bronze(BaseJob):
 
     def register_external_table(self):
         options = self.conf.parser_options  # type: ignore
-        if options:
+        if options and options.file_format:
             file_format = options.file_format
         else:
             file_format = "delta"

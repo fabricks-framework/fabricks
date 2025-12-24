@@ -1,3 +1,5 @@
+"""Job configuration models."""
+
 from typing import Optional, overload
 
 from fabricks.utils.helpers import md5

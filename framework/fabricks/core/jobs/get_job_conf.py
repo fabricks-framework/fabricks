@@ -3,8 +3,7 @@ from typing import Optional, Union, overload
 from pyspark.sql.types import Row
 
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, SPARK, Bronzes, Golds, Silvers
-from fabricks.core.jobs.get_job_id import get_job_id
-from fabricks.models import JobConf, TStep
+from fabricks.models import JobConf, TStep, get_job_id
 
 
 def get_job_conf_internal(step: TStep, row: Union[Row, dict]) -> JobConf:

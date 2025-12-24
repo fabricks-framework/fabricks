@@ -1,7 +1,6 @@
 """Job configuration models."""
 
-from hashlib import md5
-from typing import List, Optional, TypedDict, Union
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, computed_field
 
@@ -20,6 +19,7 @@ from fabricks.models.common import (
     TStep,
 )
 from fabricks.models.table import TableOptions
+from fabricks.models.utils import get_job_id
 
 
 class BaseInvokerOptions(BaseModel):
@@ -55,9 +55,9 @@ class CheckOptions(BaseModel):
     count_must_equal: Optional[str] = None
 
 
-class ParserOptions(TypedDict):
-    file_format: Optional[str]
-    read_options: Optional[dict[str, str]]
+class ParserOptions(BaseModel):
+    file_format: Optional[str] = None
+    read_options: Optional[dict[str, str]] = None
 
 
 class BronzeOptions(BaseModel):
@@ -148,7 +148,7 @@ class JobConfBase(BaseModel):
     @property
     def job_id(self) -> str:
         """Computed job_id from step, topic, and item."""
-        return md5(f"{self.step}.{self.topic}-{self.item}".encode()).hexdigest()
+        return get_job_id(step=self.step, topic=self.topic, item=self.item)
 
     options: TOptions
     table_options: Optional[TableOptions] = None

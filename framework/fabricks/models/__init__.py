@@ -64,6 +64,7 @@ from fabricks.models.table import (
     StepTableOptions,
     TableOptions,
 )
+from fabricks.models.utils import get_dependency_id, get_job_id
 
 __all__ = [
     # Common types
@@ -129,4 +130,6 @@ __all__ = [
     "StepTableOptions",
     "TableOptions",
     "ParserOptions",
+    "get_dependency_id",
+    "get_job_id",
 ]

@@ -16,9 +16,10 @@ from fabricks.utils.read import read
 class DeleteLogBaseParser(BaseParser):
     def __init__(self, options: Optional[ParserOptions] = None):
         if options:
-            file_format = options.get("file_format") or "parquet"
+            file_format = options.file_format or "parquet"
         else:
             file_format = "parquet"
+
         super().__init__(options, file_format)
 
     def _parse(
@@ -33,7 +34,7 @@ class DeleteLogBaseParser(BaseParser):
             path=data_path,
             file_format=self.file_format,
             schema_path=schema_path,
-            options=self.options.get("read_options"),
+            options=self.options.read_options if self.options else {},
             spark=spark,
         )
 
@@ -63,7 +64,7 @@ class DeleteLogBaseParser(BaseParser):
                 path=data_path,
                 file_format=self.file_format,
                 schema_path=schema_path,
-                options=self.options.get("read_options"),
+                options=self.options.read_options if self.options else {},
                 spark=spark,
             )
             df.columns

@@ -10,7 +10,6 @@ from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
 from fabricks.core.jobs.get_job_conf import get_job_conf
-from fabricks.core.jobs.get_job_id import get_job_id
 from fabricks.metastore.table import Table
 from fabricks.models import (
     AllowedChangeDataCaptures,
@@ -28,6 +27,7 @@ from fabricks.models import (
     TableOptions,
     TOptions,
     TStep,
+    get_job_id,
 )
 from fabricks.utils.path import Path
 

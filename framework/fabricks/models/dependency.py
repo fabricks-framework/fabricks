@@ -3,8 +3,8 @@
 from pydantic import BaseModel, ConfigDict, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
 
-from fabricks.core.jobs.get_job_id import get_dependency_id, get_job_id
 from fabricks.models.common import AllowedOrigins
+from fabricks.models.utils import get_dependency_id, get_job_id
 
 
 class JobDependency(BaseModel):

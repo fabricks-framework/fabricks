@@ -13,7 +13,7 @@ from fabricks.utils.read.read import read
 
 class BaseParser(ABC):
     def __init__(self, options: Optional[ParserOptions], file_format: str):
-        self.options = options or {}
+        self.options = options
         self.file_format = file_format
 
     def add_timestamp_from_file_path(self, df: DataFrame) -> DataFrame:
@@ -43,7 +43,7 @@ class BaseParser(ABC):
             path=data_path,
             file_format=self.file_format,
             schema_path=schema_path,
-            options=self.options.get("read_options"),
+            options=self.options.read_options if self.options else {},
             spark=spark,
         )
 
