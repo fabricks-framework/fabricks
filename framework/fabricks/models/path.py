@@ -10,9 +10,9 @@ class Paths(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    storage: "Path"
-    tmp: "Path"
-    checkpoints: "Path"
-    commits: "Path"
-    schema: "Path"
-    runtime: "Path"
+    to_storage: "Path"
+    to_tmp: "Path"
+    to_checkpoints: "Path"
+    to_commits: "Path"
+    to_schema: "Path"
+    to_runtime: "Path"

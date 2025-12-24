@@ -22,7 +22,7 @@ class Checker(Generator):
         if self.check_options and getattr(self.check_options, position):
             DEFAULT_LOGGER.debug(f"check {position}", extra={"label": self})
 
-            p = self.paths.runtime.append(f".{position}.sql")
+            p = self.paths.to_runtime.append(f".{position}.sql")
             assert p.exists(), f"{position} check not found ({p})"
 
             df = self.spark.sql(p.get_sql())
@@ -124,7 +124,7 @@ class Checker(Generator):
         if self.check_options and self.check_options.skip:
             DEFAULT_LOGGER.debug("check if run should be skipped", extra={"label": self})
 
-            p = self.paths.runtime.append(".skip.sql")
+            p = self.paths.to_runtime.append(".skip.sql")
             assert p.exists(), "skip check not found"
 
             df = self.spark.sql(p.get_sql())

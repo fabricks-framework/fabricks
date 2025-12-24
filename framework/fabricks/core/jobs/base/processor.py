@@ -51,7 +51,7 @@ class Processor(Invoker):
                 self.rm_commit(current_batch)
 
                 assert last_batch == self.table.get_property("fabricks.last_batch")
-                assert self.paths.commits.joinpath(last_batch).exists()
+                assert self.paths.to_commits.joinpath(last_batch).exists()
 
     def _for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
@@ -99,7 +99,7 @@ class Processor(Invoker):
                 DEFAULT_LOGGER.debug("use streaming", extra={"label": self})
                 write_stream(
                     df,
-                    checkpoints_path=self.paths.checkpoints,
+                    checkpoints_path=self.paths.to_checkpoints,
                     func=self._for_each_batch,
                     timeout=self.timeout,
                 )

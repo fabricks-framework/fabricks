@@ -172,12 +172,12 @@ class Configurator(ABC):
             assert runtime_root
 
             self._paths = Paths(
-                storage=storage,
-                tmp=storage.joinpath("tmp", self.topic, self.item),
-                checkpoints=storage.joinpath("checkpoints", self.topic, self.item),
-                commits=storage.joinpath("checkpoints", self.topic, self.item, "commits"),
-                schema=storage.joinpath("schema", self.topic, self.item),
-                runtime=runtime_root.joinpath(self.topic, self.item),
+                to_storage=storage,
+                to_tmp=storage.joinpath("tmp", self.topic, self.item),
+                to_checkpoints=storage.joinpath("checkpoints", self.topic, self.item),
+                to_commits=storage.joinpath("checkpoints", self.topic, self.item, "commits"),
+                to_schema=storage.joinpath("schema", self.topic, self.item),
+                to_runtime=runtime_root.joinpath(self.topic, self.item),
             )
 
         assert self._paths is not None

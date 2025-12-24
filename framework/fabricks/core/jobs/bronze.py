@@ -182,7 +182,7 @@ class Bronze(BaseJob):
             df = parse(
                 stream=stream,
                 data_path=self.data_path,
-                schema_path=self.paths.schema,
+                schema_path=self.paths.to_schema,
                 spark=self.spark,
             )
 

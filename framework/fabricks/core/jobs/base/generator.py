@@ -31,9 +31,9 @@ class Generator(Configurator):
 
         If the schema folder exists, it will be deleted. The method also calls the `rm_checkpoints` method to remove any checkpoints associated with the generator.
         """
-        if self.paths.schema.exists():
+        if self.paths.to_schema.exists():
             DEFAULT_LOGGER.info("delete schema folder", extra={"label": self})
-            self.paths.schema.rm()
+            self.paths.to_schema.rm()
         self.rm_checkpoints()
 
     def rm_checkpoints(self):
@@ -42,9 +42,9 @@ class Generator(Configurator):
 
         This method checks if the checkpoints folder exists and deletes it if it does.
         """
-        if self.paths.checkpoints.exists():
+        if self.paths.to_checkpoints.exists():
             DEFAULT_LOGGER.info("delete checkpoints folder", extra={"label": self})
-            self.paths.checkpoints.rm()
+            self.paths.to_checkpoints.rm()
 
     def rm_commit(self, id: Union[str, int]):
         """
@@ -56,7 +56,7 @@ class Generator(Configurator):
         Returns:
             None
         """
-        path = self.paths.commits.joinpath(str(id))
+        path = self.paths.to_commits.joinpath(str(id))
         if path.exists():
             DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": self})
             path.rm()
@@ -332,7 +332,7 @@ class Generator(Configurator):
                     dummy_df = dummy_df.select("__metadata")
 
                     df = df.unionByName(dummy_df, allowMissingColumns=True)
-                    path = self.paths.checkpoints.append("__init")
+                    path = self.paths.to_checkpoints.append("__init")
                     if path.exists():
                         path.rm()
 
@@ -382,7 +382,7 @@ class Generator(Configurator):
                 df = self.base_transform(df)
 
                 if self.stream:
-                    path = self.paths.checkpoints.append("__schema")
+                    path = self.paths.to_checkpoints.append("__schema")
                     query = (
                         df.writeStream.foreachBatch(_update_schema)
                         .option("checkpointLocation", path.string)
