@@ -4,8 +4,17 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
-from fabricks.models.common import InvokerOptions
+from fabricks.models.common import BaseInvokerOptions, SparkOptions
 from fabricks.models.table import StepTableOptions
+
+
+class StepInvokerOptions(BaseModel):
+    """Grouped invoker operations for pre/run/post execution."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    pre_run: Optional[List[BaseInvokerOptions]] = None
+    post_run: Optional[List[BaseInvokerOptions]] = None
 
 
 class StepTimeoutOptions(BaseModel):
@@ -36,8 +45,6 @@ class StepOptions(BaseModel):
     order: int
     workers: Optional[int] = None
     timeouts: Optional[StepTimeoutOptions] = None
-    extenders: Optional[List[str]] = None
-    invokers: Optional[InvokerOptions] = None
 
 
 class BronzeOptions(StepOptions):
@@ -65,13 +72,11 @@ class Step(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     name: str
-
-    timeouts: Optional[StepTimeoutOptions] = None
-    extenders: Optional[List[str]] = None
-    pre_run: Optional[InvokerOptions] = None
-    post_run: Optional[InvokerOptions] = None
     path_options: StepPathOptions
     table_options: Optional[StepTableOptions] = None
+    extender_options: Optional[List[str]] = None
+    invoker_options: Optional[StepInvokerOptions] = None
+    spark_options: Optional[SparkOptions] = None
 
 
 class BronzeConf(Step):
@@ -94,3 +99,5 @@ class GoldConf(Step):
 
 class PowerBI(Step):
     """PowerBI configuration."""
+
+    path_options: Optional[StepPathOptions] = None
