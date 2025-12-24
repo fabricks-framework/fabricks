@@ -103,20 +103,26 @@ class Configurator(ABC):
             # Apply step-level spark options if configured
             step_spark = self.step_spark_options
             if step_spark:
-                for key, value in step_spark.sql.items():
+                sql_options = step_spark.sql or {}
+                for key, value in sql_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.sql(f"set {key} = {value}")
-                for key, value in step_spark.conf.items():
+
+                conf_options = step_spark.conf or {}
+                for key, value in conf_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.conf.set(f"{key}", f"{value}")
 
             # Apply job-level spark options if configured
             job_spark = self.spark_options
             if job_spark:
-                for key, value in job_spark.sql.items():
+                sql_options = job_spark.sql or {}
+                for key, value in sql_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.sql(f"set {key} = {value}")
-                for key, value in job_spark.conf.items():
+
+                conf_options = job_spark.conf or {}
+                for key, value in conf_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.conf.set(f"{key}", f"{value}")
 

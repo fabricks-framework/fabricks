@@ -38,11 +38,11 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     # runtime options
     spark_options = CONF_RUNTIME.spark_options
     if spark_options:
-        sql_options = spark_options.sql
+        sql_options = spark_options.sql or {}
         for key, value in sql_options.items():
             spark.sql(f"set {key} = {value};")
 
-        conf_options = spark_options.conf
+        conf_options = spark_options.conf or {}
         for key, value in conf_options.items():
             spark.conf.set(key, value)
 

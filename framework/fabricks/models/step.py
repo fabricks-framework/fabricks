@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
-from fabricks.models.common import InvokeOptions
+from fabricks.models.common import InvokerOptions
 from fabricks.models.table import StepTableOptions
 
 
@@ -35,10 +35,9 @@ class StepOptions(BaseModel):
 
     order: int
     workers: Optional[int] = None
-    timeouts: StepTimeoutOptions
+    timeouts: Optional[StepTimeoutOptions] = None
     extenders: Optional[List[str]] = None
-    pre_run: Optional[InvokeOptions] = None
-    post_run: Optional[InvokeOptions] = None
+    invokers: Optional[InvokerOptions] = None
 
 
 class BronzeOptions(StepOptions):
@@ -67,29 +66,30 @@ class Step(BaseModel):
 
     name: str
 
+    timeouts: Optional[StepTimeoutOptions] = None
+    extenders: Optional[List[str]] = None
+    pre_run: Optional[InvokerOptions] = None
+    post_run: Optional[InvokerOptions] = None
+    path_options: StepPathOptions
+    table_options: Optional[StepTableOptions] = None
+
 
 class BronzeConf(Step):
     """Bronze layer step configuration."""
 
     options: BronzeOptions
-    path_options: StepPathOptions
-    table_options: Optional[StepTableOptions] = None
 
 
 class SilverConf(Step):
     """Silver layer step configuration."""
 
     options: SilverOptions
-    path_options: StepPathOptions
-    table_options: Optional[StepTableOptions] = None
 
 
 class GoldConf(Step):
     """Gold layer step configuration."""
 
     options: GoldOptions
-    path_options: StepPathOptions
-    table_options: Optional[StepTableOptions] = None
 
 
 class PowerBI(Step):

@@ -12,6 +12,7 @@ from fabricks.models.common import (
     AllowedOperations,
     AllowedTypes,
     ExtenderOptions,
+    InvokerOptions,
     SparkOptions,
     TBronze,
     TGold,
@@ -20,26 +21,6 @@ from fabricks.models.common import (
 )
 from fabricks.models.table import TableOptions
 from fabricks.models.utils import get_job_id
-
-
-class BaseInvokerOptions(BaseModel):
-    """Base configuration for notebook invocation."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    notebook: str
-    timeout: int
-    arguments: Optional[dict[str, str]] = None
-
-
-class InvokerOptions(BaseModel):
-    """Grouped invoker operations for pre/run/post execution."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    pre_run: Optional[List[BaseInvokerOptions]] = None
-    run: Optional[List[BaseInvokerOptions]] = None
-    post_run: Optional[List[BaseInvokerOptions]] = None
 
 
 class CheckOptions(BaseModel):

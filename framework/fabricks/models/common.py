@@ -1,6 +1,6 @@
 """Common types and type aliases used across all models."""
 
-from typing import Any, Literal, Optional
+from typing import Any, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -35,17 +35,28 @@ class SparkOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    sql: dict[Any, Any]
-    conf: dict[Any, Any]
+    sql: Optional[dict[Any, Any]] = None
+    conf: Optional[dict[Any, Any]] = None
 
 
-class InvokeOptions(BaseModel):
+class BaseInvokerOptions(BaseModel):
     """Options for invoking notebooks during pre/post run operations."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     notebook: str
+    timeout: Optional[int] = None
     arguments: Optional[dict[Any, Any]] = None
+
+
+class InvokerOptions(BaseModel):
+    """Grouped invoker operations for pre/run/post execution."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    pre_run: Optional[List[BaseInvokerOptions]] = None
+    run: Optional[List[BaseInvokerOptions]] = None
+    post_run: Optional[List[BaseInvokerOptions]] = None
 
 
 class ExtenderOptions(BaseModel):

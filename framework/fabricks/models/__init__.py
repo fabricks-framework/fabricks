@@ -16,7 +16,7 @@ from fabricks.models.common import (
     Database,
     DatabasePathOptions,
     ExtenderOptions,
-    InvokeOptions,
+    InvokerOptions,
     SparkOptions,
     TBronze,
     TGold,
@@ -26,19 +26,10 @@ from fabricks.models.common import (
 from fabricks.models.dependency import JobDependency, SchemaDependencies
 
 # Job models
-from fabricks.models.job import BaseInvokerOptions
 from fabricks.models.job import BronzeOptions as JobBronzeOptions
 from fabricks.models.job import CheckOptions
 from fabricks.models.job import GoldOptions as JobGoldOptions
-from fabricks.models.job import (
-    InvokerOptions,
-    JobConf,
-    JobConfBase,
-    JobConfBronze,
-    JobConfGold,
-    JobConfSilver,
-    ParserOptions,
-)
+from fabricks.models.job import JobConf, JobConfBase, JobConfBronze, JobConfGold, JobConfSilver, ParserOptions
 from fabricks.models.job import SilverOptions as JobSilverOptions
 from fabricks.models.job import TOptions
 from fabricks.models.path import Path, Paths
@@ -82,14 +73,12 @@ __all__ = [
     "Database",
     "DatabasePathOptions",
     "ExtenderOptions",
-    "InvokeOptions",
     "SparkOptions",
     "TBronze",
     "TGold",
     "TSilver",
     "TStep",
     # Job models
-    "BaseInvokerOptions",
     "CheckOptions",
     "InvokerOptions",
     "JobBronzeOptions",
