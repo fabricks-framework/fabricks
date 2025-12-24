@@ -5,7 +5,8 @@ resolution-markers = [
     "python_full_version >= '3.12'",
     "python_full_version == '3.11.*'",
     "python_full_version == '3.10.*'",
-    "python_full_version >= '3.9.1' and python_full_version < '3.10'",
+    "python_full_version > '3.9.1' and python_full_version < '3.10'",
+    "python_full_version == '3.9.1'",
     "python_full_version < '3.9.1'",
 ]
 
@@ -513,7 +514,8 @@ name = "databricks-connect"
 version = "13.3.4"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.9.1' and python_full_version < '3.10'",
+    "python_full_version > '3.9.1' and python_full_version < '3.10'",
+    "python_full_version == '3.9.1'",
     "python_full_version < '3.9.1'",
 ]
 dependencies = [
@@ -663,6 +665,9 @@ dependencies = [
     { name = "pydantic-yaml", version = "1.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
+    { name = "sparkdantic", version = "1.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9.1'" },
+    { name = "sparkdantic", version = "2.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.9.1'" },
+    { name = "sparkdantic", version = "2.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version > '3.9.1'" },
     { name = "sqlglot" },
     { name = "tenacity" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
@@ -709,6 +714,7 @@ requires-dist = [
     { name = "pydantic-yaml", specifier = ">=1.4.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "pyyaml", specifier = ">=6.0.0" },
+    { name = "sparkdantic", specifier = ">=1.5.0" },
     { name = "sqlglot", specifier = ">=22.1.1" },
     { name = "tenacity", specifier = ">=9.1.2" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.2.1" },
@@ -957,7 +963,8 @@ name = "ipython"
 version = "8.18.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.9.1' and python_full_version < '3.10'",
+    "python_full_version > '3.9.1' and python_full_version < '3.10'",
+    "python_full_version == '3.9.1'",
     "python_full_version < '3.9.1'",
 ]
 dependencies = [
@@ -1057,6 +1064,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/af/92/b3130cbbf5591acf9ade8708c365f3238046ac7cb8ccba6e81abccb0ccff/jinja2-3.1.5.tar.gz", hash = "sha256:8fefff8dc3034e27bb80d67c671eb8a9bc424c0ef4c0826edbff304cceff43bb", size = 244674, upload-time = "2024-12-21T18:30:22.828Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bd/0f/2ba5fbcd631e3e88689309dbe978c5769e883e4b84ebfe7da30b43275c5a/jinja2-3.1.5-py3-none-any.whl", hash = "sha256:aba0f4dc9ed8013c424088f68a5c226f7d6097ed89b246d7749c2ec4175c6adb", size = 134596, upload-time = "2024-12-21T18:30:19.133Z" },
+]
+
+[[package]]
+name = "jmespath"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/00/2a/e867e8531cf3e36b41201936b7fa7ba7b5702dbef42922193f05c8976cd6/jmespath-1.0.1.tar.gz", hash = "sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe", size = 25843, upload-time = "2022-06-17T18:00:12.224Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/31/b4/b9b800c45527aadd64d5b442f9b932b00648617eb5d63d2c7a6587b7cafc/jmespath-1.0.1-py3-none-any.whl", hash = "sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980", size = 20256, upload-time = "2022-06-17T18:00:10.251Z" },
 ]
 
 [[package]]
@@ -1347,7 +1363,8 @@ resolution-markers = [
     "python_full_version >= '3.12'",
     "python_full_version == '3.11.*'",
     "python_full_version == '3.10.*'",
-    "python_full_version >= '3.9.1' and python_full_version < '3.10'",
+    "python_full_version > '3.9.1' and python_full_version < '3.10'",
+    "python_full_version == '3.9.1'",
 ]
 dependencies = [
     { name = "click", marker = "python_full_version >= '3.9.1'" },
@@ -1798,7 +1815,8 @@ name = "numpy"
 version = "1.26.4"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.9.1' and python_full_version < '3.10'",
+    "python_full_version > '3.9.1' and python_full_version < '3.10'",
+    "python_full_version == '3.9.1'",
     "python_full_version < '3.9.1'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/65/6e/09db70a523a96d25e115e71cc56a6f9031e7b8cd166c1ac8438307c14058/numpy-1.26.4.tar.gz", hash = "sha256:2a02aba9ed12e4ac4eb3ea9421c420301a0c6460d9830d74a9df87efa4912010", size = 15786129, upload-time = "2024-02-06T00:26:44.495Z" }
@@ -2461,7 +2479,8 @@ name = "pydantic-yaml"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.9.1' and python_full_version < '3.10'",
+    "python_full_version > '3.9.1' and python_full_version < '3.10'",
+    "python_full_version == '3.9.1'",
     "python_full_version < '3.9.1'",
 ]
 dependencies = [
@@ -2539,6 +2558,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pyparsing"
+version = "3.3.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/c1/1d9de9aeaa1b89b0186e5fe23294ff6517fce1bc69149185577cd31016b2/pyparsing-3.3.1.tar.gz", hash = "sha256:47fad0f17ac1e2cad3de3b458570fbc9b03560aa029ed5e16ee5554da9a2251c", size = 1550512, upload-time = "2025-12-23T03:14:04.391Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/40/2614036cdd416452f5bf98ec037f38a1afb17f327cb8e6b652d4729e0af8/pyparsing-3.3.1-py3-none-any.whl", hash = "sha256:023b5e7e5520ad96642e2c6db4cb683d3970bd640cdf7115049a6e9c3682df82", size = 121793, upload-time = "2025-12-23T03:14:02.103Z" },
+]
+
+[[package]]
 name = "pyright"
 version = "1.1.393"
 source = { registry = "https://pypi.org/simple" }
@@ -2550,6 +2578,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/f4/c1/aede6c74e664ab103
 wheels = [
     { url = "https://files.pythonhosted.org/packages/92/47/f0dd0f8afce13d92e406421ecac6df0990daee84335fc36717678577d3e0/pyright-1.1.393-py3-none-any.whl", hash = "sha256:8320629bb7a44ca90944ba599390162bf59307f3d9fb6e27da3b7011b8c17ae5", size = 5646057, upload-time = "2025-01-29T10:34:53.576Z" },
 ]
+
+[[package]]
+name = "pyspark"
+version = "3.5.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "py4j", marker = "python_full_version < '3.9.1'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cb/65/2764b1840aa6ea5f7e668a36702c3128ac54d0b861d3d57669b2453469a6/pyspark-3.5.7.tar.gz", hash = "sha256:80e36514e0c5c126d35a26adf4f405cd4a69de96a8ea8a3c1e9a65fce2fb4eaa", size = 317370347, upload-time = "2025-09-23T19:46:10.326Z" }
 
 [[package]]
 name = "pytest"
@@ -3172,6 +3209,63 @@ wheels = [
 ]
 
 [[package]]
+name = "sparkdantic"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.9.1'",
+]
+dependencies = [
+    { name = "jmespath", marker = "python_full_version < '3.9.1'" },
+    { name = "pydantic", marker = "python_full_version < '3.9.1'" },
+    { name = "pyparsing", marker = "python_full_version < '3.9.1'" },
+    { name = "pyspark", marker = "python_full_version < '3.9.1'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/35/ad/90a65f6e37108e400301a8440b8fd2b9ff751fd7915fae32027437f932ba/sparkdantic-1.5.0.tar.gz", hash = "sha256:94420240c8ce9551ee7ac7536e99d6701a4aa900b8c2a48e79370195c7162d41", size = 6890, upload-time = "2025-01-05T07:45:50.289Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/98/4b3bc12f7c75ff8f64c507404330d482caa4f08b8d61d01db3d4a1746bda/sparkdantic-1.5.0-py3-none-any.whl", hash = "sha256:6b89bc45b63f09b165117b0a2272b7d3bbb13fcb7604d002861bc09382fe6f36", size = 7599, upload-time = "2025-01-05T07:45:48.205Z" },
+]
+
+[[package]]
+name = "sparkdantic"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version == '3.9.1'",
+]
+dependencies = [
+    { name = "jmespath", marker = "python_full_version == '3.9.1'" },
+    { name = "packaging", marker = "python_full_version == '3.9.1'" },
+    { name = "pydantic", marker = "python_full_version == '3.9.1'" },
+    { name = "pyparsing", marker = "python_full_version == '3.9.1'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/1a/972ca1d1a002e3588e263326752a7ff6cf50f3213081c2e9525d58aeaeef/sparkdantic-2.0.0.tar.gz", hash = "sha256:5a03ac95efd814ce8205dd8b4818d2bc2847401c169fbbb0b5cd45f441679f05", size = 8042, upload-time = "2025-02-17T08:00:18.855Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/38/be/e122a5a4a4fe9ce004940317438ae3706e417ad962de99b142755cd0781c/sparkdantic-2.0.0-py3-none-any.whl", hash = "sha256:7bc5a00777eba6ac6e6208ff04539fa544a3c351a74c8b093133c6148db95422", size = 9227, upload-time = "2025-02-17T08:00:15.915Z" },
+]
+
+[[package]]
+name = "sparkdantic"
+version = "2.6.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.12'",
+    "python_full_version == '3.11.*'",
+    "python_full_version == '3.10.*'",
+    "python_full_version > '3.9.1' and python_full_version < '3.10'",
+]
+dependencies = [
+    { name = "jmespath", marker = "python_full_version > '3.9.1'" },
+    { name = "packaging", marker = "python_full_version > '3.9.1'" },
+    { name = "pydantic", marker = "python_full_version > '3.9.1'" },
+    { name = "pyparsing", marker = "python_full_version > '3.9.1'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/55/aa/8e63fa83371dd76a6dfebb36607a3ab465137aa7dc22c2587c8db4939861/sparkdantic-2.6.0.tar.gz", hash = "sha256:c285bd62ce61441607a2f105b32b36cbbde69250af4199f6389ff13e174a4563", size = 11875, upload-time = "2025-06-11T11:50:28.355Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/15/01a3998c0505a14597d0b70974752491c5356492002409908ff5bd29ac55/sparkdantic-2.6.0-py3-none-any.whl", hash = "sha256:2e4756d65b0c13f290f7050c01b24eb8cf75b57c17692004752cf67671deeb37", size = 10807, upload-time = "2025-06-11T11:50:27.063Z" },
+]
+
+[[package]]
 name = "sqlglot"
 version = "26.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3504,7 +3598,8 @@ resolution-markers = [
     "python_full_version >= '3.12'",
     "python_full_version == '3.11.*'",
     "python_full_version == '3.10.*'",
-    "python_full_version >= '3.9.1' and python_full_version < '3.10'",
+    "python_full_version > '3.9.1' and python_full_version < '3.10'",
+    "python_full_version == '3.9.1'",
 ]
 dependencies = [
     { name = "click", marker = "python_full_version >= '3.9.1'" },

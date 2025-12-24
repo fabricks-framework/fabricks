@@ -37,6 +37,9 @@ from fabricks.models.path import Path, Paths
 # Runtime models
 from fabricks.models.runtime import RuntimeConf, RuntimeOptions, RuntimePathOptions, RuntimeTimeoutOptions
 
+# Scehdule models
+from fabricks.models.schedule import Schedule, ScheduleOptions
+
 # Step models
 from fabricks.models.step import BronzeConf
 from fabricks.models.step import BronzeOptions as StepBronzeOptions
@@ -55,6 +58,8 @@ from fabricks.models.table import (
     StepTableOptions,
     TableOptions,
 )
+
+# Utility functions
 from fabricks.models.utils import get_dependency_id, get_job_id
 
 __all__ = [
@@ -119,6 +124,10 @@ __all__ = [
     "StepTableOptions",
     "TableOptions",
     "ParserOptions",
+    # Schedule models
+    "ScheduleOptions",
+    "Schedule",
+    # Utility functions
     "get_dependency_id",
     "get_job_id",
 ]

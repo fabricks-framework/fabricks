@@ -4,6 +4,7 @@ from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
 from pyspark.sql.types import Row
+from sparkdantic import create_spark_schema
 from typing_extensions import deprecated
 
 from fabricks.cdc import NoCDC
@@ -27,7 +28,6 @@ from fabricks.metastore.table import Table
 from fabricks.models import SchemaDependencies, StepBronzeOptions, StepGoldOptions, StepSilverOptions, TStep
 from fabricks.utils.helpers import run_in_parallel
 from fabricks.utils.read.read_yaml import read_yaml
-from fabricks.utils.schema import get_schema_for_type
 
 
 class BaseStep:
@@ -219,7 +219,7 @@ class BaseStep:
 
         try:
             conf = get_step_conf(self.name)
-            schema = get_schema_for_type(conf)
+            schema = create_spark_schema(conf)
             jobs = self.get_jobs_iter(topic=topic)
 
             df = SPARK.createDataFrame(jobs, schema=schema)  # type: ignore
