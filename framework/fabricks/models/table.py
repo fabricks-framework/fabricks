@@ -56,12 +56,12 @@ class TableOptions(BaseModel):
     powerbi: Optional[bool] = None
     maximum_compatibility: Optional[bool] = None
     bloomfilter_by: Optional[List[str]] = None
-    constraints: Optional[dict[Any, Any]] = None
-    properties: Optional[dict[Any, Any]] = None
+    constraints: Optional[dict[Any, Union[str, bool]] = None
+    properties: Optional[dict[Any, Union[str, bool]] = None
     comment: Optional[str] = None
-    calculated_columns: Optional[dict[Any, Any]] = None
-    masks: Optional[dict[Any, Any]] = None
-    comments: Optional[dict[Any, Any]] = None
+    calculated_columns: Optional[dict[Any, Union[str, bool]] = None
+    masks: Optional[dict[Any, Union[str, bool]] = None
+    comments: Optional[dict[Any, Union[str, bool]] = None
     retention_days: Optional[int] = None
     primary_key: Optional[dict[str, PrimaryKey]] = None
     foreign_keys: Optional[dict[str, ForeignKey]] = None
@@ -74,6 +74,6 @@ class StepTableOptions(BaseModel):
 
     powerbi: Optional[bool] = None
     liquid_clustering: Optional[bool] = None
-    properties: Optional[dict[Any, Any]] = None
+    properties: Optional[dict[Any, Union[str, bool]] = None
     retention_days: Optional[int] = None
-    masks: Optional[dict[Any, Any]] = None
+    masks: Optional[dict[Any, Union[str, bool]] = None

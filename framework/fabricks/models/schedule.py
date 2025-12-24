@@ -9,7 +9,7 @@ class ScheduleOptions(BaseModel):
     steps: Optional[List[TStep]] = None
     tag: Optional[str] = None
     view: Optional[str] = None
-    variables: Optional[dict[Any, Any]] = None
+    variables: Optional[dict[Any, Union[str, bool]] = None
 
 
 class Schedule(BaseModel):
