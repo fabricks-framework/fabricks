@@ -1,14 +1,13 @@
 """Job configuration models."""
 
-from pydantic import BaseModel, ConfigDict
+from dataclasses import dataclass
 
 from fabricks.utils.path import Path
 
 
-class Paths(BaseModel):
+@dataclass(frozen=True)
+class Paths:
     """Runtime path references."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
 
     to_storage: "Path"
     to_tmp: "Path"
