@@ -1,7 +1,5 @@
 """Step configuration models."""
 
-from typing import List, Optional
-
 from pydantic import BaseModel, ConfigDict
 
 from fabricks.models.common import BaseInvokerOptions, SparkOptions
@@ -13,8 +11,8 @@ class StepInvokerOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    pre_run: Optional[List[BaseInvokerOptions]] = None
-    post_run: Optional[List[BaseInvokerOptions]] = None
+    pre_run: list[BaseInvokerOptions] | None = None
+    post_run: list[BaseInvokerOptions] | None = None
 
 
 class StepTimeoutOptions(BaseModel):
@@ -22,10 +20,10 @@ class StepTimeoutOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    step: Optional[int] = None
-    job: Optional[int] = None
-    pre_run: Optional[int] = None
-    post_run: Optional[int] = None
+    step: int | None = None
+    job: int | None = None
+    pre_run: int | None = None
+    post_run: int | None = None
 
 
 class StepPathOptions(BaseModel):
@@ -43,8 +41,8 @@ class StepOptions(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     order: int
-    workers: Optional[int] = None
-    timeouts: Optional[StepTimeoutOptions] = None
+    workers: int | None = None
+    timeouts: StepTimeoutOptions | None = None
 
 
 class BronzeOptions(StepOptions):
@@ -55,15 +53,15 @@ class SilverOptions(StepOptions):
     """Silver layer step options."""
 
     parent: str
-    stream: Optional[bool] = None
-    local_checkpoint: Optional[bool] = None
+    stream: bool | None = None
+    local_checkpoint: bool | None = None
 
 
 class GoldOptions(StepOptions):
     """Gold layer step options."""
 
-    schema_drift: Optional[bool] = None
-    metadata: Optional[bool] = None
+    schema_drift: bool | None = None
+    metadata: bool | None = None
 
 
 class Step(BaseModel):
@@ -73,10 +71,10 @@ class Step(BaseModel):
 
     name: str
     path_options: StepPathOptions
-    table_options: Optional[StepTableOptions] = None
-    extender_options: Optional[List[str]] = None
-    invoker_options: Optional[StepInvokerOptions] = None
-    spark_options: Optional[SparkOptions] = None
+    table_options: StepTableOptions | None = None
+    extender_options: list[str] | None = None
+    invoker_options: StepInvokerOptions | None = None
+    spark_options: SparkOptions | None = None
 
 
 class BronzeConf(Step):
@@ -100,4 +98,4 @@ class GoldConf(Step):
 class PowerBI(Step):
     """PowerBI configuration."""
 
-    path_options: Optional[StepPathOptions] = None
+    path_options: StepPathOptions | None = None

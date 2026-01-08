@@ -1,7 +1,5 @@
 """Job configuration models."""
 
-from typing import List, Optional, Union
-
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from fabricks.models.common import (
@@ -28,17 +26,17 @@ class CheckOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    skip: Optional[bool] = None
-    pre_run: Optional[bool] = None
-    post_run: Optional[bool] = None
-    min_rows: Optional[int] = None
-    max_rows: Optional[int] = None
-    count_must_equal: Optional[str] = None
+    skip: bool | None = None
+    pre_run: bool | None = None
+    post_run: bool | None = None
+    min_rows: int | None = None
+    max_rows: int | None = None
+    count_must_equal: str | None = None
 
 
 class ParserOptions(BaseModel):
-    file_format: Optional[str] = None
-    read_options: Optional[dict[str, str]] = None
+    file_format: str | None = None
+    read_options: dict[str, str] | None = None
 
 
 class BronzeOptions(BaseModel):
@@ -52,18 +50,18 @@ class BronzeOptions(BaseModel):
     uri: str
     parser: str
     source: str
-    type: Optional[AllowedTypes] = None
-    keys: Optional[List[str]] = None
-    parents: Optional[List[str]] = None
-    filter_where: Optional[str] = None
-    optimize: Optional[bool] = None
-    compute_statistics: Optional[bool] = None
-    vacuum: Optional[bool] = None
-    no_drop: Optional[bool] = None
-    encrypted_columns: Optional[List[str]] = None
-    calculated_columns: Optional[dict[str, str]] = None
-    operation: Optional[AllowedOperations] = None
-    timeout: Optional[int] = None
+    type: AllowedTypes | None = None
+    keys: list[str] | None = None
+    parents: list[str] | None = None
+    filter_where: str | None = None
+    optimize: bool | None = None
+    compute_statistics: bool | None = None
+    vacuum: bool | None = None
+    no_drop: bool | None = None
+    encrypted_columns: list[str] | None = None
+    calculated_columns: dict[str, str] | None = None
+    operation: AllowedOperations | None = None
+    timeout: int | None = None
 
 
 class SilverOptions(BaseModel):
@@ -73,17 +71,17 @@ class SilverOptions(BaseModel):
 
     mode: AllowedModesSilver
     change_data_capture: AllowedChangeDataCaptures
-    type: Optional[AllowedTypes] = None
-    parents: Optional[List[str]] = None
-    filter_where: Optional[str] = None
-    optimize: Optional[bool] = None
-    compute_statistics: Optional[bool] = None
-    vacuum: Optional[bool] = None
-    no_drop: Optional[bool] = None
-    deduplicate: Optional[bool] = None
-    stream: Optional[bool] = None
-    order_duplicate_by: Optional[dict[str, str]] = None
-    timeout: Optional[int] = None
+    type: AllowedTypes | None = None
+    parents: list[str] | None = None
+    filter_where: str | None = None
+    optimize: bool | None = None
+    compute_statistics: bool | None = None
+    vacuum: bool | None = None
+    no_drop: bool | None = None
+    deduplicate: bool | None = None
+    stream: bool | None = None
+    order_duplicate_by: dict[str, str] | None = None
+    timeout: int | None = None
 
 
 class GoldOptions(BaseModel):
@@ -93,27 +91,27 @@ class GoldOptions(BaseModel):
 
     mode: AllowedModesGold
     change_data_capture: AllowedChangeDataCaptures
-    type: Optional[AllowedTypes] = None
-    update_where: Optional[str] = None
-    parents: Optional[List[str]] = None
-    optimize: Optional[bool] = None
-    compute_statistics: Optional[bool] = None
-    vacuum: Optional[bool] = None
-    no_drop: Optional[bool] = None
-    deduplicate: Optional[bool] = None
-    rectify_as_upserts: Optional[bool] = None
-    correct_valid_from: Optional[bool] = None
-    persist_last_timestamp: Optional[bool] = None
-    persist_last_updated_timestamp: Optional[bool] = None
-    table: Optional[str] = None
-    notebook: Optional[bool] = None
-    requirements: Optional[bool] = None
-    timeout: Optional[int] = None
-    metadata: Optional[bool] = None
-    last_updated: Optional[bool] = None
+    type: AllowedTypes | None = None
+    update_where: str | None = None
+    parents: list[str] | None = None
+    optimize: bool | None = None
+    compute_statistics: bool | None = None
+    vacuum: bool | None = None
+    no_drop: bool | None = None
+    deduplicate: bool | None = None
+    rectify_as_upserts: bool | None = None
+    correct_valid_from: bool | None = None
+    persist_last_timestamp: bool | None = None
+    persist_last_updated_timestamp: bool | None = None
+    table: str | None = None
+    notebook: bool | None = None
+    requirements: bool | None = None
+    timeout: int | None = None
+    metadata: bool | None = None
+    last_updated: bool | None = None
 
 
-TOptions = Union[BronzeOptions, SilverOptions, GoldOptions]
+TOptions = BronzeOptions | SilverOptions | GoldOptions
 
 
 class JobConfBase(BaseModel):
@@ -132,13 +130,13 @@ class JobConfBase(BaseModel):
         return get_job_id(step=self.step, topic=self.topic, item=self.item)
 
     options: TOptions
-    table_options: Optional[TableOptions] = None
-    check_options: Optional[CheckOptions] = None
-    spark_options: Optional[SparkOptions] = None
-    invoker_options: Optional[InvokerOptions] = None
-    extender_options: Optional[List[ExtenderOptions]] = None
-    tags: Optional[List[str]] = None
-    comment: Optional[str] = None
+    table_options: TableOptions | None = None
+    check_options: CheckOptions | None = None
+    spark_options: SparkOptions | None = None
+    invoker_options: InvokerOptions | None = None
+    extender_options: list[ExtenderOptions] | None = None
+    tags: list[str] | None = None
+    comment: str | None = None
 
 
 class JobConfBronze(JobConfBase):
@@ -146,7 +144,7 @@ class JobConfBronze(JobConfBase):
 
     step: TBronze
     options: BronzeOptions
-    parser_options: Optional["ParserOptions"] = None
+    parser_options: ParserOptions | None = None
 
 
 class JobConfSilver(JobConfBase):
@@ -163,4 +161,4 @@ class JobConfGold(JobConfBase):
     options: GoldOptions
 
 
-JobConf = Union[JobConfBronze, JobConfSilver, JobConfGold]
+JobConf = JobConfBronze | JobConfSilver | JobConfGold

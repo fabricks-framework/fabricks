@@ -1,6 +1,6 @@
 """Common types and type aliases used across all models."""
 
-from typing import Any, List, Literal, Optional, Union
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -35,8 +35,8 @@ class SparkOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    sql: Optional[dict[Any, Union[str, bool]]] = None
-    conf: Optional[dict[Any, Union[str, bool]]] = None
+    sql: dict[str, str | bool] | None = None
+    conf: dict[str, str | bool] | None = None
 
 
 class BaseInvokerOptions(BaseModel):
@@ -45,8 +45,8 @@ class BaseInvokerOptions(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     notebook: str
-    timeout: Optional[int] = None
-    arguments: Optional[dict[Any, Union[str, bool]]] = None
+    timeout: int | None = None
+    arguments: dict[str, str | bool] | None = None
 
 
 class InvokerOptions(BaseModel):
@@ -54,9 +54,9 @@ class InvokerOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    pre_run: Optional[List[BaseInvokerOptions]] = None
-    run: Optional[List[BaseInvokerOptions]] = None
-    post_run: Optional[List[BaseInvokerOptions]] = None
+    pre_run: list[BaseInvokerOptions] | None = None
+    run: list[BaseInvokerOptions] | None = None
+    post_run: list[BaseInvokerOptions] | None = None
 
 
 class ExtenderOptions(BaseModel):
@@ -65,7 +65,7 @@ class ExtenderOptions(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     extender: str
-    arguments: Optional[dict[str, str]] = None
+    arguments: dict[str, str] | None = None
 
 
 class DatabasePathOptions(BaseModel):

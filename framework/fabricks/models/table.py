@@ -1,7 +1,5 @@
 """Table-related options and constraint models."""
 
-from typing import Any, List, Optional, Union
-
 from pydantic import BaseModel, ConfigDict
 
 from fabricks.models.common import AllowedConstraintOptions, AllowedForeignKeyOptions
@@ -12,8 +10,8 @@ class ForeignKeyOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    foreign_key: Optional[AllowedForeignKeyOptions] = None
-    constraint: Optional[AllowedConstraintOptions] = None
+    foreign_key: AllowedForeignKeyOptions | None = None
+    constraint: AllowedConstraintOptions | None = None
 
 
 class PrimaryKeyOptions(BaseModel):
@@ -21,7 +19,7 @@ class PrimaryKeyOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    constraint: Optional[AllowedConstraintOptions] = None
+    constraint: AllowedConstraintOptions | None = None
 
 
 class ForeignKey(BaseModel):
@@ -29,9 +27,9 @@ class ForeignKey(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    keys: List[str]
+    keys: list[str]
     reference: str
-    options: Optional[ForeignKeyOptions] = None
+    options: ForeignKeyOptions | None = None
 
 
 class PrimaryKey(BaseModel):
@@ -39,8 +37,8 @@ class PrimaryKey(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    keys: List[str]
-    options: Optional[PrimaryKeyOptions] = None
+    keys: list[str]
+    options: PrimaryKeyOptions | None = None
 
 
 class TableOptions(BaseModel):
@@ -48,23 +46,23 @@ class TableOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    identity: Optional[bool] = None
-    liquid_clustering: Optional[bool] = None
-    partition_by: Optional[List[str]] = None
-    zorder_by: Optional[List[str]] = None
-    cluster_by: Optional[List[str]] = None
-    powerbi: Optional[bool] = None
-    maximum_compatibility: Optional[bool] = None
-    bloomfilter_by: Optional[List[str]] = None
-    constraints: Optional[dict[Any, Union[str, bool]]] = None
-    properties: Optional[dict[Any, Union[str, bool]]] = None
-    comment: Optional[str] = None
-    calculated_columns: Optional[dict[Any, Union[str, bool]]] = None
-    masks: Optional[dict[Any, Union[str, bool]]] = None
-    comments: Optional[dict[Any, Union[str, bool]]] = None
-    retention_days: Optional[int] = None
-    primary_key: Optional[dict[str, PrimaryKey]] = None
-    foreign_keys: Optional[dict[str, ForeignKey]] = None
+    identity: bool | None = None
+    liquid_clustering: bool | None = None
+    partition_by: list[str] | None = None
+    zorder_by: list[str] | None = None
+    cluster_by: list[str] | None = None
+    powerbi: bool | None = None
+    maximum_compatibility: bool | None = None
+    bloomfilter_by: list[str] | None = None
+    constraints: dict[str, str | bool] | None = None
+    properties: dict[str, str | bool] | None = None
+    comment: str | None = None
+    calculated_columns: dict[str, str | bool] | None = None
+    masks: dict[str, str] | None = None
+    comments: dict[str, str | bool] | None = None
+    retention_days: int | None = None
+    primary_key: dict[str, PrimaryKey] | None = None
+    foreign_keys: dict[str, ForeignKey] | None = None
 
 
 class StepTableOptions(BaseModel):
@@ -72,8 +70,8 @@ class StepTableOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    powerbi: Optional[bool] = None
-    liquid_clustering: Optional[bool] = None
-    properties: Optional[dict[Any, Union[str, bool]]] = None
-    retention_days: Optional[int] = None
-    masks: Optional[dict[Any, Union[str, bool]]] = None
+    powerbi: bool | None = None
+    liquid_clustering: bool | None = None
+    properties: dict[str, str | bool] | None = None
+    retention_days: int | None = None
+    masks: dict[str, str] | None = None
