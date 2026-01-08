@@ -1,6 +1,6 @@
 """Common types and type aliases used across all models."""
 
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 
@@ -35,8 +35,8 @@ class SparkOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    sql: Optional[dict[Any, Union[str, bool]] = None
-    conf: Optional[dict[Any, Union[str, bool]] = None
+    sql: Optional[dict[Any, Union[str, bool]]] = None
+    conf: Optional[dict[Any, Union[str, bool]]] = None
 
 
 class BaseInvokerOptions(BaseModel):
@@ -46,7 +46,7 @@ class BaseInvokerOptions(BaseModel):
 
     notebook: str
     timeout: Optional[int] = None
-    arguments: Optional[dict[Any, Union[str, bool]] = None
+    arguments: Optional[dict[Any, Union[str, bool]]] = None
 
 
 class InvokerOptions(BaseModel):

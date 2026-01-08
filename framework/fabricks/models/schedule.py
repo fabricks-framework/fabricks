@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -9,7 +9,7 @@ class ScheduleOptions(BaseModel):
     steps: Optional[List[TStep]] = None
     tag: Optional[str] = None
     view: Optional[str] = None
-    variables: Optional[dict[Any, Union[str, bool]] = None
+    variables: Optional[dict[Any, Union[str, bool]]] = None
 
 
 class Schedule(BaseModel):

@@ -350,7 +350,7 @@ class Generator(Configurator):
                 constraints = self.table_options.constraints or {} if self.table_options else {}
                 if constraints:
                     for key, value in constraints.items():
-                        self.table.add_constraint(name=key, expr=value)
+                        self.table.add_constraint(name=key, expr=str(value))
 
                 comment = self.table_options.comment if self.table_options else None
                 if comment:
@@ -423,7 +423,7 @@ class Generator(Configurator):
                 comments = self.table_options.comments or {} if self.table_options else {}
                 if comments:
                     for col, comment in comments.items():
-                        self.table.add_column_comment(column=col, comment=comment)
+                        self.table.add_column_comment(column=col, comment=str(comment))
 
     def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
         if df is None:

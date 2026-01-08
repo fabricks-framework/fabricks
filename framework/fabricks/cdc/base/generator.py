@@ -25,11 +25,11 @@ class Generator(Configurator):
         identity: Optional[bool] = False,
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str]] = None,
+        properties: Optional[dict[str, Any]] = None,
         masks: Optional[dict[str, str]] = None,
         primary_key: Optional[dict[str, Any]] = None,
         foreign_keys: Optional[dict[str, Any]] = None,
-        comments: Optional[dict[str, str]] = None,
+        comments: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
         kwargs["mode"] = "complete"
