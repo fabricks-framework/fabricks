@@ -196,16 +196,16 @@ class Bronze(BaseJob):
     def encrypt(self, df: DataFrame) -> DataFrame:
         encrypted_columns = self.options.encrypted_columns or []
         if encrypted_columns:
-            if not IS_UNITY_CATALOG:
+            try:
                 from databricks.sdk.runtime import dbutils
 
                 key = dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
-            else:
+            except Exception:
                 import os
 
                 key = os.environ["FABRICKS_ENCRYPTION_KEY"]
 
-            assert key, "key not found"
+            assert key, "encryption key not found in secrets nor in environment"
 
             for col in encrypted_columns:
                 DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"label": self})

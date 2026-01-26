@@ -4,7 +4,7 @@
 # COMMAND ----------
 
 from logging import DEBUG
-from typing import Any
+from typing import Any, cast
 
 from databricks.sdk.runtime import dbutils, display, spark
 
@@ -12,6 +12,7 @@ from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_step
 from fabricks.core.schedules import generate, terminate
+from fabricks.models import TStep
 from fabricks.utils.helpers import run_in_parallel, run_notebook
 
 # COMMAND ----------
@@ -51,7 +52,7 @@ steps = [row.step for row in spark.sql("select step from {df} group by step", df
 
 
 def _schedule(task: Any):
-    step = get_step(step=task)
+    step = get_step(step=cast(TStep, task))
     run_notebook(
         PATH_NOTEBOOKS.joinpath("process"),
         timeout=step.timeouts.step,
