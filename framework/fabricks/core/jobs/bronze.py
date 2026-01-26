@@ -11,7 +11,7 @@ from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobBronzeOptions, JobDependency
+from fabricks.models import BronzeConf, JobBronzeOptions, JobDependency
 from fabricks.utils.helpers import concat_ws
 from fabricks.utils.path import Path
 from fabricks.utils.read import read
@@ -57,6 +57,11 @@ class Bronze(BaseJob):
     def options(self) -> JobBronzeOptions:
         """Direct access to typed bronze job options."""
         return self.conf.options  # type: ignore
+
+    @property
+    def step_conf(self) -> BronzeConf:
+        """Direct access to typed bronze step options."""
+        return self.step_conf.options  # type: ignore
 
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):

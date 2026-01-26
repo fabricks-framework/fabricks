@@ -11,7 +11,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobDependency, JobGoldOptions
+from fabricks.models import GoldConf, JobDependency, JobGoldOptions
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix, get_tables
 
@@ -52,13 +52,18 @@ class Gold(BaseJob):
         return self.conf.options  # type: ignore
 
     @property
+    def step_conf(self) -> GoldConf:
+        """Direct access to typed bronze step options."""
+        return self.step_conf.options  # type: ignore
+
+    @property
     def stream(self) -> bool:
         return False
 
     @property
     def schema_drift(self) -> bool:
         if not self._schema_drift:
-            _schema_drift = self.step_conf.get("options", {}).get("schema_drift", False)
+            _schema_drift = self.step_conf.options.schema_drift or False
             assert _schema_drift is not None
             self._schema_drift = cast(bool, _schema_drift)
         return self._schema_drift
@@ -217,7 +222,7 @@ class Gold(BaseJob):
 
         add_metadata = self.options.metadata
         if add_metadata is None:
-            add_metadata = self.step_conf.get("options", {}).get("metadata", False)
+            add_metadata = self.step_conf.options.metadata or False
 
         context = {
             "add_metadata": add_metadata,

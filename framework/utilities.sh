@@ -86,7 +86,7 @@ format() {
 show_help() {
 		echo -e "${MAGENTA}Usage: $0 <command>${RESET}"
 		echo -e "${CYAN}Available commands:${RESET}"
-		echo -e "  ${GREEN}format-python${RESET}         - Run Python code formatters and linters"
+		echo -e "  ${GREEN}format${RESET}         - Run Python code formatters and linters"
 		echo -e "  ${GREEN}check-dependencies${RESET}    - Check for missing dependencies"
 		echo -e "  ${GREEN}help${RESET}                  - Show help"
 }

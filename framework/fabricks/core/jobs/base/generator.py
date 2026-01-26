@@ -206,7 +206,7 @@ class Generator(Configurator):
 
             # first take from job options, then from step options
             job_powerbi = self.table_options.powerbi if self.table_options else None
-            step_powerbi = self.step_conf.get("table_options", {}).get("powerbi", None)
+            step_powerbi = self.step_conf.table_options.powerbi if self.step_conf.table_options else None
             if job_powerbi is not None:
                 powerbi = job_powerbi
             elif step_powerbi is not None:
@@ -214,7 +214,7 @@ class Generator(Configurator):
 
             # first take from job options, then from step options
             job_masks = self.table_options.masks if self.table_options else None
-            step_masks = self.step_conf.get("table_options", {}).get("masks", None)
+            step_masks = self.step_conf.table_options.masks if self.step_conf.table_options else None
             if job_masks is not None:
                 masks = job_masks
             elif step_masks is not None:
@@ -255,7 +255,9 @@ class Generator(Configurator):
 
             # first take from job options, then from step options
             liquid_clustering_job = self.table_options.liquid_clustering if self.table_options else None
-            liquid_clustering_step = self.step_conf.get("table_options", {}).get("liquid_clustering", None)
+            liquid_clustering_step = (
+                self.step_conf.table_options.liquid_clustering if self.step_conf.table_options else None
+            )
             if liquid_clustering_job is not None:
                 liquid_clustering = liquid_clustering_job
             elif liquid_clustering_step:
@@ -287,8 +289,8 @@ class Generator(Configurator):
                 # first take from job options, then from step options
                 if self.table_options and self.table_options.properties:
                     properties = self.table_options.properties
-                elif self.step_conf.get("table_options", {}).get("properties", {}):
-                    properties = self.step_conf.get("table_options", {}).get("properties", {})
+                elif self.step_conf.table_options and self.step_conf.table_options.properties:
+                    properties = self.step_conf.table_options.properties
 
             if properties is None:
                 properties = default_properties
@@ -457,7 +459,7 @@ class Generator(Configurator):
 
         # first take from job options, then from step options
         enable_job = self.table_options.liquid_clustering if self.table_options else None
-        enable_step = self.step_conf.get("table_options", {}).get("liquid_clustering", None)
+        enable_step = self.step_conf.table_options.liquid_clustering if self.step_conf.table_options else None
         if enable_job is not None:
             enable = enable_job
         elif enable_step:

@@ -9,6 +9,7 @@ from fabricks.core.extenders import get_extender
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.get_schedule import get_schedule
+from fabricks.models.common import ExtenderOptions
 from fabricks.utils.path import Path
 
 
@@ -86,7 +87,7 @@ class Invoker(Checker):
             raise Exception(errors)
 
     def _invoke_step(self, position: str, schedule: Optional[str] = None):
-        invokers = self.step_conf.get("invoker_options", {}).get(position, [])
+        invokers = getattr(self.step_conf.invoker_options, position, []) if self.step_conf.invoker_options else []
 
         errors = []
 
@@ -178,22 +179,17 @@ class Invoker(Checker):
 
     def extend_job(self, df: DataFrame) -> DataFrame:
         extenders = self.extender_options or []
-        for e in extenders:
-            name = e.extender
-            DEFAULT_LOGGER.debug(f"extend ({name})", extra={"label": self})
-            arguments = e.arguments or {}
-
-            extender = get_extender(name)
-            df = extender(df, **arguments)
-
-        return df
+        return self._extend(df, extenders, extended="job")
 
     def extend_step(self, df: DataFrame) -> DataFrame:
-        extenders = self.step_conf.get("extender_options", {}) or {}
+        extenders = self.step_conf.extender_options or []
+        return self._extend(df, extenders, extended="step")
+
+    def _extend(self, df: DataFrame, extenders: list[ExtenderOptions], extended: str) -> DataFrame:
         for e in extenders:
-            name = e.get("extender")
-            DEFAULT_LOGGER.debug(f"extend by step ({name})", extra={"label": self})
-            arguments = e.get("arguments", {})
+            name = e.extender
+            DEFAULT_LOGGER.debug(f"extend {extended} ({name})", extra={"label": self})
+            arguments = e.arguments or {}
 
             extender = get_extender(name)
             df = extender(df, **arguments)

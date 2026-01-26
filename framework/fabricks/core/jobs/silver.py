@@ -9,7 +9,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobDependency, JobSilverOptions
+from fabricks.models import JobDependency, JobSilverOptions, SilverConf
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.read.read import read
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -50,11 +50,16 @@ class Silver(BaseJob):
         return self.conf.options  # type: ignore
 
     @property
+    def step_conf(self) -> SilverConf:
+        """Direct access to typed bronze step options."""
+        return self.step_conf.options  # type: ignore
+
+    @property
     def stream(self) -> bool:
         if not self._stream:
             _stream = self.options.stream
             if _stream is None:
-                _stream = self.step_conf.get("options", {}).get("stream")
+                _stream = self.step_conf.options.stream
             self._stream = _stream if _stream is not None else True
         return self._stream  # type: ignore
 
@@ -73,7 +78,7 @@ class Silver(BaseJob):
     @property
     def parent_step(self) -> str:
         if not self._parent_step:
-            _parent_step = self.step_conf.get("options", {}).get("parent")
+            _parent_step = self.step_conf.options.parent
             assert _parent_step is not None
             self._parent_step = str(_parent_step)
         return self._parent_step

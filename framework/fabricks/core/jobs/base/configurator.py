@@ -14,11 +14,14 @@ from fabricks.metastore.table import Table
 from fabricks.models import (
     AllowedChangeDataCaptures,
     AllowedModes,
+    BronzeConf,
     CheckOptions,
     ExtenderOptions,
+    GoldConf,
     InvokerOptions,
     Paths,
     RuntimeOptions,
+    SilverConf,
     SparkOptions,
     StepBronzeOptions,
     StepGoldOptions,
@@ -58,7 +61,7 @@ class Configurator(ABC):
             self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item, row=conf)
             self.job_id = get_job_id(step=self.step, topic=self.topic, item=self.item)
 
-    _step_conf: Optional[dict[str, str]] = None
+    _step_conf: Optional[Union[BronzeConf, SilverConf, GoldConf]] = None
     _step_options: Optional[Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]] = None
     _step_table_options: Optional[StepTableOptions] = None
     _runtime_options: Optional[RuntimeOptions] = None
@@ -129,11 +132,11 @@ class Configurator(ABC):
         return self._spark
 
     @property
-    def step_conf(self) -> dict:
+    def step_conf(self) -> Union[BronzeConf, SilverConf, GoldConf]:
         if not self._step_conf:
             _conf = [s for s in STEPS if s.name == self.step][0]
             assert _conf is not None
-            self._step_conf = _conf.model_dump()
+            self._step_conf = _conf
         return self._step_conf
 
     @property
@@ -223,17 +226,7 @@ class Configurator(ABC):
     def step_spark_options(self) -> Optional[SparkOptions]:
         """Direct access to typed step-level spark options from context configuration.
         Returns None if not configured at step level."""
-        # Step-level spark options are optional and accessed from step_conf dict
-        # since they're not currently in the Step model types
-        step_spark = self.step_conf.get("spark_options")
-        if step_spark:
-            from fabricks.models import SparkOptions
-
-            # Convert dict to SparkOptions if needed
-            if isinstance(step_spark, dict):
-                return SparkOptions(sql=step_spark.get("sql", {}), conf=step_spark.get("conf", {}))
-            return step_spark
-        return None
+        return self.step_conf.spark_options
 
     @property
     def table_options(self) -> Optional[TableOptions]:

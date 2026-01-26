@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, ConfigDict
 
-from fabricks.models.common import BaseInvokerOptions, SparkOptions
+from fabricks.models.common import BaseInvokerOptions, ExtenderOptions, SparkOptions
 from fabricks.models.table import StepTableOptions
 
 
@@ -72,7 +72,7 @@ class Step(BaseModel):
     name: str
     path_options: StepPathOptions
     table_options: StepTableOptions | None = None
-    extender_options: list[str] | None = None
+    extender_options: list[ExtenderOptions] | None = None
     invoker_options: StepInvokerOptions | None = None
     spark_options: SparkOptions | None = None
 
