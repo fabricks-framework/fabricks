@@ -83,7 +83,6 @@ packages = [
 
 [dependency-groups]
 test = [
-    "pandas >=1.5.3",
     "pytest >=7.1.2",
     "pytest-order >=1.0.1",
 ]
