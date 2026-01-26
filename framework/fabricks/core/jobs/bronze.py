@@ -60,8 +60,8 @@ class Bronze(BaseJob):
 
     @property
     def step_conf(self) -> BronzeConf:
-        """Direct access to typed bronze step options."""
-        return self.step_conf.options  # type: ignore
+        """Direct access to typed bronze step conf."""
+        return self.step_conf  # type: ignore
 
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
