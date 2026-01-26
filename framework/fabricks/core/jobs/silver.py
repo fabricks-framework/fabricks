@@ -52,7 +52,7 @@ class Silver(BaseJob):
     @property
     def step_conf(self) -> SilverConf:
         """Direct access to typed bronze step conf."""
-        return self.step_conf  # type: ignore
+        return self.base_step_conf  # type: ignore
 
     @property
     def stream(self) -> bool:

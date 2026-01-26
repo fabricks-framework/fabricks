@@ -132,20 +132,11 @@ class Configurator(ABC):
         return self._spark
 
     @property
-    def step_conf(self) -> Union[BronzeConf, SilverConf, GoldConf]:
+    def base_step_conf(self) -> Union[BronzeConf, SilverConf, GoldConf]:
         if not self._step_conf:
             _conf = [s for s in STEPS if s.name == self.step][0]
             assert _conf is not None
             self._step_conf = _conf
-
-        # Return properly typed config based on step
-        if self.step == "bronze":
-            return cast(BronzeConf, self._step_conf)
-        elif self.step == "silver":
-            return cast(SilverConf, self._step_conf)
-        elif self.step == "gold":
-            return cast(GoldConf, self._step_conf)
-
         return self._step_conf
 
     @property
@@ -205,7 +196,13 @@ class Configurator(ABC):
     def options(self) -> TOptions:
         """Direct access to typed job options."""
         raise NotImplementedError()
-
+    
+    @property
+    @abstractmethod
+    def step_conf(self) -> Union[BronzeConf, SilverConf, GoldConf]:
+        """Direct access to typed step conf from context configuration."""
+        raise NotImplementedError()
+    
     @property
     def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]:
         """Direct access to typed step-level options from context configuration."""

@@ -54,7 +54,7 @@ class Gold(BaseJob):
     @property
     def step_conf(self) -> GoldConf:
         """Direct access to typed gold step conf."""
-        return self.step_conf  # type: ignore
+        return self.base_step_conf  # type: ignore
 
     @property
     def stream(self) -> bool:
