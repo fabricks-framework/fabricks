@@ -53,7 +53,7 @@ check_dependencies(){
     uv sync
 }
 
-format_python() {
+format() {
     log_section "Installing Python dev & test dependencies"
     uv sync --group dev --group test || log_error "Failed to install Python dependencies"
 
@@ -101,8 +101,8 @@ main() {
     shift
 
     case "$command" in
-        format-python)
-            format_python "$@"
+        format)
+            format "$@"
             ;;
         check-dependencies)
             check_dependencies "$@"

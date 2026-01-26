@@ -271,7 +271,7 @@ class Configurator(ABC):
     @property
     def cdc(self) -> Union[NoCDC, SCD1, SCD2]:
         if not self._cdc:
-            if self.change_data_capture == "nocdc":
+            if self.change_data_capture in ["nocdc", "none"]:
                 cdc = NoCDC(self.step, self.topic, self.item, spark=self.spark)
             elif self.change_data_capture == "scd1":
                 cdc = SCD1(self.step, self.topic, self.item, spark=self.spark)

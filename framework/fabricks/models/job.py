@@ -1,9 +1,10 @@
 """Job configuration models."""
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from fabricks.models.common import (
     AllowedChangeDataCaptures,
+    AllowedModes,
     AllowedModesBronze,
     AllowedModesGold,
     AllowedModesSilver,
@@ -39,65 +40,64 @@ class ParserOptions(BaseModel):
     read_options: dict[str, str] | None = None
 
 
-class BronzeOptions(BaseModel):
+class BaseOptions(BaseModel):
+    """Base job options."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    mode: AllowedModes
+    change_data_capture: AllowedChangeDataCaptures | None = Field(default="none")
+
+    parents: list[str] | None = None
+    optimize: bool | None = None
+    compute_statistics: bool | None = None
+    vacuum: bool | None = None
+    no_drop: bool | None = None
+    timeout: int | None = None
+
+
+class BronzeOptions(BaseOptions):
     """Bronze layer job options."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     mode: AllowedModesBronze
-    change_data_capture: AllowedChangeDataCaptures = "none"
+    type: AllowedTypes | None = None
 
     uri: str
-    parser: str
-    source: str
-    type: AllowedTypes | None = None
     keys: list[str] | None = None
-    parents: list[str] | None = None
+
+    parser: str | None = None
+    source: str | None = None
     filter_where: str | None = None
-    optimize: bool | None = None
-    compute_statistics: bool | None = None
-    vacuum: bool | None = None
-    no_drop: bool | None = None
     encrypted_columns: list[str] | None = None
     calculated_columns: dict[str, str] | None = None
     operation: AllowedOperations | None = None
-    timeout: int | None = None
 
 
-class SilverOptions(BaseModel):
+class SilverOptions(BaseOptions):
     """Silver layer job options."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     mode: AllowedModesSilver
-    change_data_capture: AllowedChangeDataCaptures
     type: AllowedTypes | None = None
-    parents: list[str] | None = None
+
     filter_where: str | None = None
-    optimize: bool | None = None
-    compute_statistics: bool | None = None
-    vacuum: bool | None = None
-    no_drop: bool | None = None
     deduplicate: bool | None = None
     stream: bool | None = None
     order_duplicate_by: dict[str, str] | None = None
-    timeout: int | None = None
 
 
-class GoldOptions(BaseModel):
+class GoldOptions(BaseOptions):
     """Gold layer job options."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     mode: AllowedModesGold
-    change_data_capture: AllowedChangeDataCaptures
     type: AllowedTypes | None = None
+
     update_where: str | None = None
-    parents: list[str] | None = None
-    optimize: bool | None = None
-    compute_statistics: bool | None = None
-    vacuum: bool | None = None
-    no_drop: bool | None = None
     deduplicate: bool | None = None
     rectify_as_upserts: bool | None = None
     correct_valid_from: bool | None = None
@@ -106,7 +106,6 @@ class GoldOptions(BaseModel):
     table: str | None = None
     notebook: bool | None = None
     requirements: bool | None = None
-    timeout: int | None = None
     metadata: bool | None = None
     last_updated: bool | None = None
 
