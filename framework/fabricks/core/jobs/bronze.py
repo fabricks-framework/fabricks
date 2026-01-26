@@ -11,7 +11,7 @@ from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobBronzeOptions, JobDependency, TBronze
+from fabricks.models import JobBronzeOptions, JobDependency
 from fabricks.utils.helpers import concat_ws
 from fabricks.utils.path import Path
 from fabricks.utils.read import read
@@ -20,7 +20,7 @@ from fabricks.utils.read import read
 class Bronze(BaseJob):
     def __init__(
         self,
-        step: TBronze,
+        step: str,
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
@@ -60,11 +60,11 @@ class Bronze(BaseJob):
 
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
-        return cls(step=cast(TBronze, step), job_id=job_id, conf=conf)
+        return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
-        return cls(step=cast(TBronze, step), topic=topic, item=item, conf=conf)
+        return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property
     def data_path(self) -> Path:

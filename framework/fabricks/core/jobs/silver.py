@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union, cast
+from typing import Optional, Sequence, Union
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -9,7 +9,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobDependency, JobSilverOptions, TBronze, TSilver
+from fabricks.models import JobDependency, JobSilverOptions
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.read.read import read
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -18,7 +18,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 class Silver(BaseJob):
     def __init__(
         self,
-        step: TSilver,
+        step: str,
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
@@ -33,16 +33,16 @@ class Silver(BaseJob):
             conf=conf,
         )
 
-    _parent_step: Optional[TBronze] = None
+    _parent_step: Optional[str] = None
     _stream: Optional[bool] = None
 
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
-        return cls(step=cast(TSilver, step), job_id=job_id, conf=conf)
+        return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
-        return cls(step=cast(TSilver, step), topic=topic, item=item, conf=conf)
+        return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property
     def options(self) -> JobSilverOptions:
@@ -71,12 +71,11 @@ class Silver(BaseJob):
         return self.mode in ["combine", "memory"]
 
     @property
-    def parent_step(self) -> TBronze:
+    def parent_step(self) -> str:
         if not self._parent_step:
             _parent_step = self.step_conf.get("options", {}).get("parent")
-            _parent_step = cast(TBronze, _parent_step)
             assert _parent_step is not None
-            self._parent_step = _parent_step
+            self._parent_step = str(_parent_step)
         return self._parent_step
 
     def update_metadata(self, df: DataFrame) -> DataFrame:

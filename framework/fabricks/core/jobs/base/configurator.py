@@ -26,7 +26,6 @@ from fabricks.models import (
     StepTableOptions,
     TableOptions,
     TOptions,
-    TStep,
     get_job_id,
 )
 from fabricks.utils.path import Path
@@ -36,14 +35,14 @@ class Configurator(ABC):
     def __init__(
         self,
         expand: str,
-        step: TStep,
+        step: str,
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
         conf: Optional[Union[dict, Row]] = None,
     ):
         self.expand = expand
-        self.step: TStep = step
+        self.step = step
 
         if job_id is not None:
             self.job_id = job_id

@@ -13,10 +13,6 @@ from fabricks.models.common import (
     ExtenderOptions,
     InvokerOptions,
     SparkOptions,
-    TBronze,
-    TGold,
-    TSilver,
-    TStep,
 )
 from fabricks.models.table import TableOptions
 from fabricks.models.utils import get_job_id
@@ -118,7 +114,7 @@ class JobConfBase(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    step: TStep
+    step: str
     topic: str
     item: str
 
@@ -141,7 +137,6 @@ class JobConfBase(BaseModel):
 class JobConfBronze(JobConfBase):
     """Bronze-specific job configuration."""
 
-    step: TBronze
     options: BronzeOptions
     parser_options: ParserOptions | None = None
 
@@ -149,14 +144,12 @@ class JobConfBronze(JobConfBase):
 class JobConfSilver(JobConfBase):
     """Silver-specific job configuration."""
 
-    step: TSilver
     options: SilverOptions
 
 
 class JobConfGold(JobConfBase):
     """Gold-specific job configuration."""
 
-    step: TGold
     options: GoldOptions
 
 

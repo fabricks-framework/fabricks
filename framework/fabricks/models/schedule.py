@@ -1,10 +1,8 @@
 from pydantic import BaseModel
 
-from fabricks.models.common import TStep
-
 
 class ScheduleOptions(BaseModel):
-    steps: list[TStep] | None = None
+    steps: list[str] | None = None
     tag: str | None = None
     view: str | None = None
     variables: dict[str, str | bool | int] | None = None

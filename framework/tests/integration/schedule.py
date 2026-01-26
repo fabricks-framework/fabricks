@@ -4,7 +4,7 @@
 # COMMAND ----------
 
 from logging import DEBUG
-from typing import Any, cast
+from typing import Any
 
 from databricks.sdk.runtime import dbutils, display
 
@@ -12,7 +12,6 @@ import fabricks.core.schedules as s
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_step
-from fabricks.models import TStep
 from fabricks.utils.helpers import run_in_parallel, run_notebook
 from tests.integration._types import steps
 
@@ -51,7 +50,7 @@ display(dependency_df)
 
 
 def _schedule(task: Any):
-    step = get_step(step=cast(TStep, task))
+    step = get_step(step=task)
     run_notebook(
         PATH_NOTEBOOKS.joinpath("process"),
         timeout=step.timeouts.step,

@@ -9,7 +9,7 @@ from sparkdantic import create_spark_schema
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, PATHS_RUNTIME, SPARK
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.get_job import get_job, get_job_internal
-from fabricks.models import AllowedModes, TStep
+from fabricks.models import AllowedModes
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import Path
 from fabricks.utils.read import read_yaml
@@ -20,7 +20,7 @@ class GenericOptions(BaseModel):
 
 
 class JobConfGeneric(BaseModel):
-    step: TStep
+    step: str
     job_id: str
     topic: str
     item: str

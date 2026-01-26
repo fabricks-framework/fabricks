@@ -3,10 +3,10 @@ from typing import Optional, Union, overload
 from pyspark.sql.types import Row
 
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, SPARK, Bronzes, Golds, Silvers
-from fabricks.models import JobConf, TStep, get_job_id
+from fabricks.models import JobConf, get_job_id
 
 
-def get_job_conf_internal(step: TStep, row: Union[Row, dict]) -> JobConf:
+def get_job_conf_internal(step: str, row: Union[Row, dict]) -> JobConf:
     if isinstance(row, Row):
         row = row.asDict(recursive=True)
 
@@ -34,15 +34,15 @@ def get_job_conf_internal(step: TStep, row: Union[Row, dict]) -> JobConf:
 
 
 @overload
-def get_job_conf(step: TStep, *, job_id: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
+def get_job_conf(step: str, *, job_id: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
 
 
 @overload
-def get_job_conf(step: TStep, *, topic: str, item: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
+def get_job_conf(step: str, *, topic: str, item: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
 
 
 def get_job_conf(
-    step: TStep,
+    step: str,
     job_id: Optional[str] = None,
     topic: Optional[str] = None,
     item: Optional[str] = None,

@@ -4,12 +4,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-# Step type definitions
-TBronze = Literal["bronze"]
-TSilver = Literal["silver"]
-TGold = Literal["gold"]
-TStep = Literal[TBronze, TSilver, TGold]
-
 # Mode type definitions
 AllowedModesBronze = Literal["memory", "append", "register"]
 AllowedModesSilver = Literal["memory", "append", "latest", "update", "combine"]

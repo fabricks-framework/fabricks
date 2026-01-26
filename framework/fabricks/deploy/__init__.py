@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union, cast
+from typing import Optional, Union
 
 from fabricks.context import FABRICKS_STORAGE, Steps
 from fabricks.context.log import DEFAULT_LOGGER
@@ -12,7 +12,6 @@ from fabricks.deploy.udfs import deploy_udfs
 from fabricks.deploy.utils import print_atomic_bomb
 from fabricks.deploy.views import deploy_views
 from fabricks.metastore.database import Database
-from fabricks.models import TStep
 
 
 class Deploy:
@@ -41,7 +40,7 @@ class Deploy:
         deploy_schedules()
 
     @staticmethod
-    def armageddon(steps: Optional[Union[TStep, List[TStep], str, List[str]]], nowait: bool = False):
+    def armageddon(steps: Optional[Union[str, list[str]]] = None, nowait: bool = False):
         DEFAULT_LOGGER.warning("!💥 armageddon 💥!")
         print_atomic_bomb(nowait=nowait)
 
@@ -52,11 +51,9 @@ class Deploy:
         assert steps is not None
 
         if isinstance(steps, str):
-            steps = [cast(TStep, steps)]
-        elif isinstance(steps, List):
-            steps = [cast(TStep, s) for s in steps]
-        elif isinstance(steps, TStep):
             steps = [steps]
+        elif isinstance(steps, list):
+            steps = [s for s in steps]
 
         fabricks = Database("fabricks")
         fabricks.drop()

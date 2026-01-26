@@ -18,10 +18,6 @@ from fabricks.models.common import (
     ExtenderOptions,
     InvokerOptions,
     SparkOptions,
-    TBronze,
-    TGold,
-    TSilver,
-    TStep,
 )
 from fabricks.models.dependency import JobDependency, SchemaDependencies
 
@@ -79,10 +75,6 @@ __all__ = [
     "DatabasePathOptions",
     "ExtenderOptions",
     "SparkOptions",
-    "TBronze",
-    "TGold",
-    "TSilver",
-    "TStep",
     # Job models
     "CheckOptions",
     "InvokerOptions",

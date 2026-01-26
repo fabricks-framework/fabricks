@@ -1,13 +1,8 @@
-from typing import Union, cast
-
 from fabricks.context import Bronzes, Golds, Silvers
-from fabricks.models import JobConfBronze, JobConfGold, JobConfSilver, TStep
+from fabricks.models import JobConfBronze, JobConfGold, JobConfSilver
 
 
-def get_step_conf(step: Union[TStep, str]):
-    if isinstance(step, str):
-        step = cast(TStep, step)
-
+def get_step_conf(step: str):
     if step in Bronzes:
         expand = "bronze"
     elif step in Silvers:

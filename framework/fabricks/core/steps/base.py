@@ -25,13 +25,13 @@ from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
-from fabricks.models import SchemaDependencies, StepBronzeOptions, StepGoldOptions, StepSilverOptions, TStep
+from fabricks.models import SchemaDependencies, StepBronzeOptions, StepGoldOptions, StepSilverOptions
 from fabricks.utils.helpers import run_in_parallel
 from fabricks.utils.read.read_yaml import read_yaml
 
 
 class BaseStep:
-    def __init__(self, step: Union[TStep, str]):
+    def __init__(self, step: str):
         self.name = cast(str, step)
 
         if self.name in Bronzes:
