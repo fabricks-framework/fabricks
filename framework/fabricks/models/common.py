@@ -38,7 +38,7 @@ class BaseInvokerOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    notebook: str
+    notebook: str | None = None
     timeout: int | None = None
     arguments: dict[str, str | bool | int] | None = None
 
