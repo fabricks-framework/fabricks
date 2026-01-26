@@ -54,12 +54,12 @@ class TableOptions(BaseModel):
     powerbi: bool | None = None
     maximum_compatibility: bool | None = None
     bloomfilter_by: list[str] | None = None
-    constraints: dict[str, str | bool] | None = None
-    properties: dict[str, str | bool] | None = None
+    constraints: dict[str, str | bool | int] | None = None
+    properties: dict[str, str | bool | int] | None = None
     comment: str | None = None
-    calculated_columns: dict[str, str | bool] | None = None
+    calculated_columns: dict[str, str | bool | int] | None = None
     masks: dict[str, str] | None = None
-    comments: dict[str, str | bool] | None = None
+    comments: dict[str, str | bool | int] | None = None
     retention_days: int | None = None
     primary_key: dict[str, PrimaryKey] | None = None
     foreign_keys: dict[str, ForeignKey] | None = None
@@ -72,6 +72,6 @@ class StepTableOptions(BaseModel):
 
     powerbi: bool | None = None
     liquid_clustering: bool | None = None
-    properties: dict[str, str | bool] | None = None
+    properties: dict[str, str | bool | int] | None = None
     retention_days: int | None = None
     masks: dict[str, str] | None = None

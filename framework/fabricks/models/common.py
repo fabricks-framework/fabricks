@@ -35,8 +35,8 @@ class SparkOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    sql: dict[str, str | bool] | None = None
-    conf: dict[str, str | bool] | None = None
+    sql: dict[str, str | bool | int] | None = None
+    conf: dict[str, str | bool | int] | None = None
 
 
 class BaseInvokerOptions(BaseModel):
@@ -46,7 +46,7 @@ class BaseInvokerOptions(BaseModel):
 
     notebook: str
     timeout: int | None = None
-    arguments: dict[str, str | bool] | None = None
+    arguments: dict[str, str | bool | int] | None = None
 
 
 class InvokerOptions(BaseModel):
