@@ -1,4 +1,4 @@
-"""Job configuration models."""
+"""Job dependency tracking models."""
 
 from pydantic import BaseModel, ConfigDict, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
