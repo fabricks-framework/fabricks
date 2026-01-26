@@ -189,7 +189,7 @@ class Invoker(Checker):
         return df
 
     def extend_step(self, df: DataFrame) -> DataFrame:
-        extenders = self.step_conf.get("extender_options", {})
+        extenders = self.step_conf.get("extender_options", {}) or {}
         for e in extenders:
             name = e.get("extender")
             DEFAULT_LOGGER.debug(f"extend by step ({name})", extra={"label": self})
