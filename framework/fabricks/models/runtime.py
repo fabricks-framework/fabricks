@@ -39,6 +39,7 @@ class RuntimeOptions(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     secret_scope: str
+    encryption_key: str | None = None
     unity_catalog: bool | None = None
     type_widening: bool | None = None
     catalog: str | None = None

@@ -196,13 +196,13 @@ class Configurator(ABC):
     def options(self) -> TOptions:
         """Direct access to typed job options."""
         raise NotImplementedError()
-    
+
     @property
     @abstractmethod
     def step_conf(self) -> Union[BronzeConf, SilverConf, GoldConf]:
         """Direct access to typed step conf from context configuration."""
         raise NotImplementedError()
-    
+
     @property
     def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]:
         """Direct access to typed step-level options from context configuration."""

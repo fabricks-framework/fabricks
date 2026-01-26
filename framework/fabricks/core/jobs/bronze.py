@@ -5,7 +5,7 @@ from pyspark.sql.functions import expr, lit, md5
 from pyspark.sql.types import Row, TimestampType
 
 from fabricks.cdc.nocdc import NoCDC
-from fabricks.context import IS_UNITY_CATALOG, SECRET_SCOPE, VARIABLES
+from fabricks.context import SECRET_SCOPE, VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
@@ -196,14 +196,14 @@ class Bronze(BaseJob):
     def encrypt(self, df: DataFrame) -> DataFrame:
         encrypted_columns = self.options.encrypted_columns or []
         if encrypted_columns:
-            try:
+            if self.runtime_options.encryption_key is not None:
                 from databricks.sdk.runtime import dbutils
 
-                key = dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
-            except Exception:
+                key = dbutils.secrets.get(scope=SECRET_SCOPE, key=self.runtime_options.encryption_key)
+            else:
                 import os
 
-                key = os.environ["FABRICKS_ENCRYPTION_KEY"]
+                key = os.environ.get("FABRICKS_ENCRYPTION_KEY")
 
             assert key, "encryption key not found in secrets nor in environment"
 
