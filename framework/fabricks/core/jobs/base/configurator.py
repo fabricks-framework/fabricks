@@ -137,6 +137,15 @@ class Configurator(ABC):
             _conf = [s for s in STEPS if s.name == self.step][0]
             assert _conf is not None
             self._step_conf = _conf
+
+        # Return properly typed config based on step
+        if self.step == "bronze":
+            return cast(BronzeConf, self._step_conf)
+        elif self.step == "silver":
+            return cast(SilverConf, self._step_conf)
+        elif self.step == "gold":
+            return cast(GoldConf, self._step_conf)
+
         return self._step_conf
 
     @property
