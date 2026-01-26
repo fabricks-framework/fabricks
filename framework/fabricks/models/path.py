@@ -1,4 +1,4 @@
-"""Job configuration models."""
+"""Path configuration models."""
 
 from dataclasses import dataclass
 
