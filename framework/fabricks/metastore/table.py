@@ -3,7 +3,7 @@ from typing import Sequence, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
-from pyspark.errors.exceptions.connect import UnknownException
+from pyspark.errors.exceptions.connect import UnknownException  # type: ignore
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import max
 from pyspark.sql.types import StructType
