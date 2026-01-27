@@ -200,6 +200,7 @@ class ConfigOptions(BaseSettings):
             path=path,
             default=default,
             base=base,
+            assume_git=True,
         )
 
     def _resolve_paths(self) -> ResolvedPathOptions:

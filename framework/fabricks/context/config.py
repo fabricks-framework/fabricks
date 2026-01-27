@@ -8,9 +8,9 @@ config = ConfigOptions()
 # Constants
 CONFIG: Final[ConfigOptions] = config
 
-PATH_CONFIG: Final[Path] = Path(config.resolved_paths.config, assume_git=True)
-PATH_RUNTIME: Final[Path] = Path(config.resolved_paths.runtime, assume_git=True)
-PATH_NOTEBOOKS: Final[Path] = Path(config.resolved_paths.notebooks, assume_git=True)
+PATH_CONFIG: Final[Path] = config.resolved_paths.config
+PATH_RUNTIME: Final[Path] = config.resolved_paths.runtime
+PATH_NOTEBOOKS: Final[Path] = config.resolved_paths.notebooks
 IS_JOB_CONFIG_FROM_YAML: Final[bool] = config.job_config_from_yaml
 IS_DEBUGMODE: Final[bool] = config.debugmode
 IS_DEVMODE: Final[bool] = config.devmode

@@ -254,6 +254,7 @@ def resolve_path(
     base: Path | None | str = None,
     apply_variables: bool = False,
     variables: dict[str, str] | None = None,
+    assume_git: bool = False,
 ) -> Path:
     """
     Resolve a path with optional variable substitution and base path joining.
@@ -275,9 +276,9 @@ def resolve_path(
         raise ValueError("path and default cannot both be None")
 
     if apply_variables:
-        return Path.from_uri(resolved_value, regex=variables)
+        return Path.from_uri(resolved_value, regex=variables, assume_git=assume_git)
 
     if base:
         return base.joinpath(resolved_value)
 
-    return Path(resolved_value)
+    return Path(resolved_value, assume_git=assume_git)

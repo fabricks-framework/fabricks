@@ -103,6 +103,7 @@ class RuntimeConf(BaseModel):
         default: str | None = None,
         base: Path | str | None = None,
         apply_variables: bool = False,
+        assume_git: bool = False,
     ) -> Path:
         return resolve_path(
             path=path,
@@ -110,6 +111,7 @@ class RuntimeConf(BaseModel):
             base=base,
             apply_variables=apply_variables,
             variables=self.variables or {},
+            assume_git=assume_git,
         )
 
     def _resolve_paths(self) -> RuntimeResolvedPathOptions:
@@ -132,7 +134,9 @@ class RuntimeConf(BaseModel):
             if objects:
                 for obj in objects:
                     storage_paths[obj.name] = resolve_path(
-                        obj.path_options.storage, apply_variables=True, variables=self.variables or {},
+                        obj.path_options.storage,
+                        apply_variables=True,
+                        variables=self.variables or {},
                     )
 
         root = self.config.resolved_paths.runtime
@@ -152,7 +156,9 @@ class RuntimeConf(BaseModel):
             views=self._resolve_path(self.path_options.views, base=root),
             requirements=self._resolve_path(self.path_options.requirements, base=root),
             extenders=self._resolve_path(
-                self.path_options.extenders, default="fabricks/extenders", base=root,
+                self.path_options.extenders,
+                default="fabricks/extenders",
+                base=root,
             ),
             masks=self._resolve_path(self.path_options.masks, default="fabricks/masks", base=root),
             storages=storage_paths,

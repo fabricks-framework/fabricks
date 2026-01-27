@@ -26,8 +26,8 @@ def pprint_runtime(extended: bool = True) -> None:
             for step in steps:
                 print(f"      • {step.name}")
                 if extended:
-                    print(f"         - 📖 {step.path_options.runtime}")
-                    print(f"         - 💾 {step.path_options.storage}")
+                    print(f"         - 📖 {r.PATHS_RUNTIME.get(step.name)}")
+                    print(f"         - 💾 {r.PATHS_STORAGE.get(step.name)}")
         else:
             print(f"   {icon} {layer}: No steps")
 
