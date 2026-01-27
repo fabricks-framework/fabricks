@@ -2,10 +2,9 @@ from typing import Final, Optional
 
 import yaml
 
-from fabricks.context.config import PATH_CONFIG, PATH_RUNTIME
-from fabricks.context.helpers import get_runtime_path, get_storage_paths
+from fabricks.context.config import PATH_CONFIG
 from fabricks.models import Database, RuntimeConf, StepBronzeConf, StepGoldConf, StepSilverConf
-from fabricks.utils.path import Path, resolve_path
+from fabricks.utils.path import Path
 
 with open(str(PATH_CONFIG)) as f:
     data = yaml.safe_load(f)
@@ -35,68 +34,24 @@ SECRET_SCOPE: Final[str] = CONF_RUNTIME.options.secret_scope
 
 TIMEZONE: Final[Optional[str]] = CONF_RUNTIME.options.timezone
 
-IS_TYPE_WIDENING: Final[bool] = (
-    CONF_RUNTIME.options.type_widening if CONF_RUNTIME.options.type_widening is not None else True
-)
+IS_TYPE_WIDENING: Final[bool] = CONF_RUNTIME.options.type_widening or False
 
-FABRICKS_STORAGE: Final[Path] = resolve_path(
-    CONF_RUNTIME.path_options.storage,
-    apply_variables=True,
-    variables=VARIABLES
-)
+# Resolve all paths at once
+PATHS_RESOLVED = CONF_RUNTIME.resolved_path_options
+
+FABRICKS_STORAGE: Final[Path] = PATHS_RESOLVED.storage
 
 FABRICKS_STORAGE_CREDENTIAL: Final[Optional[str]] = CONF_RUNTIME.path_options.storage_credential
 
-PATH_UDFS: Final[Path] = resolve_path(
-    CONF_RUNTIME.path_options.udfs,
-    base=PATH_RUNTIME
-)
-
-PATH_PARSERS: Final[Path] = resolve_path(
-    CONF_RUNTIME.path_options.parsers,
-    base=PATH_RUNTIME
-)
-
-PATH_EXTENDERS: Final[Path] = resolve_path(
-    CONF_RUNTIME.path_options.extenders,
-    default="fabricks/extenders",
-    base=PATH_RUNTIME
-)
-
-PATH_VIEWS: Final[Path] = resolve_path(
-    CONF_RUNTIME.path_options.views,
-    base=PATH_RUNTIME
-)
-
-PATH_SCHEDULES: Final[Path] = resolve_path(
-    CONF_RUNTIME.path_options.schedules,
-    base=PATH_RUNTIME
-)
-
-PATH_REQUIREMENTS: Final[Path] = resolve_path(
-    CONF_RUNTIME.path_options.requirements,
-    base=PATH_RUNTIME
-)
-
-PATH_MASKS: Final[Path] = resolve_path(
-    CONF_RUNTIME.path_options.masks,
-    default="fabricks/masks",
-    base=PATH_RUNTIME
-)
-
-PATHS_STORAGE: Final[dict[str, Path]] = {
-    "fabricks": FABRICKS_STORAGE,
-    **get_storage_paths(BRONZE, variables),
-    **get_storage_paths(SILVER, variables),
-    **get_storage_paths(GOLD, variables),
-    **get_storage_paths(databases, variables),
-}
-
-PATHS_RUNTIME: Final[dict[str, Path]] = {
-    **get_runtime_path(BRONZE, PATH_RUNTIME),
-    **get_runtime_path(SILVER, PATH_RUNTIME),
-    **get_runtime_path(GOLD, PATH_RUNTIME),
-}
+PATH_UDFS: Final[Path] = PATHS_RESOLVED.udfs
+PATH_PARSERS: Final[Path] = PATHS_RESOLVED.parsers
+PATH_EXTENDERS: Final[Path] = PATHS_RESOLVED.extenders
+PATH_VIEWS: Final[Path] = PATHS_RESOLVED.views
+PATH_SCHEDULES: Final[Path] = PATHS_RESOLVED.schedules
+PATH_REQUIREMENTS: Final[Path] = PATHS_RESOLVED.requirements
+PATH_MASKS: Final[Path] = PATHS_RESOLVED.masks
+PATHS_STORAGE: Final[dict[str, Path]] = PATHS_RESOLVED.storage_paths
+PATHS_RUNTIME: Final[dict[str, Path]] = PATHS_RESOLVED.runtime_paths
 
 Bronzes = [b.name for b in BRONZE]
 Silvers = [s.name for s in SILVER]
