@@ -95,12 +95,12 @@ class Invoker(Checker):
             for i, invoker in enumerate(invokers):
                 DEFAULT_LOGGER.debug(f"invoke by step ({i}, {position})", extra={"label": self})
                 try:
-                    notebook = invoker.get("notebook")
+                    notebook = invoker.get("notebook") if isinstance(invoker, dict) else invoker.notebook
                     assert notebook, "notebook mandatory"
                     path = PATH_RUNTIME.joinpath(notebook)
 
-                    arguments = invoker.get("arguments", {})
-                    timeout = invoker.get("timeout")
+                    arguments = invoker.get("arguments", {}) if isinstance(invoker, dict) else invoker.arguments
+                    timeout = invoker.get("timeout") if isinstance(invoker, dict) else invoker.timeout
 
                     self._run_notebook(
                         path=path,
