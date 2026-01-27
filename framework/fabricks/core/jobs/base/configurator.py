@@ -6,7 +6,7 @@ from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
 from fabricks.cdc import SCD1, SCD2, NoCDC
-from fabricks.context import CONF_RUNTIME, PATHS_RUNTIME, PATHS_STORAGE, STEPS
+from fabricks.context import PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
 from fabricks.core.jobs.get_job_conf import get_job_conf
@@ -31,6 +31,7 @@ from fabricks.models import (
     TOptions,
     get_job_id,
 )
+from fabricks.models.runtime import RuntimeConf
 from fabricks.utils.path import Path
 
 
@@ -65,6 +66,7 @@ class Configurator(ABC):
     _step_options: Optional[Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]] = None
     _step_table_options: Optional[StepTableOptions] = None
     _runtime_options: Optional[RuntimeOptions] = None
+    _runtime_conf: Optional[RuntimeConf] = None
     _spark: Optional[SparkSession] = None
     _timeout: Optional[int] = None
     _paths: Optional[Paths] = None
@@ -198,6 +200,15 @@ class Configurator(ABC):
         raise NotImplementedError()
 
     @property
+    def runtime_conf(self) -> RuntimeConf:
+        """Direct access to typed runtime conf."""
+        if not self._runtime_conf:
+            from fabricks.context.runtime import CONF_RUNTIME
+
+            self._runtime_conf = CONF_RUNTIME
+        return self._runtime_conf
+
+    @property
     @abstractmethod
     def step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
         """Direct access to typed step conf from context configuration."""
@@ -221,9 +232,7 @@ class Configurator(ABC):
     @property
     def runtime_options(self) -> RuntimeOptions:
         """Direct access to typed runtime options from context configuration."""
-        if not self._runtime_options:
-            self._runtime_options = CONF_RUNTIME.options
-        return self._runtime_options
+        return self.runtime_conf.options
 
     @property
     def step_spark_options(self) -> Optional[SparkOptions]:

@@ -5,7 +5,7 @@ from pyspark.sql.functions import expr, lit, md5
 from pyspark.sql.types import Row, TimestampType
 
 from fabricks.cdc.nocdc import NoCDC
-from fabricks.context import SECRET_SCOPE, VARIABLES
+from fabricks.context import VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
@@ -205,12 +205,14 @@ class Bronze(BaseJob):
             if self.runtime_options.encryption_key is not None:
                 from databricks.sdk.runtime import dbutils
 
-                from fabricks.context import IS_UNITY_CATALOG
-
-                key = dbutils.secrets.get(scope=SECRET_SCOPE, key=self.runtime_options.encryption_key)
-                if IS_UNITY_CATALOG:
+                key = dbutils.secrets.get(
+                    scope=self.runtime_options.secret_scope,
+                    key=self.runtime_options.encryption_key,
+                )
+                if self.runtime_options.unity_catalog:
                     DEFAULT_LOGGER.warning(
-                        "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead", extra={"label": self}
+                        "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead",
+                        extra={"label": self},
                     )
 
             else:
