@@ -970,7 +970,7 @@ wheels = [
 
 [[package]]
 name = "fabricks"
-version = "3.1.0"
+version = "4.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "azure-data-tables" },
