@@ -214,12 +214,13 @@ class ConfigOptions(BaseSettings):
             ResolvedPathOptions with all paths resolved
         """
         # Collect all storage paths with variable substitution
-
+        root = Path(self.base, assume_git=True)
+        
         return ResolvedPathOptions(
             base=self._resolve_path(self.base),
-            config=self._resolve_path(self.config, base=self.base),
-            runtime=self._resolve_path(self.runtime, base=self.base),
-            notebooks=self._resolve_path(self.notebooks, base=self.base),
+            config=self._resolve_path(self.config, base=root),
+            runtime=self._resolve_path(self.runtime, base=root),
+            notebooks=self._resolve_path(self.notebooks, base=root),
         )
 
     @computed_field
