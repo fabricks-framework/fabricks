@@ -217,7 +217,6 @@ class Configurator(ABC):
     @property
     def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]:
         """Direct access to typed step-level options from context configuration."""
-        """Direct access to typed step conf from context configuration."""
         raise NotImplementedError()
 
     @property
