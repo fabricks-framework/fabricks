@@ -6,6 +6,7 @@ from fabricks.models.common import Database, ExtenderOptions, SparkOptions
 from fabricks.models.config import ConfigOptions
 from fabricks.models.step import BronzeConf, GoldConf, PowerBI, SilverConf
 from fabricks.utils.path import Path, resolve_path
+from typing import ClassVar
 
 
 class RuntimePathOptions(BaseModel):
@@ -87,7 +88,7 @@ class RuntimeConf(BaseModel):
     variables: dict[str, str] | None = None
     credentials: list[dict[str, str]] | None = None
 
-    config = ConfigOptions()
+    config: ClassVar[ConfigOptions] = ConfigOptions()
 
     @computed_field
     @property

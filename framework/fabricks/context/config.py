@@ -1,11 +1,9 @@
-import logging
 from typing import Final
 
 from fabricks.models.config import ConfigOptions
 from fabricks.utils.log import get_logger
 from fabricks.utils.path import Path
 
-logger, _ = get_logger("logs", level=logging.DEBUG)
 config = ConfigOptions()
 
 # Constants

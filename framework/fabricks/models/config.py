@@ -29,11 +29,13 @@ class ConfigOptions(BaseSettings):
         """Convert string representations of boolean values to bool."""
         if isinstance(v, bool):
             return v
+        
         if isinstance(v, str):
             if v.lower() in ("true", "1", "yes"):
                 return True
             elif v.lower() in ("false", "0", "no"):
                 return False
+            
         return v
 
     @field_validator("loglevel", mode="before")
@@ -62,6 +64,7 @@ class ConfigOptions(BaseSettings):
         """Set default notebooks path if not provided."""
         if not v or v == "none":
             return "runtime/notebooks"
+        
         return v
 
     @classmethod
@@ -87,6 +90,7 @@ class ConfigOptions(BaseSettings):
                 logger.debug(f"Loading configuration from {pyproject_path}")
                 with open(pyproject_path, "rb") as f:
                     data = tomllib.load(f)
+                    print(data)
 
                 return data.get("tool", {}).get("fabricks", {})
 
@@ -101,6 +105,7 @@ class ConfigOptions(BaseSettings):
                 logger.debug(f"Loading configuration from {json_path}")
                 with open(json_path, "r") as f:
                     data = json.load(f)
+                    print(data)
 
                 return data
 
