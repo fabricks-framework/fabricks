@@ -215,7 +215,7 @@ class ConfigOptions(BaseSettings):
         """
         # Collect all storage paths with variable substitution
         root = Path(self.base, assume_git=True)
-        
+
         return ResolvedPathOptions(
             base=self._resolve_path(self.base),
             config=self._resolve_path(self.config, base=root),
