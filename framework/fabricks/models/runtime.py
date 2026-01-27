@@ -1,10 +1,9 @@
 """Runtime configuration models."""
 
-from typing import Optional
-
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from fabricks.models.common import Database, ExtenderOptions, SparkOptions
+from fabricks.models.config import Config
 from fabricks.models.step import BronzeConf, GoldConf, PowerBI, SilverConf
 from fabricks.utils.path import Path, resolve_path
 
@@ -73,7 +72,7 @@ class RuntimeOptions(BaseModel):
 class RuntimeConf(BaseModel):
     """Complete runtime configuration."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
     name: str
     options: RuntimeOptions
@@ -88,17 +87,19 @@ class RuntimeConf(BaseModel):
     variables: dict[str, str] | None = None
     credentials: list[dict[str, str]] | None = None
 
+    config = Config()
+
     @computed_field
     @property
-    def resolved_path_options(self, runtime: Path) -> RuntimeResolvedPathOptions:
+    def resolved_path_options(self) -> RuntimeResolvedPathOptions:
         """Get all runtime paths resolved as Path objects."""
-        return self._resolve_paths(runtime=runtime)
+        return self._resolve_paths()
 
     def _resolve_path(
         self,
-        path: Optional[str],
-        default: Optional[str] = None,
-        base: Optional[Path] = None,
+        path: str | None,
+        default: str | None = None,
+        base: Path | str | None = None,
         apply_variables: bool = False,
     ) -> Path:
         return resolve_path(
@@ -109,7 +110,7 @@ class RuntimeConf(BaseModel):
             variables=self.variables or {},
         )
 
-    def _resolve_paths(self, runtime: Path) -> RuntimeResolvedPathOptions:
+    def _resolve_paths(self) -> RuntimeResolvedPathOptions:
         """
         Get all runtime paths resolved as Path objects.
 
@@ -137,17 +138,19 @@ class RuntimeConf(BaseModel):
         for objects in [self.bronze, self.silver, self.gold]:
             if objects:
                 for obj in objects:
-                    runtime_paths[obj.name] = resolve_path(obj.path_options.runtime, base=runtime)
+                    runtime_paths[obj.name] = resolve_path(obj.path_options.runtime, base=self.config.runtime)
 
         return RuntimeResolvedPathOptions(
             storage=storage_paths["fabricks"],
-            udfs=self._resolve_path(self.path_options.udfs, base=runtime),
-            parsers=self._resolve_path(self.path_options.parsers, base=runtime),
-            schedules=self._resolve_path(self.path_options.schedules, base=runtime),
-            views=self._resolve_path(self.path_options.views, base=runtime),
-            requirements=self._resolve_path(self.path_options.requirements, base=runtime),
-            extenders=self._resolve_path(self.path_options.extenders, default="fabricks/extenders", base=runtime),
-            masks=self._resolve_path(self.path_options.masks, default="fabricks/masks", base=runtime),
+            udfs=self._resolve_path(self.path_options.udfs, base=self.config.runtime),
+            parsers=self._resolve_path(self.path_options.parsers, base=self.config.runtime),
+            schedules=self._resolve_path(self.path_options.schedules, base=self.config.runtime),
+            views=self._resolve_path(self.path_options.views, base=self.config.runtime),
+            requirements=self._resolve_path(self.path_options.requirements, base=self.config.runtime),
+            extenders=self._resolve_path(
+                self.path_options.extenders, default="fabricks/extenders", base=self.config.runtime
+            ),
+            masks=self._resolve_path(self.path_options.masks, default="fabricks/masks", base=self.config.runtime),
             storages=storage_paths,
             runtimes=runtime_paths,
         )

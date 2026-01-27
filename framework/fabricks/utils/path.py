@@ -249,11 +249,11 @@ class Path:
 
 
 def resolve_path(
-    path: Optional[str],
-    default: Optional[str] = None,
-    base: Optional[Path] = None,
+    path: str | None,
+    default: str | None = None,
+    base: Path | None | str = None,
     apply_variables: bool = False,
-    variables: Optional[dict[str, str]] = None,
+    variables: dict[str, str] | None = None,
 ) -> Path:
     """
     Resolve a path with optional variable substitution and base path joining.
@@ -267,6 +267,9 @@ def resolve_path(
     Returns:
         Resolved Path object
     """
+    if isinstance(base, str):
+        base = Path(base)
+
     resolved_value = path or default
     if resolved_value is None:
         raise ValueError("path and default cannot both be None")
