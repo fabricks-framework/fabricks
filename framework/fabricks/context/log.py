@@ -99,12 +99,12 @@ if IS_FUNMODE:
             "⚠️ Warning: End of month is near! Make sure to finalize your data reports and close out any pending tasks! 📅✅"
         )
 
-    if _now.weekday == 4:
+    if _now.weekday() == 4:
         DEFAULT_LOGGER.warning(
             "📅🚫 Please do not deploy on Fridays! Avoid end-of-week surprises in your data pipelines! 🚫📅"
         )
 
-    if _now.weekday == 0:
+    if _now.weekday() == 0:
         DEFAULT_LOGGER.info(
             "☕ Happy Monday! Kickstart your week with fresh data insights and a strong cup of coffee! 📊☕"
         )
