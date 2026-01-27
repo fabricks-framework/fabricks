@@ -246,3 +246,35 @@ class Path:
 
     def __str__(self) -> str:
         return self.string
+
+
+def resolve_path(
+    path: Optional[str],
+    default: Optional[str] = None,
+    base: Optional[Path] = None,
+    apply_variables: bool = False,
+    variables: Optional[dict[str, str]] = None,
+) -> Path:
+    """
+    Resolve a path with optional variable substitution and base path joining.
+
+    Args:
+        path: The path string from configuration
+        default: Default value if path is None
+        base: Base path to join with (e.g., PATH_RUNTIME)
+        apply_variables: Whether to apply variable substitution using VARIABLES
+
+    Returns:
+        Resolved Path object
+    """
+    resolved_value = path or default
+    if resolved_value is None:
+        raise ValueError("path and default cannot both be None")
+
+    if apply_variables:
+        return Path.from_uri(resolved_value, regex=variables)
+
+    if base:
+        return base.joinpath(resolved_value)
+
+    return Path(resolved_value)

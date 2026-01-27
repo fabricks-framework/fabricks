@@ -5,7 +5,7 @@ import yaml
 from fabricks.context.config import PATH_CONFIG, PATH_RUNTIME
 from fabricks.context.helpers import get_runtime_path, get_storage_paths
 from fabricks.models import Database, RuntimeConf, StepBronzeConf, StepGoldConf, StepSilverConf
-from fabricks.utils.path import Path
+from fabricks.utils.path import Path, resolve_path
 
 with open(str(PATH_CONFIG)) as f:
     data = yaml.safe_load(f)
@@ -24,6 +24,7 @@ credentials = CONF_RUNTIME.credentials or []
 variables = CONF_RUNTIME.variables or {}
 VARIABLES: dict = variables
 
+
 IS_UNITY_CATALOG: Final[bool] = CONF_RUNTIME.options.unity_catalog or False
 CATALOG: Optional[str] = CONF_RUNTIME.options.catalog
 
@@ -38,23 +39,50 @@ IS_TYPE_WIDENING: Final[bool] = (
     CONF_RUNTIME.options.type_widening if CONF_RUNTIME.options.type_widening is not None else True
 )
 
-FABRICKS_STORAGE: Final[Path] = Path.from_uri(CONF_RUNTIME.path_options.storage, regex=variables)
+FABRICKS_STORAGE: Final[Path] = resolve_path(
+    CONF_RUNTIME.path_options.storage,
+    apply_variables=True,
+    variables=VARIABLES
+)
 
 FABRICKS_STORAGE_CREDENTIAL: Final[Optional[str]] = CONF_RUNTIME.path_options.storage_credential
 
-PATH_UDFS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.udfs)
+PATH_UDFS: Final[Path] = resolve_path(
+    CONF_RUNTIME.path_options.udfs,
+    base=PATH_RUNTIME
+)
 
-PATH_PARSERS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.parsers)
+PATH_PARSERS: Final[Path] = resolve_path(
+    CONF_RUNTIME.path_options.parsers,
+    base=PATH_RUNTIME
+)
 
-PATH_EXTENDERS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.extenders or "fabricks/extenders")
+PATH_EXTENDERS: Final[Path] = resolve_path(
+    CONF_RUNTIME.path_options.extenders,
+    default="fabricks/extenders",
+    base=PATH_RUNTIME
+)
 
-PATH_VIEWS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.views)
+PATH_VIEWS: Final[Path] = resolve_path(
+    CONF_RUNTIME.path_options.views,
+    base=PATH_RUNTIME
+)
 
-PATH_SCHEDULES: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.schedules)
+PATH_SCHEDULES: Final[Path] = resolve_path(
+    CONF_RUNTIME.path_options.schedules,
+    base=PATH_RUNTIME
+)
 
-PATH_REQUIREMENTS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.requirements)
+PATH_REQUIREMENTS: Final[Path] = resolve_path(
+    CONF_RUNTIME.path_options.requirements,
+    base=PATH_RUNTIME
+)
 
-PATH_MASKS: Final[Path] = PATH_RUNTIME.joinpath(CONF_RUNTIME.path_options.masks or "fabricks/masks")
+PATH_MASKS: Final[Path] = resolve_path(
+    CONF_RUNTIME.path_options.masks,
+    default="fabricks/masks",
+    base=PATH_RUNTIME
+)
 
 PATHS_STORAGE: Final[dict[str, Path]] = {
     "fabricks": FABRICKS_STORAGE,
