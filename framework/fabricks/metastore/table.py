@@ -3,6 +3,7 @@ from typing import Sequence, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
+from pyspark.errors.exceptions.connect import UnknownException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import max
 from pyspark.sql.types import StructType
@@ -316,7 +317,13 @@ class Table(DbObject):
         return self.get_property("delta.columnMapping.mode") == "name"
 
     def exists(self) -> bool:
-        return self.is_deltatable and self.registered
+        try:
+            return self.is_deltatable and self.registered
+        except UnknownException as e:
+            if "PERMISSION_DENIED" in str(e) or "row filter or column mask" in str(e):
+                return self.registered
+            else:
+                raise e
 
     def register(self):
         DEFAULT_LOGGER.debug("register table", extra={"label": self})
