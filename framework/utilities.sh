@@ -83,10 +83,22 @@ format() {
     uv sync
 }
 
+format_commit(){
+    format
+
+    log_section "Committing formatted code..."
+
+    git add .
+    git commit -m "chore: format code"
+
+    log_success "Formatted code committed"
+}
+
 show_help() {
 		echo -e "${MAGENTA}Usage: $0 <command>${RESET}"
 		echo -e "${CYAN}Available commands:${RESET}"
 		echo -e "  ${GREEN}format${RESET}                - Run Python code formatters and linters"
+        echo -e "  ${GREEN}format-commit${RESET}         - Format code and commit changes"
 		echo -e "  ${GREEN}check-dependencies${RESET}    - Check for missing dependencies"
 		echo -e "  ${GREEN}help${RESET}                  - Show help"
 }
@@ -103,6 +115,9 @@ main() {
     case "$command" in
         format)
             format "$@"
+            ;;
+        format-commit)
+            format_commit "$@"
             ;;
         check-dependencies)
             check_dependencies "$@"
