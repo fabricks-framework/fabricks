@@ -1,7 +1,6 @@
 from typing import Final
 
 from fabricks.models.config import ConfigOptions
-from fabricks.utils.log import get_logger
 from fabricks.utils.path import Path
 
 config = ConfigOptions()

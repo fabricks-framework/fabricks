@@ -1,12 +1,13 @@
 """Runtime configuration models."""
 
+from typing import ClassVar
+
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from fabricks.models.common import Database, ExtenderOptions, SparkOptions
 from fabricks.models.config import ConfigOptions
 from fabricks.models.step import BronzeConf, GoldConf, PowerBI, SilverConf
 from fabricks.utils.path import Path, resolve_path
-from typing import ClassVar
 
 
 class RuntimePathOptions(BaseModel):
