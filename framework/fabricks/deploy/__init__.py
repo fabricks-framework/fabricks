@@ -3,7 +3,7 @@ from typing import Optional, Union
 
 from fabricks.context import FABRICKS_STORAGE, Steps
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.steps.base import BaseStep
+from fabricks.core.steps import get_step
 from fabricks.deploy.masks import deploy_masks
 from fabricks.deploy.notebooks import deploy_notebooks
 from fabricks.deploy.schedules import deploy_schedules
@@ -40,6 +40,20 @@ class Deploy:
         deploy_schedules()
 
     @staticmethod
+    def step(step: str):
+        Deploy.tables()
+        s = get_step(step)
+        s.create()
+
+        Deploy.views()
+        Deploy.schedules()
+
+    @staticmethod
+    def job(step: str):
+        s = get_step(step)
+        s.create()
+
+    @staticmethod
     def armageddon(steps: Optional[Union[str, list[str]]] = None, nowait: bool = False):
         DEFAULT_LOGGER.warning("!💥 armageddon 💥!")
         print_atomic_bomb(nowait=nowait)
@@ -59,7 +73,7 @@ class Deploy:
         fabricks.drop()
 
         for s in steps:
-            step = BaseStep(s)
+            step = get_step(s)
             step.drop()
 
         tmp = FABRICKS_STORAGE.joinpath("tmp")
