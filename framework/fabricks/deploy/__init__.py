@@ -96,7 +96,7 @@ class Deploy:
         Deploy.notebooks()
 
         for s in steps:
-            step = BaseStep(s)
+            step = get_step(s)
             step.create()
 
         Deploy.views()
