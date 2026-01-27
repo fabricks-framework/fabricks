@@ -9,7 +9,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobDependency, JobSilverOptions, SilverConf
+from fabricks.models import JobDependency, JobSilverOptions, StepSilverConf, StepSilverOptions
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.read.read import read
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -50,9 +50,14 @@ class Silver(BaseJob):
         return self.conf.options  # type: ignore
 
     @property
-    def step_conf(self) -> SilverConf:
-        """Direct access to typed bronze step conf."""
+    def step_conf(self) -> StepSilverConf:
+        """Direct access to typed silver step conf."""
         return self.base_step_conf  # type: ignore
+
+    @property
+    def step_options(self) -> StepSilverOptions:
+        """Direct access to typed silver step options."""
+        return self.base_step_conf.options  # type: ignore
 
     @property
     def stream(self) -> bool:

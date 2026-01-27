@@ -1,10 +1,10 @@
-from typing import Final, List, Optional
+from typing import Final, Optional
 
 import yaml
 
 from fabricks.context.config import PATH_CONFIG, PATH_RUNTIME
 from fabricks.context.helpers import get_runtime_path, get_storage_paths
-from fabricks.models import BronzeConf, Database, GoldConf, RuntimeConf, SilverConf
+from fabricks.models import Database, RuntimeConf, StepBronzeConf, StepGoldConf, StepSilverConf
 from fabricks.utils.path import Path
 
 with open(str(PATH_CONFIG)) as f:
@@ -14,12 +14,12 @@ conf_data = [d["conf"] for d in data][0]
 assert conf_data, "conf mandatory"
 CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(conf_data)
 
-BRONZE: List[BronzeConf] = CONF_RUNTIME.bronze or []
-SILVER: List[SilverConf] = CONF_RUNTIME.silver or []
-GOLD: List[GoldConf] = CONF_RUNTIME.gold or []
+BRONZE: list[StepBronzeConf] = CONF_RUNTIME.bronze or []
+SILVER: list[StepSilverConf] = CONF_RUNTIME.silver or []
+GOLD: list[StepGoldConf] = CONF_RUNTIME.gold or []
 STEPS = BRONZE + SILVER + GOLD
 
-databases: List[Database] = CONF_RUNTIME.databases or []
+databases: list[Database] = CONF_RUNTIME.databases or []
 credentials = CONF_RUNTIME.credentials or []
 variables = CONF_RUNTIME.variables or {}
 VARIABLES: dict = variables

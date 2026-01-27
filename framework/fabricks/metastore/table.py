@@ -13,7 +13,6 @@ from fabricks.metastore._types import AddedColumn, ChangedColumn, DroppedColumn,
 from fabricks.metastore.dbobject import DbObject
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix
-from fabricks.models.table import PrimaryKey, ForeignKey
 
 
 class Table(DbObject):
@@ -159,7 +158,10 @@ class Table(DbObject):
         )
 
     def _get_ddl_columns(
-        self, df: DataFrame, masks: dict[str, str] | None, comments: dict[str, str] | None,
+        self,
+        df: DataFrame,
+        masks: dict[str, str] | None,
+        comments: dict[str, str] | None,
     ) -> list[str]:
         def _backtick(name: str, dtype: str) -> str:
             j = df.schema[name].jsonValue()

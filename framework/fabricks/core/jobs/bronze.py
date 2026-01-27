@@ -5,13 +5,13 @@ from pyspark.sql.functions import expr, lit, md5
 from pyspark.sql.types import Row, TimestampType
 
 from fabricks.cdc.nocdc import NoCDC
-from fabricks.context import SECRET_SCOPE, VARIABLES, IS_UNITY_CATALOG
+from fabricks.context import SECRET_SCOPE, VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import BronzeConf, JobBronzeOptions, JobDependency
+from fabricks.models import JobBronzeOptions, JobDependency, StepBronzeConf, StepBronzeOptions
 from fabricks.utils.helpers import concat_ws
 from fabricks.utils.path import Path
 from fabricks.utils.read import read
@@ -59,9 +59,14 @@ class Bronze(BaseJob):
         return self.conf.options  # type: ignore
 
     @property
-    def step_conf(self) -> BronzeConf:
+    def step_conf(self) -> StepBronzeConf:
         """Direct access to typed bronze step conf."""
         return self.base_step_conf  # type: ignore
+
+    @property
+    def step_options(self) -> StepBronzeOptions:
+        """Direct access to typed bronze step options."""
+        return self.base_step_conf.options  # type: ignore
 
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
@@ -177,8 +182,9 @@ class Bronze(BaseJob):
             else:
                 df = self.spark.sql(f"select * from {self}")
 
-            # cleaning should done by parser
-            df = clean(df)
+            if self.step_options.clean:
+                # cleaning should done by parser
+                df = clean(df)
 
         else:
             options = self.conf.parser_options or None  # type: ignore
@@ -199,9 +205,14 @@ class Bronze(BaseJob):
             if self.runtime_options.encryption_key is not None:
                 from databricks.sdk.runtime import dbutils
 
+                from fabricks.context import IS_UNITY_CATALOG
+
                 key = dbutils.secrets.get(scope=SECRET_SCOPE, key=self.runtime_options.encryption_key)
                 if IS_UNITY_CATALOG:
-                    DEFAULT_LOGGER.warning("Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY", extra={"label": self})
+                    DEFAULT_LOGGER.warning(
+                        "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead", extra={"label": self}
+                    )
+
             else:
                 import os
 

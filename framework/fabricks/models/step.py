@@ -48,6 +48,8 @@ class StepOptions(BaseModel):
 class BronzeOptions(StepOptions):
     """Bronze layer step options."""
 
+    clean: bool | None = None
+
 
 class SilverOptions(StepOptions):
     """Silver layer step options."""

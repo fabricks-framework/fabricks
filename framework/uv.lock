@@ -1027,8 +1027,6 @@ docs = [
     { name = "mkdocs-material" },
 ]
 test = [
-    { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "pandas", version = "3.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pytest", version = "8.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "pytest", version = "9.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pytest-order" },
@@ -1077,7 +1075,6 @@ docs = [
     { name = "mkdocs-material", specifier = ">=9.6.18" },
 ]
 test = [
-    { name = "pandas", specifier = ">=1.5.3" },
     { name = "pytest", specifier = ">=7.1.2" },
     { name = "pytest-order", specifier = ">=1.0.1" },
 ]

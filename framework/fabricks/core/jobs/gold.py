@@ -11,7 +11,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import GoldConf, JobDependency, JobGoldOptions
+from fabricks.models import JobDependency, JobGoldOptions, StepGoldConf, StepGoldOptions
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix, get_tables
 
@@ -52,9 +52,14 @@ class Gold(BaseJob):
         return self.conf.options  # type: ignore
 
     @property
-    def step_conf(self) -> GoldConf:
+    def step_conf(self) -> StepGoldConf:
         """Direct access to typed gold step conf."""
         return self.base_step_conf  # type: ignore
+
+    @property
+    def step_options(self) -> StepGoldOptions:
+        """Direct access to typed gold step options."""
+        return self.base_step_conf.options  # type: ignore
 
     @property
     def stream(self) -> bool:

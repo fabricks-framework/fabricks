@@ -14,17 +14,17 @@ from fabricks.metastore.table import Table
 from fabricks.models import (
     AllowedChangeDataCaptures,
     AllowedModes,
-    BronzeConf,
     CheckOptions,
     ExtenderOptions,
-    GoldConf,
     InvokerOptions,
     Paths,
     RuntimeOptions,
-    SilverConf,
     SparkOptions,
+    StepBronzeConf,
     StepBronzeOptions,
+    StepGoldConf,
     StepGoldOptions,
+    StepSilverConf,
     StepSilverOptions,
     StepTableOptions,
     TableOptions,
@@ -61,7 +61,7 @@ class Configurator(ABC):
             self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item, row=conf)
             self.job_id = get_job_id(step=self.step, topic=self.topic, item=self.item)
 
-    _step_conf: Optional[Union[BronzeConf, SilverConf, GoldConf]] = None
+    _step_conf: Optional[Union[StepBronzeConf, StepSilverConf, StepGoldConf]] = None
     _step_options: Optional[Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]] = None
     _step_table_options: Optional[StepTableOptions] = None
     _runtime_options: Optional[RuntimeOptions] = None
@@ -132,7 +132,7 @@ class Configurator(ABC):
         return self._spark
 
     @property
-    def base_step_conf(self) -> Union[BronzeConf, SilverConf, GoldConf]:
+    def base_step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
         if not self._step_conf:
             _conf = [s for s in STEPS if s.name == self.step][0]
             assert _conf is not None
@@ -199,18 +199,15 @@ class Configurator(ABC):
 
     @property
     @abstractmethod
-    def step_conf(self) -> Union[BronzeConf, SilverConf, GoldConf]:
+    def step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
         """Direct access to typed step conf from context configuration."""
         raise NotImplementedError()
 
     @property
     def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]:
         """Direct access to typed step-level options from context configuration."""
-        if not self._step_options:
-            _step = [s for s in STEPS if s.name == self.step][0]
-            assert _step is not None
-            self._step_options = _step.options
-        return self._step_options
+        """Direct access to typed step conf from context configuration."""
+        raise NotImplementedError()
 
     @property
     def step_table_options(self) -> Optional[StepTableOptions]:

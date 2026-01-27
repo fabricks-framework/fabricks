@@ -1,8 +1,7 @@
 import os
 import pathlib
-from typing import List, Union
 
-from fabricks.models import BronzeConf, Database, GoldConf, SilverConf
+from fabricks.models import Database, StepBronzeConf, StepGoldConf, StepSilverConf
 from fabricks.utils.path import Path
 
 
@@ -42,7 +41,7 @@ def get_config_from_file():
 
 
 def get_storage_paths(
-    objects: Union[List[BronzeConf], List[SilverConf], List[GoldConf], List[Database]],
+    objects: list[StepBronzeConf] | list[StepSilverConf] | list[StepGoldConf] | list[Database],
     variables: dict,
 ) -> dict:
     d = {}
@@ -52,7 +51,7 @@ def get_storage_paths(
 
 
 def get_runtime_path(
-    objects: Union[List[BronzeConf], List[SilverConf], List[GoldConf]],
+    objects: list[StepBronzeConf] | list[StepSilverConf] | list[StepGoldConf],
     root: Path,
 ) -> dict:
     d = {}

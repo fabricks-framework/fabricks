@@ -37,11 +37,12 @@ from fabricks.models.runtime import RuntimeConf, RuntimeOptions, RuntimePathOpti
 from fabricks.models.schedule import Schedule, ScheduleOptions
 
 # Step models
-from fabricks.models.step import BronzeConf
+from fabricks.models.step import BronzeConf as StepBronzeConf
 from fabricks.models.step import BronzeOptions as StepBronzeOptions
-from fabricks.models.step import GoldConf
+from fabricks.models.step import GoldConf as StepGoldConf
 from fabricks.models.step import GoldOptions as StepGoldOptions
-from fabricks.models.step import PowerBI, SilverConf
+from fabricks.models.step import PowerBI
+from fabricks.models.step import SilverConf as StepSilverConf
 from fabricks.models.step import SilverOptions as StepSilverOptions
 from fabricks.models.step import Step, StepOptions, StepPathOptions, StepTimeoutOptions
 
@@ -97,15 +98,15 @@ __all__ = [
     "RuntimePathOptions",
     "RuntimeTimeoutOptions",
     # Step models
-    "BronzeConf",
-    "GoldConf",
     "PowerBI",
-    "SilverConf",
     "Step",
+    "StepBronzeConf",
     "StepBronzeOptions",
+    "StepGoldConf",
     "StepGoldOptions",
     "StepOptions",
     "StepPathOptions",
+    "StepSilverConf",
     "StepSilverOptions",
     "StepTimeoutOptions",
     # Table models
