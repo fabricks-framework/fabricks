@@ -20,7 +20,7 @@ def pprint_runtime(extended: bool = True) -> None:
 
     print("\n⚙️ STEPS:")
 
-    def _print_steps(steps: list[r.StepBronzeConf | r.StepSilverConf | r.StepGoldConf], layer, icon):
+    def _print_steps(steps: list[r.StepBronzeConf] | list[r.StepSilverConf] | list[r.StepGoldConf], layer, icon):
         if steps:
             print(f"   {icon} {layer}:")
             for step in steps:

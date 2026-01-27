@@ -1,10 +1,12 @@
 import logging
 import os
 import pathlib
-from pathlib import Path
+from pathlib import Path as PathLibPath
 
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+
+from fabricks.utils.path import Path, resolve_path
 
 
 class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
@@ -22,7 +24,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
     def _load_hierarchical_file(self):
         """Search up directory hierarchy for configuration files."""
 
-        def pyproject_settings(base: Path):
+        def pyproject_settings(base: PathLibPath):
             pyproject_path = base / "pyproject.toml"
             if pyproject_path.exists():
                 import sys
@@ -41,7 +43,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
 
             return None
 
-        def json_settings(base: Path):
+        def json_settings(base: PathLibPath):
             json_path = base / "fabricksconfig.json"
             if json_path.exists():
                 import json
@@ -74,13 +76,24 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
         return data or {}
 
 
+class ResolvedPathOptions(BaseModel):
+    """Resolved path objects for main configuration."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    base: Path
+    config: Path
+    runtime: Path
+    notebooks: Path
+
+
 class ConfigOptions(BaseSettings):
     """Main configuration options for Fabricks framework."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     base: str = Field(
-        validation_alias=AliasChoices("base"),
+        validation_alias=AliasChoices("FABRICKS_BASE", "base"),
         default="none",
     )
     config: str = Field(
@@ -176,3 +189,40 @@ class ConfigOptions(BaseSettings):
             HierarchicalFileSettingsSource(settings_cls),
             file_secret_settings,
         )
+
+    def _resolve_path(
+        self,
+        path: str | None,
+        default: str | None = None,
+        base: Path | str | None = None,
+    ) -> Path:
+        return resolve_path(
+            path=path,
+            default=default,
+            base=base,
+        )
+
+    def _resolve_paths(self) -> ResolvedPathOptions:
+        """
+        Get all paths resolved as Path objects.
+
+        Args:
+            runtime: The base runtime path (e.g., PATH_RUNTIME)
+
+        Returns:
+            ResolvedPathOptions with all paths resolved
+        """
+        # Collect all storage paths with variable substitution
+
+        return ResolvedPathOptions(
+            base=self._resolve_path(self.base),
+            config=self._resolve_path(self.config, base=self.base),
+            runtime=self._resolve_path(self.runtime, base=self.base),
+            notebooks=self._resolve_path(self.notebooks, base=self.base),
+        )
+
+    @computed_field
+    @property
+    def resolved_paths(self) -> ResolvedPathOptions:
+        """Get all paths resolved as Path objects."""
+        return self._resolve_paths()
