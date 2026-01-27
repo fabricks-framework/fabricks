@@ -32,6 +32,7 @@ class CheckOptions(BaseModel):
 
 
 class ParserOptions(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
     file_format: str | None = None
     read_options: dict[str, str] | None = None
 
