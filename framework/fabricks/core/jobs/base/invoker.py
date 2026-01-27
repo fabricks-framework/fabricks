@@ -9,7 +9,7 @@ from fabricks.core.extenders import get_extender
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.get_schedule import get_schedule
-from fabricks.models.common import ExtenderOptions
+from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
 from fabricks.utils.path import Path
 
 
@@ -29,6 +29,35 @@ class Invoker(Checker):
         self._invoke_job(position="post_run", schedule=schedule)
         self._invoke_step(position="post_run", schedule=schedule)
 
+    def _invoke_notebook(
+        self,
+        invoker: dict | BaseInvokerOptions,
+        schedule: Optional[str] = None,
+        **kwargs,
+    ):
+        path = kwargs.get("path")
+        if path is None:
+            notebook = invoker.get("notebook") if isinstance(invoker, dict) else invoker.notebook
+            assert notebook, "notebook mandatory"
+            path = PATH_RUNTIME.joinpath(notebook)
+
+        assert path is not None, "path mandatory"
+
+        timeout = invoker.get("timeout") if isinstance(invoker, dict) else invoker.timeout
+        arguments = invoker.get("arguments") if isinstance(invoker, dict) else invoker.arguments
+        arguments = arguments or {}
+
+        schema_only = kwargs.get("schema_only")
+        if schema_only is not None:
+            arguments["schema_only"] = schema_only
+
+        return self._run_notebook(
+            path=path,
+            arguments=arguments,
+            schedule=schedule,
+            timeout=timeout,
+        )
+
     def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
         invokers = getattr(self.invoker_options, position, None) or [] if self.invoker_options else []
         if position == "run":
@@ -40,38 +69,10 @@ class Invoker(Checker):
             for i, invoker in enumerate(invokers):
                 DEFAULT_LOGGER.debug(f"invoke ({i}, {position})", extra={"label": self})
                 try:
-                    path = kwargs.get("path")
-                    if path is None:
-                        # Handle both dict (empty {}) and Pydantic model cases
-                        notebook = invoker.get("notebook") if isinstance(invoker, dict) else invoker.notebook
-                        assert notebook, "notebook mandatory"
-                        path = PATH_RUNTIME.joinpath(notebook)
-
-                    assert path is not None, "path mandatory"
-
-                    # Handle both dict (empty {}) and Pydantic model cases
-                    arguments = invoker.get("arguments") if isinstance(invoker, dict) else invoker.arguments
-                    arguments = arguments or {}
-                    timeout = invoker.get("timeout") if isinstance(invoker, dict) else invoker.timeout
-
-                    schema_only = kwargs.get("schema_only")
-                    if schema_only is not None:
-                        arguments["schema_only"] = schema_only
-
                     if len(invokers) == 1 and position == "run":
-                        return self._run_notebook(
-                            path=path,
-                            arguments=arguments,
-                            timeout=timeout,
-                            schedule=schedule,
-                        )
+                        return self._invoke_notebook(invoker, schedule=schedule, **kwargs)
                     else:
-                        self._run_notebook(
-                            path=path,
-                            arguments=arguments,
-                            timeout=timeout,
-                            schedule=schedule,
-                        )
+                        self._invoke_notebook(invoker=invoker, schedule=schedule, **kwargs)
 
                 except Exception as e:
                     DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self})
@@ -95,19 +96,7 @@ class Invoker(Checker):
             for i, invoker in enumerate(invokers):
                 DEFAULT_LOGGER.debug(f"invoke by step ({i}, {position})", extra={"label": self})
                 try:
-                    notebook = invoker.get("notebook") if isinstance(invoker, dict) else invoker.notebook
-                    assert notebook, "notebook mandatory"
-                    path = PATH_RUNTIME.joinpath(notebook)
-
-                    arguments = invoker.get("arguments", {}) if isinstance(invoker, dict) else invoker.arguments
-                    timeout = invoker.get("timeout") if isinstance(invoker, dict) else invoker.timeout
-
-                    self._run_notebook(
-                        path=path,
-                        arguments=arguments,
-                        timeout=timeout,
-                        schedule=schedule,
-                    )
+                    self._invoke_notebook(invoker=invoker, schedule=schedule)
 
                 except Exception as e:
                     DEFAULT_LOGGER.warning(f"fail to run invoker by step ({i}, {position})", extra={"label": self})
