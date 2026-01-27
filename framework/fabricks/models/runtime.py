@@ -132,27 +132,29 @@ class RuntimeConf(BaseModel):
             if objects:
                 for obj in objects:
                     storage_paths[obj.name] = resolve_path(
-                        obj.path_options.storage, apply_variables=True, variables=self.variables or {}
+                        obj.path_options.storage, apply_variables=True, variables=self.variables or {},
                     )
+
+        root = self.config.resolved_paths.runtime
 
         # Collect all runtime paths with base path joining
         runtime_paths: dict[str, Path] = {}
         for objects in [self.bronze, self.silver, self.gold]:
             if objects:
                 for obj in objects:
-                    runtime_paths[obj.name] = resolve_path(obj.path_options.runtime, base=self.config.runtime)
+                    runtime_paths[obj.name] = resolve_path(obj.path_options.runtime, base=root)
 
         return RuntimeResolvedPathOptions(
             storage=storage_paths["fabricks"],
-            udfs=self._resolve_path(self.path_options.udfs, base=self.config.runtime),
-            parsers=self._resolve_path(self.path_options.parsers, base=self.config.runtime),
-            schedules=self._resolve_path(self.path_options.schedules, base=self.config.runtime),
-            views=self._resolve_path(self.path_options.views, base=self.config.runtime),
-            requirements=self._resolve_path(self.path_options.requirements, base=self.config.runtime),
+            udfs=self._resolve_path(self.path_options.udfs, base=root),
+            parsers=self._resolve_path(self.path_options.parsers, base=root),
+            schedules=self._resolve_path(self.path_options.schedules, base=root),
+            views=self._resolve_path(self.path_options.views, base=root),
+            requirements=self._resolve_path(self.path_options.requirements, base=root),
             extenders=self._resolve_path(
-                self.path_options.extenders, default="fabricks/extenders", base=self.config.runtime
+                self.path_options.extenders, default="fabricks/extenders", base=root,
             ),
-            masks=self._resolve_path(self.path_options.masks, default="fabricks/masks", base=self.config.runtime),
+            masks=self._resolve_path(self.path_options.masks, default="fabricks/masks", base=root),
             storages=storage_paths,
             runtimes=runtime_paths,
         )
