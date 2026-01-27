@@ -50,8 +50,8 @@ PATH_VIEWS: Final[Path] = PATHS_RESOLVED.views
 PATH_SCHEDULES: Final[Path] = PATHS_RESOLVED.schedules
 PATH_REQUIREMENTS: Final[Path] = PATHS_RESOLVED.requirements
 PATH_MASKS: Final[Path] = PATHS_RESOLVED.masks
-PATHS_STORAGE: Final[dict[str, Path]] = PATHS_RESOLVED.storage_paths
-PATHS_RUNTIME: Final[dict[str, Path]] = PATHS_RESOLVED.runtime_paths
+PATHS_STORAGE: Final[dict[str, Path]] = PATHS_RESOLVED.storages
+PATHS_RUNTIME: Final[dict[str, Path]] = PATHS_RESOLVED.runtimes
 
 Bronzes = [b.name for b in BRONZE]
 Silvers = [s.name for s in SILVER]

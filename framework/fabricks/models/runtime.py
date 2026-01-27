@@ -39,8 +39,8 @@ class RuntimeResolvedPathOptions(BaseModel):
     extenders: Path
     masks: Path
 
-    storage_paths: dict[str, Path]
-    runtime_paths: dict[str, Path]
+    storages: dict[str, Path]
+    runtimes: dict[str, Path]
 
 
 class RuntimeTimeoutOptions(BaseModel):
@@ -88,11 +88,11 @@ class RuntimeConf(BaseModel):
     variables: dict[str, str] | None = None
     credentials: list[dict[str, str]] | None = None
 
-    @property
     @computed_field
-    def resolved_path_options(self) -> RuntimeResolvedPathOptions:
+    @property
+    def resolved_path_options(self, runtime: Path) -> RuntimeResolvedPathOptions:
         """Get all runtime paths resolved as Path objects."""
-        return self._resolve_paths(runtime=Path.from_uri("fabricks/runtime"))
+        return self._resolve_paths(runtime=runtime)
 
     def _resolve_path(
         self,
@@ -148,6 +148,6 @@ class RuntimeConf(BaseModel):
             requirements=self._resolve_path(self.path_options.requirements, base=runtime),
             extenders=self._resolve_path(self.path_options.extenders, default="fabricks/extenders", base=runtime),
             masks=self._resolve_path(self.path_options.masks, default="fabricks/masks", base=runtime),
-            storage_paths=storage_paths,
-            runtime_paths=runtime_paths,
+            storages=storage_paths,
+            runtimes=runtime_paths,
         )
