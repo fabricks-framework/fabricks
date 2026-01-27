@@ -4,7 +4,7 @@ import pathlib
 from pathlib import Path
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 logger = logging.getLogger(__file__)
 
@@ -65,7 +65,14 @@ class ConfigOptions(BaseSettings):
         return v
 
     @classmethod
-    def settings_customise_sources(cls, settings_cls, init_settings, env_settings, file_secret_settings):
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ):
         # Load from pyproject.toml
         def pyproject_settings(base: Path):
             pyproject_path = base / "pyproject.toml"
