@@ -80,7 +80,7 @@ class ConfigOptions(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     base: str = Field(
-        validation_alias=AliasChoices("FABRICKS_BASE", "base"),
+        validation_alias=AliasChoices("base"),
         default="none",
     )
     config: str = Field(
