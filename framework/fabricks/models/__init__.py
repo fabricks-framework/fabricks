@@ -33,7 +33,7 @@ from fabricks.models.path import Path, Paths
 # Runtime models
 from fabricks.models.runtime import RuntimeConf, RuntimeOptions, RuntimePathOptions, RuntimeTimeoutOptions
 
-# Scehdule models
+# Schedule models
 from fabricks.models.schedule import Schedule, ScheduleOptions
 
 # Step models
