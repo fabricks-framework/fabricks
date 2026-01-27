@@ -1,5 +1,5 @@
 import re
-from typing import Any, Sequence, overload
+from typing import Sequence, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
@@ -11,6 +11,7 @@ from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore._types import AddedColumn, ChangedColumn, DroppedColumn, SchemaDiff
 from fabricks.metastore.dbobject import DbObject
+from fabricks.models import ForeignKey, PrimaryKey
 from fabricks.utils.path import Path
 from fabricks.utils.sqlglot import fix
 
@@ -105,8 +106,8 @@ class Table(DbObject):
         cluster_by: list[str] | str | None = None,
         properties: dict[str, str] | None = None,
         masks: dict[str, str] | None = None,
-        primary_key: dict[str, Any] | None = None,
-        foreign_keys: dict[str, Any] | None = None,
+        primary_key: dict[str, PrimaryKey] | None = None,
+        foreign_keys: dict[str, ForeignKey] | None = None,
         comments: dict[str, str] | None = None,
     ): ...
 
@@ -122,8 +123,8 @@ class Table(DbObject):
         cluster_by: list[str] | str | None = None,
         properties: dict[str, str] | None = None,
         masks: dict[str, str] | None = None,
-        primary_key: dict[str, Any] | None = None,
-        foreign_keys: dict[str, Any] | None = None,
+        primary_key: dict[str, PrimaryKey] | None = None,
+        foreign_keys: dict[str, ForeignKey] | None = None,
         comments: dict[str, str] | None = None,
     ): ...
 
@@ -138,8 +139,8 @@ class Table(DbObject):
         cluster_by: list[str] | str | None = None,
         properties: dict[str, str] | None = None,
         masks: dict[str, str] | None = None,
-        primary_key: dict[str, Any] | None = None,
-        foreign_keys: dict[str, Any] | None = None,
+        primary_key: dict[str, PrimaryKey] | None = None,
+        foreign_keys: dict[str, ForeignKey] | None = None,
         comments: dict[str, str] | None = None,
     ):
         self._create(
@@ -200,8 +201,8 @@ class Table(DbObject):
         cluster_by: list[str] | str | None = None,
         properties: dict[str, str] | None = None,
         masks: dict[str, str] | None = None,
-        primary_key: dict[str, Any] | None = None,
-        foreign_keys: dict[str, Any] | None = None,
+        primary_key: dict[str, PrimaryKey] | None = None,
+        foreign_keys: dict[str, ForeignKey] | None = None,
         comments: dict[str, str] | None = None,
     ):
         DEFAULT_LOGGER.info("create table", extra={"label": self})
@@ -241,19 +242,21 @@ class Table(DbObject):
             assert len(primary_key) == 1, "only one primary key allowed"
 
             for key, value in primary_key.items():
-                keys = value["keys"]
+                keys = value.keys
                 if isinstance(keys, str):
                     keys = [keys]
+
                 ddl_primary_key = f", constraint {key} primary key (" + ", ".join(keys) + ")"
 
         if foreign_keys:
             fks = []
 
             for key, value in foreign_keys.items():
-                reference = value["reference"]
-                keys = value["keys"]
+                reference = value.reference
+                keys = value.keys
                 if isinstance(keys, str):
                     keys = [keys]
+
                 keys = ", ".join([f"`{k}`" for k in keys])
                 fk = f"constraint {key} foreign key ({keys}) references {reference}"
                 fks.append(fk)
