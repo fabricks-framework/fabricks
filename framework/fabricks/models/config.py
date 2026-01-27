@@ -6,8 +6,10 @@ from pathlib import Path
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+logger = logging.getLogger(__file__)
 
-class Config(BaseSettings):
+
+class ConfigOptions(BaseSettings):
     """Main configuration options for Fabricks framework."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -75,6 +77,7 @@ class Config(BaseSettings):
                 else:
                     import tomli as tomllib  # type: ignore
 
+                logger.debug(f"Loading configuration from {pyproject_path}")
                 with open(pyproject_path, "rb") as f:
                     data = tomllib.load(f)
 
@@ -88,6 +91,7 @@ class Config(BaseSettings):
             if json_path.exists():
                 import json
 
+                logger.debug(f"Loading configuration from {json_path}")
                 with open(json_path, "r") as f:
                     data = json.load(f)
 

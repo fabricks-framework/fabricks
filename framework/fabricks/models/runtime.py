@@ -3,7 +3,7 @@
 from pydantic import BaseModel, ConfigDict, computed_field
 
 from fabricks.models.common import Database, ExtenderOptions, SparkOptions
-from fabricks.models.config import Config
+from fabricks.models.config import ConfigOptions
 from fabricks.models.step import BronzeConf, GoldConf, PowerBI, SilverConf
 from fabricks.utils.path import Path, resolve_path
 
@@ -87,7 +87,7 @@ class RuntimeConf(BaseModel):
     variables: dict[str, str] | None = None
     credentials: list[dict[str, str]] | None = None
 
-    config = Config()
+    config = ConfigOptions()
 
     @computed_field
     @property
