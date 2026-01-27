@@ -35,7 +35,9 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
                 with open(pyproject_path, "rb") as f:
                     data = tomllib.load(f)
 
-                return data.get("tool", {}).get("fabricks", {})
+                data = data.get("tool", {}).get("fabricks", {})
+                data["base"] = str(base)
+                return data
 
             return None
 
@@ -47,6 +49,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
                 with open(json_path, "r") as f:
                     data = json.load(f)
 
+                data["base"] = str(base)
                 return data
 
             return None
@@ -76,6 +79,10 @@ class ConfigOptions(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    base: str = Field(
+        validation_alias=AliasChoices("FABRICKS_BASE", "base"),
+        default="none",
+    )
     config: str = Field(
         validation_alias=AliasChoices("FABRICKS_CONFIG", "config"),
         default="none",
