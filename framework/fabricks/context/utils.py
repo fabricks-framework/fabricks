@@ -15,8 +15,8 @@ def pprint_runtime(extended: bool = True) -> None:
     print(f"    • Notebooks: {c.PATH_NOTEBOOKS.string}")
     print(f"    • Config: {c.PATH_CONFIG.string}")
     print(f"    • Log Level: {logging.getLevelName(c.LOGLEVEL)}")
-    print(f"    • Debug Mode: {'✓' if c.IS_DEBUGMODE else '✗'}")
-    print(f"    • Job Config from YAML: {'✓' if c.IS_JOB_CONFIG_FROM_YAML else '✗'}")
+    print(f"    • Debug Mode: {'✅' if c.IS_DEBUGMODE else '❌'}")
+    print(f"    • Job Config from YAML: {'✅' if c.IS_JOB_CONFIG_FROM_YAML else '❌'}")
 
     print("\n⚙️ STEPS:")
 
@@ -42,7 +42,7 @@ def pprint_runtime(extended: bool = True) -> None:
 
     # Unity Catalog Section
     print("\n🏛️ UNITY CATALOG:")
-    print(f"    • Enabled:  {'✓' if r.IS_UNITY_CATALOG else '✗'}")
+    print(f"    • Enabled:  {'✅' if r.IS_UNITY_CATALOG else '❌'}")
     if r.IS_UNITY_CATALOG and r.CATALOG:
         print(f"    • Catalog: {r.CATALOG}")
 
