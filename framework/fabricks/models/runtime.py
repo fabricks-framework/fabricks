@@ -146,21 +146,51 @@ class RuntimeConf(BaseModel):
         for objects in [self.bronze, self.silver, self.gold]:
             if objects:
                 for obj in objects:
-                    runtime_paths[obj.name] = resolve_path(obj.path_options.runtime, base=root)
+                    runtime_paths[obj.name] = resolve_path(
+                        obj.path_options.runtime,
+                        base=root,
+                        assume_git=True,
+                    )
 
         return RuntimeResolvedPathOptions(
             storage=storage_paths["fabricks"],
-            udfs=self._resolve_path(self.path_options.udfs, base=root),
-            parsers=self._resolve_path(self.path_options.parsers, base=root),
-            schedules=self._resolve_path(self.path_options.schedules, base=root),
-            views=self._resolve_path(self.path_options.views, base=root),
-            requirements=self._resolve_path(self.path_options.requirements, base=root),
+            udfs=self._resolve_path(
+                self.path_options.udfs,
+                base=root,
+                assume_git=True,
+            ),
+            parsers=self._resolve_path(
+                self.path_options.parsers,
+                base=root,
+                assume_git=True,
+            ),
+            schedules=self._resolve_path(
+                self.path_options.schedules,
+                base=root,
+                assume_git=True,
+            ),
+            views=self._resolve_path(
+                self.path_options.views,
+                base=root,
+                assume_git=True,
+            ),
+            requirements=self._resolve_path(
+                self.path_options.requirements,
+                base=root,
+                assume_git=True,
+            ),
             extenders=self._resolve_path(
                 self.path_options.extenders,
                 default="fabricks/extenders",
                 base=root,
+                assume_git=True,
             ),
-            masks=self._resolve_path(self.path_options.masks, default="fabricks/masks", base=root),
+            masks=self._resolve_path(
+                self.path_options.masks,
+                default="fabricks/masks",
+                base=root,
+                assume_git=True,
+            ),
             storages=storage_paths,
             runtimes=runtime_paths,
         )
