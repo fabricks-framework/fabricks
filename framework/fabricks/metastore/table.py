@@ -314,7 +314,7 @@ class Table(DbObject):
                 return True
             else:
                 raise e
-        
+
     @property
     def column_mapping_enabled(self) -> bool:
         assert self.registered, f"{self} not registered"
