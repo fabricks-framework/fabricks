@@ -67,6 +67,10 @@ class LogFormatter(logging.Formatter):
             if isinstance(df, DataFrame):
                 extra += f"\n---\n%df\n{df.toPandas().to_string(index=True)}\n---"
 
+        if hasattr(record, "json"):
+            json_data = record.__dict__.get("json")
+            extra += f"\n---\n{json.dumps(json_data, indent=2, default=str)}\n---"
+
         if self.debugmode:
             if hasattr(record, "sql"):
                 extra += f"\n---\n%sql\n{record.__dict__.get('sql')}\n---"
@@ -155,6 +159,9 @@ class AzureTableLogHandler(logging.Handler):
                         "traceback": str(logging.Formatter.formatException(self, e))[:1000],  # type: ignore
                     }
                     r["Exception"] = json.dumps(d)
+
+            if hasattr(record, "json"):
+                r["Data"] = json.dumps(record.__dict__.get("json", ""))
 
             if self.debugmode:
                 if hasattr(record, "content"):

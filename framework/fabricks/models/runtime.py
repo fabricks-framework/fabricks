@@ -2,7 +2,7 @@
 
 from typing import ClassVar
 
-from pydantic import BaseModel, ConfigDict, computed_field, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from fabricks.models.common import Database, ExtenderOptions, SparkOptions
 from fabricks.models.config import ConfigOptions
