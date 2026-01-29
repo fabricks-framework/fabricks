@@ -141,7 +141,9 @@ class Gold(BaseJob):
             invokers = self.invoker_options.run or [] if self.invoker_options else []
             assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
 
-            global_temp_view = self.invoke(path=self.paths.to_runtime, schema_only=schema_only, **kwargs)
+            path = self.invoker_options.run[0].notebook if invokers else self.paths.to_runtime
+
+            global_temp_view = self.invoke(path=path, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"
 
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
