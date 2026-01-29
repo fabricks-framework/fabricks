@@ -10,7 +10,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 
 UDFS: dict[str, Callable] = {}
 
-UDF_SCHEMA = CONF_RUNTIME.udf_options.schema or "default" if CONF_RUNTIME.udf_options else "default"
+UDF_SCHEMA = CONF_RUNTIME.udf_options.schema_name or "default" if CONF_RUNTIME.udf_options else "default"
 UDF_PREFIX = CONF_RUNTIME.udf_options.prefix or "udf_" if CONF_RUNTIME.udf_options else "udf_"
 
 

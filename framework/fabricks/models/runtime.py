@@ -2,7 +2,7 @@
 
 from typing import ClassVar
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field, Field
 
 from fabricks.models.common import Database, ExtenderOptions, SparkOptions
 from fabricks.models.config import ConfigOptions
@@ -28,7 +28,7 @@ class RuntimePathOptions(BaseModel):
 
 class UDFOptions(BaseModel):
     prefix: str | None = None
-    schema: str | None = None
+    schema_name: str | None = Field(..., alias="schema")
 
 
 class RuntimeResolvedPathOptions(BaseModel):
