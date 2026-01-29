@@ -74,9 +74,9 @@ def register_udf(
 
     if not is_registered(udf, spark) or override:
         if override:
-            DEFAULT_LOGGER.debug(f"override udf {udf}")
+            DEFAULT_LOGGER.debug(f"override udf {udf}", label="fabricks")
         else:
-            DEFAULT_LOGGER.debug(f"register udf {udf}")
+            DEFAULT_LOGGER.debug(f"register udf {udf}", label="fabricks")
 
         if extension is None:
             extension = get_extension(udf)
@@ -91,8 +91,6 @@ def register_udf(
         elif extension == "py":
             if not IS_UNITY_CATALOG:
                 assert path.exists(), f"udf not found ({path.string})"
-            else:
-                DEFAULT_LOGGER.debug(f"could not check if udf exists ({path.string})")
 
             spec = importlib.util.spec_from_file_location(udf, path.string)
             assert spec, f"no valid udf found ({path.string})"
