@@ -27,8 +27,4 @@ print(step, topic, item)
 
 # COMMAND ----------
 
-raise ValueError(f"arg1 {arg1}")
-
-# COMMAND ----------
-
-dbutils.notebook.exit(value="exit (0)")
+dbutils.notebook.exit(value="exit (0)")  # type: ignore
