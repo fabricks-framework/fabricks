@@ -7,6 +7,7 @@ from pyspark.sql import DataFrame
 
 from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.processor import Processor
+from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils._types import DataFrameLike
@@ -56,6 +57,7 @@ class Merger(Processor):
         assert "__key" or keys, f"{self} - __key or keys not found"
 
         return {
+            "debugmode": IS_DEBUGMODE,
             "src": src,
             "format": format,
             "tgt": self.table,

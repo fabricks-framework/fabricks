@@ -7,6 +7,7 @@ from pyspark.sql import DataFrame
 
 from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.generator import Generator
+from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -322,6 +323,7 @@ class Processor(Generator):
         parent_final = "__final"
 
         return {
+            "debugmode": IS_DEBUGMODE,
             "src": src,
             "format": format,
             "tgt": tgt,

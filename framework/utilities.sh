@@ -4,7 +4,6 @@
 # Exit on error
 set -e
 
-
 # Color codes
 RED="\033[1;31m"
 GREEN="\033[1;32m"
@@ -40,23 +39,20 @@ log_success() {
 	echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS] $msg${RESET}"
 }
 
-check_dependencies(){
+install_dependencies(){
     log_section "Installing Python dev & test dependencies"
     uv sync --group dev --group test || log_error "Failed to install Python dependencies"
+}
 
+check_dependencies(){
     log_section "Checking dependencies"
+
     log_info "Running deptry..."
     uv run deptry . || log_error "deptry found missing dependencies"
     log_success "All dependencies are satisfied"
-
-    log_section "Installing default dependencies"
-    uv sync
 }
 
 format() {
-    log_section "Installing Python dev & test dependencies"
-    uv sync --group dev --group test || log_error "Failed to install Python dependencies"
-
 	log_section "Python Formatting Started"
 
 	log_info "Running autoflake..."
@@ -78,9 +74,30 @@ format() {
 	uv run pyright . || log_warn "pyright found issues"
 
 	log_success "Python formatting completed"
+}
 
-    log_section "Installing default dependencies"
-    uv sync
+format_sql() {
+    log_section "SQL Formatting Started"
+
+    log_info "Running sqlfmt..."
+    uv run sqlfmt .
+
+    log_success "SQL formatting completed"
+}
+
+format_yaml() {
+    log_section "YAML Formatting Started"
+
+    log_info "Running yamlfix..."
+    uv run yamlfix . --exclude .venv --exclude .dev --exclude .idea --include *.yml
+
+    log_success "YAML formatting completed"
+}
+
+format_all() {
+    format
+    format_sql
+    format_yaml
 }
 
 format_commit(){
@@ -97,10 +114,14 @@ format_commit(){
 show_help() {
 		echo -e "${MAGENTA}Usage: $0 <command>${RESET}"
 		echo -e "${CYAN}Available commands:${RESET}"
-		echo -e "  ${GREEN}format${RESET}                - Run Python code formatters and linters"
-        echo -e "  ${GREEN}format-commit${RESET}         - Format code and commit changes"
-		echo -e "  ${GREEN}check-dependencies${RESET}    - Check for missing dependencies"
-		echo -e "  ${GREEN}help${RESET}                  - Show help"
+		echo -e "  ${GREEN}format${RESET}                   - Run Python code formatters and linters"
+        echo -e "  ${GREEN}format-sql${RESET}               - Run SQL formatter"
+        echo -e "  ${GREEN}format-yaml${RESET}              - Run YAML formatter"
+        echo -e "  ${GREEN}format-all${RESET}               - Run all formatters"
+        echo -e "  ${GREEN}format-commit${RESET}            - Format code and commit changes"
+        echo -e "  ${GREEN}install-dependencies${RESET}     - Install dev and test dependencies"
+		echo -e "  ${GREEN}check-dependencies${RESET}       - Check for missing dependencies"
+		echo -e "  ${GREEN}help${RESET}                     - Show help"
 }
 
 main() {
@@ -116,8 +137,20 @@ main() {
         format)
             format "$@"
             ;;
+        format-sql)
+            format_sql "$@"
+            ;;
+        format-yaml)
+            format_yaml "$@"
+            ;;
+        format-all)
+            format_all "$@"
+            ;;
         format-commit)
             format_commit "$@"
+            ;;
+        install-dependencies)
+            install_dependencies "$@"
             ;;
         check-dependencies)
             check_dependencies "$@"
