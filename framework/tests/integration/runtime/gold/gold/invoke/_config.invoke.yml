@@ -119,7 +119,7 @@
       mode: complete
     invoker_options:
       run:
-        - notebook: gold/gold/invoke/pre_run/exe
+        - notebook: gold/gold/invoke/pre_run/exe_2
           arguments:
             arg1: 1
 - job:
