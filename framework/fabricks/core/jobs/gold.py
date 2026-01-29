@@ -9,7 +9,7 @@ from typing_extensions import deprecated
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.udfs import is_registered, register_udf
+from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobGoldOptions, StepGoldConf, StepGoldOptions
 from fabricks.utils.path import Path
@@ -105,8 +105,8 @@ class Gold(BaseJob):
 
         else:
             matches = []
-            if "udf_" in self.sql:
-                r = re.compile(r"(?<=udf_)\w*(?=\()")
+            if f"{UDF_PREFIX}" in self.sql:
+                r = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
                 matches = re.findall(r, self.sql)
                 matches = set(matches)
                 matches = list(matches)

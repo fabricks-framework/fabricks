@@ -5,10 +5,13 @@ from typing import Callable, List, Optional
 
 from pyspark.sql import SparkSession
 
-from fabricks.context import CATALOG, IS_UNITY_CATALOG, PATH_UDFS, SPARK
+from fabricks.context import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, PATH_UDFS, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 
 UDFS: dict[str, Callable] = {}
+
+UDF_SCHEMA = CONF_RUNTIME.udf_options.schema or "default" if CONF_RUNTIME.udf_options else "default"
+UDF_PREFIX = CONF_RUNTIME.udf_options.prefix or "udf_" if CONF_RUNTIME.udf_options else "udf_"
 
 
 def register_all_udfs(extension: Optional[str] = None, override: bool = False):
@@ -47,12 +50,12 @@ def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
         spark = SPARK
     assert spark is not None
 
-    df = spark.sql("show user functions in default")
+    df = spark.sql(f"show user functions in {UDF_SCHEMA}")
 
     if CATALOG:
-        df = df.where(f"function == '{CATALOG}.default.udf_{udf}'")
+        df = df.where(f"function == '{CATALOG}.{UDF_SCHEMA}.{UDF_PREFIX}{udf}'")
     else:
-        df = df.where(f"function == 'spark_catalog.default.udf_{udf}'")
+        df = df.where(f"function == 'spark_catalog.{UDF_SCHEMA}.{UDF_PREFIX}{udf}'")
 
     return not df.isEmpty()
 
@@ -72,9 +75,9 @@ def register_udf(
 
     if not is_registered(udf, spark) or override:
         if override:
-            DEFAULT_LOGGER.debug(f"override udf {udf}")
+            DEFAULT_LOGGER.debug(f"override udf {udf}", extra={"label": "fabricks"})
         else:
-            DEFAULT_LOGGER.debug(f"register udf {udf}")
+            DEFAULT_LOGGER.debug(f"register udf {udf}", extra={"label": "fabricks"})
 
         if extension is None:
             extension = get_extension(udf)
@@ -89,8 +92,6 @@ def register_udf(
         elif extension == "py":
             if not IS_UNITY_CATALOG:
                 assert path.exists(), f"udf not found ({path.string})"
-            else:
-                DEFAULT_LOGGER.debug(f"could not check if udf exists ({path.string})")
 
             spec = importlib.util.spec_from_file_location(udf, path.string)
             assert spec, f"no valid udf found ({path.string})"

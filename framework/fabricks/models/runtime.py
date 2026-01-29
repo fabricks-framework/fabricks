@@ -26,6 +26,11 @@ class RuntimePathOptions(BaseModel):
     masks: str | None = None
 
 
+class UDFOptions(BaseModel):
+    prefix: str | None = None
+    schema: str | None = None
+
+
 class RuntimeResolvedPathOptions(BaseModel):
     """Resolved path objects for runtime components."""
 
@@ -80,7 +85,8 @@ class RuntimeConf(BaseModel):
     options: RuntimeOptions
     path_options: RuntimePathOptions
     extender_options: ExtenderOptions | None = None
-    spark_options: SparkOptions
+    spark_options: SparkOptions | None = None
+    udf_options: UDFOptions | None = None
     bronze: list[BronzeConf] | None = None
     silver: list[SilverConf] | None = None
     gold: list[GoldConf] | None = None
