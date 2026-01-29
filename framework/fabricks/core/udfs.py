@@ -74,9 +74,9 @@ def register_udf(
 
     if not is_registered(udf, spark) or override:
         if override:
-            DEFAULT_LOGGER.debug(f"override udf {udf}", label="fabricks")
+            DEFAULT_LOGGER.debug(f"override udf {udf}", extra={"label": "fabricks"})
         else:
-            DEFAULT_LOGGER.debug(f"register udf {udf}", label="fabricks")
+            DEFAULT_LOGGER.debug(f"register udf {udf}", extra={"label": "fabricks"})
 
         if extension is None:
             extension = get_extension(udf)
