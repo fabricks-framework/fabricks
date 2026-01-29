@@ -397,8 +397,16 @@ class Table(DbObject):
 
         return diffs
 
-    def update_schema(self, df: DataFrame, widen_types: bool = False):
+    def update_schema(self, df: DataFrame | None = None, schema: StructType | None = None, widen_types: bool = False):
+        if df is None and schema is None:
+            raise ValueError("Either df or schema must be provided")
+
+        if df is None and schema is not None:
+            df = self.spark.createDataFrame([], schema)
+
+        assert df is not None
         assert self.registered, f"{self} not registered"
+
         if not self.column_mapping_enabled:
             self.enable_column_mapping()
 
@@ -447,8 +455,16 @@ class Table(DbObject):
                 except Exception:
                     pass
 
-    def overwrite_schema(self, df: DataFrame):
+    def overwrite_schema(self, df: DataFrame | None = None, schema: StructType | None = None):
+        if df is None and schema is None:
+            raise ValueError("Either df or schema must be provided")
+
+        if df is None and schema is not None:
+            df = self.spark.createDataFrame([], schema)
+
+        assert df is not None
         assert self.registered, f"{self} not registered"
+
         if not self.column_mapping_enabled:
             self.enable_column_mapping()
 

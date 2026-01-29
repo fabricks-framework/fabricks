@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Union
 
 from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.types import StructType
 
 from fabricks.cdc.base._types import AllowedSources
 from fabricks.context import SPARK
@@ -151,6 +152,8 @@ class Configurator(ABC):
             df = self.table.dataframe
         elif isinstance(src, str):
             df = self.spark.sql(src)
+        elif isinstance(src, StructType):
+            df = self.spark.createDataFrame([], schema=src)
         else:
             raise ValueError(f"{src} not allowed")
 

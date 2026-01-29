@@ -16,8 +16,8 @@ from fabricks.metastore.database import Database
 
 class Deploy:
     @staticmethod
-    def tables(drop: bool = False):
-        deploy_tables(drop=drop)
+    def tables(drop: bool = False, update: bool = False):
+        deploy_tables(drop=drop, update=update)
 
     @staticmethod
     def views():
