@@ -16,6 +16,9 @@ class RuntimeTimeoutOptions(TypedDict):
     pre_run: int
     post_run: int
 
+class UDFOptions(TypedDict):
+    prefix: Optional[str]
+    schema: Optional[str]
 
 class StepTimeoutOptions(TypedDict):
     step: Optional[int]
@@ -123,6 +126,7 @@ class Conf(TypedDict):
     options: RuntimeOptions
     path_options: RuntimePathOptions
     extender_options: Optional[ExtenderOptions]
+    udf_options: Optional[UDFOptions]
     spark_options: SparkOptions
     bronze: Optional[List[Bronze]]
     silver: Optional[List[Silver]]
