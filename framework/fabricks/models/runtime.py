@@ -31,6 +31,11 @@ class UDFOptions(BaseModel):
     schema_name: str | None = Field(..., alias="schema")
 
 
+class MaskOptions(BaseModel):
+    prefix: str | None = None
+    schema_name: str | None = Field(..., alias="schema")
+
+
 class RuntimeResolvedPathOptions(BaseModel):
     """Resolved path objects for runtime components."""
 
@@ -87,6 +92,7 @@ class RuntimeConf(BaseModel):
     extender_options: ExtenderOptions | None = None
     spark_options: SparkOptions | None = None
     udf_options: UDFOptions | None = None
+    mask_options: MaskOptions | None = None
     bronze: list[BronzeConf] | None = None
     silver: list[SilverConf] | None = None
     gold: list[GoldConf] | None = None

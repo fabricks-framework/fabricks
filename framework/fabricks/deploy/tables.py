@@ -7,7 +7,7 @@ from fabricks.metastore.table import Table
 
 
 def deploy_tables(drop: bool = False, update: bool = False):
-    DEFAULT_LOGGER.info("create or replace fabricks (default) tables")
+    DEFAULT_LOGGER.info("create or replace fabricks (default) tables", extra={"label": "fabricks"})
 
     create_table_log(drop=drop, update=update)
     create_table_dummy(drop=drop, update=update)

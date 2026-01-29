@@ -4,7 +4,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 
 def deploy_views():
-    DEFAULT_LOGGER.info("create or replace fabricks (default) views")
+    DEFAULT_LOGGER.info("create or replace fabricks (default) views", extra={"label": "fabricks"})
 
     create_or_replace_jobs_view()
     create_or_replace_tables_view()
@@ -68,7 +68,7 @@ def create_or_replace_jobs_view():
             dmls.append(dml)
 
         except Exception:
-            DEFAULT_LOGGER.debug(f"could not find fabricks.{table}")
+            DEFAULT_LOGGER.debug(f"could not find fabricks.{table}", extra={"label": "fabricks"})
 
     sql = f"""create or replace view fabricks.jobs with schema evolution as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -95,7 +95,7 @@ def create_or_replace_tables_view():
             dmls.append(dml)
 
         except Exception:
-            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_tables")
+            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_tables", extra={"label": "fabricks"})
 
     sql = f"""create or replace view fabricks.tables with schema evolution as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -122,7 +122,7 @@ def create_or_replace_views_view():
             dmls.append(dml)
 
         except Exception:
-            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_views")
+            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_views", extra={"label": "fabricks"})
 
     sql = f"""create or replace view fabricks.views with schema evolution as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -152,7 +152,7 @@ def create_or_replace_dependencies_view():
             dmls.append(dml)
 
         except Exception:
-            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_dependencies")
+            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_dependencies", extra={"label": "fabricks"})
 
     sql = f"""create or replace view fabricks.dependencies with schema evolution  as {" union all ".join(dmls)}"""
     sql = fix_sql(sql)
@@ -179,7 +179,7 @@ def create_or_replace_dependencies_flat_view():
     """
     sql = fix_sql(sql)
 
-    DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_flat", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_flat", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
 
@@ -220,7 +220,7 @@ def create_or_replace_dependencies_unpivot_view():
     """
     sql = fix_sql(sql)
 
-    DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_unpivot", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_unpivot", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
 
@@ -261,7 +261,7 @@ def create_or_replace_dependencies_circular_view():
     """
     sql = fix_sql(sql)
 
-    DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_circular", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_circular", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
 
@@ -333,7 +333,7 @@ def create_or_replace_logs_pivot_view():
     """
     sql = fix_sql(sql)
 
-    DEFAULT_LOGGER.debug("create or replace fabricks.logs_pivot", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace fabricks.logs_pivot", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
 
@@ -360,7 +360,7 @@ def create_or_replace_last_schedule_view():
     """
     sql = fix_sql(sql)
 
-    DEFAULT_LOGGER.debug("create or replace fabricks.last_schedule", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace fabricks.last_schedule", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
 
@@ -387,7 +387,7 @@ def create_or_replace_last_status_view():
     """
     sql = fix_sql(sql)
 
-    DEFAULT_LOGGER.debug("create or replace fabricks.last_status", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace fabricks.last_status", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
 
@@ -426,7 +426,7 @@ def create_or_replace_previous_schedule_view():
     """
     sql = fix_sql(sql)
 
-    DEFAULT_LOGGER.debug("create or replace fabricks.previous_schedule", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace fabricks.previous_schedule", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
 
@@ -452,7 +452,7 @@ def create_or_replace_schedules_view():
     """
     sql = fix_sql(sql)
 
-    DEFAULT_LOGGER.debug("create or replace fabricks.schedules", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace fabricks.schedules", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
 
@@ -509,5 +509,5 @@ def create_or_replace_jobs_to_be_updated_view():
     """
     sql = fix_sql(sql)
 
-    DEFAULT_LOGGER.debug("create or replace fabricks.jobs_to_be_updated", extra={"sql": sql})
+    DEFAULT_LOGGER.debug("create or replace fabricks.jobs_to_be_updated", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)

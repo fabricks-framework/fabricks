@@ -32,8 +32,8 @@ class Deploy:
         deploy_masks(override=override)
 
     @staticmethod
-    def notebooks():
-        deploy_notebooks()
+    def notebooks(override: bool = False):
+        deploy_notebooks(overwrite=override)
 
     @staticmethod
     def schedules():
@@ -55,7 +55,7 @@ class Deploy:
 
     @staticmethod
     def armageddon(steps: Optional[Union[str, list[str]]] = None, nowait: bool = False):
-        DEFAULT_LOGGER.warning("!💥 armageddon 💥!")
+        DEFAULT_LOGGER.warning("!💥 armageddon 💥!", extra={"label": "fabricks"})
         print_atomic_bomb(nowait=nowait)
 
         DEFAULT_LOGGER.setLevel(logging.INFO)

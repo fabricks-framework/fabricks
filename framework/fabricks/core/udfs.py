@@ -18,14 +18,14 @@ def register_all_udfs(extension: Optional[str] = None, override: bool = False):
     """
     Register all user-defined functions (UDFs).
     """
-    DEFAULT_LOGGER.info("register udfs")
+    DEFAULT_LOGGER.info("register udfs", extra={"label": "fabricks"})
 
     for udf in get_udfs(extension=extension):
         split = udf.split(".")
         try:
             register_udf(udf=split[0], extension=split[1], override=override)
         except Exception as e:
-            DEFAULT_LOGGER.exception(f"could not register udf {udf}", exc_info=e)
+            DEFAULT_LOGGER.exception(f"could not register udf {udf}", exc_info=e, extra={"label": "fabricks"})
 
 
 def get_udfs(extension: Optional[str] = None) -> List[str]:

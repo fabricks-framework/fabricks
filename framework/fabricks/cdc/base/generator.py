@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Sequence, Union, cast
 
 from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
+from pyspark.sql.types import StructType
 
 from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.configurator import Configurator
@@ -156,7 +157,9 @@ class Generator(Configurator):
         **kwargs,
     ):
         if self.is_view:
-            assert not isinstance(src, DataFrameLike), "dataframe not allowed"
+            assert not isinstance(src, DataFrameLike) and not isinstance(src, StructType), (
+                "dataframe and structtype not allowed"
+            )
             self.create_or_replace_view(src=src)
 
         else:

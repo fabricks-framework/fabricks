@@ -65,7 +65,19 @@ class LogFormatter(logging.Formatter):
         if hasattr(record, "df"):
             df = record.__dict__.get("df")
             if isinstance(df, DataFrame):
-                extra += f"\n---\n%df\n{df.toPandas().to_string(index=True)}\n---"
+                try:
+                    pandas_df = df.toPandas()
+                except Exception:
+                    # Handle timestamp precision/timezone issues by casting to string
+                    from pyspark.sql.functions import col
+                    from pyspark.sql.types import TimestampType
+
+                    for field in df.schema.fields:
+                        if isinstance(field.dataType, TimestampType):
+                            df = df.withColumn(field.name, col(field.name).cast("string"))
+                    pandas_df = df.toPandas()
+
+                extra += f"\n---\n%df\n{pandas_df.to_string(index=True)}\n---"
 
         if hasattr(record, "json"):
             json_data = record.__dict__.get("json")

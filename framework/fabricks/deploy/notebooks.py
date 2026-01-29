@@ -13,7 +13,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 def deploy_notebook(notebook: str):
     from fabricks.api import notebooks
 
-    DEFAULT_LOGGER.debug(f"overwrite {notebook}")
+    DEFAULT_LOGGER.debug(f"overwrite {notebook}", extra={"label": "fabricks"})
 
     w = WorkspaceClient()
 
@@ -34,21 +34,24 @@ def deploy_notebook(notebook: str):
     )
 
 
-def deploy_notebooks():
-    DEFAULT_LOGGER.info("overwrite notebooks")
+def deploy_notebooks(overwrite: bool = False):
+    if overwrite:
+        DEFAULT_LOGGER.warning("overwrite notebooks", extra={"label": "fabricks"})
 
-    _create_dir_if_not_exists()
-    _clean_dir()
+        _create_dir_if_not_exists()
+        _clean_dir()
 
-    for n in [
-        "cluster",
-        "initialize",
-        "process",
-        "schedule",
-        "run",
-        "terminate",
-    ]:
-        deploy_notebook(notebook=n)
+        for n in [
+            "cluster",
+            "initialize",
+            "process",
+            "schedule",
+            "run",
+            "terminate",
+        ]:
+            deploy_notebook(notebook=n)
+    else:
+        DEFAULT_LOGGER.info("deploy notebooks skipped (overwrite=False)", extra={"label": "fabricks"})
 
 
 def _create_dir_if_not_exists():
