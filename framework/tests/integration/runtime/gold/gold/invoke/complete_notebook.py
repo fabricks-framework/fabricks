@@ -48,4 +48,4 @@ uuid = View.create_or_replace(df)
 
 # COMMAND ----------
 
-dbutils.notebook.exit(uuid) # type: ignore
+dbutils.notebook.exit(uuid)  # type: ignore
