@@ -4,6 +4,7 @@ from pathlib import Path as PathlibPath
 from typing import List, Optional, Union
 
 from pyspark.sql.dataframe import DataFrame
+from typing_extensions import deprecated
 
 from fabricks.utils.spark import spark
 
@@ -379,5 +380,38 @@ def resolve_fileshare_path(
     return FileSharePath(resolved_value)
 
 
-class Path(FileSharePath):
-    """Alias for FileSharePath for backward compatibility."""
+@deprecated("Use GitPath or FileSharePath directly instead.")
+class Path:
+    """
+    Legacy Path class with assume_git flag for backward compatibility.
+    """
+
+    def __new__(cls, path: Union[str, PathlibPath], assume_git: bool = False):
+        if assume_git:
+            return GitPath(path)
+        else:
+            return FileSharePath(path)
+
+    @classmethod
+    def from_uri(
+        cls,
+        uri: str,
+        regex: Optional[dict[str, str]] = None,
+        assume_git: Optional[bool] = False,
+    ):
+        """
+        Create a path from a URI with optional regex substitution.
+
+        Args:
+            uri: The URI string
+            regex: Dictionary of regex patterns to substitute
+            assume_git: If True, return GitPath; otherwise FileSharePath
+
+        Returns:
+            GitPath if assume_git is True, FileSharePath otherwise
+        """
+        if assume_git is None:
+            assume_git = False
+
+        path_class = GitPath if assume_git else FileSharePath
+        return path_class.from_uri(uri, regex=regex)
