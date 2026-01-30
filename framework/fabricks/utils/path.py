@@ -246,3 +246,13 @@ class Path:
 
     def __str__(self) -> str:
         return self.string
+
+
+class GitPath(Path):
+    def __init__(self, path: Union[str, PathlibPath]):
+        super().__init__(path=path, assume_git=True)
+
+
+class FileSharePath(Path):
+    def __init__(self, path: Union[str, PathlibPath]):
+        super().__init__(path=path, assume_git=False)

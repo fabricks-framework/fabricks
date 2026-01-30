@@ -5,9 +5,10 @@
 
 from databricks.sdk.runtime import dbutils, spark
 
+from fabricks.metastore.view import View
+
 # COMMAND ----------
 
-from fabricks.metastore.view import View
 
 # COMMAND ----------
 
@@ -47,4 +48,4 @@ uuid = View.create_or_replace(df)
 
 # COMMAND ----------
 
-dbutils.notebook.exit(uuid)
+dbutils.notebook.exit(uuid) # type: ignore
