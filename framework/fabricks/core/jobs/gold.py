@@ -12,7 +12,7 @@ from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobGoldOptions, StepGoldConf, StepGoldOptions
-from fabricks.utils.path import Path
+from fabricks.utils.path import GitPath
 from fabricks.utils.sqlglot import fix, get_tables
 
 
@@ -35,7 +35,7 @@ class Gold(BaseJob):
         )
 
     _sql: Optional[str] = None
-    _sql_path: Optional[Path] = None
+    _sql_path: Optional[GitPath] = None
     _schema_drift: Optional[bool] = None
 
     @classmethod
@@ -141,10 +141,16 @@ class Gold(BaseJob):
             invokers = self.invoker_options.run or [] if self.invoker_options else []
             assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
 
+            path = None
             if invokers:
-                path = invokers[0].notebook or self.paths.to_runtime
-            else:
+                from fabricks.context import PATH_RUNTIME
+
+                path = PATH_RUNTIME.joinpath(invokers[0].notebook) if invokers[0].notebook else None
+
+            if path is None:
                 path = self.paths.to_runtime
+
+            assert path is not None, "path could not be resolved"
 
             global_temp_view = self.invoke(path=path, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"

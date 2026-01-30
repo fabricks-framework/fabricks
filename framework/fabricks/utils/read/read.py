@@ -4,12 +4,12 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructType
 
 from fabricks.context import SPARK
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 
 
 @overload
 def read_stream(
-    src: Union[Path, str],
+    src: Union[FileSharePath, str],
     file_format: str,
     *,
     schema: StructType,
@@ -20,9 +20,9 @@ def read_stream(
 
 @overload
 def read_stream(
-    src: Union[Path, str],
+    src: Union[FileSharePath, str],
     file_format: str,
-    schema_path: Union[Path, str],
+    schema_path: Union[FileSharePath, str],
     *,
     options: Optional[dict[str, str]] = None,
     spark: Optional[SparkSession] = None,
@@ -31,7 +31,7 @@ def read_stream(
 
 @overload
 def read_stream(
-    src: Union[Path, str],
+    src: Union[FileSharePath, str],
     file_format: str,
     *,
     options: Optional[dict[str, str]] = None,
@@ -40,9 +40,9 @@ def read_stream(
 
 
 def read_stream(
-    src: Union[Path, str],
+    src: Union[FileSharePath, str],
     file_format: str,
-    schema_path: Optional[Union[Path, str]] = None,
+    schema_path: Optional[Union[FileSharePath, str]] = None,
     hints: Optional[Union[str, List[str]]] = None,
     schema: Optional[StructType] = None,
     options: Optional[dict[str, str]] = None,
@@ -60,9 +60,9 @@ def read_stream(
 
 
 def _read_stream(
-    src: Union[Path, str],
+    src: Union[FileSharePath, str],
     file_format: str,
-    schema_path: Optional[Union[Path, str]] = None,
+    schema_path: Optional[Union[FileSharePath, str]] = None,
     hints: Optional[Union[str, List[str]]] = None,
     schema: Optional[StructType] = None,
     options: Optional[dict[str, str]] = None,
@@ -78,7 +78,7 @@ def _read_stream(
     else:
         file_format = "binaryFile" if file_format == "pdf" else file_format
         if isinstance(src, str):
-            src = Path(src)
+            src = FileSharePath(src)
         if file_format == "delta":
             reader = spark.readStream.format("delta")
         else:
@@ -89,7 +89,8 @@ def _read_stream(
             else:
                 assert schema_path
                 if isinstance(schema_path, str):
-                    schema_path = Path(schema_path)
+                    schema_path = FileSharePath(schema_path)
+
                 reader.option("cloudFiles.inferColumnTypes", "true")
                 reader.option("cloudFiles.useIncrementalListing", "true")
                 reader.option("cloudFiles.schemaEvolutionMode", "addNewColumns")
@@ -117,7 +118,7 @@ def _read_stream(
 
 @overload
 def read_batch(
-    src: Union[Path, str],
+    src: Union[FileSharePath, str],
     file_format: str,
     schema: StructType,
     options: Optional[dict[str, str]] = None,
@@ -127,7 +128,7 @@ def read_batch(
 
 @overload
 def read_batch(
-    src: Union[Path, str],
+    src: Union[FileSharePath, str],
     file_format: str,
     *,
     options: Optional[dict[str, str]] = None,
@@ -136,7 +137,7 @@ def read_batch(
 
 
 def read_batch(
-    src: Union[Path, str],
+    src: Union[FileSharePath, str],
     file_format: str,
     schema: Optional[StructType] = None,
     options: Optional[dict[str, str]] = None,
@@ -152,7 +153,7 @@ def read_batch(
 
 
 def _read_batch(
-    src: Union[Path, str],
+    src: Union[FileSharePath, str],
     file_format: str,
     schema: Optional[StructType] = None,
     options: Optional[dict[str, str]] = None,
@@ -169,7 +170,7 @@ def _read_batch(
         path_glob_filter = file_format
         file_format = "binaryFile" if file_format == "pdf" else file_format
         if isinstance(src, str):
-            src = Path(src)
+            src = FileSharePath(src)
         reader = spark.read.format(file_format)
         reader = reader.option("pathGlobFilter", f"*.{path_glob_filter}")
         if schema:
@@ -201,7 +202,7 @@ def read(
 def read(
     stream: bool,
     *,
-    path: Union[Path, str],
+    path: Union[FileSharePath, str],
     file_format: str = "delta",
     metadata: Optional[bool] = False,
     spark: Optional[SparkSession] = None,
@@ -212,7 +213,7 @@ def read(
 def read(
     stream: bool,
     *,
-    path: Union[Path, str],
+    path: Union[FileSharePath, str],
     file_format: str,
     schema: StructType,
     options: Optional[dict[str, str]] = None,
@@ -225,9 +226,9 @@ def read(
 def read(
     stream: bool,
     *,
-    path: Union[Path, str],
+    path: Union[FileSharePath, str],
     file_format: str,
-    schema_path: Union[Path, str],
+    schema_path: Union[FileSharePath, str],
     options: Optional[dict[str, str]] = None,
     metadata: Optional[bool] = True,
     spark: Optional[SparkSession] = None,
@@ -237,9 +238,9 @@ def read(
 def read(
     stream: bool,
     table: Optional[str] = None,
-    path: Optional[Union[Path, str]] = None,
+    path: Optional[Union[FileSharePath, str]] = None,
     file_format: Optional[str] = None,
-    schema_path: Optional[Union[Path, str]] = None,
+    schema_path: Optional[Union[FileSharePath, str]] = None,
     schema: Optional[StructType] = None,
     hints: Optional[Union[str, List[str]]] = None,
     options: Optional[dict[str, str]] = None,

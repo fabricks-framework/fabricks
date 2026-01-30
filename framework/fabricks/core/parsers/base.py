@@ -7,7 +7,7 @@ from pyspark.sql.types import MapType, StringType
 
 from fabricks.core.parsers.utils import clean
 from fabricks.models import ParserOptions
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.read.read import read
 
 
@@ -33,8 +33,8 @@ class BaseParser(ABC):
 
     def parse(
         self,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
         stream: bool,
     ) -> DataFrame:
@@ -55,8 +55,8 @@ class BaseParser(ABC):
     @final
     def get_data(
         self,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
         stream: bool,
     ) -> DataFrame:
@@ -64,8 +64,8 @@ class BaseParser(ABC):
         Retrieves and processes data from the specified data path using the provided schema.
 
         Args:
-            data_path (Path): The path to the data file.
-            schema_path (Path): The path to the schema file.
+            data_path (FileSharePath): The path to the data file.
+            schema_path (FileSharePath): The path to the schema file.
             spark (SparkSession): The SparkSession object.
             stream (bool): Indicates whether the data should be processed as a stream.
 

@@ -2,19 +2,19 @@ from dataclasses import dataclass
 from typing import Final
 
 from fabricks.context import FABRICKS_STORAGE, PATH_RUNTIME
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath, GitPath
 
 
 @dataclass(frozen=True)
 class Paths:
-    tests: Path
-    landing: Path
-    raw: Path
-    out: Path
+    tests: GitPath
+    landing: FileSharePath
+    raw: FileSharePath
+    out: FileSharePath
 
 
 paths: Final[Paths] = Paths(
-    tests=Path(PATH_RUNTIME.pathlibpath.parent.resolve(), assume_git=True),
+    tests=GitPath(PATH_RUNTIME.pathlibpath.parent.resolve()),
     landing=FABRICKS_STORAGE.joinpath("landing"),
     raw=FABRICKS_STORAGE.joinpath("raw"),
     out=FABRICKS_STORAGE.joinpath("out"),

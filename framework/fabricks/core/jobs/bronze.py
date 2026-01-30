@@ -13,7 +13,7 @@ from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobBronzeOptions, JobDependency, StepBronzeConf, StepBronzeOptions
 from fabricks.utils.helpers import concat_ws
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
 
 
@@ -77,10 +77,10 @@ class Bronze(BaseJob):
         return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property
-    def data_path(self) -> Path:
+    def data_path(self) -> FileSharePath:
         uri = self.options.uri
         assert uri is not None, "no uri provided in options"
-        path = Path.from_uri(uri, regex=VARIABLES)
+        path = FileSharePath.from_uri(uri, regex=VARIABLES)
         return path
 
     def get_dependencies(self, *s) -> Sequence[JobDependency]:

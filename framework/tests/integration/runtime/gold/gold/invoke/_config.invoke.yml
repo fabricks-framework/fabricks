@@ -117,9 +117,10 @@
     tags: [test]
     options:
       mode: complete
+      notebook: true
     invoker_options:
       run:
-        - notebook: gold/gold/invoke/pre_run/exe_2
+        - notebook: gold/gold/invoke/complete_notebook
           arguments:
             arg1: 1
 - job:

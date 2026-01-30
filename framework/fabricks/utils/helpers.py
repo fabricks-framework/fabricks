@@ -8,7 +8,7 @@ from pyspark.sql import DataFrame
 from typing_extensions import deprecated
 
 from fabricks.utils._types import DataFrameLike
-from fabricks.utils.path import Path
+from fabricks.utils.path import GitPath
 from fabricks.utils.spark import spark
 
 
@@ -197,12 +197,12 @@ def run_in_parallel(
     return results
 
 
-def run_notebook(path: Path, timeout: Optional[int] = None, **kwargs):
+def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
     """
     Runs a notebook located at the given path.
 
     Args:
-        path (Path): The path to the notebook file.
+        path (GitPath): The path to the notebook file.
         timeout (Optional[int]): The maximum execution time for the notebook in seconds. Defaults to None.
         **kwargs: Additional keyword arguments to be passed to the notebook.
 
@@ -229,7 +229,7 @@ def md5(s: Any) -> str:
     return md5.hexdigest()
 
 
-def load_module_from_path(name: str, path: Path):
+def load_module_from_path(name: str, path: GitPath):
     from importlib.util import module_from_spec, spec_from_file_location
 
     if path.parent not in sys.path:

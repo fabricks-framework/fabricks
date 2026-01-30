@@ -28,7 +28,7 @@ from fabricks.models.job import GoldOptions as JobGoldOptions
 from fabricks.models.job import JobConf, JobConfBase, JobConfBronze, JobConfGold, JobConfSilver, ParserOptions
 from fabricks.models.job import SilverOptions as JobSilverOptions
 from fabricks.models.job import TOptions
-from fabricks.models.path import Path, Paths
+from fabricks.models.path import Paths
 
 # Runtime models
 from fabricks.models.runtime import RuntimeConf, RuntimeOptions, RuntimePathOptions, RuntimeTimeoutOptions
@@ -88,7 +88,6 @@ __all__ = [
     "JobDependency",
     "JobGoldOptions",
     "JobSilverOptions",
-    "Path",
     "Paths",
     "SchemaDependencies",
     "TOptions",

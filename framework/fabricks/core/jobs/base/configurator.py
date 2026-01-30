@@ -32,7 +32,6 @@ from fabricks.models import (
     get_job_id,
 )
 from fabricks.models.runtime import RuntimeConf
-from fabricks.utils.path import Path
 
 
 class Configurator(ABC):
@@ -71,7 +70,6 @@ class Configurator(ABC):
     _timeout: Optional[int] = None
     _paths: Optional[Paths] = None
     _table: Optional[Table] = None
-    _root: Optional[Path] = None
 
     _cdc: Optional[Union[NoCDC, SCD1, SCD2]] = None
     _change_data_capture: Optional[AllowedChangeDataCaptures] = None

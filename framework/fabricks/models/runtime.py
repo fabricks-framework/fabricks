@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 from fabricks.models.common import Database, ExtenderOptions, SparkOptions
 from fabricks.models.config import ConfigOptions
 from fabricks.models.step import BronzeConf, GoldConf, PowerBI, SilverConf
-from fabricks.utils.path import Path, resolve_path
+from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, resolve_git_path
 
 
 class RuntimePathOptions(BaseModel):
@@ -41,17 +41,17 @@ class RuntimeResolvedPathOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
-    storage: Path
-    udfs: Path
-    parsers: Path
-    schedules: Path
-    views: Path
-    requirements: Path
-    extenders: Path
-    masks: Path
+    storage: FileSharePath
+    udfs: GitPath
+    parsers: GitPath
+    schedules: GitPath
+    views: GitPath
+    requirements: GitPath
+    extenders: GitPath
+    masks: GitPath
 
-    storages: dict[str, Path]
-    runtimes: dict[str, Path]
+    storages: dict[str, FileSharePath]
+    runtimes: dict[str, GitPath]
 
 
 class RuntimeTimeoutOptions(BaseModel):
@@ -109,23 +109,6 @@ class RuntimeConf(BaseModel):
         """Get all runtime paths resolved as Path objects."""
         return self._resolve_paths()
 
-    def _resolve_path(
-        self,
-        path: str | None,
-        default: str | None = None,
-        base: Path | str | None = None,
-        apply_variables: bool = False,
-        assume_git: bool = False,
-    ) -> Path:
-        return resolve_path(
-            path=path,
-            default=default,
-            base=base,
-            apply_variables=apply_variables,
-            variables=self.variables or {},
-            assume_git=assume_git,
-        )
-
     def _resolve_paths(self) -> RuntimeResolvedPathOptions:
         """
         Get all runtime paths resolved as Path objects.
@@ -137,15 +120,15 @@ class RuntimeConf(BaseModel):
             RuntimeResolvedPathOptions with all paths resolved
         """
         # Collect all storage paths with variable substitution
-        storage_paths: dict[str, Path] = {
-            "fabricks": self._resolve_path(self.path_options.storage, apply_variables=True)
+        storage_paths: dict[str, FileSharePath] = {
+            "fabricks": resolve_fileshare_path(self.path_options.storage, apply_variables=True)
         }
 
         # Add storage paths for bronze/silver/gold/databases
         for objects in [self.bronze, self.silver, self.gold, self.databases]:
             if objects:
                 for obj in objects:
-                    storage_paths[obj.name] = resolve_path(
+                    storage_paths[obj.name] = resolve_fileshare_path(
                         obj.path_options.storage,
                         apply_variables=True,
                         variables=self.variables or {},
@@ -154,54 +137,46 @@ class RuntimeConf(BaseModel):
         root = self.config.resolved_paths.runtime
 
         # Collect all runtime paths with base path joining
-        runtime_paths: dict[str, Path] = {}
+        runtime_paths: dict[str, GitPath] = {}
         for objects in [self.bronze, self.silver, self.gold]:
             if objects:
                 for obj in objects:
-                    runtime_paths[obj.name] = resolve_path(
+                    runtime_paths[obj.name] = resolve_git_path(
                         obj.path_options.runtime,
                         base=root,
-                        assume_git=True,
                     )
 
         return RuntimeResolvedPathOptions(
             storage=storage_paths["fabricks"],
-            udfs=self._resolve_path(
-                self.path_options.udfs,
+            udfs=resolve_git_path(
+                path=self.path_options.udfs,
                 base=root,
-                assume_git=True,
             ),
-            parsers=self._resolve_path(
-                self.path_options.parsers,
+            parsers=resolve_git_path(
+                path=self.path_options.parsers,
                 base=root,
-                assume_git=True,
             ),
-            schedules=self._resolve_path(
-                self.path_options.schedules,
+            schedules=resolve_git_path(
+                path=self.path_options.schedules,
                 base=root,
-                assume_git=True,
             ),
-            views=self._resolve_path(
-                self.path_options.views,
+            views=resolve_git_path(
+                path=self.path_options.views,
                 base=root,
-                assume_git=True,
             ),
-            requirements=self._resolve_path(
-                self.path_options.requirements,
+            requirements=resolve_git_path(
+                path=self.path_options.requirements,
                 base=root,
-                assume_git=True,
             ),
-            extenders=self._resolve_path(
-                self.path_options.extenders,
+            extenders=resolve_git_path(
+                path=self.path_options.extenders,
+                base=root,
                 default="fabricks/extenders",
-                base=root,
-                assume_git=True,
             ),
-            masks=self._resolve_path(
-                self.path_options.masks,
-                default="fabricks/masks",
+            masks=resolve_git_path(
+                path=self.path_options.masks,
                 base=root,
-                assume_git=True,
+                default="fabricks/masks",
             ),
             storages=storage_paths,
             runtimes=runtime_paths,

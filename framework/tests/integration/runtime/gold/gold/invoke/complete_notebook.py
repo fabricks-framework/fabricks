@@ -1,5 +1,14 @@
 # Databricks notebook source
-from databricks.sdk.runtime import dbutils
+# MAGIC %run ./add_missing_modules
+
+# COMMAND ----------
+
+from databricks.sdk.runtime import dbutils, spark
+
+from fabricks.metastore.view import View
+
+# COMMAND ----------
+
 
 # COMMAND ----------
 
@@ -27,4 +36,16 @@ print(step, topic, item)
 
 # COMMAND ----------
 
-dbutils.notebook.exit(value="exit (0)")  # type: ignore
+assert arg1 == "1"
+
+# COMMAND ----------
+
+df = spark.sql(f"select {arg1} as dummy")
+
+# COMMAND ----------
+
+uuid = View.create_or_replace(df)
+
+# COMMAND ----------
+
+dbutils.notebook.exit(uuid)  # type: ignore

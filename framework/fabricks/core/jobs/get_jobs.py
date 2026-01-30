@@ -11,7 +11,7 @@ from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.get_job import get_job, get_job_internal
 from fabricks.models import AllowedModes
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
-from fabricks.utils.path import Path
+from fabricks.utils.path import GitPath
 from fabricks.utils.read import read_yaml
 
 
@@ -40,7 +40,7 @@ def get_jobs_internal_df() -> DataFrame:
     if IS_JOB_CONFIG_FROM_YAML:
         schema = create_spark_schema(JobConfGeneric)
 
-        def _read_yaml(path: Path):
+        def _read_yaml(path: GitPath):
             df = SPARK.createDataFrame(read_yaml(path, root="job"), schema=schema)  # type: ignore
             if df:
                 df = df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))

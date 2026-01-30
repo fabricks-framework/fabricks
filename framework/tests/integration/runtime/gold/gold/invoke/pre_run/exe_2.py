@@ -27,4 +27,8 @@ print(step, topic, item)
 
 # COMMAND ----------
 
+assert arg1 == "1"
+
+# COMMAND ----------
+
 dbutils.notebook.exit(value="exit (0)")  # type: ignore

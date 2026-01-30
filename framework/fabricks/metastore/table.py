@@ -12,7 +12,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore._types import AddedColumn, ChangedColumn, DroppedColumn, SchemaDiff
 from fabricks.metastore.dbobject import DbObject
 from fabricks.models import ForeignKey, PrimaryKey
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.sqlglot import fix
 
 
@@ -22,11 +22,11 @@ class Table(DbObject):
         return cls(step, topic, item, spark=spark)
 
     @property
-    def deltapath(self) -> Path:
+    def deltapath(self) -> FileSharePath:
         return self.database.delta_path.joinpath("/".join(self.levels))
 
     @property
-    def delta_path(self) -> Path:
+    def delta_path(self) -> FileSharePath:
         return self.database.delta_path.joinpath("/".join(self.levels))
 
     @property

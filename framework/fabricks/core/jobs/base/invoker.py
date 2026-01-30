@@ -10,7 +10,7 @@ from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.get_schedule import get_schedule
 from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
-from fabricks.utils.path import Path
+from fabricks.utils.path import GitPath
 
 
 class Invoker(Checker):
@@ -41,7 +41,7 @@ class Invoker(Checker):
             assert notebook, "notebook mandatory"
             path = PATH_RUNTIME.joinpath(notebook)
 
-        assert path is not None, "path mandatory"
+        assert path is not None, "path could not be resolved"
 
         timeout = invoker.get("timeout") if isinstance(invoker, dict) else invoker.timeout
         arguments = invoker.get("arguments") if isinstance(invoker, dict) else invoker.arguments
@@ -113,7 +113,7 @@ class Invoker(Checker):
 
     def _run_notebook(
         self,
-        path: Path,
+        path: GitPath,
         arguments: Optional[dict] = None,
         timeout: Optional[int] = None,
         schedule: Optional[str] = None,
@@ -122,7 +122,7 @@ class Invoker(Checker):
         Invokes a notebook job.
 
         Args:
-            path (Optional[Path]): The path to the notebook file. If not provided, it will be retrieved from the invoker options.
+            path (Optional[GitPath]): The path to the notebook file. If not provided, it will be retrieved from the invoker options.
             arguments (Optional[dict]): Additional arguments to pass to the notebook job. If not provided, it will be retrieved from the invoker options.
             schedule (Optional[str]): The schedule for the job. If provided, schedule variables will be retrieved.
 

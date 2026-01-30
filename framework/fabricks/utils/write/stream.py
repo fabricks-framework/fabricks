@@ -3,12 +3,12 @@ from typing import Callable, Optional
 from pyspark.sql import DataFrame
 from pyspark.sql.streaming.query import StreamingQuery
 
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 
 
 def write_stream(
     df: DataFrame,
-    checkpoints_path: Path,
+    checkpoints_path: FileSharePath,
     func: Callable,
     timeout: Optional[int] = 18000,
 ) -> StreamingQuery:

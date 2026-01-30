@@ -9,7 +9,7 @@ from pyspark.sql.functions import expr, lit, when
 from fabricks.core.parsers import BaseParser, parser
 from fabricks.models.job import ParserOptions
 from fabricks.utils.helpers import concat_dfs
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
 
 
@@ -24,13 +24,13 @@ class DeleteLogBaseParser(BaseParser):
     def _parse(
         self,
         stream: bool,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
     ) -> Optional[DataFrame]:
         df = read(
             stream=stream,
-            path=data_path,
+            FileSharePath=data_path,
             file_format=self.file_format,
             schema_path=schema_path,
             options=self.options.read_options if self.options else {},
@@ -50,8 +50,8 @@ class DeleteLogBaseParser(BaseParser):
 
     def _parse_delete_log(
         self,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
         stream: bool,
     ) -> Optional[DataFrame]:
@@ -60,7 +60,7 @@ class DeleteLogBaseParser(BaseParser):
         try:
             df = read(
                 stream=stream,
-                path=data_path,
+                FileSharePath=data_path,
                 file_format=self.file_format,
                 schema_path=schema_path,
                 options=self.options.read_options if self.options else {},
@@ -86,8 +86,8 @@ class DeleteLogBaseParser(BaseParser):
 
     def parse(
         self,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
         stream: bool,
     ) -> DataFrame:
@@ -113,8 +113,8 @@ class DeleteLogBaseParser(BaseParser):
 class MonarchParser(DeleteLogBaseParser):
     def parse(
         self,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
         stream: bool,
     ) -> DataFrame:

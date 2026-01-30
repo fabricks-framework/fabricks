@@ -6,7 +6,7 @@ from pathlib import Path as PathLibPath
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
-from fabricks.utils.path import Path, resolve_path
+from fabricks.utils.path import GitPath, resolve_git_path
 
 
 class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
@@ -81,10 +81,10 @@ class ResolvedPathOptions(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
-    base: Path
-    config: Path
-    runtime: Path
-    notebooks: Path
+    base: GitPath
+    config: GitPath
+    runtime: GitPath
+    notebooks: GitPath
 
 
 class ConfigOptions(BaseSettings):
@@ -190,19 +190,6 @@ class ConfigOptions(BaseSettings):
             file_secret_settings,
         )
 
-    def _resolve_path(
-        self,
-        path: str | None,
-        default: str | None = None,
-        base: Path | str | None = None,
-    ) -> Path:
-        return resolve_path(
-            path=path,
-            default=default,
-            base=base,
-            assume_git=True,
-        )
-
     def _resolve_paths(self) -> ResolvedPathOptions:
         """
         Get all paths resolved as Path objects.
@@ -214,13 +201,13 @@ class ConfigOptions(BaseSettings):
             ResolvedPathOptions with all paths resolved
         """
         # Collect all storage paths with variable substitution
-        root = Path(self.base, assume_git=True)
+        root = GitPath(self.base)
 
         return ResolvedPathOptions(
-            base=self._resolve_path(self.base),
-            config=self._resolve_path(self.config, base=root),
-            runtime=self._resolve_path(self.runtime, base=root),
-            notebooks=self._resolve_path(self.notebooks, base=root),
+            base=resolve_git_path(path=self.base),
+            config=resolve_git_path(path=self.config, base=root),
+            runtime=resolve_git_path(path=self.runtime, base=root),
+            notebooks=resolve_git_path(path=self.notebooks, base=root),
         )
 
     @computed_field
