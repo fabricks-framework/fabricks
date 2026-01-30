@@ -16,9 +16,11 @@ class RuntimeTimeoutOptions(TypedDict):
     pre_run: int
     post_run: int
 
+
 class UDFOptions(TypedDict):
     prefix: Optional[str]
     schema: Optional[str]
+
 
 class StepTimeoutOptions(TypedDict):
     step: Optional[int]

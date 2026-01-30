@@ -126,7 +126,18 @@ class Gold(BaseJob):
             invokers = self.options.invokers.get_list("run")
             assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
 
-            global_temp_view = self.invoke(path=self.paths.runtime, schema_only=schema_only, **kwargs)
+            path = None
+            if invokers:
+                notebook = invokers[0].get("notebook")
+                if notebook:
+                    from fabricks.context import PATH_RUNTIME
+
+                    path = PATH_RUNTIME.joinpath(notebook)
+
+            if path is None:
+                path = self.paths.runtime
+
+            global_temp_view = self.invoke(path=path, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"
 
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")

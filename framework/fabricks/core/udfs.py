@@ -5,13 +5,14 @@ from typing import Callable, List, Optional
 
 from pyspark.sql import SparkSession
 
-from fabricks.context import CATALOG, IS_UNITY_CATALOG, PATH_UDFS, SPARK, CONF_RUNTIME
+from fabricks.context import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, PATH_UDFS, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 
 UDFS: dict[str, Callable] = {}
 
 udf_schema = CONF_RUNTIME.get("udf_options", {}).get("schema", "default")
 udf_prefix = CONF_RUNTIME.get("udf_options", {}).get("prefix", "udf_")
+
 
 def register_all_udfs(extension: Optional[str] = None, override: bool = False):
     """
