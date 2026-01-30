@@ -312,7 +312,6 @@ def resolve_git_path(
     path: str | None,
     default: str | None = None,
     base: GitPath | str | None = None,
-    apply_variables: bool = False,
     variables: dict[str, str] | None = None,
 ) -> GitPath:
     """
@@ -335,7 +334,7 @@ def resolve_git_path(
     if resolved_value is None:
         raise ValueError("path and default cannot both be None")
 
-    if apply_variables:
+    if variables:
         return GitPath.from_uri(resolved_value, regex=variables)
 
     if base:
@@ -348,7 +347,6 @@ def resolve_fileshare_path(
     path: str | None,
     default: str | None = None,
     base: FileSharePath | str | None = None,
-    apply_variables: bool = False,
     variables: dict[str, str] | None = None,
 ) -> FileSharePath:
     """
@@ -371,7 +369,7 @@ def resolve_fileshare_path(
     if resolved_value is None:
         raise ValueError("path and default cannot both be None")
 
-    if apply_variables:
+    if variables:
         return FileSharePath.from_uri(resolved_value, regex=variables)
 
     if base:
