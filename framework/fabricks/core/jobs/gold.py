@@ -135,7 +135,7 @@ class Gold(BaseJob):
                     path = PATH_RUNTIME.joinpath(notebook)
 
             if path is None:
-                path = self.paths.runtime      
+                path = self.paths.runtime
 
             global_temp_view = self.invoke(path=path, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"
