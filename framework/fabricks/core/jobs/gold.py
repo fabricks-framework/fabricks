@@ -131,6 +131,9 @@ class Gold(BaseJob):
             else:
                 path = self.paths.runtime
 
+            if not isinstance(path, Path):
+                path = Path(path, assume_git=True)
+
             global_temp_view = self.invoke(path=path, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"
 
