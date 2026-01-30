@@ -57,19 +57,19 @@ def test_update_configurations():
     step.update_configurations()
 
     df = SPARK.sql("select * from fabricks.gold_jobs")
-    assert df.count() == 51, f"{df.count()} job(s) <> 51"
+    assert df.count() == 53, f"{df.count()} job(s) <> 53"
 
     SPARK.sql("update fabricks.gold_jobs set options = null")
 
     df = SPARK.sql("select * from fabricks.gold_jobs where options is null")
-    assert df.count() == 51, f"{df.count()} job(s) without options <> 51"
+    assert df.count() == 53, f"{df.count()} job(s) without options <> 53"
 
     SPARK.sql("delete from fabricks.gold_jobs where topic == 'scd1'")
 
     step.update_configurations()
 
     df = SPARK.sql("select * from fabricks.gold_jobs")
-    assert df.count() == 51, f"{df.count()} job(s) <> 51"
+    assert df.count() == 53, f"{df.count()} job(s) <> 53"
 
     df = SPARK.sql("select * from fabricks.gold_jobs where options is null")
     assert df.count() == 0, f"{df.count()} job(s) without options <> 0"
