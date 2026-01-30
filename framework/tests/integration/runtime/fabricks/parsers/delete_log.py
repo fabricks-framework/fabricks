@@ -8,8 +8,8 @@ from pyspark.sql.functions import expr, lit, when
 
 from fabricks.core.parsers import BaseParser
 from fabricks.models import ParserOptions
-from fabricks.utils.FileSharePath import FileSharePath
 from fabricks.utils.helpers import concat_dfs
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
 
 
@@ -31,7 +31,7 @@ class DeleteLogBaseParser(BaseParser):
     ) -> Optional[DataFrame]:
         df = read(
             stream=stream,
-            FileSharePath=data_path,
+            path=data_path,
             file_format=self.file_format,
             schema_path=schema_path,
             options=self.options.read_options if self.options else {},
@@ -61,7 +61,7 @@ class DeleteLogBaseParser(BaseParser):
         try:
             df = read(
                 stream=stream,
-                FileSharePath=data_path,
+                path=data_path,
                 file_format=self.file_format,
                 schema_path=schema_path,
                 options=self.options.read_options if self.options else {},

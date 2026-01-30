@@ -30,7 +30,7 @@ class DeleteLogBaseParser(BaseParser):
     ) -> Optional[DataFrame]:
         df = read(
             stream=stream,
-            FileSharePath=data_path,
+            path=data_path,
             file_format=self.file_format,
             schema_path=schema_path,
             options=self.options.read_options if self.options else {},
@@ -60,7 +60,7 @@ class DeleteLogBaseParser(BaseParser):
         try:
             df = read(
                 stream=stream,
-                FileSharePath=data_path,
+                path=data_path,
                 file_format=self.file_format,
                 schema_path=schema_path,
                 options=self.options.read_options if self.options else {},

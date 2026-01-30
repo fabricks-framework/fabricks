@@ -52,7 +52,7 @@ check_dependencies(){
     log_success "All dependencies are satisfied"
 }
 
-format() {
+format_python() {
 	log_section "Python Formatting Started"
 
 	log_info "Running autoflake..."
@@ -95,7 +95,7 @@ format_yaml() {
 }
 
 format_all() {
-    format
+    format_python
     format_sql
     format_yaml
 }
@@ -112,16 +112,16 @@ format_commit(){
 }
 
 show_help() {
-		echo -e "${MAGENTA}Usage: $0 <command>${RESET}"
-		echo -e "${CYAN}Available commands:${RESET}"
-		echo -e "  ${GREEN}format${RESET}                   - Run Python code formatters and linters"
-        echo -e "  ${GREEN}format-sql${RESET}               - Run SQL formatter"
-        echo -e "  ${GREEN}format-yaml${RESET}              - Run YAML formatter"
-        echo -e "  ${GREEN}format-all${RESET}               - Run all formatters"
-        echo -e "  ${GREEN}format-commit${RESET}            - Format code and commit changes"
-        echo -e "  ${GREEN}install-dependencies${RESET}     - Install dev and test dependencies"
-		echo -e "  ${GREEN}check-dependencies${RESET}       - Check for missing dependencies"
-		echo -e "  ${GREEN}help${RESET}                     - Show help"
+		echo -e "   ${MAGENTA}Usage: $0 <command>${RESET}"
+		echo -e "   ${CYAN}Available commands:${RESET}"
+		echo -e "   ${GREEN}format-python${RESET}            - Run Python code formatters and linters"
+        echo -e "   ${GREEN}format-sql${RESET}               - Run SQL formatter"
+        echo -e "   ${GREEN}format-yaml${RESET}              - Run YAML formatter"
+        echo -e "   ${GREEN}format-all${RESET}               - Run all formatters"
+        echo -e "   ${GREEN}format-commit${RESET}            - Format code and commit changes"
+        echo -e "   ${GREEN}install-dependencies${RESET}     - Install dev and test dependencies"
+		echo -e "   ${GREEN}check-dependencies${RESET}       - Check for missing dependencies"
+		echo -e "   ${GREEN}help${RESET}                     - Show help"
 }
 
 main() {
@@ -134,8 +134,8 @@ main() {
     shift
 
     case "$command" in
-        format)
-            format "$@"
+        format-python)
+            format_python "$@"
             ;;
         format-sql)
             format_sql "$@"
