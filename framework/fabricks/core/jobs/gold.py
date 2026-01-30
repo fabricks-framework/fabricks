@@ -126,13 +126,16 @@ class Gold(BaseJob):
             invokers = self.options.invokers.get_list("run")
             assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
 
+            path = None
             if invokers:
-                path = invokers[0].get("notebook", self.paths.runtime)
-            else:
-                path = self.paths.runtime
+                notebook = invokers[0].get("notebook")
+                if notebook:
+                    from fabricks.context import PATH_RUNTIME
 
-            if not isinstance(path, Path):
-                path = Path(path, assume_git=True)
+                    path = PATH_RUNTIME.joinpath(notebook)
+
+            if path is None:
+                path = self.paths.runtime      
 
             global_temp_view = self.invoke(path=path, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"
