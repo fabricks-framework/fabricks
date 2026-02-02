@@ -23,7 +23,7 @@ from fabricks.utils.write import write_stream
 
 class Processor(Invoker):
     def filter_where(self, df: DataFrame) -> DataFrame:
-        assert isinstance(self.options, Union[JobBronzeOptions, JobSilverOptions])
+        assert isinstance(self.options, (JobBronzeOptions, JobSilverOptions))
 
         f = self.options.filter_where
         if f:
