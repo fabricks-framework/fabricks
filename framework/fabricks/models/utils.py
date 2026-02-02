@@ -1,4 +1,4 @@
-"""Job configuration models."""
+"""Utility functions for job and dependency ID generation."""
 
 from typing import Optional, overload
 

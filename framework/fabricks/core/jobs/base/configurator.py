@@ -194,7 +194,13 @@ class Configurator(ABC):
     @property
     @abstractmethod
     def options(self) -> TOptions:
-        """Direct access to typed job options."""
+        """
+        Direct access to typed job options.
+
+        Subclasses must implement this property and return their specific typed
+        options instance (e.g. JobBronzeOptions, JobSilverOptions, or JobGoldOptions)
+        corresponding to the job type.
+        """
         raise NotImplementedError()
 
     @property

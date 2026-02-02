@@ -132,7 +132,15 @@ class ConfigOptions(BaseSettings):
     @field_validator("job_config_from_yaml", "debugmode", "funmode", "devmode", mode="before")
     @classmethod
     def validate_bool(cls, v):
-        """Convert string representations of boolean values to bool."""
+        """
+        Convert common string representations of boolean values to bool.
+
+        Accepted case-insensitive string values are:
+        - "true", "1", "yes" -> True
+        - "false", "0", "no" -> False
+
+        Non-string inputs or strings not matching the above values are returned unchanged.
+        """
         if isinstance(v, bool):
             return v
 
