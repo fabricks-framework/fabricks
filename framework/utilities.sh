@@ -31,7 +31,7 @@ log_error() {
 
 log_section() {
 	local msg="$1"
-	echo -e "${CYAN}========== $msg ==========${RESET}"
+	echo -e "${CYAN}=============== $msg ===============${RESET}"
 }
 
 log_success() {

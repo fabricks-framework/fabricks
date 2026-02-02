@@ -26,7 +26,7 @@ class Generator(Configurator):
         identity: Optional[bool] = False,
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str | bool]] = None,
+        properties: Optional[dict[str, str | bool | int]] = None,
         masks: Optional[dict[str, str]] = None,
         primary_key: Optional[dict[str, Any]] = None,
         foreign_keys: Optional[dict[str, Any]] = None,

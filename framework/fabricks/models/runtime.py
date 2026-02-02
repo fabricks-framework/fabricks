@@ -28,12 +28,12 @@ class RuntimePathOptions(BaseModel):
 
 class UDFOptions(BaseModel):
     prefix: str | None = None
-    schema_name: str = Field(..., alias="schema")
+    schema_name: str | None = Field(None, alias="schema")
 
 
 class MaskOptions(BaseModel):
     prefix: str | None = None
-    schema_name: str = Field(..., alias="schema")
+    schema_name: str | None = Field(None, alias="schema")
 
 
 class RuntimeResolvedPathOptions(BaseModel):

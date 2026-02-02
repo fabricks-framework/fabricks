@@ -224,6 +224,8 @@ class Generator(Configurator):
 
             maximum_compatibility = self.table_options.maximum_compatibility if self.table_options else False
 
+            default_properties: dict[str, str | bool | int] = {}
+
             if maximum_compatibility:
                 default_properties = {
                     "delta.minReaderVersion": "1",

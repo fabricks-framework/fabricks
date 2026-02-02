@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from functools import partial
-from typing import Optional, Union
+from typing import Optional
 
 from pyspark.sql import DataFrame
 
