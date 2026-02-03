@@ -454,7 +454,7 @@ class Gold(BaseJob):
         else:
             self.cdc_last_timestamp.overwrite(df)
 
-    def overwrite(self, schedule: Optional[str] = None):
+    def overwrite(self, schedule: Optional[str] = None, invoke: Optional[bool] = False):
         if self.mode == "invoke":
             DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"label": self})
             return
@@ -465,4 +465,4 @@ class Gold(BaseJob):
             return
 
         self.overwrite_schema()
-        self.run(reload=True, schedule=schedule)
+        self.run(reload=True, schedule=schedule, invoke=invoke)
