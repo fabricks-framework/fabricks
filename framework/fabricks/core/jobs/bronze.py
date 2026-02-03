@@ -183,7 +183,7 @@ class Bronze(BaseJob):
                 df = self.spark.sql(f"select * from {self}")
 
             if self.step_options.clean is not False:
-                # cleaning should done by parser
+                # cleaning should done by parser but for delta we do it here
                 df = clean(df)
 
         else:
