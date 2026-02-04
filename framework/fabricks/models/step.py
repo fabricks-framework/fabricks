@@ -9,7 +9,7 @@ from fabricks.models.table import StepTableOptions
 class StepInvokerOptions(BaseModel):
     """Grouped invoker operations for pre/run/post execution."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
     pre_run: list[BaseInvokerOptions] | None = None
     post_run: list[BaseInvokerOptions] | None = None
@@ -18,7 +18,7 @@ class StepInvokerOptions(BaseModel):
 class StepTimeoutOptions(BaseModel):
     """Optional timeout overrides for individual steps."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
     step: int | None = None
     job: int | None = None
@@ -29,7 +29,7 @@ class StepTimeoutOptions(BaseModel):
 class StepPathOptions(BaseModel):
     """Path configuration for steps."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
     runtime: str
     storage: str
@@ -38,7 +38,7 @@ class StepPathOptions(BaseModel):
 class StepOptions(BaseModel):
     """Base step configuration options."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
     order: int
     workers: int | None = None
@@ -69,7 +69,7 @@ class GoldOptions(StepOptions):
 class Step(BaseModel):
     """Base step configuration."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
     name: str
     path_options: StepPathOptions

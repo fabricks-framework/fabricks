@@ -13,7 +13,7 @@ from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, 
 class RuntimePathOptions(BaseModel):
     """Path configuration for runtime components."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
     storage: str
     udfs: str
@@ -57,7 +57,7 @@ class RuntimeResolvedPathOptions(BaseModel):
 class RuntimeTimeoutOptions(BaseModel):
     """Timeout settings for runtime operations."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
     step: int
     job: int
@@ -68,7 +68,7 @@ class RuntimeTimeoutOptions(BaseModel):
 class RuntimeOptions(BaseModel):
     """Main runtime configuration options."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
     secret_scope: str
     encryption_key: str | None = None
