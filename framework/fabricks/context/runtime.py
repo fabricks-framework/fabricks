@@ -19,7 +19,7 @@ GOLD: list[StepGoldConf] = CONF_RUNTIME.gold or []
 STEPS = BRONZE + SILVER + GOLD
 
 databases: list[Database] = CONF_RUNTIME.databases or []
-credentials = CONF_RUNTIME.credentials or []
+credentials = CONF_RUNTIME.credentials or {}
 variables = CONF_RUNTIME.variables or {}
 VARIABLES: dict = variables
 

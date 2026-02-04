@@ -20,11 +20,10 @@ def add_credentials_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = get_spark()
 
-    credentials = CONF_RUNTIME.credentials or []
-    for cred in credentials:
-        for uri, secret in cred.items():
-            s = get_secret_from_secret_scope(secret_scope=SECRET_SCOPE, name=secret)
-            add_secret_to_spark(secret=s, uri=uri, spark=spark)
+    credentials = CONF_RUNTIME.credentials or {}
+    for uri, secret in credentials.items():
+        s = get_secret_from_secret_scope(secret_scope=SECRET_SCOPE, name=secret)
+        add_secret_to_spark(secret=s, uri=uri, spark=spark)
 
 
 def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
