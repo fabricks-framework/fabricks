@@ -99,7 +99,7 @@ class RuntimeConf(BaseModel):
     powerbi: list[PowerBI] | None = None
     databases: list[Database] | None = None
     variables: dict[str, str] | None = None
-    credentials: list[dict[str, str]] | None = None
+    credentials: dict[str, str] | None = None
 
     config: ClassVar[ConfigOptions] = ConfigOptions()
 
