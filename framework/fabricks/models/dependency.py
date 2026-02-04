@@ -10,7 +10,7 @@ from fabricks.models.utils import get_dependency_id, get_job_id
 class JobDependency(BaseModel):
     """Job dependency tracking."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="ignore", frozen=True)
 
     origin: AllowedOrigins
     job_id: str
