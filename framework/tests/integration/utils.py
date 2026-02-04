@@ -9,7 +9,7 @@ from pyspark.sql.functions import expr
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import concat_dfs
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath, GitPath
 from tests.integration._types import paths
 
 
@@ -73,7 +73,7 @@ def convert_parquet_to_delta(topic: str, deletelog: bool = True):
         writer.save(f"{root}/delta/{topic}")
 
 
-def convert_json_to_parquet(from_dir: Path, to_dir: Path):
+def convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
     DEFAULT_LOGGER.debug(f"convert json to parquet - {to_dir}")
 
     dates = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
@@ -108,8 +108,10 @@ def git_to_landing():
     for i in range(1, 12):
         job = f"job{i}"
         DEFAULT_LOGGER.debug(f"copy json from git to landing ({job})")
+
         from_dir = paths.tests.joinpath("data", job)
         to_dir = paths.landing.joinpath(job)
+
         convert_json_to_parquet(from_dir, to_dir)
 
 
@@ -126,14 +128,15 @@ def landing_to_raw(iter: Union[int, List[int]]):
         landing = paths.landing.joinpath(job)
         for f in landing.walk():
             if str(f).endswith("parquet"):
-                path = Path(f)
+                path = FileSharePath(f)
 
                 for i in range(1, 4):
                     to_path = f.replace("landing", "raw").replace(job, "")
                     if i > 1:  # needed for unity catalog (cannot use same delta table more than once)
                         to_path = to_path.replace("raw", f"raw/{i}")
                         print(to_path)
-                    to_path = Path(to_path)
+
+                    to_path = FileSharePath(to_path)
 
                     dbutils.fs.cp(path.string, to_path.string)
 
@@ -149,7 +152,7 @@ def create_expected_views():
         views = paths.tests.joinpath("expected", step, cdc)
         for v in sorted(views.walk()):
             DEFAULT_LOGGER.debug(f"create view {v}")
-            spark.sql(Path(v).get_sql())
+            spark.sql(GitPath(v).get_sql())
 
     _create_views("silver", "scd2")
     _create_views("silver", "scd1")

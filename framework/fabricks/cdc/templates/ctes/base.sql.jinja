@@ -16,6 +16,7 @@ with
             {% if add_calculated_columns %} {% for c in add_calculated_columns %} {{ c }}, {% endfor %} {% endif %}
             {% if add_timestamp %} cast(current_date() as timestamp) as __timestamp, {% endif %}
             {% if add_operation %} cast('{{ add_operation }}' as string) as __operation, {% endif %}
+            {% if add_last_updated %} cast(current_timestamp() as timestamp) as __last_updated, {% endif %}
             {% if add_source %} cast('{{ add_source }}' as string) as __source, {% endif %}
             {% if add_hash %} {{ h.add_hash(fields=hashes) }} as __hash, {% endif %}
             {% if add_key %} {{ h.add_hash(fields=keys) }} as __key, {% endif %}

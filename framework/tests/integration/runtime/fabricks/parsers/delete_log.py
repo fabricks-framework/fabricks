@@ -6,25 +6,27 @@ from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, lit, when
 
-from fabricks.core.parsers import BaseParser, ParserOptions
+from fabricks.core.parsers import BaseParser
+from fabricks.models import ParserOptions
 from fabricks.utils.helpers import concat_dfs
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
 
 
 class DeleteLogBaseParser(BaseParser):
     def __init__(self, options: Optional[ParserOptions] = None):
         if options:
-            file_format = options.get("file_format") or "parquet"
+            file_format = options.file_format or "parquet"
         else:
             file_format = "parquet"
+
         super().__init__(options, file_format)
 
     def _parse(
         self,
         stream: bool,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
     ) -> Optional[DataFrame]:
         df = read(
@@ -32,7 +34,7 @@ class DeleteLogBaseParser(BaseParser):
             path=data_path,
             file_format=self.file_format,
             schema_path=schema_path,
-            options=self.options.get("read_options"),
+            options=self.options.read_options if self.options else {},
             spark=spark,
         )
 
@@ -49,8 +51,8 @@ class DeleteLogBaseParser(BaseParser):
 
     def _parse_delete_log(
         self,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
         stream: bool,
     ) -> Optional[DataFrame]:
@@ -62,7 +64,7 @@ class DeleteLogBaseParser(BaseParser):
                 path=data_path,
                 file_format=self.file_format,
                 schema_path=schema_path,
-                options=self.options.get("read_options"),
+                options=self.options.read_options if self.options else {},
                 spark=spark,
             )
             df.columns
@@ -85,8 +87,8 @@ class DeleteLogBaseParser(BaseParser):
 
     def parse(
         self,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
         stream: bool,
     ) -> DataFrame:

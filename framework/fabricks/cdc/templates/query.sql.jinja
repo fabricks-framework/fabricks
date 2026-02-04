@@ -1,4 +1,4 @@
-{% include 'queries/context.sql.jinja' %}
+{% if debugmode %} {% include 'queries/context.sql.jinja' %} {% endif %}
 {% include 'ctes/base.sql.jinja' %}
 {% if slice %} {% include 'ctes/slice.sql.jinja' %} {% endif %}
 {% if deduplicate_key %} {% include 'ctes/deduplicate_key.sql.jinja' %} {% endif %}

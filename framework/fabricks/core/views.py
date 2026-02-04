@@ -1,10 +1,10 @@
 from fabricks.context import PATH_VIEWS, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.utils.path import Path
+from fabricks.utils.path import GitPath
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-def create_or_replace_view_internal(path: Path):
+def create_or_replace_view_internal(path: GitPath):
     sql = path.get_sql()
     file_name = path.get_file_name().split(".")[0]
 

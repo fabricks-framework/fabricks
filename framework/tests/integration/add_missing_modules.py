@@ -22,3 +22,7 @@ root = p.absolute()
 if str(root) not in sys.path:
     print(f"adding {root} to sys.path")
     sys.path.insert(0, str(root))
+
+    for c in ["fabricks", "tests"]:
+        print(f"adding {root}/{c} to sys.path")
+        sys.path.insert(0, str(root / c))

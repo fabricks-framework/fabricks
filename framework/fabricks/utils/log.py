@@ -60,7 +60,28 @@ class LogFormatter(logging.Formatter):
         extra = ""
         if hasattr(record, "exc_info") and record.exc_info:
             exc_info = record.__dict__.get("exc_info", None)
-            extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
+            extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"  # type: ignore
+
+        if hasattr(record, "df"):
+            df = record.__dict__.get("df")
+            if isinstance(df, DataFrame):
+                try:
+                    pandas_df = df.toPandas()
+                except Exception:
+                    # Handle timestamp precision/timezone issues by casting to string
+                    from pyspark.sql.functions import col
+                    from pyspark.sql.types import TimestampType
+
+                    for field in df.schema.fields:
+                        if isinstance(field.dataType, TimestampType):
+                            df = df.withColumn(field.name, col(field.name).cast("string"))
+                    pandas_df = df.toPandas()
+
+                extra += f"\n---\n%df\n{pandas_df.to_string(index=True)}\n---"
+
+        if hasattr(record, "json"):
+            json_data = record.__dict__.get("json")
+            extra += f"\n---\n{json.dumps(json_data, indent=2, default=str)}\n---"
 
         if self.debugmode:
             if hasattr(record, "sql"):
@@ -71,11 +92,6 @@ class LogFormatter(logging.Formatter):
 
             if hasattr(record, "context"):
                 extra += f"\n---\n{json.dumps(record.__dict__.get('context'), indent=2, default=str)}\n---"
-
-            if hasattr(record, "df"):
-                df = record.__dict__.get("df")
-                if isinstance(df, DataFrame):
-                    extra += f"\n---\n%df\n{df.toPandas().to_string(index=True)}\n---"
 
         record.levelname = levelname_formatted
         record.prefix = prefix
@@ -155,6 +171,9 @@ class AzureTableLogHandler(logging.Handler):
                         "traceback": str(logging.Formatter.formatException(self, e))[:1000],  # type: ignore
                     }
                     r["Exception"] = json.dumps(d)
+
+            if hasattr(record, "json"):
+                r["Data"] = json.dumps(record.__dict__.get("json", ""))
 
             if self.debugmode:
                 if hasattr(record, "content"):

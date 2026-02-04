@@ -41,6 +41,7 @@
     options:
       change_data_capture: scd1
       mode: update
+      persist_last_updated_timestamp: True
 - job:
     step: gold
     topic: scd1
@@ -49,3 +50,4 @@
     options:
       change_data_capture: scd1
       mode: update
+      last_updated: True

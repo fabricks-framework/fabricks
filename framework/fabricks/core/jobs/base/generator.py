@@ -6,10 +6,10 @@ from pyspark.sql.functions import lit
 
 from fabricks.cdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import JobDependency
 from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.table import SchemaDiff
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.models import JobDependency
 
 
 class Generator(Configurator):
@@ -31,9 +31,9 @@ class Generator(Configurator):
 
         If the schema folder exists, it will be deleted. The method also calls the `rm_checkpoints` method to remove any checkpoints associated with the generator.
         """
-        if self.paths.schema.exists():
+        if self.paths.to_schema.exists():
             DEFAULT_LOGGER.info("delete schema folder", extra={"label": self})
-            self.paths.schema.rm()
+            self.paths.to_schema.rm()
         self.rm_checkpoints()
 
     def rm_checkpoints(self):
@@ -42,9 +42,9 @@ class Generator(Configurator):
 
         This method checks if the checkpoints folder exists and deletes it if it does.
         """
-        if self.paths.checkpoints.exists():
+        if self.paths.to_checkpoints.exists():
             DEFAULT_LOGGER.info("delete checkpoints folder", extra={"label": self})
-            self.paths.checkpoints.rm()
+            self.paths.to_checkpoints.rm()
 
     def rm_commit(self, id: Union[str, int]):
         """
@@ -56,7 +56,7 @@ class Generator(Configurator):
         Returns:
             None
         """
-        path = self.paths.commits.joinpath(str(id))
+        path = self.paths.to_commits.joinpath(str(id))
         if path.exists():
             DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": self})
             path.rm()
@@ -91,7 +91,7 @@ class Generator(Configurator):
         Returns:
                 None
         """
-        if self.options.job.get("no_drop"):
+        if self.options.no_drop:
             raise ValueError("no_drop is set, cannot drop the job")
 
         try:
@@ -167,7 +167,7 @@ class Generator(Configurator):
         ...
 
     def _get_clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
-        columns = self.options.table.get_list("cluster_by")
+        columns = self.table_options.cluster_by or [] if self.table_options else []
         if columns:
             return columns
 
@@ -205,16 +205,16 @@ class Generator(Configurator):
             identity = False
 
             # first take from job options, then from step options
-            job_powerbi = self.options.table.get_boolean("powerbi", None)
-            step_powerbi = self.step_conf.get("table_options", {}).get("powerbi", None)
+            job_powerbi = self.table_options.powerbi if self.table_options else None
+            step_powerbi = self.step_conf.table_options.powerbi if self.step_conf.table_options else None
             if job_powerbi is not None:
                 powerbi = job_powerbi
             elif step_powerbi is not None:
                 powerbi = step_powerbi
 
             # first take from job options, then from step options
-            job_masks = self.options.table.get("masks", None)
-            step_masks = self.step_conf.get("table_options", {}).get("masks", None)
+            job_masks = self.table_options.masks if self.table_options else None
+            step_masks = self.step_conf.table_options.masks if self.step_conf.table_options else None
             if job_masks is not None:
                 masks = job_masks
             elif step_masks is not None:
@@ -222,7 +222,9 @@ class Generator(Configurator):
             else:
                 masks = None
 
-            maximum_compatibility = self.options.table.get_boolean("maximum_compatibility", False)
+            maximum_compatibility = self.table_options.maximum_compatibility if self.table_options else False
+
+            default_properties: dict[str, str | bool | int] = {}
 
             if maximum_compatibility:
                 default_properties = {
@@ -251,11 +253,13 @@ class Generator(Configurator):
             if "__identity" in df.columns:
                 identity = False
             else:
-                identity = self.options.table.get_boolean("identity", False)
+                identity = self.table_options.identity if self.table_options else False
 
             # first take from job options, then from step options
-            liquid_clustering_job = self.options.table.get("liquid_clustering", None)
-            liquid_clustering_step = self.step_conf.get("table_options", {}).get("liquid_clustering", None)
+            liquid_clustering_job = self.table_options.liquid_clustering if self.table_options else None
+            liquid_clustering_step = (
+                self.step_conf.table_options.liquid_clustering if self.step_conf.table_options else None
+            )
             if liquid_clustering_job is not None:
                 liquid_clustering = liquid_clustering_job
             elif liquid_clustering_step:
@@ -278,24 +282,24 @@ class Generator(Configurator):
 
             if liquid_clustering is None:
                 cluster_by = None
-                partition_by = self.options.table.get_list("partition_by")
+                partition_by = self.table_options.partition_by or [] if self.table_options else []
                 if partition_by:
                     partitioning = True
 
             properties = None
             if not powerbi:
                 # first take from job options, then from step options
-                if self.options.table.get_dict("properties"):
-                    properties = self.options.table.get_dict("properties")
-                elif self.step_conf.get("table_options", {}).get("properties", {}):
-                    properties = self.step_conf.get("table_options", {}).get("properties", {})
+                if self.table_options and self.table_options.properties:
+                    properties = self.table_options.properties
+                elif self.step_conf.table_options and self.step_conf.table_options.properties:
+                    properties = self.step_conf.table_options.properties
 
             if properties is None:
                 properties = default_properties
 
-            primary_key = self.options.table.get_dict("primary_key")
-            foreign_keys = self.options.table.get_dict("foreign_keys")
-            comments = self.options.table.get_dict("comments")
+            primary_key = self.table_options.primary_key or {} if self.table_options else {}
+            foreign_keys = self.table_options.foreign_keys or {} if self.table_options else {}
+            comments = self.table_options.comments or {} if self.table_options else {}
 
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
@@ -332,7 +336,7 @@ class Generator(Configurator):
                     dummy_df = dummy_df.select("__metadata")
 
                     df = df.unionByName(dummy_df, allowMissingColumns=True)
-                    path = self.paths.checkpoints.append("__init")
+                    path = self.paths.to_checkpoints.append("__init")
                     if path.exists():
                         path.rm()
 
@@ -347,12 +351,12 @@ class Generator(Configurator):
                 else:
                     _create_table(df)
 
-                constraints = self.options.table.get_dict("constraints")
+                constraints = self.table_options.constraints or {} if self.table_options else {}
                 if constraints:
                     for key, value in constraints.items():
-                        self.table.add_constraint(name=key, expr=value)
+                        self.table.add_constraint(name=key, expr=str(value))
 
-                comment = self.options.table.get("comment")
+                comment = self.table_options.comment if self.table_options else None
                 if comment:
                     self.table.add_table_comment(comment=comment)
 
@@ -382,7 +386,7 @@ class Generator(Configurator):
                 df = self.base_transform(df)
 
                 if self.stream:
-                    path = self.paths.checkpoints.append("__schema")
+                    path = self.paths.to_checkpoints.append("__schema")
                     query = (
                         df.writeStream.foreachBatch(_update_schema)
                         .option("checkpointLocation", path.string)
@@ -415,15 +419,15 @@ class Generator(Configurator):
             self.table.drop_comments()
 
             if table:
-                comment = self.options.table.get("comment")
+                comment = self.table_options.comment if self.table_options else None
                 if comment:
                     self.table.add_table_comment(comment=comment)
 
             if columns:
-                comments = self.options.table.get_dict("comments")
+                comments = self.table_options.comments or {} if self.table_options else {}
                 if comments:
                     for col, comment in comments.items():
-                        self.table.add_column_comment(column=col, comment=comment)
+                        self.table.add_column_comment(column=col, comment=str(comment))
 
     def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
         if df is None:
@@ -456,8 +460,8 @@ class Generator(Configurator):
         enable = False
 
         # first take from job options, then from step options
-        enable_job = self.options.table.get_boolean("liquid_clustering", None)
-        enable_step = self.step_conf.get("table_options", {}).get("liquid_clustering", None)
+        enable_job = self.table_options.liquid_clustering if self.table_options else None
+        enable_step = self.step_conf.table_options.liquid_clustering if self.step_conf.table_options else None
         if enable_job is not None:
             enable = enable_job
         elif enable_step:

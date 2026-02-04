@@ -5,10 +5,12 @@ from pyspark.sql import DataFrame
 
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.extenders import get_extender
 from fabricks.core.jobs.base.checker import Checker
 from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.get_schedule import get_schedule
-from fabricks.utils.path import Path
+from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
+from fabricks.utils.path import GitPath
 
 
 class Invoker(Checker):
@@ -27,8 +29,37 @@ class Invoker(Checker):
         self._invoke_job(position="post_run", schedule=schedule)
         self._invoke_step(position="post_run", schedule=schedule)
 
+    def _invoke_notebook(
+        self,
+        invoker: dict | BaseInvokerOptions,
+        schedule: Optional[str] = None,
+        **kwargs,
+    ):
+        path = kwargs.get("path")
+        if path is None:
+            notebook = invoker.get("notebook") if isinstance(invoker, dict) else invoker.notebook
+            assert notebook, "notebook mandatory"
+            path = PATH_RUNTIME.joinpath(notebook)
+
+        assert path is not None, "path could not be resolved"
+
+        timeout = invoker.get("timeout") if isinstance(invoker, dict) else invoker.timeout
+        arguments = invoker.get("arguments") if isinstance(invoker, dict) else invoker.arguments
+        arguments = arguments or {}
+
+        schema_only = kwargs.get("schema_only")
+        if schema_only is not None:
+            arguments["schema_only"] = schema_only
+
+        return self._run_notebook(
+            path=path,
+            arguments=arguments,
+            schedule=schedule,
+            timeout=timeout,
+        )
+
     def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
-        invokers = self.options.invokers.get_list(position)
+        invokers = getattr(self.invoker_options, position, None) or [] if self.invoker_options else []
         if position == "run":
             invokers = invokers if len(invokers) > 0 else [{}]  # run must work even without run invoker options
 
@@ -38,35 +69,10 @@ class Invoker(Checker):
             for i, invoker in enumerate(invokers):
                 DEFAULT_LOGGER.debug(f"invoke ({i}, {position})", extra={"label": self})
                 try:
-                    path = kwargs.get("path")
-                    if path is None:
-                        notebook = invoker.get("notebook")
-                        assert notebook, "notebook mandatory"
-                        path = PATH_RUNTIME.joinpath(notebook)
-
-                    assert path is not None, "path mandatory"
-
-                    arguments = invoker.get("arguments") or {}
-                    timeout = invoker.get("timeout")
-
-                    schema_only = kwargs.get("schema_only")
-                    if schema_only is not None:
-                        arguments["schema_only"] = schema_only
-
                     if len(invokers) == 1 and position == "run":
-                        return self._run_notebook(
-                            path=path,
-                            arguments=arguments,
-                            timeout=timeout,
-                            schedule=schedule,
-                        )
+                        return self._invoke_notebook(invoker, schedule=schedule, **kwargs)
                     else:
-                        self._run_notebook(
-                            path=path,
-                            arguments=arguments,
-                            timeout=timeout,
-                            schedule=schedule,
-                        )
+                        self._invoke_notebook(invoker=invoker, schedule=schedule, **kwargs)
 
                 except Exception as e:
                     DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self})
@@ -82,7 +88,7 @@ class Invoker(Checker):
             raise Exception(errors)
 
     def _invoke_step(self, position: str, schedule: Optional[str] = None):
-        invokers = self.step_conf.get("invoker_options", {}).get(position, [])
+        invokers = getattr(self.step_conf.invoker_options, position, []) if self.step_conf.invoker_options else []
 
         errors = []
 
@@ -90,19 +96,7 @@ class Invoker(Checker):
             for i, invoker in enumerate(invokers):
                 DEFAULT_LOGGER.debug(f"invoke by step ({i}, {position})", extra={"label": self})
                 try:
-                    notebook = invoker.get("notebook")
-                    assert notebook, "notebook mandatory"
-                    path = PATH_RUNTIME.joinpath(notebook)
-
-                    arguments = invoker.get("arguments", {})
-                    timeout = invoker.get("timeout")
-
-                    self._run_notebook(
-                        path=path,
-                        arguments=arguments,
-                        timeout=timeout,
-                        schedule=schedule,
-                    )
+                    self._invoke_notebook(invoker=invoker, schedule=schedule)
 
                 except Exception as e:
                     DEFAULT_LOGGER.warning(f"fail to run invoker by step ({i}, {position})", extra={"label": self})
@@ -119,7 +113,7 @@ class Invoker(Checker):
 
     def _run_notebook(
         self,
-        path: Path,
+        path: GitPath,
         arguments: Optional[dict] = None,
         timeout: Optional[int] = None,
         schedule: Optional[str] = None,
@@ -128,7 +122,7 @@ class Invoker(Checker):
         Invokes a notebook job.
 
         Args:
-            path (Optional[Path]): The path to the notebook file. If not provided, it will be retrieved from the invoker options.
+            path (Optional[GitPath]): The path to the notebook file. If not provided, it will be retrieved from the invoker options.
             arguments (Optional[dict]): Additional arguments to pass to the notebook job. If not provided, it will be retrieved from the invoker options.
             schedule (Optional[str]): The schedule for the job. If provided, schedule variables will be retrieved.
 
@@ -167,33 +161,24 @@ class Invoker(Checker):
                 "topic": self.topic,
                 "item": self.item,
                 **arguments,
-                "job_options": json.dumps(self.options.job.options),
+                "job_options": json.dumps(self.options.model_dump()),
                 "schedule_variables": json.dumps(variables),
             },
         )
 
     def extend_job(self, df: DataFrame) -> DataFrame:
-        from fabricks.core.extenders import get_extender
-
-        extenders = self.options.extenders
-        for e in extenders:
-            name = e.get("extender")
-            DEFAULT_LOGGER.debug(f"extend ({name})", extra={"label": self})
-            arguments = e.get("arguments") or {}
-
-            extender = get_extender(name)
-            df = extender(df, **arguments)
-
-        return df
+        extenders = self.extender_options or []
+        return self._extend(df, extenders, extended="job")
 
     def extend_step(self, df: DataFrame) -> DataFrame:
-        from fabricks.core.extenders import get_extender
+        extenders = self.step_conf.extender_options or []
+        return self._extend(df, extenders, extended="step")
 
-        extenders = self.step_conf.get("extender_options", {})
+    def _extend(self, df: DataFrame, extenders: list[ExtenderOptions], extended: str) -> DataFrame:
         for e in extenders:
-            name = e.get("extender")
-            DEFAULT_LOGGER.debug(f"extend by step ({name})", extra={"label": self})
-            arguments = e.get("arguments", {})
+            name = e.extender
+            DEFAULT_LOGGER.debug(f"extend {extended} ({name})", extra={"label": self})
+            arguments = e.arguments or {}
 
             extender = get_extender(name)
             df = extender(df, **arguments)

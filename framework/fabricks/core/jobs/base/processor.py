@@ -3,9 +3,8 @@ from functools import partial
 from typing import Optional
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import expr
 
-from fabricks.context import IS_TYPE_WIDENING, IS_UNITY_CATALOG, SECRET_SCOPE
+from fabricks.context import IS_TYPE_WIDENING
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.exception import (
     PostRunCheckException,
@@ -18,36 +17,18 @@ from fabricks.core.jobs.base.exception import (
     SkipRunCheckWarning,
 )
 from fabricks.core.jobs.base.invoker import Invoker
+from fabricks.models import JobBronzeOptions, JobSilverOptions
 from fabricks.utils.write import write_stream
 
 
 class Processor(Invoker):
     def filter_where(self, df: DataFrame) -> DataFrame:
-        f = self.options.job.get("filter_where")
+        assert isinstance(self.options, (JobBronzeOptions, JobSilverOptions))
 
+        f = self.options.filter_where
         if f:
             DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
             df = df.where(f"{f}")
-
-        return df
-
-    def encrypt(self, df: DataFrame) -> DataFrame:
-        encrypted_columns = self.options.job.get_list("encrypted_columns")
-        if encrypted_columns:
-            if not IS_UNITY_CATALOG:
-                from databricks.sdk.runtime import dbutils
-
-                key = dbutils.secrets.get(scope=SECRET_SCOPE, key="encryption-key")
-            else:
-                import os
-
-                key = os.environ["FABRICKS_ENCRYPTION_KEY"]
-
-            assert key, "key not found"
-
-            for col in encrypted_columns:
-                DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"label": self})
-                df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
 
         return df
 
@@ -70,7 +51,7 @@ class Processor(Invoker):
                 self.rm_commit(current_batch)
 
                 assert last_batch == self.table.get_property("fabricks.last_batch")
-                assert self.paths.commits.joinpath(last_batch).exists()
+                assert self.paths.to_commits.joinpath(last_batch).exists()
 
     def _for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
@@ -118,7 +99,7 @@ class Processor(Invoker):
                 DEFAULT_LOGGER.debug("use streaming", extra={"label": self})
                 write_stream(
                     df,
-                    checkpoints_path=self.paths.checkpoints,
+                    checkpoints_path=self.paths.to_checkpoints,
                     func=self._for_each_batch,
                     timeout=self.timeout,
                 )
@@ -198,11 +179,15 @@ class Processor(Invoker):
                 raise exception
 
             if vacuum is None:
-                vacuum = self.options.job.get("vacuum", False)
+                vacuum = self.options.vacuum if self.options and self.options.vacuum is not None else False
             if optimize is None:
-                optimize = self.options.job.get("optimize", False)
+                optimize = self.options.optimize if self.options and self.options.optimize is not None else False
             if compute_statistics is None:
-                compute_statistics = self.options.job.get("compute_statistics", False)
+                compute_statistics = (
+                    self.options.compute_statistics
+                    if self.options and self.options.compute_statistics is not None
+                    else False
+                )
 
             if vacuum or optimize or compute_statistics:
                 self.maintain(

@@ -2,13 +2,13 @@ from typing import List, Optional, Union, get_args
 
 from pyspark.sql import DataFrame
 
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.read._types import AllowedIOModes
 
 
 def write_delta(
     df: DataFrame,
-    path: Path,
+    path: FileSharePath,
     mode: AllowedIOModes,
     options: Optional[dict[str, str]] = None,
     partition_by: Union[Optional[List[str]], str] = None,
@@ -30,7 +30,7 @@ def write_delta(
 
 def append_delta(
     df: DataFrame,
-    path: Path,
+    path: FileSharePath,
     options: Optional[dict[str, str]] = None,
     partition_by: Union[Optional[List[str]], str] = None,
 ):
@@ -39,7 +39,7 @@ def append_delta(
 
 def overwrite_delta(
     df: DataFrame,
-    path: Path,
+    path: FileSharePath,
     options: Optional[dict[str, str]] = None,
     partition_by: Union[Optional[List[str]], str] = None,
 ):

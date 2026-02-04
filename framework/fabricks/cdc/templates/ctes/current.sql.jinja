@@ -9,6 +9,10 @@ __current as (
                 {% elif cdc == "scd1" %} __timestamp,
                 {% elif cdc == "scd2" %} __valid_from as __timestamp,
                 {% endif %}
+            {% elif i == "__last_updated" %}
+                {% if add_last_updated %} cast(current_timestamp() as timestamp) as __last_updated,
+                {% else %} __last_updated,
+                {% endif %}
             {% elif i == "__operation" %}
                 {% if has_no_data %} 'delete' as __operation, {% else %} 'current' as __operation, {% endif %}
             {% elif i == "__hash" %}

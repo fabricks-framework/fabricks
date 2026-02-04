@@ -7,7 +7,7 @@ from typing_extensions import deprecated
 from fabricks.context import PATHS_STORAGE, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.utils import get_tables, get_views
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 
 
 class Database:
@@ -25,11 +25,11 @@ class Database:
 
     @property
     @deprecated("use delta_path instead")
-    def deltapath(self) -> Path:
+    def deltapath(self) -> FileSharePath:
         return self.storage.joinpath("delta")
 
     @property
-    def delta_path(self) -> Path:
+    def delta_path(self) -> FileSharePath:
         return self.storage.joinpath("delta")
 
     def create(self):

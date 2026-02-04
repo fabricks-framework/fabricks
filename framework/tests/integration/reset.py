@@ -33,10 +33,11 @@ landing_to_raw(1)
 
 def _reset(row: Row):
     job = get_job(step=row["step"], job_id=row["job_id"])
-    if job.paths.schema.exists():
-        job.paths.schema.rm()
-    if job.paths.checkpoints.exists():
-        job.paths.checkpoints.rm()
+    if job.paths.to_schema.exists():
+        job.paths.to_schema.rm()
+
+    if job.paths.to_checkpoints.exists():
+        job.paths.to_checkpoints.rm()
 
     if job.mode == "memory":
         pass

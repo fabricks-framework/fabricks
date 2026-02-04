@@ -1,10 +1,10 @@
-from typing import Optional, Union, cast, overload
+from typing import Optional, Union, overload
 
 from pyspark.sql.types import Row
 
-from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, TBronze, TGold, TSilver
+from fabricks.context import Bronzes, Golds, Silvers
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.jobs.get_job_id import get_job_id
+from fabricks.models import get_job_id
 
 
 @overload
@@ -91,7 +91,6 @@ def get_job_internal(
     if step in Bronzes:
         from fabricks.core.jobs.bronze import Bronze
 
-        step = cast(TBronze, step)
         if job_id is not None:
             job = Bronze.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
@@ -102,7 +101,6 @@ def get_job_internal(
     elif step in Silvers:
         from fabricks.core.jobs.silver import Silver
 
-        step = cast(TSilver, step)
         if job_id is not None:
             job = Silver.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
@@ -113,7 +111,6 @@ def get_job_internal(
     elif step in Golds:
         from fabricks.core.jobs.gold import Gold
 
-        step = cast(TGold, step)
         if job_id is not None:
             job = Gold.from_job_id(step=step, job_id=job_id, conf=conf)
         else:

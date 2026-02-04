@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union, cast
+from typing import Optional, Sequence, Union
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -6,10 +6,10 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import JobDependency, TBronze, TSilver
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.models import JobDependency, JobSilverOptions, StepSilverConf, StepSilverOptions
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.read.read import read
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -18,7 +18,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 class Silver(BaseJob):
     def __init__(
         self,
-        step: TSilver,
+        step: str,
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
@@ -33,23 +33,38 @@ class Silver(BaseJob):
             conf=conf,
         )
 
-    _parent_step: Optional[TBronze] = None
+    _parent_step: Optional[str] = None
     _stream: Optional[bool] = None
 
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
-        return cls(step=cast(TSilver, step), job_id=job_id, conf=conf)
+        return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
-        return cls(step=cast(TSilver, step), topic=topic, item=item, conf=conf)
+        return cls(step=step, topic=topic, item=item, conf=conf)
+
+    @property
+    def options(self) -> JobSilverOptions:
+        """Direct access to typed silver job options."""
+        return self.conf.options  # type: ignore
+
+    @property
+    def step_conf(self) -> StepSilverConf:
+        """Direct access to typed silver step conf."""
+        return self.base_step_conf  # type: ignore
+
+    @property
+    def step_options(self) -> StepSilverOptions:
+        """Direct access to typed silver step options."""
+        return self.base_step_conf.options  # type: ignore
 
     @property
     def stream(self) -> bool:
         if not self._stream:
-            _stream = self.options.job.get("stream")
+            _stream = self.options.stream
             if _stream is None:
-                _stream = self.step_conf.get("options", {}).get("stream")
+                _stream = self.step_conf.options.stream
             self._stream = _stream if _stream is not None else True
         return self._stream  # type: ignore
 
@@ -66,18 +81,17 @@ class Silver(BaseJob):
         return self.mode in ["combine", "memory"]
 
     @property
-    def parent_step(self) -> TBronze:
+    def parent_step(self) -> str:
         if not self._parent_step:
-            _parent_step = self.step_conf.get("options", {}).get("parent")
-            _parent_step = cast(TBronze, _parent_step)
+            _parent_step = self.step_conf.options.parent
             assert _parent_step is not None
-            self._parent_step = _parent_step
+            self._parent_step = str(_parent_step)
         return self._parent_step
 
-    def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extend)
-
+    def update_metadata(self, df: DataFrame) -> DataFrame:
         if "__metadata" in df.columns:
+            DEFAULT_LOGGER.debug("update metadata", extra={"label": self})
+
             df = df.withColumn(
                 "__metadata",
                 expr(
@@ -88,11 +102,18 @@ class Silver(BaseJob):
                         __metadata.file_size as file_size,            
                         __metadata.file_modification_time as file_modification_time,
                         __metadata.inserted as inserted,
-                    cast(current_timestamp() as timestamp) as updated
+                        cast(current_timestamp() as timestamp) as updated
                     )
                     """
                 ),
             )
+
+        return df
+
+    def base_transform(self, df: DataFrame) -> DataFrame:
+        df = df.transform(self.extend)
+        df = self.update_metadata(df)
+
         return df
 
     def get_data(
@@ -153,7 +174,6 @@ class Silver(BaseJob):
 
         # transforms
         df = self.filter_where(df)
-        df = self.encrypt(df)
         if transform:
             df = self.base_transform(df)
 
@@ -165,7 +185,7 @@ class Silver(BaseJob):
     def get_dependencies(self) -> Sequence[JobDependency]:
         dependencies = []
 
-        parents = self.options.job.get_list("parents") or []
+        parents = self.options.parents or []
         if parents:
             for p in parents:
                 dependencies.append(JobDependency.from_parts(self.job_id, p, "job"))
@@ -237,9 +257,9 @@ class Silver(BaseJob):
         except Py4JJavaError as e:
             DEFAULT_LOGGER.exception("fail to create nor replace view", extra={"label": self}, exc_info=e)
 
-    def overwrite(self, schedule: Optional[str] = None):
+    def overwrite(self, schedule: Optional[str] = None, invoke: Optional[bool] = False):
         self.truncate()
-        self.run(schedule=schedule)
+        self.run(schedule=schedule, invoke=invoke)
 
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
@@ -251,7 +271,7 @@ class Silver(BaseJob):
 
         not_append = not self.mode == "append"
         nocdc = self.change_data_capture == "nocdc"
-        order_duplicate_by = self.options.job.get_dict("order_duplicate_by") or {}
+        order_duplicate_by = self.options.order_duplicate_by or {}
 
         rectify = False
         if not_append and not nocdc:
@@ -283,7 +303,7 @@ class Silver(BaseJob):
 
         context = {
             "soft_delete": self.slowly_changing_dimension,
-            "deduplicate": self.options.job.get_boolean("deduplicate", not_append),
+            "deduplicate": self.options.deduplicate if self.options.deduplicate is not None else not_append,
             "rectify": rectify,
             "order_duplicate_by": order_duplicate_by,
         }

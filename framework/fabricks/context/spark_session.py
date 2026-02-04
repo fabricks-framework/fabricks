@@ -20,10 +20,11 @@ def add_credentials_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = get_spark()
 
-    credentials = CONF_RUNTIME.get("credentials", {})
-    for uri, secret in credentials.items():
-        s = get_secret_from_secret_scope(secret_scope=SECRET_SCOPE, name=secret)
-        add_secret_to_spark(secret=s, uri=uri, spark=spark)
+    credentials = CONF_RUNTIME.credentials or []
+    for cred in credentials:
+        for uri, secret in cred.items():
+            s = get_secret_from_secret_scope(secret_scope=SECRET_SCOPE, name=secret)
+            add_secret_to_spark(secret=s, uri=uri, spark=spark)
 
 
 def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
@@ -35,13 +36,13 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     spark.sql("set spark.databricks.delta.resolveMergeUpdateStructsByName.enabled = True;")
 
     # runtime options
-    spark_options = CONF_RUNTIME.get("spark_options", {})
+    spark_options = CONF_RUNTIME.spark_options
     if spark_options:
-        sql_options = spark_options.get("sql", {})
+        sql_options = spark_options.sql or {}
         for key, value in sql_options.items():
             spark.sql(f"set {key} = {value};")
 
-        conf_options = spark_options.get("conf", {})
+        conf_options = spark_options.conf or {}
         for key, value in conf_options.items():
             spark.conf.set(key, value)
 

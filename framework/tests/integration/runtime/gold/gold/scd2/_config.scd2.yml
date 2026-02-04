@@ -8,6 +8,7 @@
     options:
       change_data_capture: scd2
       mode: update
+      last_updated: True
 - job:
     step: gold
     topic: scd2

@@ -1,27 +1,26 @@
-from dataclasses import dataclass
-from typing import List, Literal, Optional, TypedDict, Union, overload
+from typing import List, Literal, Optional, Union, overload
 
+from pydantic import BaseModel
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
+from sparkdantic import create_spark_schema
 
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, PATHS_RUNTIME, SPARK
-from fabricks.core.jobs.base._types import AllowedModes, TStep
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.get_job import get_job, get_job_internal
+from fabricks.models import AllowedModes
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
-from fabricks.utils.path import Path
+from fabricks.utils.path import GitPath
 from fabricks.utils.read import read_yaml
-from fabricks.utils.schema import get_schema_for_type
 
 
-class GenericOptions(TypedDict):
+class GenericOptions(BaseModel):
     mode: AllowedModes
 
 
-@dataclass
-class JobConfGeneric:
-    step: TStep
+class JobConfGeneric(BaseModel):
+    step: str
     job_id: str
     topic: str
     item: str
@@ -39,9 +38,9 @@ def get_jobs_internal():
 
 def get_jobs_internal_df() -> DataFrame:
     if IS_JOB_CONFIG_FROM_YAML:
-        schema = get_schema_for_type(JobConfGeneric)
+        schema = create_spark_schema(JobConfGeneric)
 
-        def _read_yaml(path: Path):
+        def _read_yaml(path: GitPath):
             df = SPARK.createDataFrame(read_yaml(path, root="job"), schema=schema)  # type: ignore
             if df:
                 df = df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))

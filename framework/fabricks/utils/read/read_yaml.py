@@ -2,11 +2,11 @@ from typing import Iterable, Optional, cast
 
 import yaml
 
-from fabricks.utils.path import Path
+from fabricks.utils.path import BasePath
 
 
 def read_yaml(
-    path: Path,
+    path: BasePath,
     root: Optional[str] = None,
     preferred_file_name: Optional[str] = None,
 ) -> Iterable[dict]:

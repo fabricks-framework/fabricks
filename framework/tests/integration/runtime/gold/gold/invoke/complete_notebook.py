@@ -40,7 +40,7 @@ assert arg1 == "1"
 
 # COMMAND ----------
 
-df = spark.sql("select 1 as dummy")
+df = spark.sql(f"select {arg1} as dummy")
 
 # COMMAND ----------
 

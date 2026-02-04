@@ -4,24 +4,34 @@ from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
 from pyspark.sql.types import Row
+from sparkdantic import create_spark_schema
 from typing_extensions import deprecated
 
 from fabricks.cdc import NoCDC
-from fabricks.context import CONF_RUNTIME, LOGLEVEL, PATHS_RUNTIME, PATHS_STORAGE, SPARK, STEPS
+from fabricks.context import (
+    CONF_RUNTIME,
+    LOGLEVEL,
+    PATHS_RUNTIME,
+    PATHS_STORAGE,
+    SPARK,
+    STEPS,
+    Bronzes,
+    Golds,
+    Silvers,
+)
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import Bronzes, Golds, SchemaDependencies, Silvers, TStep
 from fabricks.core.jobs.get_job import get_job
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
+from fabricks.models import SchemaDependencies, StepBronzeOptions, StepGoldOptions, StepSilverOptions
 from fabricks.utils.helpers import run_in_parallel
 from fabricks.utils.read.read_yaml import read_yaml
-from fabricks.utils.schema import get_schema_for_type
 
 
 class BaseStep:
-    def __init__(self, step: Union[TStep, str]):
+    def __init__(self, step: str):
         self.name = cast(str, step)
 
         if self.name in Bronzes:
@@ -45,7 +55,7 @@ class BaseStep:
         self.database = Database(self.name)
 
     _conf: Optional[dict] = None
-    _options: Optional[dict] = None
+    _options: Optional[Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]] = None
 
     _workers: Optional[int] = None
     _timeouts: Optional[Timeouts] = None
@@ -53,18 +63,18 @@ class BaseStep:
     @property
     def workers(self):
         if not self._workers:
-            w = self.options.get("workers")
+            w = self.options.workers
             if w is None:
-                w = CONF_RUNTIME.get("options", {}).get("workers")
+                w = CONF_RUNTIME.options.workers
             assert w is not None
             self._workers = cast(int, w)
 
         return self._workers
 
     def _get_timeout(self, what: str) -> int:
-        t = self.options.get("timeouts", {}).get(what, None)
+        t = getattr(self.options.timeouts, what, None)
         if t is None:
-            t = CONF_RUNTIME.get("options", {}).get("timeouts", {}).get(what)
+            t = getattr(CONF_RUNTIME.options.timeouts, what)
         assert t is not None
 
         return int(t)
@@ -82,18 +92,18 @@ class BaseStep:
     @property
     def conf(self) -> dict:
         if not self._conf:
-            _conf = [s for s in STEPS if s.get("name") == self.name][0]
+            _conf = [s for s in STEPS if s.name == self.name][0]
             assert _conf is not None
-            self._conf = cast(dict[str, str], _conf)
+            self._conf = _conf.model_dump()
 
         return self._conf
 
     @property
-    def options(self) -> dict:
+    def options(self):
         if not self._options:
-            o = self.conf.get("options")
-            assert o is not None
-            self._options = cast(dict[str, str], o)
+            _step = [s for s in STEPS if s.name == self.name][0]
+            assert _step is not None
+            self._options = _step.options
 
         return self._options
 
@@ -209,7 +219,7 @@ class BaseStep:
 
         try:
             conf = get_step_conf(self.name)
-            schema = get_schema_for_type(conf)
+            schema = create_spark_schema(conf)
             jobs = self.get_jobs_iter(topic=topic)
 
             df = SPARK.createDataFrame(jobs, schema=schema)  # type: ignore
@@ -392,7 +402,7 @@ class BaseStep:
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
     def update_steps_list(self):
-        order = self.options.get("order", 0)
+        order = self.options.order or 0
         df = SPARK.sql(f"select '{self.expand}' as expand, '{self.name}' as step, '{order}' :: int as `order`")
 
         NoCDC("fabricks", "steps").delete_missing(df, keys=["step"], update_where=f"step = '{self.name}'")

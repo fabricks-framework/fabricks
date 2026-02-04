@@ -7,6 +7,7 @@ from pyspark.sql import DataFrame
 
 from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.generator import Generator
+from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -65,6 +66,7 @@ class Processor(Generator):
         add_key = kwargs.get("add_key", None)
         add_hash = kwargs.get("add_hash", None)
         add_timestamp = kwargs.get("add_timestamp", None)
+        add_last_updated = kwargs.get("add_last_updated", None)
         add_metadata = kwargs.get("add_metadata", None)
 
         has_order_by = None if not order_duplicate_by else True
@@ -78,6 +80,7 @@ class Processor(Generator):
         has_hash = add_hash or "__hash" in inputs
         has_identity = "__identity" in inputs
         has_rescued_data = "__rescued_data" in inputs
+        has_last_updated = add_last_updated or "__last_updated" in inputs
 
         soft_delete = kwargs.get("soft_delete", None)
         delete_missing = kwargs.get("delete_missing", None)
@@ -152,6 +155,10 @@ class Processor(Generator):
         if add_hash and "__hash" in inputs:
             overwrite.append("__hash")
 
+        # override __last_updated if added and found in df
+        if add_last_updated and "__last_updated" in inputs:
+            overwrite.append("__last_updated")
+
         # override metadata if added and found in df
         if add_metadata and "__metadata" in inputs:
             overwrite.append("__metadata")
@@ -219,6 +226,11 @@ class Processor(Generator):
                 outputs.append("__metadata")
             if "__metadata" not in intermediates:
                 intermediates.append("__metadata")
+        if has_last_updated:
+            if "__last_updated" not in outputs:
+                outputs.append("__last_updated")
+            if "__last_updated" not in intermediates:
+                intermediates.append("__last_updated")
         if has_source:
             if "__source" not in outputs:
                 outputs.append("__source")
@@ -311,6 +323,7 @@ class Processor(Generator):
         parent_final = "__final"
 
         return {
+            "debugmode": IS_DEBUGMODE,
             "src": src,
             "format": format,
             "tgt": tgt,
@@ -337,6 +350,7 @@ class Processor(Generator):
             "has_rows": has_rows,
             "has_source": has_source,
             "has_metadata": has_metadata,
+            "has_last_updated": has_last_updated,
             "has_timestamp": has_timestamp,
             "has_operation": has_operation,
             "has_identity": has_identity,
@@ -347,6 +361,7 @@ class Processor(Generator):
             # default add
             "add_metadata": add_metadata,
             "add_timestamp": add_timestamp,
+            "add_last_updated": add_last_updated,
             "add_key": add_key,
             "add_hash": add_hash,
             # value add

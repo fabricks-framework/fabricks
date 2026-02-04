@@ -1,31 +1,41 @@
-from dataclasses import dataclass
 from typing import List
 
-from fabricks.core.jobs.base._types import JobConf
-from fabricks.utils.schema import get_json_schema_for_type
+from pydantic import BaseModel
+
+from fabricks.models import JobConf
+
+
+class JobWrapper(BaseModel):
+    """Wrapper for JobConf to generate array schema."""
+
+    job: JobConf
 
 
 def get_job_schema() -> str:
     import json
 
-    @dataclass
-    class JobWrapper:
-        job: JobConf
+    # Generate JSON schema using Pydantic's built-in method
+    # Use List[JobWrapper] to create the array schema
+    from pydantic import TypeAdapter
 
-    sc = get_json_schema_for_type(List[JobWrapper])
-    defs: dict[str, dict] = sc["$defs"]
+    adapter = TypeAdapter(List[JobWrapper])
+    sc = adapter.json_schema()
+
+    # Remove properties that are not defined in YAML
+    defs: dict[str, dict] = sc.get("$defs", {})
     removals = [("Job", "job_id"), ("Job", "table")]
 
     for key, defi in defs.items():
         for ent, prop in removals:
-            if key.startswith(ent) and prop in defi["properties"]:
-                req: List[str] = defi["required"]
-                req.remove(prop)  # not defined in yaml
-                jobprops: dict = defi["properties"]
-                jobprops.pop(prop)
+            if key.startswith(ent) and prop in defi.get("properties", {}):
+                req: List[str] = defi.get("required", [])
+                if prop in req:
+                    req.remove(prop)  # not defined in yaml
 
-    j = json.dumps(sc, indent=4)
-    return j
+                jobprops: dict = defi.get("properties", {})
+                jobprops.pop(prop, None)
+
+    return json.dumps(sc, indent=4)
 
 
 def print_job_schema():

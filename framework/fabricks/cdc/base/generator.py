@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Sequence, Union, cast
 
 from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
+from pyspark.sql.types import StructType
 
 from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.configurator import Configurator
@@ -25,11 +26,11 @@ class Generator(Configurator):
         identity: Optional[bool] = False,
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str]] = None,
+        properties: Optional[dict[str, str | bool | int]] = None,
         masks: Optional[dict[str, str]] = None,
         primary_key: Optional[dict[str, Any]] = None,
         foreign_keys: Optional[dict[str, Any]] = None,
-        comments: Optional[dict[str, str]] = None,
+        comments: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
         kwargs["mode"] = "complete"
@@ -145,6 +146,7 @@ class Generator(Configurator):
         d = self.get_schema_differences(src, **kwargs)
         if d is None:
             return None
+
         return len(d) > 0
 
     def _update_schema(
@@ -155,7 +157,9 @@ class Generator(Configurator):
         **kwargs,
     ):
         if self.is_view:
-            assert not isinstance(src, DataFrameLike), "dataframe not allowed"
+            assert not isinstance(src, DataFrameLike) and not isinstance(src, StructType), (
+                "dataframe and structtype not allowed"
+            )
             self.create_or_replace_view(src=src)
 
         else:

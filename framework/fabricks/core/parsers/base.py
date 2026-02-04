@@ -5,15 +5,15 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, expr, from_json, lit
 from pyspark.sql.types import MapType, StringType
 
-from fabricks.core.parsers._types import ParserOptions
 from fabricks.core.parsers.utils import clean
-from fabricks.utils.path import Path
+from fabricks.models import ParserOptions
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.read.read import read
 
 
 class BaseParser(ABC):
     def __init__(self, options: Optional[ParserOptions], file_format: str):
-        self.options = options or {}
+        self.options = options
         self.file_format = file_format
 
     def add_timestamp_from_file_path(self, df: DataFrame) -> DataFrame:
@@ -33,8 +33,8 @@ class BaseParser(ABC):
 
     def parse(
         self,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
         stream: bool,
     ) -> DataFrame:
@@ -43,7 +43,7 @@ class BaseParser(ABC):
             path=data_path,
             file_format=self.file_format,
             schema_path=schema_path,
-            options=self.options.get("read_options"),
+            options=self.options.read_options if self.options else {},
             spark=spark,
         )
 
@@ -55,8 +55,8 @@ class BaseParser(ABC):
     @final
     def get_data(
         self,
-        data_path: Path,
-        schema_path: Path,
+        data_path: FileSharePath,
+        schema_path: FileSharePath,
         spark: SparkSession,
         stream: bool,
     ) -> DataFrame:
@@ -64,8 +64,8 @@ class BaseParser(ABC):
         Retrieves and processes data from the specified data path using the provided schema.
 
         Args:
-            data_path (Path): The path to the data file.
-            schema_path (Path): The path to the schema file.
+            data_path (FileSharePath): The path to the data file.
+            schema_path (FileSharePath): The path to the schema file.
             spark (SparkSession): The SparkSession object.
             stream (bool): Indicates whether the data should be processed as a stream.
 

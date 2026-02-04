@@ -40,7 +40,7 @@ fi
 
 if [ -z "$git" ]
 then
-    git="true"
+    git="false"
 fi
 
 if [ -z "$build" ]

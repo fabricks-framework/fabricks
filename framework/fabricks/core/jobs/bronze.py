@@ -7,21 +7,20 @@ from pyspark.sql.types import Row, TimestampType
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import JobDependency, TBronze
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.parsers import BaseParser
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.models import JobBronzeOptions, JobDependency, StepBronzeConf, StepBronzeOptions
 from fabricks.utils.helpers import concat_ws
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
 
 
 class Bronze(BaseJob):
     def __init__(
         self,
-        step: TBronze,
+        step: str,
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
@@ -36,7 +35,7 @@ class Bronze(BaseJob):
             conf=conf,
         )
 
-    _parser: Optional[BaseParser] = None
+    _parser: Optional[str] = None
 
     @property
     def stream(self) -> bool:
@@ -54,25 +53,40 @@ class Bronze(BaseJob):
     def virtual(self) -> bool:
         return False
 
+    @property
+    def options(self) -> JobBronzeOptions:
+        """Direct access to typed bronze job options."""
+        return self.conf.options  # type: ignore
+
+    @property
+    def step_conf(self) -> StepBronzeConf:
+        """Direct access to typed bronze step conf."""
+        return self.base_step_conf  # type: ignore
+
+    @property
+    def step_options(self) -> StepBronzeOptions:
+        """Direct access to typed bronze step options."""
+        return self.base_step_conf.options  # type: ignore
+
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
-        return cls(step=cast(TBronze, step), job_id=job_id, conf=conf)
+        return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
-        return cls(step=cast(TBronze, step), topic=topic, item=item, conf=conf)
+        return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property
-    def data_path(self) -> Path:
-        uri = self.options.job.get("uri")
+    def data_path(self) -> FileSharePath:
+        uri = self.options.uri
         assert uri is not None, "no uri provided in options"
-        path = Path.from_uri(uri, regex=VARIABLES)
+        path = FileSharePath.from_uri(uri, regex=VARIABLES)
         return path
 
     def get_dependencies(self, *s) -> Sequence[JobDependency]:
         dependencies = []
 
-        parents = self.options.job.get_list("parents")
+        parents = self.options.parents or []
         if parents:
             for p in parents:
                 dependencies.append(JobDependency.from_parts(self.job_id, p, "job"))
@@ -81,8 +95,8 @@ class Bronze(BaseJob):
 
     def register_external_table(self):
         options = self.conf.parser_options  # type: ignore
-        if options:
-            file_format = options.get("file_format")
+        if options and options.file_format:
+            file_format = options.file_format
         else:
             file_format = "delta"
 
@@ -136,17 +150,14 @@ class Bronze(BaseJob):
             self.compute_statistics_external_table()
 
     @property
-    def parser(self) -> BaseParser:
+    def parser(self) -> str:
         if not self._parser:
             assert self.mode not in ["register"], f"{self.mode} not allowed"
 
-            name = self.options.job.get("parser")
-            assert name is not None, "parser not found"
+            parser = self.options.parser
+            assert parser is not None, "parser not found"
 
-            options = self.conf.parser_options or None  # type: ignore
-            p = get_parser(name, options)
-
-            self._parser = p
+            self._parser = cast(str, parser)
 
         return self._parser
 
@@ -171,16 +182,49 @@ class Bronze(BaseJob):
             else:
                 df = self.spark.sql(f"select * from {self}")
 
-            # cleaning should done by parser
-            df = clean(df)
+            if self.step_options.clean is not False:
+                # cleaning should done by parser but for delta we do it here
+                df = clean(df)
 
         else:
-            df = self.parser.get_data(
+            options = self.conf.parser_options or None  # type: ignore
+            parse = get_parser(self.parser, options)
+
+            df = parse(
                 stream=stream,
                 data_path=self.data_path,
-                schema_path=self.paths.schema,
+                schema_path=self.paths.to_schema,
                 spark=self.spark,
             )
+
+        return df
+
+    def encrypt(self, df: DataFrame) -> DataFrame:
+        encrypted_columns = self.options.encrypted_columns or []
+        if encrypted_columns:
+            if self.runtime_options.encryption_key is not None:
+                from databricks.sdk.runtime import dbutils
+
+                key = dbutils.secrets.get(
+                    scope=self.runtime_options.secret_scope,
+                    key=self.runtime_options.encryption_key,
+                )
+                if self.runtime_options.unity_catalog:
+                    DEFAULT_LOGGER.warning(
+                        "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead",
+                        extra={"label": self},
+                    )
+
+            else:
+                import os
+
+                key = os.environ.get("FABRICKS_ENCRYPTION_KEY")
+
+            assert key, "encryption key not found in secrets nor in environment"
+
+            for col in encrypted_columns:
+                DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"label": self})
+                df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
 
         return df
 
@@ -204,7 +248,7 @@ class Bronze(BaseJob):
         return df
 
     def add_calculated_columns(self, df: DataFrame) -> DataFrame:
-        calculated_columns = self.options.job.get_dict("calculated_columns")
+        calculated_columns = self.options.calculated_columns or {}
 
         if calculated_columns:
             for key, value in calculated_columns.items():
@@ -230,7 +274,7 @@ class Bronze(BaseJob):
 
     def add_key(self, df: DataFrame) -> DataFrame:
         if "__key" not in df.columns:
-            fields = self.options.job.get_list("keys")
+            fields = self.options.keys or []
             if fields:
                 DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"label": self})
 
@@ -244,7 +288,7 @@ class Bronze(BaseJob):
 
     def add_source(self, df: DataFrame) -> DataFrame:
         if "__source" not in df.columns:
-            source = self.options.job.get("source")
+            source = self.options.source
             if source:
                 DEFAULT_LOGGER.debug(f"add source ({source})", extra={"label": self})
                 df = df.withColumn("__source", lit(source))
@@ -253,7 +297,7 @@ class Bronze(BaseJob):
 
     def add_operation(self, df: DataFrame) -> DataFrame:
         if "__operation" not in df.columns:
-            operation = self.options.job.get("operation")
+            operation = self.options.operation
             if operation:
                 DEFAULT_LOGGER.debug(f"add operation ({operation})", extra={"label": self})
                 df = df.withColumn("__operation", lit(operation))
@@ -263,15 +307,10 @@ class Bronze(BaseJob):
 
         return df
 
-    def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extend)
-        df = df.transform(self.add_calculated_columns)
-        df = df.transform(self.add_hash)
-        df = df.transform(self.add_operation)
-        df = df.transform(self.add_source)
-        df = df.transform(self.add_key)
-
+    def add_metadata(self, df: DataFrame) -> DataFrame:
         if "__metadata" in df.columns:
+            DEFAULT_LOGGER.debug("add metadata", extra={"label": self})
+
             if self.mode == "register":
                 #  https://github.com/delta-io/delta/issues/2014 (BUG)
                 df = df.withColumn(
@@ -304,6 +343,17 @@ class Bronze(BaseJob):
                         """
                     ),
                 )
+
+        return df
+
+    def base_transform(self, df: DataFrame) -> DataFrame:
+        df = df.transform(self.extend)
+        df = df.transform(self.add_calculated_columns)
+        df = df.transform(self.add_hash)
+        df = df.transform(self.add_operation)
+        df = df.transform(self.add_source)
+        df = df.transform(self.add_key)
+        df = df.transform(self.add_metadata)
 
         return df
 
@@ -395,6 +445,6 @@ class Bronze(BaseJob):
         else:
             super().vacuum()
 
-    def overwrite(self, schedule: Optional[str] = None):
+    def overwrite(self, schedule: Optional[str] = None, invoke: Optional[bool] = False):
         self.truncate()
-        self.run(schedule=schedule)
+        self.run(schedule=schedule, invoke=invoke)

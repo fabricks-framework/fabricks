@@ -1,5 +1,17 @@
-from fabricks.context import BRONZE, DBUTILS, GOLD, SECRET_SCOPE, SILVER, SPARK, init_spark_session, pprint_runtime
-from fabricks.core.jobs.base._types import Bronzes, Golds, Silvers, Steps
+from fabricks.context import (
+    BRONZE,
+    CONF_RUNTIME,
+    DBUTILS,
+    GOLD,
+    SILVER,
+    SPARK,
+    Bronzes,
+    Golds,
+    Silvers,
+    Steps,
+    init_spark_session,
+    pprint_runtime,
+)
 
 # step
 BRONZES = Bronzes
@@ -18,7 +30,7 @@ __all__ = [
     "GOLDS",
     "init_spark_session",
     "pprint_runtime",
-    "SECRET_SCOPE",
+    "CONF_RUNTIME",
     "SILVER",
     "Silvers",
     "SILVERS",

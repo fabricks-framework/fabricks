@@ -1,10 +1,9 @@
 import logging
-from typing import List, Optional, Union, cast
+from typing import Optional, Union
 
-from fabricks.context import FABRICKS_STORAGE
+from fabricks.context import FABRICKS_STORAGE, Steps
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base._types import Steps, TStep
-from fabricks.core.steps.base import BaseStep
+from fabricks.core.steps import get_step
 from fabricks.deploy.masks import deploy_masks
 from fabricks.deploy.notebooks import deploy_notebooks
 from fabricks.deploy.schedules import deploy_schedules
@@ -17,8 +16,8 @@ from fabricks.metastore.database import Database
 
 class Deploy:
     @staticmethod
-    def tables(drop: bool = False):
-        deploy_tables(drop=drop)
+    def tables(drop: bool = False, update: bool = False):
+        deploy_tables(drop=drop, update=update)
 
     @staticmethod
     def views():
@@ -33,16 +32,30 @@ class Deploy:
         deploy_masks(override=override)
 
     @staticmethod
-    def notebooks():
-        deploy_notebooks()
+    def notebooks(override: bool = False):
+        deploy_notebooks(overwrite=override)
 
     @staticmethod
     def schedules():
         deploy_schedules()
 
     @staticmethod
-    def armageddon(steps: Optional[Union[TStep, List[TStep], str, List[str]]], nowait: bool = False):
-        DEFAULT_LOGGER.warning("!💥 armageddon 💥!")
+    def step(step: str):
+        Deploy.tables()
+        s = get_step(step)
+        s.create()
+
+        Deploy.views()
+        Deploy.schedules()
+
+    @staticmethod
+    def job(step: str):
+        s = get_step(step)
+        s.create()
+
+    @staticmethod
+    def armageddon(steps: Optional[Union[str, list[str]]] = None, nowait: bool = False):
+        DEFAULT_LOGGER.warning("!💥 armageddon 💥!", extra={"label": "fabricks"})
         print_atomic_bomb(nowait=nowait)
 
         DEFAULT_LOGGER.setLevel(logging.INFO)
@@ -52,17 +65,15 @@ class Deploy:
         assert steps is not None
 
         if isinstance(steps, str):
-            steps = [cast(TStep, steps)]
-        elif isinstance(steps, List):
-            steps = [cast(TStep, s) for s in steps]
-        elif isinstance(steps, TStep):
             steps = [steps]
+        elif isinstance(steps, list):
+            steps = [s for s in steps]
 
         fabricks = Database("fabricks")
         fabricks.drop()
 
         for s in steps:
-            step = BaseStep(s)
+            step = get_step(s)
             step.drop()
 
         tmp = FABRICKS_STORAGE.joinpath("tmp")
@@ -85,7 +96,7 @@ class Deploy:
         Deploy.notebooks()
 
         for s in steps:
-            step = BaseStep(s)
+            step = get_step(s)
             step.create()
 
         Deploy.views()

@@ -12,7 +12,7 @@ def get_extender(name: str) -> Callable:
     if not IS_UNITY_CATALOG:
         assert path.exists(), "no valid extender found in {path.string}"
     else:
-        DEFAULT_LOGGER.debug(f"could not check if extender exists ({path.string})")
+        DEFAULT_LOGGER.debug(f"could not check if extender exists ({path.string})", extra={"label": "fabricks"})
 
     load_module_from_path(name, path)
     e = EXTENDERS[name]

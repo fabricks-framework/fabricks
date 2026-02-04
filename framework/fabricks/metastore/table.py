@@ -1,5 +1,5 @@
 import re
-from typing import Any, List, Optional, Sequence, Union, overload
+from typing import Sequence, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
@@ -11,21 +11,22 @@ from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore._types import AddedColumn, ChangedColumn, DroppedColumn, SchemaDiff
 from fabricks.metastore.dbobject import DbObject
-from fabricks.utils.path import Path
+from fabricks.models import ForeignKey, PrimaryKey
+from fabricks.utils.path import FileSharePath
 from fabricks.utils.sqlglot import fix
 
 
 class Table(DbObject):
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, spark: Optional[SparkSession] = SPARK):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, spark: SparkSession | None = SPARK):
         return cls(step, topic, item, spark=spark)
 
     @property
-    def deltapath(self) -> Path:
+    def deltapath(self) -> FileSharePath:
         return self.database.delta_path.joinpath("/".join(self.levels))
 
     @property
-    def delta_path(self) -> Path:
+    def delta_path(self) -> FileSharePath:
         return self.database.delta_path.joinpath("/".join(self.levels))
 
     @property
@@ -43,7 +44,7 @@ class Table(DbObject):
         return self.spark.sql(f"select * from {self}")
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         assert self.registered, f"{self} not registered"
 
         return self.dataframe.columns
@@ -98,16 +99,16 @@ class Table(DbObject):
         self,
         df: DataFrame,
         *,
-        partitioning: Optional[bool] = False,
-        partition_by: Optional[Union[List[str], str]] = None,
-        identity: Optional[bool] = False,
-        liquid_clustering: Optional[bool] = False,
-        cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str]] = None,
-        masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, Any]] = None,
-        foreign_keys: Optional[dict[str, Any]] = None,
-        comments: Optional[dict[str, str]] = None,
+        partitioning: bool | None = False,
+        partition_by: list[str] | str | None = None,
+        identity: bool | None = False,
+        liquid_clustering: bool | None = False,
+        cluster_by: list[str] | str | None = None,
+        properties: dict[str, str | bool | int] | None = None,
+        masks: dict[str, str] | None = None,
+        primary_key: dict[str, PrimaryKey] | None = None,
+        foreign_keys: dict[str, ForeignKey] | None = None,
+        comments: dict[str, str] | None = None,
     ): ...
 
     @overload
@@ -115,32 +116,32 @@ class Table(DbObject):
         self,
         *,
         schema: StructType,
-        partitioning: Optional[bool] = False,
-        partition_by: Optional[Union[List[str], str]] = None,
-        identity: Optional[bool] = False,
-        liquid_clustering: Optional[bool] = False,
-        cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str]] = None,
-        masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, Any]] = None,
-        foreign_keys: Optional[dict[str, Any]] = None,
-        comments: Optional[dict[str, str]] = None,
+        partitioning: bool | None = False,
+        partition_by: list[str] | str | None = None,
+        identity: bool | None = False,
+        liquid_clustering: bool | None = False,
+        cluster_by: list[str] | str | None = None,
+        properties: dict[str, str | bool | int] | None = None,
+        masks: dict[str, str] | None = None,
+        primary_key: dict[str, PrimaryKey] | None = None,
+        foreign_keys: dict[str, ForeignKey] | None = None,
+        comments: dict[str, str] | None = None,
     ): ...
 
     def create(
         self,
-        df: Optional[DataFrame] = None,
-        schema: Optional[StructType] = None,
-        partitioning: Optional[bool] = False,
-        partition_by: Optional[Union[List[str], str]] = None,
-        identity: Optional[bool] = False,
-        liquid_clustering: Optional[bool] = False,
-        cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str]] = None,
-        masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, Any]] = None,
-        foreign_keys: Optional[dict[str, Any]] = None,
-        comments: Optional[dict[str, str]] = None,
+        df: DataFrame | None = None,
+        schema: StructType | None = None,
+        partitioning: bool | None = False,
+        partition_by: list[str] | str | None = None,
+        identity: bool | None = False,
+        liquid_clustering: bool | None = False,
+        cluster_by: list[str] | str | None = None,
+        properties: dict[str, str | bool | int] | None = None,
+        masks: dict[str, str] | None = None,
+        primary_key: dict[str, PrimaryKey] | None = None,
+        foreign_keys: dict[str, ForeignKey] | None = None,
+        comments: dict[str, str] | None = None,
     ):
         self._create(
             df=df,
@@ -158,8 +159,11 @@ class Table(DbObject):
         )
 
     def _get_ddl_columns(
-        self, df: DataFrame, masks: Optional[dict[str, str]], comments: Optional[dict[str, str]]
-    ) -> List[str]:
+        self,
+        df: DataFrame,
+        masks: dict[str, str] | None,
+        comments: dict[str, str] | None,
+    ) -> list[str]:
         def _backtick(name: str, dtype: str) -> str:
             j = df.schema[name].jsonValue()
             r = re.compile(r"(?<='name': ')[^']+(?=',)")
@@ -188,18 +192,18 @@ class Table(DbObject):
 
     def _create(
         self,
-        df: Optional[DataFrame] = None,
-        schema: Optional[StructType] = None,
-        partitioning: Optional[bool] = False,
-        partition_by: Optional[Union[List[str], str]] = None,
-        identity: Optional[bool] = False,
-        liquid_clustering: Optional[bool] = False,
-        cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str]] = None,
-        masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, Any]] = None,
-        foreign_keys: Optional[dict[str, Any]] = None,
-        comments: Optional[dict[str, str]] = None,
+        df: DataFrame | None = None,
+        schema: StructType | None = None,
+        partitioning: bool | None = False,
+        partition_by: list[str] | str | None = None,
+        identity: bool | None = False,
+        liquid_clustering: bool | None = False,
+        cluster_by: list[str] | str | None = None,
+        properties: dict[str, str | bool | int] | None = None,
+        masks: dict[str, str] | None = None,
+        primary_key: dict[str, PrimaryKey] | None = None,
+        foreign_keys: dict[str, ForeignKey] | None = None,
+        comments: dict[str, str] | None = None,
     ):
         DEFAULT_LOGGER.info("create table", extra={"label": self})
         if not df:
@@ -238,19 +242,21 @@ class Table(DbObject):
             assert len(primary_key) == 1, "only one primary key allowed"
 
             for key, value in primary_key.items():
-                keys = value["keys"]
+                keys = value.keys
                 if isinstance(keys, str):
                     keys = [keys]
+
                 ddl_primary_key = f", constraint {key} primary key (" + ", ".join(keys) + ")"
 
         if foreign_keys:
             fks = []
 
             for key, value in foreign_keys.items():
-                reference = value["reference"]
-                keys = value["keys"]
+                reference = value.reference
+                keys = value.keys
                 if isinstance(keys, str):
                     keys = [keys]
+
                 keys = ", ".join([f"`{k}`" for k in keys])
                 fk = f"constraint {key} foreign key ({keys}) references {reference}"
                 fks.append(fk)
@@ -301,7 +307,13 @@ class Table(DbObject):
 
     @property
     def is_deltatable(self) -> bool:
-        return DeltaTable.isDeltaTable(self.spark, str(self.delta_path))
+        try:
+            return DeltaTable.isDeltaTable(self.spark, str(self.delta_path))
+        except Exception as e:
+            if "PERMISSION_DENIED" in str(e) or "row filter or column mask" in str(e):
+                return True
+            else:
+                raise e
 
     @property
     def column_mapping_enabled(self) -> bool:
@@ -329,13 +341,17 @@ class Table(DbObject):
         self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
-    def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: Optional[str] = None) -> bool:
+    def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: list[str] | None = None) -> bool:
         assert self.registered, f"{self} not registered"
 
-        diffs = self.get_schema_differences(df)
+        diffs = self.get_schema_differences(df, exclude_columns_with_prefix=exclude_columns_with_prefix)
         return len(diffs) > 0
 
-    def get_schema_differences(self, df: DataFrame) -> Sequence[SchemaDiff]:
+    def get_schema_differences(
+        self,
+        df: DataFrame,
+        exclude_columns_with_prefix: list[str] | None = None,
+    ) -> Sequence[SchemaDiff]:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug("get schema differences", extra={"label": self, "df": df})
@@ -346,6 +362,9 @@ class Table(DbObject):
                 df1 = df1.drop("__identity")
 
         all_columns = set(df1.columns).union(set(df.columns))
+        if exclude_columns_with_prefix:
+            for excluded in exclude_columns_with_prefix:
+                all_columns = {c for c in all_columns if not c.startswith(excluded)}
 
         df1_dict = {name: dtype for name, dtype in df1.dtypes}
         df2_dict = {name: dtype for name, dtype in df.dtypes}
@@ -378,8 +397,16 @@ class Table(DbObject):
 
         return diffs
 
-    def update_schema(self, df: DataFrame, widen_types: bool = False):
+    def update_schema(self, df: DataFrame | None = None, schema: StructType | None = None, widen_types: bool = False):
+        if df is None and schema is None:
+            raise ValueError("Either df or schema must be provided")
+
+        if df is None and schema is not None:
+            df = self.spark.createDataFrame([], schema)
+
+        assert df is not None
         assert self.registered, f"{self} not registered"
+
         if not self.column_mapping_enabled:
             self.enable_column_mapping()
 
@@ -428,8 +455,16 @@ class Table(DbObject):
                 except Exception:
                     pass
 
-    def overwrite_schema(self, df: DataFrame):
+    def overwrite_schema(self, df: DataFrame | None = None, schema: StructType | None = None):
+        if df is None and schema is None:
+            raise ValueError("Either df or schema must be provided")
+
+        if df is None and schema is not None:
+            df = self.spark.createDataFrame([], schema)
+
+        assert df is not None
         assert self.registered, f"{self} not registered"
+
         if not self.column_mapping_enabled:
             self.enable_column_mapping()
 
@@ -473,7 +508,7 @@ class Table(DbObject):
             pass
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
 
-    def optimize(self, columns: Optional[Union[str, List[str]]] = None):
+    def optimize(self, columns: str | list[str] | None = None):
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.info("optimize", extra={"label": self})
@@ -579,7 +614,7 @@ class Table(DbObject):
 
         return self.spark.sql(f"describe detail {self.qualified_name}")
 
-    def get_partitions(self) -> List[str]:
+    def get_partitions(self) -> list[str]:
         assert self.registered, f"{self} not registered"
 
         try:
@@ -610,7 +645,7 @@ class Table(DbObject):
         version = df.select(max("version")).collect()[0][0]
         return version
 
-    def get_property(self, key: str) -> Optional[str]:
+    def get_property(self, key: str) -> str | None:
         assert self.registered, f"{self} not registered"
 
         try:
@@ -652,7 +687,7 @@ class Table(DbObject):
                 """
             )
 
-    def set_property(self, key: Union[str, int], value: Union[str, int]):
+    def set_property(self, key: str | int, value: str | int):
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug(f"set property {key} = {value}", extra={"label": self})
@@ -735,7 +770,7 @@ class Table(DbObject):
             """
         )
 
-    def add_column(self, name: str, type: str, after: Optional[str] = None):
+    def add_column(self, name: str, type: str, after: str | None = None):
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.info(f"add column {name} ({type})", extra={"label": self})
@@ -747,7 +782,7 @@ class Table(DbObject):
             """
         )
 
-    def create_bloomfilter_index(self, columns: Union[str, List[str]]):
+    def create_bloomfilter_index(self, columns: str | list[str]):
         assert self.registered, f"{self} not registered"
 
         if isinstance(columns, str):
@@ -790,7 +825,7 @@ class Table(DbObject):
         df = self.spark.sql(f"describe history {self.qualified_name}")
         return df
 
-    def enable_liquid_clustering(self, columns: Optional[Union[str, List[str]]] = None, auto: Optional[bool] = False):
+    def enable_liquid_clustering(self, columns: str | list[str] | None = None, auto: bool | None = False):
         assert self.registered, f"{self} not registered"
 
         if auto:

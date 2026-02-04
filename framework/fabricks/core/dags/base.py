@@ -59,10 +59,9 @@ class BaseDags:
         d = TABLE_LOG_HANDLER.table.query(q)
         df = SPARK.createDataFrame(d)
 
-        if "Exception" not in df.columns:
-            df = df.withColumn("Exception", expr("null"))
-        if "NotebookId" not in df.columns:
-            df = df.withColumn("NotebookId", expr("null"))
+        for column in ["Exception", "NotebookId", "Json"]:
+            if column not in df.columns:
+                df = df.withColumn(column, expr("null"))
 
         df = SPARK.sql(
             """
@@ -76,7 +75,8 @@ class BaseDags:
               `Level` as `level`,
               `Message` as `status`,
               to_timestamp(`Created`, 'dd/MM/yy HH:mm:ss') as `timestamp`,
-              from_json(Exception, 'type STRING, message STRING, traceback STRING') as exception
+              from_json(Exception, 'type STRING, message STRING, traceback STRING') as exception,
+              Json as json
             from
               {df}
             """,

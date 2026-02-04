@@ -10,22 +10,22 @@ from fabricks.context.log import DEFAULT_LOGGER
 
 UDFS: dict[str, Callable] = {}
 
-udf_schema = CONF_RUNTIME.get("udf_options", {}).get("schema", "default")
-udf_prefix = CONF_RUNTIME.get("udf_options", {}).get("prefix", "udf_")
+UDF_SCHEMA = CONF_RUNTIME.udf_options.schema_name or "default" if CONF_RUNTIME.udf_options else "default"
+UDF_PREFIX = CONF_RUNTIME.udf_options.prefix or "udf_" if CONF_RUNTIME.udf_options else "udf_"
 
 
 def register_all_udfs(extension: Optional[str] = None, override: bool = False):
     """
     Register all user-defined functions (UDFs).
     """
-    DEFAULT_LOGGER.info("register udfs")
+    DEFAULT_LOGGER.info("register udfs", extra={"label": "fabricks"})
 
     for udf in get_udfs(extension=extension):
         split = udf.split(".")
         try:
             register_udf(udf=split[0], extension=split[1], override=override)
         except Exception as e:
-            DEFAULT_LOGGER.exception(f"could not register udf {udf}", exc_info=e)
+            DEFAULT_LOGGER.exception(f"could not register udf {udf}", exc_info=e, extra={"label": "fabricks"})
 
 
 def get_udfs(extension: Optional[str] = None) -> List[str]:
@@ -50,12 +50,12 @@ def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
         spark = SPARK
     assert spark is not None
 
-    df = spark.sql(f"show user functions in {udf_schema}")
+    df = spark.sql(f"show user functions in {UDF_SCHEMA}")
 
     if CATALOG:
-        df = df.where(f"function == '{CATALOG}.{udf_schema}.{udf_prefix}{udf}'")
+        df = df.where(f"function == '{CATALOG}.{UDF_SCHEMA}.{UDF_PREFIX}{udf}'")
     else:
-        df = df.where(f"function == 'spark_catalog.{udf_schema}.{udf_prefix}{udf}'")
+        df = df.where(f"function == 'spark_catalog.{UDF_SCHEMA}.{UDF_PREFIX}{udf}'")
 
     return not df.isEmpty()
 

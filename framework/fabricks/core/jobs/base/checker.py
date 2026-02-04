@@ -19,10 +19,10 @@ class Checker(Generator):
         self._check("post_run")
 
     def _check(self, position: Literal["pre_run", "post_run"]):
-        if self.options.check.get(position):
+        if self.check_options and getattr(self.check_options, position):
             DEFAULT_LOGGER.debug(f"check {position}", extra={"label": self})
 
-            p = self.paths.runtime.append(f".{position}.sql")
+            p = self.paths.to_runtime.append(f".{position}.sql")
             assert p.exists(), f"{position} check not found ({p})"
 
             df = self.spark.sql(p.get_sql())
@@ -54,9 +54,9 @@ class Checker(Generator):
                     raise PostRunCheckWarning(row["__message"], dataframe=df)
 
     def check_post_run_extra(self):
-        min_rows = self.options.check.get("min_rows")
-        max_rows = self.options.check.get("max_rows")
-        count_must_equal = self.options.check.get("count_must_equal")
+        min_rows = self.check_options.min_rows if self.check_options else None
+        max_rows = self.check_options.max_rows if self.check_options else None
+        count_must_equal = self.check_options.count_must_equal if self.check_options else None
 
         if min_rows or max_rows or count_must_equal:
             df = self.spark.sql(f"select count(*) from {self}")
@@ -121,10 +121,10 @@ class Checker(Generator):
         self._check_duplicate_in_column("__identity")
 
     def check_skip_run(self):
-        if self.options.check.get("skip"):
+        if self.check_options and self.check_options.skip:
             DEFAULT_LOGGER.debug("check if run should be skipped", extra={"label": self})
 
-            p = self.paths.runtime.append(".skip.sql")
+            p = self.paths.to_runtime.append(".skip.sql")
             assert p.exists(), "skip check not found"
 
             df = self.spark.sql(p.get_sql())

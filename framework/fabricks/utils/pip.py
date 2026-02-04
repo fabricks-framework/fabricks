@@ -1,13 +1,13 @@
 import subprocess
 from typing import List, Optional, Union
 
-from fabricks.utils.path import Path
+from fabricks.utils.path import FileSharePath
 
 
 def pip_package(
     package: Union[str, List[str]],
-    whl_path: Optional[Path] = None,
-    tgt_path: Optional[Path] = None,
+    whl_path: Optional[FileSharePath] = None,
+    tgt_path: Optional[FileSharePath] = None,
 ):
     if isinstance(package, str):
         package = [package]
@@ -29,9 +29,9 @@ def pip_package(
 
 
 def pip_requirements(
-    requirements_path: Path,
-    whl_path: Optional[Path] = None,
-    tgt_path: Optional[Path] = None,
+    requirements_path: FileSharePath,
+    whl_path: Optional[FileSharePath] = None,
+    tgt_path: Optional[FileSharePath] = None,
 ):
     r = requirements_path.string
 
@@ -50,7 +50,7 @@ def pip_requirements(
         raise ValueError(r, out.stderr)
 
 
-def pip_wheel(requirement_path: Path, whl_path: Path):
+def pip_wheel(requirement_path: FileSharePath, whl_path: FileSharePath):
     import subprocess
 
     r = requirement_path.string
