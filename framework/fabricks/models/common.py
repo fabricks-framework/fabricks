@@ -21,7 +21,7 @@ AllowedConstraintOptions = Literal["not enforced", "deferrable", "initially defe
 AllowedForeignKeyOptions = Literal["match full", "on update no action", "on delete no action"]
 
 # Change Data Capture types
-AllowedChangeDataCaptures = Literal["nocdc", "scd1", "scd2", "none"]
+AllowedChangeDataCaptures = Literal["nocdc", "scd1", "scd2"]
 
 
 class SparkOptions(BaseModel):

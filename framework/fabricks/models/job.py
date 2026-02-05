@@ -43,7 +43,7 @@ class BaseOptions(BaseModel):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
     mode: AllowedModes
-    change_data_capture: AllowedChangeDataCaptures | None = Field(default="none")
+    change_data_capture: AllowedChangeDataCaptures | None = Field(default="nocdc")
 
     parents: list[str] | None = None
     optimize: bool | None = None
