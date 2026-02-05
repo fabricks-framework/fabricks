@@ -71,7 +71,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
                 break
 
             if path == path.parent:
-                raise FileNotFoundError("No configuration file found in hierarchy")
+                break
 
             path = path.parent
 
@@ -197,6 +197,11 @@ class ConfigOptions(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ):
         # Order: env vars > hierarchical file > defaults
+        for var in os.environ:
+            if var.startswith("FABRICKS_"):
+                if os.environ[var].lower() == "none":
+                    del os.environ[var]
+
         return (
             init_settings,
             env_settings,
