@@ -7,8 +7,6 @@ from datetime import timezone as tz
 from typing import Optional, Tuple
 from zoneinfo import ZoneInfo
 
-from pyspark.sql import DataFrame
-
 from fabricks.utils.azure_table import AzureTable
 
 

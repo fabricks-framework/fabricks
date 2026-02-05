@@ -39,6 +39,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
 
                 data = data.get("tool", {}).get("fabricks", {})
                 data["base"] = str(base)
+                data["path_to_config"] = str(pyproject_path)
                 return data
 
             return None
@@ -52,6 +53,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
                     data = json.load(f)
 
                 data["base"] = str(base)
+                data["path_to_config"] = str(json_path)
                 return data
 
             return None
@@ -69,7 +71,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
                 break
 
             if path == path.parent:
-                break
+                raise FileNotFoundError("No configuration file found in hierarchy")
 
             path = path.parent
 
@@ -94,6 +96,10 @@ class ConfigOptions(BaseSettings):
 
     base: str = Field(
         validation_alias=AliasChoices("FABRICKS_BASE", "base"),
+        default="none",
+    )
+    path_to_config: str = Field(
+        validation_alias=AliasChoices("FABRICKS_PATH_TO_CONFIG", "path_to_config"),
         default="none",
     )
     config: str = Field(
