@@ -20,19 +20,6 @@ class DagGenerator(BaseDags):
     def get_jobs(self) -> DataFrame:
         return SPARK.sql(
             f"""
-            with logs as (
-              select 
-                l.job_id,
-                median(l.duration) as median_duration
-              from
-                fabricks.logs_pivot l
-              where
-                true
-                and duration is not null
-                and date_diff(day, l.start_time , current_date) < 10
-              group by
-                l.job_id
-            )
             select
               'statuses' as PartitionKey,
               '{self.schedule_id}' as ScheduleId,
@@ -41,13 +28,10 @@ class DagGenerator(BaseDags):
               j.step as Step,
               j.job_id as JobId,
               j.job as Job,
-              'scheduled' as `Status`,
-              max(median_duration) as `MedianDuration`, 
-              dense_rank() over (order by max(median_duration) desc) as Rank
+              'scheduled' as `Status`
             from
               fabricks.jobs j
               inner join fabricks.{self.schedule}_schedule v on j.job_id = v.job_id
-              left join logs l on j.job_id = l.job_id
             group by all
             """
         )

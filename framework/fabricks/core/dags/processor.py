@@ -93,8 +93,7 @@ class DagProcessor(BaseDags):
                 break
 
             else:
-                sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
-                for s in sorted_scheduled:
+                for s in scheduled:
                     dependencies = self.table.query(f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'")
 
                     if len(dependencies) == 0:
