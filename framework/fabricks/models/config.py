@@ -8,6 +8,12 @@ from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, Settings
 
 from fabricks.utils.path import GitPath, resolve_git_path
 
+# Clean environment variables set to "none" (case-insensitive)
+for var in os.environ:
+    if var.startswith("FABRICKS_"):
+        if os.environ[var].lower() == "none":
+            del os.environ[var]
+
 
 class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
     """Custom settings source for hierarchical file configuration."""
@@ -71,7 +77,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
                 break
 
             if path == path.parent:
-                raise FileNotFoundError("No configuration file found in hierarchy")
+                break
 
             path = path.parent
 
