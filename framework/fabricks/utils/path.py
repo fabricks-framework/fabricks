@@ -127,11 +127,11 @@ class GitPath(BasePath):
             path = path.replace(".ipynb", "")
         if path.endswith(".py"):
             path = path.replace(".py", "")
+            
         return path
 
     def walk(
         self,
-        depth: Optional[int] = None,
         convert: Optional[bool] = False,
         file_format: Optional[str] = None,
     ) -> List:
@@ -143,9 +143,11 @@ class GitPath(BasePath):
                 out = list(self._yield(self.string))
 
         if file_format:
-            out = [o for o in out if o.endswith(".sql")]
+            out = [o for o in out if o.endswith(file_format)]
+
         if convert:
             out = [self.__class__(o) for o in out]
+
         return out
 
     def _yield(self, path: Union[str, PathlibPath]):
@@ -156,6 +158,7 @@ class GitPath(BasePath):
         for child in path.glob(r"*"):
             if child.is_dir():
                 yield from self._yield(child)
+
             else:
                 yield str(child)
 
@@ -230,9 +233,11 @@ class FileSharePath(BasePath):
                 out = list(self._yield(self.string))
 
         if file_format:
-            out = [o for o in out if o.endswith(".sql")]
+            out = [o for o in out if o.endswith(file_format)]
+
         if convert:
             out = [self.__class__(o) for o in out]
+
         return out
 
     def get_file_info(self) -> DataFrame:

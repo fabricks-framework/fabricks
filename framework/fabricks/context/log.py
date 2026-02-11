@@ -148,11 +148,11 @@ def send_message_to_channel(
         teams_message["themeColor"] = color
     else:
         COLORS = {
-            "DEBUG": "#00FFFF",
-            "INFO": "#00FF00 ",
-            "WARNING": "#FFFF00 ",
-            "ERROR": "#FF0000 ",
-            "CRITICAL": "#FF0000",
+            "DEBUG": "#00BCD4",
+            "INFO": "#2196F3",
+            "WARNING": "#FF9800",
+            "ERROR": "#F44336",
+            "CRITICAL": "#C62828",
         }
         color = COLORS[loglevel]
         teams_message["themeColor"] = color
