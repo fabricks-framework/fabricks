@@ -143,18 +143,19 @@ class Checker(Generator):
 
     def check_run_before(self):
         if self.check_options and self.check_options.before:
-            DEFAULT_LOGGER.debug("check before time", extra={"label": self})
             self._check_run_time(self.check_options.before, "before")
 
     def check_run_after(self):
         if self.check_options and self.check_options.after:
-            DEFAULT_LOGGER.debug("check after time", extra={"label": self})
             self._check_run_time(self.check_options.after, "after")
 
     def _check_run_time(self, time: datetime.time, when: Literal["before", "after"]):
-        now = datetime.datetime.now().astimezone(TIMEZONE)
+        now = datetime.datetime.now(tz=TIMEZONE)
+        target = datetime.datetime.combine(now.date(), time, tzinfo=TIMEZONE)
 
-        if when == "before" and now.time() >= time:
-            raise SkipRunTimeWarning(f"current time {now.time()} is after {time}")
-        elif when == "after" and now.time() <= time:
-            raise SkipRunTimeWarning(f"current time {now.time()} is before {time}")
+        DEFAULT_LOGGER.debug(f"check {when} {target}", extra={"label": self})
+
+        if when == "before" and now >= target:
+            raise SkipRunTimeWarning(f"current time {now} is after {target}")
+        elif when == "after" and now <= target:
+            raise SkipRunTimeWarning(f"current time {now} is before {target}")
