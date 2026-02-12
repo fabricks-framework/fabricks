@@ -45,7 +45,7 @@ def deploy_notebooks(overwrite: bool = False):
             "cluster",
             "initialize",
             "process",
-            "schedule",
+            "standalone",
             "run",
             "terminate",
         ]:

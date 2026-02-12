@@ -16,12 +16,7 @@ dbutils.widgets.text("job_id", "---")
 # COMMAND ----------
 
 step = dbutils.widgets.get("step")
-assert step != "---"
-
-# COMMAND ----------
-
 job_id = dbutils.widgets.get("job_id")
-assert job_id != "---"
 
 # COMMAND ----------
 
