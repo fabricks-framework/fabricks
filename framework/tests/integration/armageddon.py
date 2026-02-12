@@ -3,13 +3,10 @@
 
 # COMMAND ----------
 
-import os
-import time
 from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.deploy import Deploy
 from tests.integration._types import steps
