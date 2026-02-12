@@ -91,9 +91,9 @@ class Deploy:
         fabricks.create()
 
         Deploy.tables(drop=True)
-        Deploy.udfs()
-        Deploy.masks()
-        Deploy.notebooks()
+        Deploy.udfs(override=True)
+        Deploy.masks(override=True)
+        Deploy.notebooks(override=True)
 
         for s in steps:
             step = get_step(s)

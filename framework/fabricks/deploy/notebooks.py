@@ -6,74 +6,51 @@ from importlib import resources
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service import workspace
 
-from fabricks.context import PATH_NOTEBOOKS, IS_TESTMODE
+from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
 
-
-def deploy_notebook(notebook: str):
+def deploy_notebook(notebook: str, overwrite: bool = True):
     from fabricks.api import notebooks
-
-    DEFAULT_LOGGER.debug(f"overwrite {notebook}", extra={"label": "fabricks"})
 
     w = WorkspaceClient()
 
     target = f"{PATH_NOTEBOOKS}/{notebook}.py"
     src = resources.files(notebooks) / f"{notebook}.py"
 
-    with io.open(src, "rb") as file:  # type: ignore
-        content = file.read()
-    
-    if IS_TESTMODE:
-        # Prepend Databricks notebook header
-        header = b"# Databricks notebook source\n# MAGIC %run ./add_missing_modules\n\n"
-        content = header + content
+    if overwrite:
+        if os.path.isfile(target):
+            DEFAULT_LOGGER.debug(f"removing {notebook}.py", extra={"label": "fabricks"})
+            os.remove(target)
 
-    encoded = base64.b64encode(content).decode("utf-8")
+    if not os.path.exists(target):
+        DEFAULT_LOGGER.debug(f"deploying {notebook}.py", extra={"label": "fabricks"})
 
-    w.workspace.import_(
-        path=target,
-        content=encoded,
-        format=workspace.ImportFormat.AUTO,
-        language=workspace.Language.PYTHON,
-        overwrite=True,
-    )
+        with io.open(src, "rb") as file:  # type: ignore
+            content = file.read()
+
+        encoded = base64.b64encode(content).decode("utf-8")
+
+        w.workspace.import_(
+            path=target,
+            content=encoded,
+            format=workspace.ImportFormat.AUTO,
+            language=workspace.Language.PYTHON,
+            overwrite=True,
+        )
 
 
 def deploy_notebooks(overwrite: bool = False):
-    if overwrite:
-        DEFAULT_LOGGER.warning("overwrite notebooks", extra={"label": "fabricks"})
+    d = str(PATH_NOTEBOOKS)
+    os.makedirs(d, exist_ok=True)
 
-        _create_dir_if_not_exists()
-        _clean_dir()
+    DEFAULT_LOGGER.info(f"deploying notebooks {'(overwrite)' if overwrite else ''}", extra={"label": "fabricks"})
 
-        for n in [
-            "cluster",
-            "initialize",
-            "process",
-            "standalone",
-            "run",
-            "terminate",
-        ]:
-            deploy_notebook(notebook=n)
-    else:
-        DEFAULT_LOGGER.info("deploy notebooks skipped (overwrite=False)", extra={"label": "fabricks"})
-
-
-def _create_dir_if_not_exists():
-    dir = str(PATH_NOTEBOOKS)
-    os.makedirs(dir, exist_ok=True)
-
-
-def _clean_dir():
-    dir = str(PATH_NOTEBOOKS)
     for n in [
         "cluster",
         "initialize",
         "process",
-        "schedule",
+        "standalone",
         "run",
         "terminate",
     ]:
-        file_path = os.path.join(dir, f"{n}.py")
-        if os.path.isfile(file_path):
-            os.remove(file_path)
+        deploy_notebook(notebook=n, overwrite=overwrite)
