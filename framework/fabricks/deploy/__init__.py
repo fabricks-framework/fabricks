@@ -93,7 +93,7 @@ class Deploy:
         Deploy.tables(drop=True)
         Deploy.udfs(override=True)
         Deploy.masks(override=True)
-        Deploy.notebooks(override=True)
+        Deploy.notebooks(overwrite=True)
 
         for s in steps:
             step = get_step(s)
