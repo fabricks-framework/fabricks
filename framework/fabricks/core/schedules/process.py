@@ -29,11 +29,11 @@ def process(step: str | None = None, schedule_id: str | None = None, schedule: s
     if step is None:
         step = dbutils.widgets.get("step")
 
-    assert schedule_id is not None, "Schedule ID must be provided either as an argument, task value, or widget."
-    assert schedule is not None, "Schedule must be provided either as an argument, task value, or widget."
-    assert step is not None, "Step must be provided either as an argument or widget."
+    assert schedule_id is not None, "schedule_id must be provided either as an argument, task value, or widget."
+    assert schedule is not None, "schedule must be provided either as an argument, task value, or widget."
+    assert step is not None, "step must be provided either as an argument or widget."
 
-    DEFAULT_LOGGER.info(f"Processing step {step} in schedule {schedule} with ID {schedule_id}")
+    DEFAULT_LOGGER.info(f"processing {step} in {schedule} ({schedule_id})", extra={"label": "scheduler"})
 
     with DagProcessor(schedule_id=schedule_id, schedule=schedule, step=step) as p:
         p.process()

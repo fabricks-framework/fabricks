@@ -18,7 +18,7 @@ def terminate(schedule_id: str | None = None):
         schedule_id = dbutils.widgets.get("schedule_id")
 
     assert schedule_id is not None, "Schedule ID must be provided either as an argument, task value, or widget."
-    DEFAULT_LOGGER.info(f"Terminating schedule with ID {schedule_id}")
+    DEFAULT_LOGGER.info(f"terminating schedule ({schedule_id})", extra={"label": "scheduler"})
 
     with DagTerminator(schedule_id=schedule_id) as t:
         t.terminate()

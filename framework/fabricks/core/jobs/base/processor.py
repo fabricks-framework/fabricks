@@ -121,6 +121,7 @@ class Processor(Invoker):
         vacuum: bool | None = None,
         optimize: bool | None = None,
         compute_statistics: bool | None = None,
+        **kwargs,
     ):
         """
         Run the processor.

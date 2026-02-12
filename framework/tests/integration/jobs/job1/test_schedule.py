@@ -2,7 +2,7 @@ from logging import ERROR
 
 import pytest
 
-from fabricks.context import PATH_RUNTIME, SPARK
+from fabricks.context import PATH_NOTEBOOKS, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 from fabricks.utils.helpers import run_notebook
@@ -22,9 +22,13 @@ expected_failures = [
     "gold.check_count_must_equal",
     "gold.check_duplicate_key",
     "gold.check_duplicate_identity",
-    "gold.check_time_ko",
+]
+expected_skips = [
+      "gold.check_time_ko",
+      "gold.check_skip",
 ]
 expected_failures_as_str = ", ".join(f'"{f}"' for f in expected_failures)
+expected_skips_as_str = ", ".join(f'"{f}"' for f in expected_skips)
 
 
 @pytest.mark.order(102)
@@ -33,7 +37,7 @@ def test_schedule():
     t.drop()
 
     try:
-        run_notebook(PATH_RUNTIME.parent().joinpath("schedule"), schedule="test")
+        run_notebook(PATH_NOTEBOOKS.joinpath("standalone"), schedule="test")
         assert False  # notebook should fail
     except Exception:
         assert True
@@ -71,3 +75,37 @@ def test_forced_failures():
         """
     )
     assert df.count() == len(expected_failures), f"forced failures <> {len(expected_failures)}"
+
+
+@pytest.mark.order(104)
+def test_no_unforced_skip():
+    df = SPARK.sql(
+        f"""
+        select
+          *
+        from
+          fabricks.last_schedule l
+        where
+          true
+          and l.skipped
+          and l.job not in ({expected_skips_as_str})
+        """
+    )
+    assert df.count() == 0, "unforced skip <> 0"
+
+
+@pytest.mark.order(104)
+def test_forced_skips():
+    df = SPARK.sql(
+        f"""
+        select
+          *
+        from
+          fabricks.last_schedule l
+        where
+          true
+          and l.skipped
+          and l.job in ({expected_skips_as_str})
+        """
+    )
+    assert df.count() == len(expected_skips), f"forced skips <> {len(expected_skips)}"

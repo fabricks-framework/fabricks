@@ -76,8 +76,6 @@ def run(
         else:
             raise ValueError("either job or step+job_id or step+topic+item must be provided")
 
-    assert job is not None
-
     if schedule_id is None:
         try:
             schedule_id = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule_id")
@@ -97,6 +95,10 @@ def run(
         except:  # noqa: E722
             notebook_id = None
 
+    assert job is not None
+    assert schedule_id is not None
+    assert schedule is not None
+
     extra = {
         "partition_key": schedule_id,
         "schedule_id": schedule_id,
@@ -104,9 +106,15 @@ def run(
         "step": step,
         "job": str(job),
         "target": "buffer",
-        "notebook_id": notebook_id,
-        "json": json.dumps(data),
     }
+    if data is not None:
+        extra["json"] = data
+    if notebook_id is not None:
+        extra["notebook_id"] = notebook_id
+
+    for k, v in extra.items():
+        if k not in kwargs:
+            kwargs[k] = v
 
     LOGGER.info("running", extra=extra)
 
@@ -115,7 +123,7 @@ def run(
             LOGGER.debug("invoke pre-run callable", extra=extra)
             pre_run_callable(**kwargs)
 
-        job.run(**kwargs)
+        job.run(schedule=schedule, schedule_id=schedule_id, **kwargs)
         LOGGER.info("done", extra=extra)
 
         if post_run_callable is not None:

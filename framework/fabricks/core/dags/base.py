@@ -86,13 +86,22 @@ class BaseDags:
         return df
 
     def write_logs(self, df: DataFrame):
-        (
-            df.write.format("delta")
-            .mode("overwrite")
-            .option("mergeSchema", "true")
-            .option("partitionOverwriteMode", "dynamic")
-            .save(Table("fabricks", "logs").delta_path.string)
-        )
+        try:
+            (
+                df.write.format("delta")
+                .mode("overwrite")
+                .option("mergeSchema", "true")
+                .option("partitionOverwriteMode", "dynamic")
+                .save(Table("fabricks", "logs").delta_path.string)
+            )
+        except Exception:
+            (
+                df.write.format("delta")
+                .mode("overwrite")
+                .option("overwriteSchema", "true")
+                .option("partitionOverwriteMode", "dynamic")
+                .save(Table("fabricks", "logs").delta_path.string)
+            )
 
     def remove_invalid_characters(self, s: str) -> str:
         out = re.sub("[^a-zA-Z0-9]", "", s)

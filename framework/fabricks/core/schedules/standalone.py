@@ -6,7 +6,8 @@ from databricks.sdk.runtime import dbutils, spark
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_step
-from fabricks.core.schedules import generate, terminate
+from fabricks.core.schedules.generate import generate
+from fabricks.core.schedules.terminate import terminate
 from fabricks.utils.helpers import run_in_parallel, run_notebook
 
 
@@ -34,7 +35,6 @@ def standalone(schedule: str | None = None):
             step=task,
             schedule_id=schedule_id,
             schedule=schedule,
-            workers=step.workers,
         )
 
     _ = run_in_parallel(_schedule, steps)
