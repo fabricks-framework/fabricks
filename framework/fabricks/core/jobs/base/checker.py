@@ -149,9 +149,10 @@ class Checker(Generator):
         if self.check_options and self.check_options.after:
             self._check_run_time(self.check_options.after, "after")
 
-    def _check_run_time(self, time: datetime.time, when: Literal["before", "after"]):
+    def _check_run_time(self, time: str, when: Literal["before", "after"]):
         now = datetime.datetime.now(tz=TIMEZONE)
-        target = datetime.datetime.combine(now.date(), time, tzinfo=TIMEZONE)
+        time_as_time = datetime.datetime.strptime(time, "%H:%M:%S").time()
+        target = datetime.datetime.combine(now.date(), time_as_time, tzinfo=TIMEZONE)
 
         DEFAULT_LOGGER.debug(f"check {when} {target}", extra={"label": self})
 
