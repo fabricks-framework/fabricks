@@ -7,7 +7,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.dags.generator import DagGenerator
 
 
-def generate(schedule: str | None) -> Tuple[str, DataFrame, DataFrame]:
+def generate(schedule: str | None = None) -> Tuple[str, DataFrame, DataFrame]:
     """
     Generate a schedule, job dataframe, and dependency dataframe based on the given schedule.
 

@@ -6,7 +6,7 @@ from importlib import resources
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service import workspace
 
-from fabricks.context import PATH_NOTEBOOKS
+from fabricks.context import PATH_NOTEBOOKS, IS_TESTMODE
 from fabricks.context.log import DEFAULT_LOGGER
 
 
@@ -22,6 +22,11 @@ def deploy_notebook(notebook: str):
 
     with io.open(src, "rb") as file:  # type: ignore
         content = file.read()
+    
+    if IS_TESTMODE:
+        # Prepend Databricks notebook header
+        header = b"# Databricks notebook source\n# MAGIC %run ./add_missing_modules\n\n"
+        content = header + content
 
     encoded = base64.b64encode(content).decode("utf-8")
 

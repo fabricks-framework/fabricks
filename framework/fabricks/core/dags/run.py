@@ -2,6 +2,7 @@ import json
 from typing import Callable, overload
 
 from databricks.sdk.runtime import dbutils
+from pyspark.errors.exceptions.base import IllegalArgumentException
 
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 from fabricks.core.jobs import Bronze, Gold, Silver, get_job
@@ -79,15 +80,15 @@ def run(
 
     if schedule_id is None:
         try:
+            schedule_id = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule_id")
+        except (TypeError, IllegalArgumentException, ValueError):
             schedule_id = dbutils.widgets.get("schedule_id")
-        except:  # noqa: E722
-            schedule_id = None
 
     if schedule is None:
         try:
+            schedule = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule")
+        except (TypeError, IllegalArgumentException, ValueError):
             schedule = dbutils.widgets.get("schedule")
-        except:  # noqa: E722
-            schedule = None
 
     if notebook_id is None:
         try:

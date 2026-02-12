@@ -1,11 +1,16 @@
 # Databricks notebook source
-# MAGIC %run ./add_missing_modules
 
 # COMMAND ----------
 
 from databricks.sdk.runtime import dbutils
 
 from fabricks.core.schedules import terminate
+
+# COMMAND ----------
+
+dbutils.widgets.text("schedule_id", "---")
+
+# COMMAND ----------
 
 terminate()
 

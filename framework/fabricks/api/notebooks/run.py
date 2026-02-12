@@ -1,5 +1,4 @@
 # Databricks notebook source
-# MAGIC %run ./add_missing_modules
 
 # COMMAND ----------
 
@@ -12,6 +11,8 @@ from fabricks.core.schedules import run
 
 dbutils.widgets.text("step", "---")
 dbutils.widgets.text("job_id", "---")
+dbutils.widgets.text("schedule_id", "---")
+dbutils.widgets.text("schedule", "---")
 
 # COMMAND ----------
 
