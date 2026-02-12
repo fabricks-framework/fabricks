@@ -76,8 +76,8 @@
     options:
       mode: complete
     check_options:
-      before: 23:00:00
-      after: 01:00:00
+      before: '23:00:00'
+      after: '01:00:00'
 - job:
     step: gold
     topic: check
@@ -86,5 +86,5 @@
     options:
       mode: complete
     check_options:
-      before: 01:00:00
-      after: 23:00:00
+      before: '01:00:00'
+      after: '23:00:00'

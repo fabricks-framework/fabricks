@@ -23,11 +23,11 @@ DEFAULT_LOGGER.setLevel(INFO)
 
 # COMMAND ----------
 
-send_message_to_channel(
+_ = send_message_to_channel(
     channel="IT DWH Notifications",
     title="Test started",
     message="Test started",
-    loglevel="INFO",
+    loglevel="DEBUG",
 )
 
 # COMMAND ----------
