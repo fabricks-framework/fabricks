@@ -24,16 +24,16 @@ class Deploy:
         deploy_views()
 
     @staticmethod
-    def udfs(override: bool = True):
-        deploy_udfs(override=override)
+    def udfs(overwrite=True):
+        deploy_udfs(overwrite=overwrite)
 
     @staticmethod
-    def masks(override: bool = True):
-        deploy_masks(override=override)
+    def masks(overwrite=True):
+        deploy_masks(overwrite=overwrite)
 
     @staticmethod
-    def notebooks(override: bool = False):
-        deploy_notebooks(overwrite=override)
+    def notebooks(overwrite=False):
+        deploy_notebooks(overwrite=overwrite)
 
     @staticmethod
     def schedules():
@@ -91,8 +91,8 @@ class Deploy:
         fabricks.create()
 
         Deploy.tables(drop=True)
-        Deploy.udfs(override=True)
-        Deploy.masks(override=True)
+        Deploy.udfs(overwrite=True)
+        Deploy.masks(overwrite=True)
         Deploy.notebooks(overwrite=True)
 
         for s in steps:
