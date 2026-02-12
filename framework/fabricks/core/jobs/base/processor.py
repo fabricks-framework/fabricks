@@ -152,14 +152,14 @@ class Processor(Invoker):
             if reload:
                 DEFAULT_LOGGER.debug("force reload", extra={"label": self})
 
-            if invoke:
-                self.invoke_pre_run(schedule=schedule)
+            self.check_run_before()
+            self.check_run_after()
 
             if not reload:
                 self.check_skip_run()
 
-            self.check_run_before()
-            self.check_run_after()
+            if invoke:
+                self.invoke_pre_run(schedule=schedule)
 
             try:
                 self.check_pre_run()
