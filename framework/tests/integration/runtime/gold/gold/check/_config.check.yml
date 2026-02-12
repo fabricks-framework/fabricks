@@ -68,3 +68,23 @@
       mode: complete
     check_options:
       skip: true
+- job:
+    step: gold
+    topic: check
+    item: time_ok
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      before: 23:00:00
+      after: 01:00:00
+- job:
+    step: gold
+    topic: check
+    item: time_ko
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      before: 01:00:00
+      after: 23:00:00

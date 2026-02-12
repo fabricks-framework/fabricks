@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import Final, Literal, Optional
+from typing import Final, Literal
 
 import requests
 
@@ -114,7 +114,7 @@ def send_message_to_channel(
     channel: str,
     title: str,
     message: str,
-    color: Optional[str] = None,
+    color: str | None = None,
     loglevel: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO",
 ) -> bool:
     """

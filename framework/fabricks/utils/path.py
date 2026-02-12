@@ -1,7 +1,6 @@
 import posixpath
 from abc import ABC, abstractmethod
 from pathlib import Path as PathlibPath
-from typing import List, Optional, Union
 
 from pyspark.sql.dataframe import DataFrame
 from typing_extensions import deprecated
@@ -12,7 +11,7 @@ from fabricks.utils.spark import spark
 class BasePath(ABC):
     """Abstract base class for all path types."""
 
-    def __init__(self, path: Union[str, PathlibPath]):
+    def __init__(self, path: str | PathlibPath):
         """Initialize the path."""
         if isinstance(path, PathlibPath):
             path = path.as_posix()
@@ -27,7 +26,7 @@ class BasePath(ABC):
     def from_uri(
         cls,
         uri: str,
-        regex: Optional[dict[str, str]] = None,
+        regex: dict[str, str] | None = None,
     ):
         """Create a path from a URI with optional regex substitution."""
         uri = uri.strip()
@@ -95,14 +94,14 @@ class BasePath(ABC):
     @abstractmethod
     def walk(
         self,
-        depth: Optional[int] = None,
-        convert: Optional[bool] = False,
-        file_format: Optional[str] = None,
-    ) -> List:
+        depth: int | None = None,
+        convert: bool | None = False,
+        file_format: str | None = None,
+    ) -> list:
         """Walk the path and return all files."""
 
     @abstractmethod
-    def _yield(self, path: Union[str, PathlibPath]):
+    def _yield(self, path: str | PathlibPath):
         """Recursively yield all file paths under the given path."""
 
     def __str__(self) -> str:
@@ -110,7 +109,7 @@ class BasePath(ABC):
 
 
 class GitPath(BasePath):
-    def __init__(self, path: Union[str, PathlibPath]):
+    def __init__(self, path: str | PathlibPath):
         super().__init__(path=path)
 
     def exists(self) -> bool:
@@ -127,14 +126,14 @@ class GitPath(BasePath):
             path = path.replace(".ipynb", "")
         if path.endswith(".py"):
             path = path.replace(".py", "")
-            
+
         return path
 
     def walk(
         self,
-        convert: Optional[bool] = False,
-        file_format: Optional[str] = None,
-    ) -> List:
+        convert: bool | None = False,
+        file_format: str | None = None,
+    ) -> list:
         out = []
         if self.exists():
             if self.pathlibpath.is_file():
@@ -150,7 +149,7 @@ class GitPath(BasePath):
 
         return out
 
-    def _yield(self, path: Union[str, PathlibPath]):
+    def _yield(self, path: str | PathlibPath):
         """Recursively yield all file paths in the git/local file system."""
         if isinstance(path, str):
             path = PathlibPath(path)
@@ -164,7 +163,7 @@ class GitPath(BasePath):
 
 
 class FileSharePath(BasePath):
-    def __init__(self, path: Union[str, PathlibPath]):
+    def __init__(self, path: str | PathlibPath):
         super().__init__(path=path)
 
     def exists(self) -> bool:
@@ -219,10 +218,10 @@ class FileSharePath(BasePath):
 
     def walk(
         self,
-        depth: Optional[int] = None,
-        convert: Optional[bool] = False,
-        file_format: Optional[str] = None,
-    ) -> List:
+        depth: int | None = None,
+        convert: bool | None = False,
+        file_format: str | None = None,
+    ) -> list:
         out = []
         if self.exists():
             if self.pathlibpath.is_file():
@@ -255,7 +254,7 @@ class FileSharePath(BasePath):
             list(self._rm(self.string))
             dbutils.fs.rm(self.string, recurse=True)
 
-    def _list_fs(self, depth: int) -> List:
+    def _list_fs(self, depth: int) -> list:
         from databricks.sdk.runtime import dbutils
 
         paths = dbutils.fs.ls(self.string)
@@ -288,12 +287,14 @@ class FileSharePath(BasePath):
             else:
                 yield dbutils.fs.ls(child.path)[0]
 
-    def _yield(self, path: Union[str, PathlibPath]):
+    def _yield(self, path: str | PathlibPath):
         """Recursively yield all file paths in the distributed file system."""
         from databricks.sdk.runtime import dbutils
 
-        path_str = str(path)
-        for child in dbutils.fs.ls(path_str):
+        if isinstance(path, PathlibPath):
+            path = str(path)
+
+        for child in dbutils.fs.ls(path):
             if child.isDir():  # type: ignore
                 yield from self._yield(child.path)
             else:
@@ -389,7 +390,7 @@ class Path:
     Legacy Path class with assume_git flag for backward compatibility.
     """
 
-    def __new__(cls, path: Union[str, PathlibPath], assume_git: bool = False):
+    def __new__(cls, path: str | PathlibPath, assume_git: bool = False):
         if assume_git:
             return GitPath(path)
         else:
@@ -399,8 +400,8 @@ class Path:
     def from_uri(
         cls,
         uri: str,
-        regex: Optional[dict[str, str]] = None,
-        assume_git: Optional[bool] = False,
+        regex: dict[str, str] | None = None,
+        assume_git: bool | None = False,
     ):
         """
         Create a path from a URI with optional regex substitution.

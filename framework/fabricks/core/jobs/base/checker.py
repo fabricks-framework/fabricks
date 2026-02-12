@@ -1,5 +1,7 @@
+import datetime
 from typing import Literal
 
+from fabricks.context import TIMEZONE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.exception import (
     PostRunCheckException,
@@ -7,6 +9,7 @@ from fabricks.core.jobs.base.exception import (
     PreRunCheckException,
     PreRunCheckWarning,
     SkipRunCheckWarning,
+    SkipRunTimeWarning,
 )
 from fabricks.core.jobs.base.generator import Generator
 
@@ -137,3 +140,21 @@ class Checker(Generator):
                     )
 
                 raise SkipRunCheckWarning(row["__message"], dataframe=df)
+
+    def check_run_before(self):
+        if self.check_options and self.check_options.before:
+            DEFAULT_LOGGER.debug("check before time", extra={"label": self})
+            self._check_run_time(self.check_options.before, "before")
+
+    def check_run_after(self):
+        if self.check_options and self.check_options.after:
+            DEFAULT_LOGGER.debug("check after time", extra={"label": self})
+            self._check_run_time(self.check_options.after, "after")
+
+    def _check_run_time(self, time: datetime.time, when: Literal["before", "after"]):
+        now = datetime.datetime.now().astimezone(TIMEZONE)
+
+        if when == "before" and now.time() >= time:
+            raise SkipRunTimeWarning(f"current time {now.time()} is after {time}")
+        elif when == "after" and now.time() <= time:
+            raise SkipRunTimeWarning(f"current time {now.time()} is before {time}")

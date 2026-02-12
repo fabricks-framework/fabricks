@@ -22,6 +22,7 @@ expected_failures = [
     "gold.check_count_must_equal",
     "gold.check_duplicate_key",
     "gold.check_duplicate_identity",
+    "gold.check_time_ko",
 ]
 expected_failures_as_str = ", ".join(f'"{f}"' for f in expected_failures)
 

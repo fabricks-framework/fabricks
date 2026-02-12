@@ -1,5 +1,7 @@
 """Job configuration models."""
 
+from datetime import time
+
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from fabricks.models.common import (
@@ -29,6 +31,8 @@ class CheckOptions(BaseModel):
     min_rows: int | None = None
     max_rows: int | None = None
     count_must_equal: str | None = None
+    before: time | None = None
+    after: time | None = None
 
 
 class ParserOptions(BaseModel):
