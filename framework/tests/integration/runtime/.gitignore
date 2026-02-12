@@ -4,3 +4,4 @@ fabricks/notebooks/process.py
 fabricks/notebooks/run.py
 fabricks/notebooks/standalone.py
 fabricks/notebooks/terminate.py
+fabricks/notebooks/cluster.py

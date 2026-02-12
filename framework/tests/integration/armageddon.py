@@ -40,7 +40,7 @@ for n in [
             "# Databricks notebook source",
             "# Databricks notebook source\n# MAGIC %run ./add_missing_modules\n# COMMAND ----------",
         )
-        
+
         with open(path, "w") as f:
             f.write(content)
 

@@ -9,6 +9,7 @@ from databricks.sdk.service import workspace
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
 
+
 def deploy_notebook(notebook: str, overwrite: bool = True):
     from fabricks.api import notebooks
 
