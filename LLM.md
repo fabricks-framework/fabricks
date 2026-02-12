@@ -184,7 +184,7 @@ Creates or replaces system views in the `fabricks` database. These views provide
 Deploy.views()
 ```
 
-#### `Deploy.udfs(override: bool = True)`
+#### `Deploy.udfs(overwrite = True)`
 
 Deploys User-Defined Functions (UDFs) from the runtime `udfs` directory:
 - Registers all SQL UDFs found in `fabricks/udfs/`
@@ -199,7 +199,7 @@ Deploy.udfs()                # Deploy UDFs, override existing
 Deploy.udfs(override=False)   # Skip if UDF already exists
 ```
 
-#### `Deploy.masks(override: bool = True)`
+#### `Deploy.masks(overwrite = True)`
 
 Deploys data masking functions from the runtime `masks` directory. Masks are used for data privacy and anonymization.
 
@@ -1594,7 +1594,7 @@ Creates or replaces system views in the `fabricks` database. These views provide
 Deploy.views()
 ```
 
-#### `Deploy.udfs(override: bool = True)`
+#### `Deploy.udfs(overwrite = True)`
 
 Deploys User-Defined Functions (UDFs) from the runtime `udfs` directory:
 - Registers all SQL UDFs found in `fabricks/udfs/`
@@ -1609,7 +1609,7 @@ Deploy.udfs()                # Deploy UDFs, override existing
 Deploy.udfs(override=False)   # Skip if UDF already exists
 ```
 
-#### `Deploy.masks(override: bool = True)`
+#### `Deploy.masks(overwrite = True)`
 
 Deploys data masking functions from the runtime `masks` directory. Masks are used for data privacy and anonymization.
 
