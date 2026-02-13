@@ -24,8 +24,8 @@ expected_failures = [
     "gold.check_duplicate_identity",
 ]
 expected_skips = [
-      "gold.check_time_ko",
-      "gold.check_skip",
+    "gold.check_time_ko",
+    "gold.check_skip",
 ]
 expected_failures_as_str = ", ".join(f'"{f}"' for f in expected_failures)
 expected_skips_as_str = ", ".join(f'"{f}"' for f in expected_skips)

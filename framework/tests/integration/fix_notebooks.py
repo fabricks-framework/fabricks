@@ -30,5 +30,3 @@ for n in [
             f.write(content)
 
 # COMMAND ----------
-
-
