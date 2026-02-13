@@ -29,6 +29,8 @@ class CheckOptions(BaseModel):
     min_rows: int | None = None
     max_rows: int | None = None
     count_must_equal: str | None = None
+    before: str | None = None
+    after: str | None = None
 
 
 class ParserOptions(BaseModel):

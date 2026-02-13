@@ -3,24 +3,26 @@ from typing import Optional, Union, overload
 from pyspark.sql.types import Row
 
 from fabricks.context import Bronzes, Golds, Silvers
-from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.bronze import Bronze
+from fabricks.core.jobs.gold import Gold
+from fabricks.core.jobs.silver import Silver
 from fabricks.models import get_job_id
 
 
 @overload
-def get_job(*, step: str, job_id: str) -> BaseJob: ...
+def get_job(*, step: str, job_id: str) -> Bronze | Gold | Silver: ...
 
 
 @overload
-def get_job(*, step: str, topic: str, item: str) -> BaseJob: ...
+def get_job(*, step: str, topic: str, item: str) -> Bronze | Gold | Silver: ...
 
 
 @overload
-def get_job(*, row: Row) -> BaseJob: ...
+def get_job(*, row: Row) -> Bronze | Gold | Silver: ...
 
 
 @overload
-def get_job(job: str) -> BaseJob: ...
+def get_job(job: str) -> Bronze | Gold | Silver: ...
 
 
 def get_job(
@@ -30,7 +32,7 @@ def get_job(
     item: Optional[str] = None,
     job_id: Optional[str] = None,
     row: Optional[Row] = None,
-) -> BaseJob:
+) -> Bronze | Gold | Silver:
     """
     Retrieve a job based on the provided parameters.
 

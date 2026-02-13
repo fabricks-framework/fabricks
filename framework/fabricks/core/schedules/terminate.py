@@ -1,6 +1,12 @@
-from fabricks.core.dags.terminator import DagTerminator
+import warnings
 
+from fabricks.core.schedules.dags import terminate
 
-def terminate(schedule_id: str):
-    with DagTerminator(schedule_id=schedule_id) as t:
-        t.terminate()
+warnings.warn(
+    "Importing from fabricks.core.schedules.terminate is deprecated. "
+    "Import from fabricks.core.schedules.dags instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+__all__ = ["terminate"]

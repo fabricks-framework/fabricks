@@ -1,4 +1,5 @@
 from typing import Final, Optional
+from zoneinfo import ZoneInfo
 
 import yaml
 
@@ -32,7 +33,7 @@ if IS_UNITY_CATALOG and not CATALOG:
 
 SECRET_SCOPE: Final[str] = CONF_RUNTIME.options.secret_scope
 
-TIMEZONE: Final[Optional[str]] = CONF_RUNTIME.options.timezone
+TIMEZONE: Final[ZoneInfo] = ZoneInfo(CONF_RUNTIME.options.timezone)
 
 IS_TYPE_WIDENING: Final[bool] = CONF_RUNTIME.options.type_widening or False
 

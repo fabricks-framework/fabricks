@@ -1,7 +1,7 @@
 import importlib.util
 import os
 import re
-from typing import Callable, List, Optional
+from typing import Callable
 
 from pyspark.sql import SparkSession
 
@@ -14,7 +14,7 @@ UDF_SCHEMA = CONF_RUNTIME.udf_options.schema_name or "default" if CONF_RUNTIME.u
 UDF_PREFIX = CONF_RUNTIME.udf_options.prefix or "udf_" if CONF_RUNTIME.udf_options else "udf_"
 
 
-def register_all_udfs(extension: Optional[str] = None, override: bool = False):
+def register_all_udfs(extension: str | None = None, overwrite=False):
     """
     Register all user-defined functions (UDFs).
     """
@@ -23,12 +23,12 @@ def register_all_udfs(extension: Optional[str] = None, override: bool = False):
     for udf in get_udfs(extension=extension):
         split = udf.split(".")
         try:
-            register_udf(udf=split[0], extension=split[1], override=override)
+            register_udf(udf=split[0], extension=split[1], overwrite=overwrite)
         except Exception as e:
             DEFAULT_LOGGER.exception(f"could not register udf {udf}", exc_info=e, extra={"label": "fabricks"})
 
 
-def get_udfs(extension: Optional[str] = None) -> List[str]:
+def get_udfs(extension: str | None = None) -> list[str]:
     files = [os.path.basename(f) for f in PATH_UDFS.walk()]
     udfs = [f for f in files if not str(f).endswith("__init__.py") and not str(f).endswith(".requirements.txt")]
     if extension:
@@ -45,7 +45,7 @@ def get_extension(udf: str) -> str:
     raise ValueError(f"{udf} not found")
 
 
-def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
+def is_registered(udf: str, spark: SparkSession | None = None) -> bool:
     if spark is None:
         spark = SPARK
     assert spark is not None
@@ -62,9 +62,9 @@ def is_registered(udf: str, spark: Optional[SparkSession] = None) -> bool:
 
 def register_udf(
     udf: str,
-    extension: Optional[str] = None,
-    override: Optional[bool] = False,
-    spark: Optional[SparkSession] = None,
+    extension: str | None = None,
+    overwrite: bool = False,
+    spark: SparkSession | None = None,
 ):
     """
     Register a user-defined function (UDF).
@@ -73,8 +73,8 @@ def register_udf(
         spark = SPARK
     assert spark is not None
 
-    if not is_registered(udf, spark) or override:
-        if override:
+    if not is_registered(udf, spark) or overwrite:
+        if overwrite:
             DEFAULT_LOGGER.debug(f"override udf {udf}", extra={"label": "fabricks"})
         else:
             DEFAULT_LOGGER.debug(f"register udf {udf}", extra={"label": "fabricks"})

@@ -15,4 +15,5 @@ IS_JOB_CONFIG_FROM_YAML: Final[bool] = config.job_config_from_yaml
 IS_DEBUGMODE: Final[bool] = config.debugmode
 IS_DEVMODE: Final[bool] = config.devmode
 IS_FUNMODE: Final[bool] = config.funmode
+IS_TESTMODE: Final[bool] = config.testmode
 LOGLEVEL: Final[int] = config.loglevel

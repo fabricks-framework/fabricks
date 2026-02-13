@@ -1,12 +1,7 @@
-# generated files
-data.parquet 
-_delta_log
-.part-*.crc
-part-*.parquet
-log
-test_notebook/**/metadir
-checkpoints
-# raw is generated out of raw_json
-out
-expected/**/*.parquet
-config.debug.yml
+# notebook are deployed via armageddon so we need to ignore them in git
+fabricks/notebooks/initialize.py
+fabricks/notebooks/process.py
+fabricks/notebooks/run.py
+fabricks/notebooks/standalone.py
+fabricks/notebooks/terminate.py
+fabricks/notebooks/cluster.py

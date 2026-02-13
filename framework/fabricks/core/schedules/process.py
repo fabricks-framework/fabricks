@@ -1,6 +1,11 @@
-from fabricks.core.dags.processor import DagProcessor
+import warnings
 
+from fabricks.core.schedules.dags import process
 
-def process(schedule_id: str, schedule: str, step: str):
-    with DagProcessor(schedule_id=schedule_id, schedule=schedule, step=step) as p:
-        p.process()
+warnings.warn(
+    "Importing from fabricks.core.schedules.process is deprecated. Import from fabricks.core.schedules.dags instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+__all__ = ["process"]
