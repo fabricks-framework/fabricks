@@ -17,7 +17,6 @@ for n in [
     "terminate",
 ]:
     path = os.path.join(str(PATH_NOTEBOOKS), f"{n}.py")
-    print(path)
     with open(path, "r") as f:
         content = f.read()
 
