@@ -10,7 +10,6 @@ from fabricks.context import PATH_NOTEBOOKS
 # COMMAND ----------
 
 for n in [
-    "cluster",
     "initialize",
     "process",
     "standalone",
@@ -24,9 +23,13 @@ for n in [
 
     if "# MAGIC %run ./add_missing_modules" not in content:
         content = content.replace(
-            "# Databricks notebook source",
-            "# Databricks notebook source\n# MAGIC %run ./add_missing_modules\n# COMMAND ----------",
+            "# Databricks notebook source\n",
+            "# Databricks notebook source\n# MAGIC %run ./add_missing_modules\n# COMMAND ----------\n",
         )
 
         with open(path, "w") as f:
             f.write(content)
+
+# COMMAND ----------
+
+

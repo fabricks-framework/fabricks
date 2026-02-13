@@ -1,7 +1,4 @@
 # Databricks notebook source
-
-# COMMAND ----------
-
 from databricks.sdk.runtime import dbutils
 
 from fabricks.core.schedules import process
