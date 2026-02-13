@@ -123,7 +123,24 @@ def run(
             LOGGER.debug("invoke pre-run callable", extra=extra)
             pre_run_callable(**kwargs)
 
-        job.run(schedule=schedule, schedule_id=schedule_id, **kwargs)
+        # use kwargs to pass retry, invoke, reload, vacuum, optimize, compute_statistics, etc. to the job.run method
+        retry = kwargs.get("retry", True)
+        invoke = kwargs.get("invoke", True)
+        reload = kwargs.get("reload")
+        vacuum = kwargs.get("vacuum")
+        optimize = kwargs.get("optimize")
+        compute_statistics = kwargs.get("compute_statistics")
+
+        job.run(
+            schedule=schedule,
+            schedule_id=schedule_id,
+            retry=retry,
+            invoke=invoke,
+            reload=reload,
+            vacuum=vacuum,
+            optimize=optimize,
+            compute_statistics=compute_statistics,
+        )
         LOGGER.info("done", extra=extra)
 
         if post_run_callable is not None:
