@@ -1,6 +1,5 @@
 from abc import abstractmethod
 from functools import partial
-from typing import Optional
 
 from pyspark.sql import DataFrame
 
@@ -15,6 +14,7 @@ from fabricks.core.jobs.base.exception import (
     PreRunInvokeException,
     SchemaDriftException,
     SkipRunCheckWarning,
+    SkipRunTimeWarning,
 )
 from fabricks.core.jobs.base.invoker import Invoker
 from fabricks.models import JobBronzeOptions, JobSilverOptions
@@ -32,7 +32,7 @@ class Processor(Invoker):
 
         return df
 
-    def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
+    def restore(self, last_version: str | None = None, last_batch: str | None = None):
         """
         Restores the processor to a specific version and batch.
 
@@ -53,7 +53,7 @@ class Processor(Invoker):
                 assert last_batch == self.table.get_property("fabricks.last_batch")
                 assert self.paths.to_commits.joinpath(last_batch).exists()
 
-    def _for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
+    def _for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs):
         DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
         if batch is not None:
             DEFAULT_LOGGER.debug(f"batch {batch}", extra={"label": self})
@@ -113,14 +113,15 @@ class Processor(Invoker):
 
     def run(
         self,
-        retry: Optional[bool] = True,
-        schedule: Optional[str] = None,
-        schedule_id: Optional[str] = None,
-        invoke: Optional[bool] = True,
-        reload: Optional[bool] = None,
-        vacuum: Optional[bool] = None,
-        optimize: Optional[bool] = None,
-        compute_statistics: Optional[bool] = None,
+        retry: bool | None = True,
+        schedule: str | None = None,
+        schedule_id: str | None = None,
+        invoke: bool | None = True,
+        reload: bool | None = None,
+        vacuum: bool | None = None,
+        optimize: bool | None = None,
+        compute_statistics: bool | None = None,
+        **kwargs,
     ):
         """
         Run the processor.
@@ -152,11 +153,14 @@ class Processor(Invoker):
             if reload:
                 DEFAULT_LOGGER.debug("force reload", extra={"label": self})
 
+            if not reload:
+                self.check_run_before()
+                self.check_run_after()
+                
+                self.check_skip_run()
+
             if invoke:
                 self.invoke_pre_run(schedule=schedule)
-
-            if not reload:
-                self.check_skip_run()
 
             try:
                 self.check_pre_run()
@@ -200,6 +204,10 @@ class Processor(Invoker):
 
         except SkipRunCheckWarning as e:
             DEFAULT_LOGGER.warning("skip run", extra={"label": self})
+            raise e
+
+        except SkipRunTimeWarning as e:
+            DEFAULT_LOGGER.warning("fail to pass time check", extra={"label": self})
             raise e
 
         except (PreRunCheckWarning, PostRunCheckWarning) as e:

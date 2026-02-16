@@ -6,5 +6,6 @@
     "debugmode": true,
     "config": "runtime/fabricks/conf.uc.fabricks.yml",
     "devmode": true,
-    "funmode": true
+    "funmode": true,
+    "testmode": true
 }

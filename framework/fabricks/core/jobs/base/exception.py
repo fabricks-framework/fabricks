@@ -10,7 +10,7 @@ class CustomException(Exception):
 
 
 class CheckException(Exception):
-    def __init__(self, message: str, dataframe: DataFrame):
+    def __init__(self, message: str, dataframe: DataFrame | None = None):
         self.message = message
         self.dataframe = dataframe
 
@@ -45,7 +45,15 @@ class PostRunInvokeException(CustomException):
     pass
 
 
-class SkipRunCheckWarning(CheckWarning):
+class SkipWarning(CheckException):
+    pass
+
+
+class SkipRunCheckWarning(SkipWarning):
+    pass
+
+
+class SkipRunTimeWarning(SkipWarning):
     pass
 
 

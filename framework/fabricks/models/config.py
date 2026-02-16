@@ -136,6 +136,10 @@ class ConfigOptions(BaseSettings):
         validation_alias=AliasChoices("FABRICKS_IS_DEVMODE", "devmode"),
         default=False,
     )
+    testmode: bool = Field(
+        validation_alias=AliasChoices("FABRICKS_IS_TESTMODE", "testmode"),
+        default=False,
+    )
     loglevel: int = Field(
         validation_alias=AliasChoices("FABRICKS_LOGLEVEL", "loglevel"),
         default=20,

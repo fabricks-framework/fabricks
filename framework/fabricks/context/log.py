@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime
-from typing import Final, Literal, Optional
+from typing import Final, Literal
 
 import requests
 
@@ -114,7 +114,7 @@ def send_message_to_channel(
     channel: str,
     title: str,
     message: str,
-    color: Optional[str] = None,
+    color: str | None = None,
     loglevel: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO",
 ) -> bool:
     """
@@ -148,11 +148,11 @@ def send_message_to_channel(
         teams_message["themeColor"] = color
     else:
         COLORS = {
-            "DEBUG": "#00FFFF",
-            "INFO": "#00FF00 ",
-            "WARNING": "#FFFF00 ",
-            "ERROR": "#FF0000 ",
-            "CRITICAL": "#FF0000",
+            "DEBUG": "#00BCD4",
+            "INFO": "#2196F3",
+            "WARNING": "#FF9800",
+            "ERROR": "#F44336",
+            "CRITICAL": "#C62828",
         }
         color = COLORS[loglevel]
         teams_message["themeColor"] = color

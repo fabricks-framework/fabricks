@@ -4,18 +4,18 @@ import logging
 import sys
 from datetime import datetime
 from datetime import timezone as tz
-from typing import Optional, Tuple
+from typing import Tuple
 from zoneinfo import ZoneInfo
 
 from fabricks.utils.azure_table import AzureTable
 
 
 class LogFormatter(logging.Formatter):
-    def __init__(self, debugmode: Optional[bool] = False, timezone: Optional[str] = None):
+    def __init__(self, debugmode: bool | None = False, timezone: str | ZoneInfo | None = None):
         super().__init__(fmt="%(levelname)s%(prefix)s%(message)s [%(timestamp)s]%(extra)s")
 
         self.debugmode = False if debugmode is None else debugmode
-        self.timezone = ZoneInfo(timezone) if timezone else tz.utc
+        self.timezone = ZoneInfo(timezone) if isinstance(timezone, str) else (timezone or tz.utc)
 
     COLORS = {
         logging.DEBUG: "\033[36m",
@@ -83,14 +83,14 @@ class LogFormatter(logging.Formatter):
 
 
 class AzureTableLogHandler(logging.Handler):
-    def __init__(self, table: AzureTable, debugmode: Optional[bool] = False, timezone: Optional[str] = None):
+    def __init__(self, table: AzureTable, debugmode: bool | None = False, timezone: str | ZoneInfo | None = None):
         super().__init__()
 
         self.buffer = []
         self.table = table
 
         self.debugmode = False if debugmode is None else debugmode
-        self.timezone = ZoneInfo(timezone) if timezone else tz.utc
+        self.timezone = ZoneInfo(timezone) if isinstance(timezone, str) else (timezone or tz.utc)
 
     def formatTime(self, record) -> str:
         ct = datetime.fromtimestamp(record.created, tz=tz.utc).astimezone(self.timezone)
@@ -185,7 +185,7 @@ class AzureTableLogHandler(logging.Handler):
 
 
 class CustomConsoleHandler(logging.StreamHandler):
-    def __init__(self, stream=None, debugmode: Optional[bool] = False):
+    def __init__(self, stream=None, debugmode: bool | None = False):
         super().__init__(stream or sys.stderr)
 
         self.debugmode = False if debugmode is None else debugmode
@@ -201,10 +201,10 @@ class CustomConsoleHandler(logging.StreamHandler):
 def get_logger(
     name: str,
     level: int,
-    table: Optional[AzureTable] = None,
-    debugmode: Optional[bool] = False,
-    timezone: Optional[str] = None,
-) -> Tuple[logging.Logger, Optional[AzureTableLogHandler]]:
+    table: AzureTable | None = None,
+    debugmode: bool | None = False,
+    timezone: str | ZoneInfo | None = None,
+) -> Tuple[logging.Logger, AzureTableLogHandler | None]:
     logger = logging.getLogger(name)
     if logger.hasHandlers():
         logger.handlers.clear()

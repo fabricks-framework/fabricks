@@ -1,5 +1,6 @@
 """Runtime configuration models."""
 
+from datetime import timezone as tz
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
@@ -59,10 +60,10 @@ class RuntimeTimeoutOptions(BaseModel):
 
     model_config = ConfigDict(extra="ignore", frozen=True)
 
-    step: int
-    job: int
-    pre_run: int
-    post_run: int
+    step: int = 3600
+    job: int = 3600
+    pre_run: int = 3600
+    post_run: int = 3600
 
 
 class RuntimeOptions(BaseModel):
@@ -75,10 +76,10 @@ class RuntimeOptions(BaseModel):
     unity_catalog: bool | None = None
     type_widening: bool | None = None
     catalog: str | None = None
-    workers: int
+    workers: int = 16
     timeouts: RuntimeTimeoutOptions
-    retention_days: int
-    timezone: str | None = None
+    retention_days: int = 7
+    timezone: str = str(tz.utc)
 
 
 class RuntimeConf(BaseModel):
