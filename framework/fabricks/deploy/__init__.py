@@ -6,6 +6,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.steps import get_step
 from fabricks.deploy.masks import deploy_masks
 from fabricks.deploy.notebooks import deploy_notebooks
+from fabricks.deploy.runtime import deploy_runtime
 from fabricks.deploy.schedules import deploy_schedules
 from fabricks.deploy.tables import deploy_tables
 from fabricks.deploy.udfs import deploy_udfs
@@ -23,6 +24,10 @@ class Deploy:
     @staticmethod
     def variables():
         deploy_variables()
+
+    @staticmethod
+    def runtime():
+        deploy_runtime()
 
     @staticmethod
     def views():
@@ -107,3 +112,4 @@ class Deploy:
         Deploy.views()
         Deploy.schedules()
         Deploy.variables()
+        Deploy.runtime()
