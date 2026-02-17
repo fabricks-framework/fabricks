@@ -22,6 +22,10 @@ class BasePath(ABC):
 
         self.path: str = new_path
 
+    def __json__(self):
+        """Return the JSON representation of the path."""
+        return self.string
+
     @classmethod
     def from_uri(
         cls,

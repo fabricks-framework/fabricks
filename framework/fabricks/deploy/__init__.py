@@ -10,6 +10,7 @@ from fabricks.deploy.schedules import deploy_schedules
 from fabricks.deploy.tables import deploy_tables
 from fabricks.deploy.udfs import deploy_udfs
 from fabricks.deploy.utils import print_atomic_bomb
+from fabricks.deploy.variables import deploy_variables
 from fabricks.deploy.views import deploy_views
 from fabricks.metastore.database import Database
 
@@ -18,6 +19,10 @@ class Deploy:
     @staticmethod
     def tables(drop: bool = False, update: bool = False):
         deploy_tables(drop=drop, update=update)
+
+    @staticmethod
+    def variables():
+        deploy_variables()
 
     @staticmethod
     def views():
@@ -101,3 +106,4 @@ class Deploy:
 
         Deploy.views()
         Deploy.schedules()
+        Deploy.variables()
