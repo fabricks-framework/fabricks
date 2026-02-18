@@ -23,7 +23,7 @@ class Deploy:
 
     @staticmethod
     def variables():
-        deploy_variables()
+        deploy_variables(deploy_runtime_first=True)
 
     @staticmethod
     def runtime():

@@ -1,17 +1,29 @@
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.context.runtime import VARIABLES
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-def deploy_variables():
+def deploy_variables(deploy_runtime_first: bool = True):
     """
     Deploy variables to the fabricks.variables view.
     """
-    backslash = "\\"
-    values = [f"('{key.replace(backslash, '')}', '{value}')" for key, value in VARIABLES.items()]
+    if deploy_runtime_first:
+        from fabricks.deploy.runtime import deploy_runtime
 
-    ddl = "select * from values " + ", ".join(values) + " as t(key, value)"
+        deploy_runtime()
+
+    ddl = """
+    with variables as (
+      select
+        runtime:runtime:variables as variables
+      from
+        fabricks.runtime
+    )
+    select
+      explode(variant_get(variables, '$', 'MAP<STRING, STRING>'))
+    from
+      variables
+    """
     sql = f"""create or replace view fabricks.variables with schema evolution as {ddl}"""
     sql = fix_sql(sql)
 
