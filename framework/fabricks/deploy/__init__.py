@@ -6,10 +6,12 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.steps import get_step
 from fabricks.deploy.masks import deploy_masks
 from fabricks.deploy.notebooks import deploy_notebooks
+from fabricks.deploy.runtime import deploy_runtime
 from fabricks.deploy.schedules import deploy_schedules
 from fabricks.deploy.tables import deploy_tables
 from fabricks.deploy.udfs import deploy_udfs
 from fabricks.deploy.utils import print_atomic_bomb
+from fabricks.deploy.variables import deploy_variables
 from fabricks.deploy.views import deploy_views
 from fabricks.metastore.database import Database
 
@@ -18,6 +20,14 @@ class Deploy:
     @staticmethod
     def tables(drop: bool = False, update: bool = False):
         deploy_tables(drop=drop, update=update)
+
+    @staticmethod
+    def variables():
+        deploy_variables(deploy_runtime_first=True)
+
+    @staticmethod
+    def runtime():
+        deploy_runtime()
 
     @staticmethod
     def views():
@@ -101,3 +111,5 @@ class Deploy:
 
         Deploy.views()
         Deploy.schedules()
+        Deploy.variables()
+        Deploy.runtime()

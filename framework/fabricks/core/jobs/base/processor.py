@@ -156,7 +156,7 @@ class Processor(Invoker):
             if not reload:
                 self.check_run_before()
                 self.check_run_after()
-                
+
                 self.check_skip_run()
 
             if invoke:
