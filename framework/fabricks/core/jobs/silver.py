@@ -396,3 +396,22 @@ class Silver(BaseJob):
         super().drop()
         DEFAULT_LOGGER.debug("drop current view", extra={"label": self})
         self.spark.sql(f"drop view if exists {self.qualified_name}__current")
+
+    def rewrite__key(self, old_keys: list[str], new_keys: list[str]):
+        from fabricks.utils.helpers import add_hash
+
+        df = self.spark.sql(f"select * from {self.qualified_name}")
+        df = add_hash("__old_key", df, fields=old_keys)
+        df = add_hash("__new_key", df, fields=new_keys)
+
+        df.createOrReplaceGlobalTempView(f"{self.qualified_name}__rewrite__key")
+
+        query = f"""
+        merge into {self.qualified_name} as target
+        using (select __old_key, __new_key from global_temp.{self.qualified_name}__rewrite__key) as source
+        on target.__key = source.__old_key
+        when matched then update set __key = source.__new_key
+        """
+        query = fix_sql(query)
+        DEFAULT_LOGGER.debug("rewrite __key", extra={"label": self, "sql": query})
+        self.spark.sql(query)

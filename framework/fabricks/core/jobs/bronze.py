@@ -1,7 +1,7 @@
 from typing import Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import expr, lit, md5
+from pyspark.sql.functions import expr, lit
 from pyspark.sql.types import Row, TimestampType
 
 from fabricks.cdc.nocdc import NoCDC
@@ -12,7 +12,7 @@ from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobBronzeOptions, JobDependency, StepBronzeConf, StepBronzeOptions
-from fabricks.utils.helpers import concat_ws
+from fabricks.utils.helpers import add_hash
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
 
@@ -273,7 +273,7 @@ class Bronze(BaseJob):
             if "__source" in df.columns:
                 fields += ["__source"]
 
-            df = df.withColumn("__hash", md5(expr(f"{concat_ws(fields)}")))
+            df = add_hash("__hash", df, fields=fields)
 
         return df
 
@@ -287,7 +287,7 @@ class Bronze(BaseJob):
                     fields = fields + ["__source"]
 
                 fields = [f"`{f}`" for f in fields]
-                df = df.withColumn("__key", md5(expr(f"{concat_ws(fields)}")))
+                df = add_hash("__key", df, fields=fields)
 
         return df
 

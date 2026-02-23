@@ -112,3 +112,21 @@ def test_silver_princess_calculated_column():
 def test_silver_timeout():
     job = get_job(step="silver", topic="princess", item="calculated_column")
     assert job.timeout == 3600, f"timeout {job.timeout} <> 3600"
+
+
+@pytest.mark.order(119)
+def test_hashing():
+    job = get_job(step="silver", topic="monarch", item="scd2")
+
+    df = job.table.dataframe
+    assert "__hash" in df.columns, "__hash column not found"
+    assert "__key" in df.columns, "__key column not found"
+
+    df = df.where("name == 'Louise'")
+
+    assert df.select("__key").collect()[0][0] == "38b3eff8baf56627478ec76a704e9b52", (
+        "__key value does not match expected value"
+    )
+    assert df.select("__hash").collect()[0][0] == "1f79253f5abeefea99fa779f5715a26d", (
+        "__hash value does not match expected value"
+    )
