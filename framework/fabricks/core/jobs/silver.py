@@ -220,6 +220,7 @@ class Silver(BaseJob):
 
             sql = f"create or replace view {self.qualified_name} as {' union all '.join(queries)}"
             sql = fix_sql(sql)
+            
             DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
             self.spark.sql(sql)
 
@@ -422,5 +423,6 @@ class Silver(BaseJob):
         when matched then update set __key = s.__new_key
         """
         query = fix_sql(query)
+
         DEFAULT_LOGGER.debug("rewrite __key", extra={"label": self, "sql": query})
         self.spark.sql(query)
