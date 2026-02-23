@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from fabricks.models.config import config
+
 # Mode type definitions
 AllowedModesBronze = Literal["memory", "append", "register"]
 AllowedModesSilver = Literal["memory", "append", "latest", "update", "combine"]
@@ -27,7 +29,7 @@ AllowedChangeDataCaptures = Literal["nocdc", "scd1", "scd2"]
 class SparkOptions(BaseModel):
     """Spark SQL and configuration options."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     sql: dict[str, str | bool | int] | None = None
     conf: dict[str, str | bool | int] | None = None
@@ -36,7 +38,7 @@ class SparkOptions(BaseModel):
 class BaseInvokerOptions(BaseModel):
     """Options for invoking notebooks during pre/post run operations."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     notebook: str | None = None
     timeout: int | None = None
@@ -46,7 +48,7 @@ class BaseInvokerOptions(BaseModel):
 class InvokerOptions(BaseModel):
     """Grouped invoker operations for pre/run/post execution."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     pre_run: list[BaseInvokerOptions] | None = None
     run: list[BaseInvokerOptions] | None = None
@@ -56,7 +58,7 @@ class InvokerOptions(BaseModel):
 class ExtenderOptions(BaseModel):
     """Configuration for runtime extenders."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     extender: str
     arguments: dict[str, str] | None = None
@@ -65,7 +67,7 @@ class ExtenderOptions(BaseModel):
 class DatabasePathOptions(BaseModel):
     """Path configuration for databases."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     storage: str
 
@@ -73,7 +75,7 @@ class DatabasePathOptions(BaseModel):
 class Database(BaseModel):
     """Database configuration."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     name: str
     path_options: DatabasePathOptions

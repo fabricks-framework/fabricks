@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 from pathlib import Path as PathLibPath
+from typing import Literal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
@@ -87,7 +88,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
 class ResolvedPathOptions(BaseModel):
     """Resolved path objects for main configuration."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(extra="allow", frozen=True, arbitrary_types_allowed=True)
 
     base: GitPath
     config: GitPath
@@ -144,6 +145,10 @@ class ConfigOptions(BaseSettings):
         validation_alias=AliasChoices("FABRICKS_LOGLEVEL", "loglevel"),
         default=20,
     )
+    extra_config: Literal["allow", "ignore", "forbid"] = Field(
+        validation_alias=AliasChoices("FABRICKS_EXTRA_CONFIG", "extra_config"),
+        default="ignore",
+    )
 
     @field_validator("job_config_from_yaml", "debugmode", "funmode", "devmode", mode="before")
     @classmethod
@@ -160,10 +165,11 @@ class ConfigOptions(BaseSettings):
         if isinstance(v, bool):
             return v
 
+        v_lower = str(v).lower()
         if isinstance(v, str):
-            if v.lower() in ("true", "1", "yes"):
+            if v_lower in ("true", "1", "yes"):
                 return True
-            elif v.lower() in ("false", "0", "no"):
+            elif v_lower in ("false", "0", "no"):
                 return False
 
         return v
@@ -192,7 +198,7 @@ class ConfigOptions(BaseSettings):
     @classmethod
     def validate_notebooks(cls, v):
         """Set default notebooks path if not provided."""
-        if not v or v == "none":
+        if not v or v.lower() == "none":
             return "runtime/notebooks"
 
         return v
@@ -239,3 +245,6 @@ class ConfigOptions(BaseSettings):
     def resolved_paths(self) -> ResolvedPathOptions:
         """Get all paths resolved as Path objects."""
         return self._resolve_paths()
+
+
+config = ConfigOptions()

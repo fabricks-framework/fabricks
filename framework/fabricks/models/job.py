@@ -14,6 +14,7 @@ from fabricks.models.common import (
     InvokerOptions,
     SparkOptions,
 )
+from fabricks.models.config import config
 from fabricks.models.table import TableOptions
 from fabricks.models.utils import get_job_id
 
@@ -21,7 +22,7 @@ from fabricks.models.utils import get_job_id
 class CheckOptions(BaseModel):
     """Data quality check options for jobs."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     skip: bool | None = None
     pre_run: bool | None = None
@@ -34,7 +35,7 @@ class CheckOptions(BaseModel):
 
 
 class ParserOptions(BaseModel):
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
     file_format: str | None = None
     read_options: dict[str, str] | None = None
 
@@ -42,7 +43,7 @@ class ParserOptions(BaseModel):
 class BaseOptions(BaseModel):
     """Base job options."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     mode: AllowedModes
     change_data_capture: AllowedChangeDataCaptures | None = Field(default="nocdc")
@@ -58,7 +59,7 @@ class BaseOptions(BaseModel):
 class BronzeOptions(BaseOptions):
     """Bronze layer job options."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     mode: AllowedModesBronze
     type: AllowedTypes | None = None
@@ -77,7 +78,7 @@ class BronzeOptions(BaseOptions):
 class SilverOptions(BaseOptions):
     """Silver layer job options."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     mode: AllowedModesSilver
     type: AllowedTypes | None = None
@@ -91,7 +92,7 @@ class SilverOptions(BaseOptions):
 class GoldOptions(BaseOptions):
     """Gold layer job options."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     mode: AllowedModesGold
     type: AllowedTypes | None = None
@@ -115,7 +116,7 @@ TOptions = BronzeOptions | SilverOptions | GoldOptions
 class JobConfBase(BaseModel):
     """Base job configuration with computed fields."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     step: str
     topic: str
