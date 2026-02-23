@@ -16,7 +16,7 @@ AllowedModes = Literal[AllowedModesBronze, AllowedModesSilver, AllowedModesGold]
 AllowedFileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "delta"]
 AllowedOperations = Literal["upsert", "reload", "delete"]
 AllowedTypes = Literal["manual", "default"]
-AllowedOrigins = Literal["parser", "job"]
+AllowedOrigins = Literal["parser", "parent", "wait_for"]
 
 # Constraint types
 AllowedConstraintOptions = Literal["not enforced", "deferrable", "initially deferred", "norely", "rely"]
