@@ -165,8 +165,8 @@ class ConfigOptions(BaseSettings):
         if isinstance(v, bool):
             return v
 
-        v_lower = str(v).lower()
         if isinstance(v, str):
+            v_lower = str(v).lower()
             if v_lower in ("true", "1", "yes"):
                 return True
             elif v_lower in ("false", "0", "no"):
