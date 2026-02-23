@@ -49,6 +49,7 @@ class BaseOptions(BaseModel):
     change_data_capture: AllowedChangeDataCaptures | None = Field(default="nocdc")
 
     parents: list[str] | None = None
+    wait_for: list[str] | None = None
     optimize: bool | None = None
     compute_statistics: bool | None = None
     vacuum: bool | None = None
