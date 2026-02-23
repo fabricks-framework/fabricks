@@ -401,16 +401,25 @@ class Silver(BaseJob):
         from fabricks.utils.helpers import add_hash
 
         df = self.spark.sql(f"select * from {self.qualified_name}")
+
+        assert "__key" in df.columns
+        DEFAULT_LOGGER.warning("rewrite __key", extra={"label": self})
+
         df = add_hash("__old_key", df, fields=old_keys)
         df = add_hash("__new_key", df, fields=new_keys)
 
-        df.createOrReplaceGlobalTempView(f"{self.qualified_name}__rewrite__key")
+        name = f"{self.step}_{self.topic}_{self.item}__rewrite__key"
+        global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
+
+        extra = "-- no extra join"
+        if "__valid_to" in df.columns:
+            extra = "and t.__valid_to = s.__valid_to"
 
         query = f"""
-        merge into {self.qualified_name} as target
-        using (select __old_key, __new_key from global_temp.{self.qualified_name}__rewrite__key) as source
-        on target.__key = source.__old_key
-        when matched then update set __key = source.__new_key
+        merge into {self.qualified_name} t
+        using {global_temp_view} s
+        on t.__key = s.__old_key {extra}
+        when matched then update set __key = s.__new_key
         """
         query = fix_sql(query)
         DEFAULT_LOGGER.debug("rewrite __key", extra={"label": self, "sql": query})
