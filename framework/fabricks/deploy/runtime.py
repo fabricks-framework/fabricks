@@ -11,8 +11,8 @@ def deploy_runtime():
     Deploy runtime to the fabricks.runtime view.
     """
     runtime = CONF_RUNTIME.model_dump()
-    json_str = json.dumps(runtime, default=str).replace("$", "").replace("\\", "\\\\")
-    ddl = """select parse_json('{"runtime": """ + json_str + "}') as runtime"
+    content = json.dumps(runtime, default=str).replace("\\\\$", "").replace("$", "").replace("\\", "\\\\")
+    ddl = """select parse_json('{"runtime": """ + content + "}') as runtime"
 
     sql = f"""create or replace view fabricks.runtime with schema evolution as {ddl}"""
     sql = fix_sql(sql)

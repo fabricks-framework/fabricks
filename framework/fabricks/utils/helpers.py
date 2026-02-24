@@ -24,6 +24,19 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
     return "concat_ws('*', " + ",".join(coalesce) + ")"
 
 
+def md5(s: Any) -> str:
+    from hashlib import md5
+
+    md5 = md5(str(s).encode())
+    return md5.hexdigest()
+
+
+def add_hash(column: str, df: DataFrame, fields: Union[str, List[str]]):
+    import pyspark.sql.functions as F
+
+    return df.withColumn(f"{column}", F.md5(F.expr(concat_ws(fields))))
+
+
 def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
     dfs = [df for df in dfs if df is not None]
     if len(dfs) == 0:
@@ -220,13 +233,6 @@ def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
 def xxhash64(s: Any) -> int:
     df = spark.sql(f"select xxhash64(cast('{s}' as string)) as xxhash64")
     return df.collect()[0][0]
-
-
-def md5(s: Any) -> str:
-    from hashlib import md5
-
-    md5 = md5(str(s).encode())
-    return md5.hexdigest()
 
 
 def load_module_from_path(name: str, path: GitPath):

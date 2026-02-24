@@ -188,11 +188,16 @@ class Silver(BaseJob):
         parents = self.options.parents or []
         if parents:
             for p in parents:
-                dependencies.append(JobDependency.from_parts(self.job_id, p, "job"))
+                dependencies.append(JobDependency.from_parts(self.job_id, p, "parent"))
 
         else:
             p = f"{self.parent_step}.{self.topic}_{self.item}"
             dependencies.append(JobDependency.from_parts(self.job_id, p, "parser"))
+
+        wait_for = self.options.wait_for or []
+        if wait_for:
+            for w in wait_for:
+                dependencies.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
 
         return dependencies
 
@@ -215,6 +220,7 @@ class Silver(BaseJob):
 
             sql = f"create or replace view {self.qualified_name} as {' union all '.join(queries)}"
             sql = fix_sql(sql)
+
             DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
             self.spark.sql(sql)
 
@@ -391,3 +397,30 @@ class Silver(BaseJob):
         super().drop()
         DEFAULT_LOGGER.debug("drop current view", extra={"label": self})
         self.spark.sql(f"drop view if exists {self.qualified_name}__current")
+
+    def rewrite__key(self, old_keys: list[str], new_keys: list[str]):
+        from fabricks.utils.helpers import add_hash
+
+        df = self.spark.sql(f"select * from {self.qualified_name}")
+
+        assert "__key" in df.columns
+        DEFAULT_LOGGER.warning("rewrite __key", extra={"label": self})
+
+        df = add_hash("__old_key", df, fields=old_keys)
+        df = add_hash("__new_key", df, fields=new_keys)
+
+        name = f"{self.step}_{self.topic}_{self.item}__rewrite__key"
+        global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
+
+        extra = "-- no extra join"
+        if "__valid_to" in df.columns:
+            extra = "and t.__valid_to = s.__valid_to"
+
+        query = f"""
+        merge into {self.qualified_name} t
+        using {global_temp_view} s
+        on t.__key = s.__old_key {extra}
+        when matched then update set __key = s.__new_key
+        """
+        query = fix_sql(query)
+        self.spark.sql(query)

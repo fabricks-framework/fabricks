@@ -183,24 +183,32 @@ class Gold(BaseJob):
 
     def get_dependencies(self) -> Sequence[JobDependency]:
         data = []
+
         parents = self.options.parents or []
+        if parents:
+            for p in parents:
+                data.append(JobDependency.from_parts(self.job_id, p, "parent"))
 
-        if self.mode == "invoke":
-            dependencies = []
-        elif self.options.notebook:
-            dependencies = self._get_notebook_dependencies()
         else:
-            dependencies = self._get_sql_dependencies()
+            if self.mode == "invoke":
+                dependencies = []
+            elif self.options.notebook:
+                dependencies = self._get_notebook_dependencies()
+            else:
+                dependencies = self._get_sql_dependencies()
 
-        dependencies = [d for d in dependencies if d not in parents]
-        dependencies = [d.replace("__current", "") for d in dependencies]
-        dependencies = list(set(dependencies))
+            dependencies = [d for d in dependencies if d not in parents]
+            dependencies = [d.replace("__current", "") for d in dependencies]
+            dependencies = list(set(dependencies))
 
-        for d in dependencies:
-            data.append(JobDependency.from_parts(self.job_id, d, "parser"))
+            for d in dependencies:
+                data.append(JobDependency.from_parts(self.job_id, d, "parser"))
 
-        for p in parents:
-            data.append(JobDependency.from_parts(self.job_id, p, "job"))
+        wait_for = self.options.wait_for or []
+        if wait_for:
+            for w in wait_for:
+                data.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
+
         return data
 
     def _get_sql_dependencies(self) -> List[str]:

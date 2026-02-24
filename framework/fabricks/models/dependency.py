@@ -4,13 +4,14 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
 
 from fabricks.models.common import AllowedOrigins
+from fabricks.models.config import config
 from fabricks.models.utils import get_dependency_id, get_job_id
 
 
 class JobDependency(BaseModel):
     """Job dependency tracking."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     origin: AllowedOrigins
     job_id: str

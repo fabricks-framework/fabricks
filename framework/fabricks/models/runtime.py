@@ -6,7 +6,7 @@ from typing import ClassVar
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from fabricks.models.common import Database, ExtenderOptions, SparkOptions
-from fabricks.models.config import ConfigOptions
+from fabricks.models.config import ConfigOptions, config
 from fabricks.models.step import BronzeConf, GoldConf, PowerBI, SilverConf
 from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, resolve_git_path
 
@@ -14,7 +14,7 @@ from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, 
 class RuntimePathOptions(BaseModel):
     """Path configuration for runtime components."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     storage: str
     udfs: str
@@ -40,7 +40,7 @@ class MaskOptions(BaseModel):
 class RuntimeResolvedPathOptions(BaseModel):
     """Resolved path objects for runtime components."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True, arbitrary_types_allowed=True)
 
     storage: FileSharePath
     udfs: GitPath
@@ -58,7 +58,7 @@ class RuntimeResolvedPathOptions(BaseModel):
 class RuntimeTimeoutOptions(BaseModel):
     """Timeout settings for runtime operations."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     step: int = 3600
     job: int = 3600
@@ -69,7 +69,7 @@ class RuntimeTimeoutOptions(BaseModel):
 class RuntimeOptions(BaseModel):
     """Main runtime configuration options."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     secret_scope: str
     encryption_key: str | None = None
@@ -85,7 +85,7 @@ class RuntimeOptions(BaseModel):
 class RuntimeConf(BaseModel):
     """Complete runtime configuration."""
 
-    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(extra=config.extra_config, frozen=True, arbitrary_types_allowed=True)
 
     name: str
     options: RuntimeOptions
@@ -102,7 +102,7 @@ class RuntimeConf(BaseModel):
     variables: dict[str, str] | None = None
     credentials: dict[str, str] | None = None
 
-    config: ClassVar[ConfigOptions] = ConfigOptions()
+    config: ClassVar[ConfigOptions] = config
 
     @computed_field
     @property
