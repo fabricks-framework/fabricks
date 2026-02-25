@@ -271,7 +271,7 @@ class Table(DbObject):
 
         if generated_columns:
             cols = [f"`{col}` {expr}" for col, expr in generated_columns.items()]
-            ddl_generated_columns = ",\n\t".join(cols)
+            ddl_generated_columns = "," + ",\n\t".join(cols)
 
         if not properties:
             special_char = False

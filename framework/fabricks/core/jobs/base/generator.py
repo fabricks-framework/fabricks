@@ -329,7 +329,9 @@ class Generator(Configurator):
 
         if not self.table.exists():
             DEFAULT_LOGGER.debug("create table", extra={"label": self})
-
+            
+            self.register_udfs()
+            
             df = self.get_data(stream=self.stream, schema_only=True)
             if df:
                 if self.stream:

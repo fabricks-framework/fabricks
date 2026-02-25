@@ -106,14 +106,11 @@ class Gold(BaseJob):
             return udfs
 
         else:
-            if f"{UDF_PREFIX}" in self.sql:
-                r = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
-                matches = re.findall(r, self.sql)
-                if udfs:
-                    matches.extend(udfs)
-                matches = list(set(matches))
-
-                return matches
+            matches = self._match_udfs(self.sql) or []                
+            if udfs:
+                matches += udfs
+            if len(matches) > 0:
+                return list(set(matches))
 
     def base_transform(self, df: DataFrame) -> DataFrame:
         df = df.transform(self.extend)

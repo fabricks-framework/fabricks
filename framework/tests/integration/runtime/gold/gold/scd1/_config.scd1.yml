@@ -61,4 +61,4 @@
       mode: update
     table_options:
       generated_columns:
-        __generated_column: "string generated always as udf_add_now(monarch)"
+        __generated_column: "string generated always as (concat_ws('*', monarch, cast(id as string)))"

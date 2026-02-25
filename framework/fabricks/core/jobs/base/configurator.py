@@ -321,7 +321,7 @@ class Configurator(ABC):
             for value in generated_columns.values():
                 matches = self._match_udfs(value)
                 if matches:
-                    udfs.extend(matches)
+                    udfs += matches
 
             return list(set(udfs))
 
