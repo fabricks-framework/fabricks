@@ -51,3 +51,13 @@
       change_data_capture: scd1
       mode: update
       last_updated: True
+- job:
+    step: gold
+    topic: scd1
+    item: generated_column
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
+      generated_columns:
+        __generated_column: "string generated always as udf_add_now(monarch)"

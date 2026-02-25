@@ -59,6 +59,7 @@ class TableOptions(BaseModel):
     properties: dict[str, str | bool | int] | None = None
     comment: str | None = None
     calculated_columns: dict[str, str | bool | int] | None = None
+    generated_columns: dict[str, str] | None = None
     masks: dict[str, str] | None = None
     comments: dict[str, str | bool | int] | None = None
     retention_days: int | None = None
