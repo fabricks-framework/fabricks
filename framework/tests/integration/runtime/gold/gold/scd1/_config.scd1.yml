@@ -59,5 +59,6 @@
     options:
       change_data_capture: scd1
       mode: update
+    table_options:
       generated_columns:
         __generated_column: "string generated always as udf_add_now(monarch)"
