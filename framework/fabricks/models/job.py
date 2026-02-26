@@ -35,9 +35,13 @@ class CheckOptions(BaseModel):
 
 
 class ParserOptions(BaseModel):
+    """Parser options for bronze jobs."""
+
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
+
     file_format: str | None = None
     read_options: dict[str, str] | None = None
+    clean: bool | None = None
 
 
 class BaseOptions(BaseModel):

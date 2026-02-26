@@ -149,6 +149,9 @@ main() {
         format-commit)
             format_commit "$@"
             ;;
+        format)
+            format_python "$@"
+            ;;
         install-dependencies)
             install_dependencies "$@"
             ;;

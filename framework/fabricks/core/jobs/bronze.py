@@ -11,7 +11,7 @@ from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobBronzeOptions, JobDependency, StepBronzeConf, StepBronzeOptions
+from fabricks.models import JobBronzeOptions, JobDependency, ParserOptions, StepBronzeConf, StepBronzeOptions
 from fabricks.utils.helpers import add_hash
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
@@ -176,6 +176,8 @@ class Bronze(BaseJob):
         Returns:
             DataFrame: The parsed data as a DataFrame.
         """
+        options = self.conf.parser_options or None  # type: ignore
+
         if self.mode == "register":
             if stream:
                 df = read(
@@ -187,12 +189,29 @@ class Bronze(BaseJob):
             else:
                 df = self.spark.sql(f"select * from {self}")
 
-            if self.step_options.clean is not False:
-                # cleaning should done by parser but for delta we do it here
+            # cleaning should be done by parser but for delta we do it here
+            should_clean = True
+            if options is not None and options.clean is not None:
+                should_clean = options.clean
+            elif self.step_options.clean is not None:
+                should_clean = self.step_options.clean
+
+            if should_clean:
                 df = clean(df)
 
         else:
-            options = self.conf.parser_options or None  # type: ignore
+            if options is not None and options.clean is not None:
+                # if parser options provided and clean set, use parser clean
+                pass
+
+            elif self.step_options.clean is not None:
+                if options and options.clean is None:
+                    # if parser options provided but clean not set, use step clean
+                    options = options.model_copy(update={"clean": self.step_options.clean})
+                elif options is None:
+                    # if no parser options provided, use step clean
+                    options = ParserOptions(clean=self.step_options.clean)
+
             parse = get_parser(self.parser, options)
 
             df = parse(

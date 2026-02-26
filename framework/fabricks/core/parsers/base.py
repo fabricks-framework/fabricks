@@ -77,7 +77,13 @@ class BaseParser(ABC):
             AssertionError: If the "__metadata.file_path" column is missing in the DataFrame.
         """
         df = self.parse(data_path=data_path, schema_path=schema_path, spark=spark, stream=stream)
-        df = df.transform(clean)
+
+        should_clean = True
+        if self.options and self.options.clean is not None:
+            should_clean = self.options.clean
+
+        if should_clean:
+            df = df.transform(clean)
 
         if "__rescued_data" not in df.columns:
             df = df.withColumn("__rescued_data", lit(None).cast(StringType()))
