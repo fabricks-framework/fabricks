@@ -193,12 +193,13 @@ class Bronze(BaseJob):
 
         else:
             options = self.conf.parser_options or None  # type: ignore
-            if options and options.clean is None:
-                options.clean = self.step_options.clean
-            elif options is None and self.step_options.clean is not None:
-                from fabricks.models.job import ParserOptions
+            if self.step_options.clean is not None:
+                if options and options.clean is None:
+                    options.clean = self.step_options.clean
+                elif options is None:
+                    from fabricks.models.job import ParserOptions
 
-                options = ParserOptions(clean=self.step_options.clean)
+                    options = ParserOptions(clean=self.step_options.clean)
 
             parse = get_parser(self.parser, options)
 
