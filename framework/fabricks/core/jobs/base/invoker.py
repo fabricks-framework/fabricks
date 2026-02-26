@@ -2,6 +2,7 @@ import json
 from typing import Optional
 
 from pyspark.sql import DataFrame
+from pyspark.sql.functions import expr
 
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
@@ -189,3 +190,37 @@ class Invoker(Checker):
         df = self.extend_job(df)
         df = self.extend_step(df)
         return df
+
+    def update_post_run(self, version: int):
+        if self.update_options and self.update_options:
+            from fabricks.metastore.view import create_or_replace_global_temp_view
+
+            DEFAULT_LOGGER.debug(f"calling post_run_update", extra={"label": self})
+
+            assert "__key" in self.table.columns, "__key column is required for post run update"
+            assert self.change_data_capture == "scd1", "only scd1 is supported for post run update"
+
+
+            df_asof_version = self.spark.sql(f"select * from {self} version as of {version}")
+            df_current = self.spark.sql(f"select * from {self}")
+
+            if "__hash" not in self.table.columns:
+                DEFAULT_LOGGER.warning("no __hash column found", extra={"label": self})
+                df_asof_version = self.add_hash(df_asof_version)
+                df_current = self.add_hash(df_current)
+
+            query = f"""
+            select current.* from {df_current} current left anti join {df_asof_version} asof on current.__key = asof.__key and current.__hash = asof.__hash
+            """
+            df_update = self.spark.sql(query)
+            if not df_update.isEmpty():
+                for column, expression in self.update_options.items():
+                    assert column.startswith("__"), "only columns starting with __ can be updated"
+                    df_update = df_update.withColumn(column, expr(expression))
+
+            global_temp_view = create_or_replace_global_temp_view(name=f"{self}_post_run_update", df=df_update, job=self)
+            
+            sql = f"""merge into {self} target using {global_temp_view} source on target.__key = source.__key when matched then update set {", ".join([f"target.{c} = source.{c}" for c in self.update_options.keys()])}"""
+            sql = fix_sql(sql)
+            DEFAULT_LOGGER.debug(f"execute post_run_update", extra={"label": self, "sql": sql})
+            self.spark.sql(sql)

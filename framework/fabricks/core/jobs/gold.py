@@ -1,4 +1,3 @@
-import re
 from collections.abc import Sequence
 from typing import List, Literal, Optional, Union, cast
 
@@ -9,7 +8,6 @@ from typing_extensions import deprecated
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.udfs import UDF_PREFIX
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobGoldOptions, StepGoldConf, StepGoldOptions
 from fabricks.utils.path import GitPath
@@ -106,7 +104,7 @@ class Gold(BaseJob):
             return udfs
 
         else:
-            matches = self._match_udfs(self.sql) or []                
+            matches = self._match_udfs(self.sql) or []
             if udfs:
                 matches += udfs
             if len(matches) > 0:

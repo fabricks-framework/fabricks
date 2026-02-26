@@ -669,13 +669,13 @@ class Table(DbObject):
     def enable_change_data_feed(self):
         assert self.registered, f"{self} not registered"
 
-        DEFAULT_LOGGER.debug("enable change data feed", extra={"label": self})
+        DEFAULT_LOGGER.info("enable change data feed", extra={"label": self})
         self.set_property("delta.enableChangeDataFeed", "true")
 
     def enable_column_mapping(self):
         assert self.registered, f"{self} not registered"
 
-        DEFAULT_LOGGER.debug("enable column mapping", extra={"label": self})
+        DEFAULT_LOGGER.info("enable column mapping", extra={"label": self})
 
         try:
             self.spark.sql(
