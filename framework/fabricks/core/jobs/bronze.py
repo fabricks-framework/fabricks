@@ -11,7 +11,7 @@ from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobBronzeOptions, JobDependency, StepBronzeConf, StepBronzeOptions
+from fabricks.models import JobBronzeOptions, JobDependency, ParserOptions, StepBronzeConf, StepBronzeOptions
 from fabricks.utils.helpers import add_hash
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
@@ -210,8 +210,6 @@ class Bronze(BaseJob):
                     options = options.model_copy(update={"clean": self.step_options.clean})
                 elif options is None:
                     # if no parser options provided, use step clean
-                    from fabricks.models.job import ParserOptions
-
                     options = ParserOptions(clean=self.step_options.clean)
 
             parse = get_parser(self.parser, options)
