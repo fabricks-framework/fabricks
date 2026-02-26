@@ -123,19 +123,18 @@ class Silver(BaseJob):
         schema_only: Optional[bool] = False,
         **kwargs,
     ) -> DataFrame:
-        deps = self.get_dependencies()
-        assert deps, "not dependency found"
+        lineage = self.get_dependencies_lineage()
 
         if self.mode == "memory":
-            assert len(deps) == 1, f"more than 1 dependency not allowed ({deps})"
+            assert len(lineage) == 1, f"more than 1 dependency not allowed ({lineage})"
 
-            parent = deps[0].parent
+            parent = lineage[0].parent
             df = self.spark.sql(f"select * from {parent}")
 
         elif self.mode == "combine":
             dfs = []
 
-            for row in sorted(deps, key=lambda x: x.parent_id):
+            for row in sorted(lineage, key=lambda x: x.parent_id):
                 df = self.spark.sql(f"select * from {row.parent}")
                 dfs.append(df)
 
@@ -145,12 +144,13 @@ class Silver(BaseJob):
         else:
             dfs = []
 
-            for row in sorted(deps, key=lambda x: x.parent_id):
+            for item in sorted(lineage, key=lambda x: x.parent_id):
                 try:
-                    bronze = Bronze.from_job_id(step=self.parent_step, job_id=row.parent_id)
+                    bronze = Bronze.from_job_id(step=self.parent_step, job_id=item.parent_id)
                     if bronze.mode in ["memory", "register"]:
                         # data already transformed if bronze is persisted
                         df = bronze.get_data(stream=stream, transform=True)
+
                     else:
                         df = read(
                             stream=stream,
@@ -161,8 +161,9 @@ class Silver(BaseJob):
                         )
 
                     if df:
-                        if len(deps) > 1:
+                        if len(lineage) > 1:
                             assert "__source" in df.columns, "__source not found"
+
                         dfs.append(df)
 
                 except Exception as e:
@@ -201,21 +202,26 @@ class Silver(BaseJob):
 
         return dependencies
 
+    def get_dependencies_lineage(self) -> Sequence[JobDependency]:
+        dependencies = self.get_dependencies()
+        dependencies = [d for d in dependencies if d.origin != "wait_for"]
+        assert dependencies, "no dependency found"
+        return dependencies
+
     def create_or_replace_view(self):
         assert self.mode in ["memory", "combine"], f"{self.mode} not allowed"
 
-        deps = self.get_dependencies()
-        assert deps, "dependency not found"
+        lineage = self.get_dependencies_lineage()
 
         if self.mode == "combine":
             queries = []
 
-            for row in deps:
+            for item in lineage:
                 columns = self.get_data().columns
-                df = self.spark.sql(f"select * from {row.parent}")
+                df = self.spark.sql(f"select * from {item.parent}")
                 cols = [f"`{c}`" if c in df.columns else f"null as `{c}`" for c in columns if c not in ["__source"]]
-                source = "__source" if "__source" in df.columns else f"'{row.parent}' as __source"
-                query = f"select {', '.join(cols)}, {source} from {row.parent}"
+                source = "__source" if "__source" in df.columns else f"'{item.parent}' as __source"
+                query = f"select {', '.join(cols)}, {source} from {item.parent}"
                 queries.append(query)
 
             sql = f"create or replace view {self.qualified_name} as {' union all '.join(queries)}"
@@ -225,9 +231,9 @@ class Silver(BaseJob):
             self.spark.sql(sql)
 
         else:
-            assert len(deps) == 1, "only one dependency allowed"
+            assert len(lineage) == 1, "only one dependency allowed"
 
-            parent = deps[0].parent
+            parent = lineage[0].parent
             sql = f"select * from {parent}"
             sql = fix_sql(sql)
             DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})

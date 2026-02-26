@@ -78,7 +78,11 @@ class BaseParser(ABC):
         """
         df = self.parse(data_path=data_path, schema_path=schema_path, spark=spark, stream=stream)
 
-        if self.options and self.options.clean is not False:
+        should_clean = True
+        if self.options and self.options.clean is not None:
+            should_clean = self.options.clean
+
+        if should_clean:
             df = df.transform(clean)
 
         if "__rescued_data" not in df.columns:

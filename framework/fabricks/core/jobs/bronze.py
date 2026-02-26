@@ -189,14 +189,22 @@ class Bronze(BaseJob):
             else:
                 df = self.spark.sql(f"select * from {self}")
 
-            if options and options.clean is not False:
-                df = clean(df)
-            elif self.step_options.clean is not False:
-                # cleaning should done by parser but for delta we do it here
+            # cleaning should be done by parser but for delta we do it here
+            should_clean = True
+            if options is not None and options.clean is not None:
+                should_clean = options.clean
+            elif self.step_options.clean is not None:
+                should_clean = self.step_options.clean
+
+            if should_clean:
                 df = clean(df)
 
         else:
-            if self.step_options.clean is not None:
+            if options is not None and options.clean is not None:
+                # if parser options provided and clean set, use parser clean
+                pass
+
+            elif self.step_options.clean is not None:
                 if options and options.clean is None:
                     # if parser options provided but clean not set, use step clean
                     options = options.model_copy(update={"clean": self.step_options.clean})
