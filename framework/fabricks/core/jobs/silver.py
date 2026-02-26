@@ -160,7 +160,7 @@ class Silver(BaseJob):
                             spark=self.spark,
                         )
 
-                    if df:
+                    if df is not None:
                         if len(lineage) > 1:
                             assert "__source" in df.columns, "__source not found"
 
