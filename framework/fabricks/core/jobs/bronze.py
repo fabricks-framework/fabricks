@@ -176,6 +176,8 @@ class Bronze(BaseJob):
         Returns:
             DataFrame: The parsed data as a DataFrame.
         """
+        options = self.conf.parser_options or None  # type: ignore
+
         if self.mode == "register":
             if stream:
                 df = read(
@@ -187,16 +189,19 @@ class Bronze(BaseJob):
             else:
                 df = self.spark.sql(f"select * from {self}")
 
-            if self.step_options.clean is not False:
+            if options and options.clean is not False:
+                df = clean(df)
+            elif self.step_options.clean is not False:
                 # cleaning should done by parser but for delta we do it here
                 df = clean(df)
 
         else:
-            options = self.conf.parser_options or None  # type: ignore
             if self.step_options.clean is not None:
                 if options and options.clean is None:
-                    options.clean = self.step_options.clean
+                    # if parser options provided but clean not set, use step clean
+                    options = options.model_copy(update={"clean": self.step_options.clean})
                 elif options is None:
+                    # if no parser options provided, use step clean
                     from fabricks.models.job import ParserOptions
 
                     options = ParserOptions(clean=self.step_options.clean)
