@@ -47,17 +47,27 @@ def parse_fabricks(sql: str) -> list[exp.Expression | None]:
 
 
 def get_tables(sql: str, allowed_databases: list[str] | None = None) -> list[str]:
-    tables = set()
-    for table in parse_one_fabricks(sql).find_all(exp.Table):
-        if len(table.db) > 0:  # exclude CTEs
-            if allowed_databases:
-                if table.db not in allowed_databases:
-                    continue
-            tables.add(f"{table.db}.{table.name}")
-    tables = list(tables)
-    return tables
+    tables = []
+    parts = [p for p in parse_fabricks(sql) if p is not None]
+
+    for part in parts:
+        for table in part.find_all(exp.Table):
+            if len(table.db) > 0:  # exclude CTEs
+                if allowed_databases:
+                    if table.db not in allowed_databases:
+                        continue
+
+                tables.append(f"{table.db}.{table.name}")
+
+    # Remove duplicates
+    return list(set(tables))
 
 
 def parse_script(sql: str) -> list[str]:
     parts = [p for p in parse_fabricks(sql) if p is not None]
     return [p.sql(dialect="fabricks") for p in parts]
+
+
+def parse_script_expressions(sql: str) -> list[exp.Expression]:
+    parts = [p for p in parse_fabricks(sql) if p is not None]
+    return parts
