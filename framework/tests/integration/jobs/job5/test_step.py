@@ -9,8 +9,8 @@ from fabricks.core import get_step
 DEFAULT_LOGGER.setLevel(ERROR)
 
 # Update these numbers if you add or remove jobs in gold
-deps_in_gold = 32
-jobs_in_gold = 55
+deps_in_gold = 34
+jobs_in_gold = 56
 
 
 @pytest.mark.order(501)

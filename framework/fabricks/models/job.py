@@ -110,6 +110,7 @@ class GoldOptions(BaseOptions):
     persist_last_updated_timestamp: bool | None = None
     table: str | None = None
     notebook: bool | None = None
+    script: bool | None = None
     requirements: bool | None = None
     metadata: bool | None = None
     last_updated: bool | None = None
