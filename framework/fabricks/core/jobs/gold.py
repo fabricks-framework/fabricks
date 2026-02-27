@@ -377,7 +377,6 @@ class Gold(BaseJob):
 
     def for_each_run(self, **kwargs):
         last_version = None
-        last_merge = None
 
         if self.options.persist_last_timestamp:
             last_version = self.table.get_last_version()
@@ -385,7 +384,6 @@ class Gold(BaseJob):
             last_version = self.table.get_last_version()
         if self.updater_options and self.updater_options.columns:
             last_version = self.table.get_last_version()
-            last_merge = self.table.get_last_merge()
 
         if self.mode == "invoke":
             schedule = kwargs.get("schedule", None)
@@ -400,7 +398,7 @@ class Gold(BaseJob):
             self._persist_timestamp(field="__last_updated", last_version=last_version)
 
         if self.updater_options and self.updater_options.columns:
-            self.update_post_run(last_version=last_version, last_merge=last_merge)
+            self._update_post_run(last_version=last_version)
 
     def create(self):
         if self.mode == "invoke":
@@ -485,35 +483,9 @@ class Gold(BaseJob):
         self.overwrite_schema()
         self.run(reload=True, schedule=schedule, invoke=invoke)
 
-    def _update__columns(self, drop: bool = False):
+    def _update_post_run(self, last_version: Optional[int] = None):
         if self.updater_options and self.updater_options.columns:
-            updated__columns = [c for c in self.updater_options.columns.keys() if c.startswith("__")]
-            allowed__columns = self.cdc.allowed_input__columns + self.cdc.allowed_output_trailing__columns
-
-            __columns = updated__columns + allowed__columns
-
-            if drop:
-                # drop __columns (from the updater options) that are not in the table anymore
-                for c in self.table.columns:
-                    if c not in __columns and c.startswith("__"):
-                        self.table.drop_column(c)
-
-            # add __columns (from the updater options) that are not in the table yet
-            for c in updated__columns:
-                if c not in self.table.columns:
-                    self.table.add_column(c, type="variant")
-
-    def overwrite_schema(self, df=None):
-        super().overwrite_schema(df)
-        self._update__columns(drop=True)
-
-    def update_schema(self, df=None, widen_types=False):
-        super().update_schema(df, widen_types)
-        self._update__columns(drop=False)
-
-    def update_post_run(self, last_version: Optional[int] = None, last_merge: Optional[int] = None):
-        if self.updater_options and self.updater_options.columns:
-            DEFAULT_LOGGER.debug("update post run", extra={"label": self})
+            DEFAULT_LOGGER.info("update post run", extra={"label": self})
 
             columns = self.updater_options.columns
 
@@ -548,7 +520,7 @@ class Gold(BaseJob):
                 columns = self.updater_options.columns
                 for c, expression in columns.items():
                     assert c.startswith("__"), f"{c} not allowed, columns must start with __"
-                    df = df.withColumn(c, expr(expression))
+                    df = df.withColumn(c, expr(expression).cast("variant"))
 
             name = f"{self.step}_{self.topic}_{self.item}"
             global_temp_view = create_or_replace_global_temp_view(name=f"{name}__update_post_run", df=df, job=self)
@@ -563,3 +535,29 @@ class Gold(BaseJob):
 
             DEFAULT_LOGGER.debug("exec merge", extra={"label": self, "sql": merge})
             self.spark.sql(merge)
+
+    def _update__columns(self, drop: bool = False):
+        if self.updater_options and self.updater_options.columns:
+            updated__columns = [c for c in self.updater_options.columns.keys() if c.startswith("__")]
+            allowed__columns = self.cdc.allowed_input__columns + self.cdc.allowed_output_trailing__columns
+
+            __columns = updated__columns + allowed__columns
+
+            if drop:
+                # drop __columns (from the updater options) that are not in the table anymore
+                for c in self.table.columns:
+                    if c not in __columns and c.startswith("__"):
+                        self.table.drop_column(c)
+
+            # add __columns (from the updater options) that are not in the table yet
+            for c in updated__columns:
+                if c not in self.table.columns:
+                    self.table.add_column(c, type="variant")
+
+    def overwrite_schema(self, df=None):
+        super().overwrite_schema(df)
+        self._update__columns(drop=True)
+
+    def update_schema(self, df=None, widen_types=False):
+        super().update_schema(df, widen_types)
+        self._update__columns(drop=False)
