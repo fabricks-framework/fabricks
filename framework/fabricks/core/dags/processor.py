@@ -5,7 +5,6 @@ from multiprocessing import Process
 from typing import Any, List
 
 from azure.core.exceptions import AzureError
-from databricks.sdk.runtime import dbutils, spark
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from fabricks.context import PATH_NOTEBOOKS
@@ -15,7 +14,7 @@ from fabricks.core.dags.run import run
 from fabricks.core.steps.get_step import get_step
 from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable
-
+from fabricks.utils.spark import spark, dbutils
 
 class DagProcessor(BaseDags):
     def __init__(self, schedule_id: str, schedule: str, step: str, notebook: bool = True):

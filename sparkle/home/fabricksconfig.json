@@ -1,0 +1,12 @@
+{
+    "runtime": "/home/onyxia/work/tests/integration/runtime",
+    "notebooks": "/home/onyxia/work/tests/integration/fabricks/notebooks",
+    "job_config_from_yaml": true,
+    "loglevel": "debug",
+    "debugmode": true,
+    "config": "/home/onyxia/work/config/conf.fabricks.sparkle.yml",
+    "devmode": true,
+    "funmode": true,
+    "testmode": true,
+    "sparklemode": true
+}

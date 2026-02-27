@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional
@@ -9,6 +10,9 @@ from pyspark.sql import SparkSession
 
 from fabricks.context import IS_UNITY_CATALOG
 from fabricks.utils.spark import spark as _spark
+
+remotemode = os.getenv("FABRICKS_REMOTEMODE", "false").lower() in ("true", "1", "yes")
+localmode = os.getenv("FABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
 
 
 @dataclass
@@ -33,16 +37,27 @@ _scopes = None
 
 @lru_cache(maxsize=None)
 def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
-    from databricks.sdk.runtime import dbutils
+    if localmode:
+        import os
 
-    global _scopes
+        env_var_name = name.upper().replace("-", "_")
+        secret = os.getenv(env_var_name)
+        assert secret is not None, f"Secret {env_var_name} not found in environment variables"
+        return secret
 
-    if not _scopes or secret_scope not in _scopes:  # we get the scopes only once, unless you search for something new
-        _scopes = [s.name for s in dbutils.secrets.listScopes()]
+    else:
+        from databricks.sdk.runtime import dbutils
 
-    assert secret_scope in _scopes, f"scope {secret_scope} not found"
+        global _scopes
 
-    return dbutils.secrets.get(scope=secret_scope, key=name)
+        if (
+            not _scopes or secret_scope not in _scopes
+        ):  # we get the scopes only once, unless you search for something new
+            _scopes = [s.name for s in dbutils.secrets.listScopes()]
+
+        assert secret_scope in _scopes, f"scope {secret_scope} not found"
+
+        return dbutils.secrets.get(scope=secret_scope, key=name)
 
 
 def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:

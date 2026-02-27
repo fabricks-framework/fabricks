@@ -1,0 +1,25 @@
+# Fabricks configuration for Sparkle local development
+# This follows the same structure as framework/pyproject.toml
+
+[tool.fabricks]
+# Base directory for runtime configuration
+runtime = "/home/onyxia/work/home/steps"
+
+# Directory for Fabricks notebooks (if using)
+notebooks = "/home/onyxia/work/home/notebooks"
+
+# Main Fabricks configuration file
+config_file = "/home/onyxia/work/config/conf.fabricks.sparkle.yml"
+
+# Job configuration format
+job_config_from_yaml = true
+
+# Logging
+loglevel = "info"
+
+# Development mode
+devmode = true
+debugmode = false
+
+# Local mode flag (redundant with env var but consistent with framework)
+localmode = true

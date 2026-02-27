@@ -1,6 +1,7 @@
 import logging
 import os
 import pathlib
+from functools import lru_cache
 from pathlib import Path as PathLibPath
 from typing import Literal
 
@@ -141,6 +142,14 @@ class ConfigOptions(BaseSettings):
         validation_alias=AliasChoices("FABRICKS_IS_TESTMODE", "testmode"),
         default=False,
     )
+    localmode: bool = Field(
+        validation_alias=AliasChoices("FABRICKS_IS_SPARKLE_MODE", "localmode"),
+        default=False,
+    )
+    remotemode: bool = Field(
+        validation_alias=AliasChoices("FABRICKS_IS_REMOTEMODE", "remotemode"),
+        default=False,
+    )
     loglevel: int = Field(
         validation_alias=AliasChoices("FABRICKS_LOGLEVEL", "loglevel"),
         default=20,
@@ -150,7 +159,9 @@ class ConfigOptions(BaseSettings):
         default="ignore",
     )
 
-    @field_validator("job_config_from_yaml", "debugmode", "funmode", "devmode", mode="before")
+    @field_validator(
+        "job_config_from_yaml", "debugmode", "funmode", "devmode", "testmode", "localmode", "remotemode", mode="before"
+    )
     @classmethod
     def validate_bool(cls, v):
         """
@@ -247,4 +258,10 @@ class ConfigOptions(BaseSettings):
         return self._resolve_paths()
 
 
-config = ConfigOptions()
+@lru_cache()
+def get_config() -> ConfigOptions:
+    """Get the main configuration options."""
+    return ConfigOptions()
+
+
+config = get_config()

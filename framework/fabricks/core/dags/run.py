@@ -1,7 +1,7 @@
 import json
 from typing import Callable, overload
 
-from databricks.sdk.runtime import dbutils
+from fabricks.utils.spark import dbutils
 from pyspark.errors.exceptions.base import IllegalArgumentException
 
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER

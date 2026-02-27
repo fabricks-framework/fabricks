@@ -1,0 +1,17 @@
+# Required packages for Fabricks in Sparkle
+# Aligned with framework/pyproject.toml
+
+# Delta Lake support (REQUIRED for Fabricks)
+# Must match framework/pyproject.toml: delta-spark>=3.3.2
+delta-spark>=3.3.2
+
+# Azure Storage
+azure-storage-blob>=12.19.0
+azure-identity>=1.15.0
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0
+
+# Data processing
+sqlparse>=0.4.4

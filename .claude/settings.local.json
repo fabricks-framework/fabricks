@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "WebFetch(domain:docs.databricks.com)",
+      "Bash(chmod +x databricks-local/utilities.sh)",
+      "Bash(ls framework/tests/integration/runtime/silver/*.yml)",
+      "Bash(sparkle/.integration-tests-ready:*)"
     ]
   }
 }

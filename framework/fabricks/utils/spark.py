@@ -1,14 +1,15 @@
 import os
-from typing import Final, Optional
+from typing import Optional
 
 from databricks.sdk.dbutils import RemoteDbUtils
 from pyspark.sql import DataFrame, SparkSession
 
-DATABRICKS_LOCALMODE: Final[bool] = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
+remotemode = os.getenv("FABRICKS_REMOTEMODE", "false").lower() in ("true", "1", "yes")
+localmode = os.getenv("FABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
 
 
 def get_spark() -> SparkSession:
-    if DATABRICKS_LOCALMODE:
+    if remotemode:
         from databricks.connect.session import DatabricksSession
         from databricks.sdk.core import Config
 
@@ -21,9 +22,24 @@ def get_spark() -> SparkSession:
 
         spark = DatabricksSession.builder.sdkConfig(c).getOrCreate()
 
-    else:
-        pass
+    elif localmode:
+        from pyspark.sql import SparkSession
 
+        # Get delta-spark version from environment or use default matching pyproject.toml
+        delta_version = os.getenv("DELTA_SPARK_VERSION", "3.3.2")
+        # Spark 4.0+ uses Scala 2.13, earlier versions use 2.12
+        scala_version = os.getenv("SCALA_VERSION", "2.13")
+
+        spark = ( SparkSession.builder
+            .appName("Fabricks")
+            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+            .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+            .config("spark.jars.packages", f"io.delta:delta-spark_{scala_version}:{delta_version}")
+            .config("spark.sql.warehouse.dir", "/home/onyxia/work/data/warehouse")
+            .getOrCreate()
+        )
+
+    else:
         spark = SparkSession.builder.getOrCreate()  # type: ignore
 
     assert spark is not None
@@ -35,7 +51,7 @@ def display(df: DataFrame, limit: Optional[int] = None) -> None:
     Display a Spark DataFrame in Databricks notebook or local environment.
     If running in local mode, it converts the DataFrame to a Pandas DataFrame for display.
     """
-    if DATABRICKS_LOCALMODE:
+    if localmode or remotemode:
         from IPython.display import display
 
         if limit is not None:
@@ -54,7 +70,10 @@ def display(df: DataFrame, limit: Optional[int] = None) -> None:
 
 def get_dbutils(spark: Optional[SparkSession] = None) -> Optional[RemoteDbUtils]:
     try:
-        if DATABRICKS_LOCALMODE:
+        if localmode:
+            return None
+
+        elif remotemode:
             from databricks.sdk import WorkspaceClient
 
             w = WorkspaceClient()

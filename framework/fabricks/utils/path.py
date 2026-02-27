@@ -1,3 +1,4 @@
+import os
 import posixpath
 from abc import ABC, abstractmethod
 from pathlib import Path as PathlibPath
@@ -6,6 +7,9 @@ from pyspark.sql.dataframe import DataFrame
 from typing_extensions import deprecated
 
 from fabricks.utils.spark import spark
+
+remotemode = os.getenv("FABRICKS_REMOTEMODE", "false").lower() in ("true", "1", "yes")
+localmode = os.getenv("FABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
 
 
 class BasePath(ABC):
@@ -173,11 +177,18 @@ class FileSharePath(BasePath):
     def exists(self) -> bool:
         """Check if the path exists in the distributed file system."""
         try:
-            from fabricks.utils.spark import dbutils
+            if localmode:
+                import os
 
-            assert dbutils is not None, "dbutils not found"
-            dbutils.fs.ls(self.string)
-            return True
+                return os.path.exists(self.string)
+
+            else:
+                from fabricks.utils.spark import dbutils
+
+                assert dbutils is not None, "dbutils not found"
+                dbutils.fs.ls(self.string)
+                return True
+
         except Exception:
             return False
 
@@ -259,37 +270,66 @@ class FileSharePath(BasePath):
             dbutils.fs.rm(self.string, recurse=True)
 
     def _list_fs(self, depth: int) -> list:
-        from databricks.sdk.runtime import dbutils
+        if localmode:
+            import os
 
-        paths = dbutils.fs.ls(self.string)
-
-        if depth == 1:
-            children = paths
-        else:
-            i = 1
             children = []
-            while True:
-                if i == depth:
-                    break
-                else:
-                    children = []
+            for root, dirs, files in os.walk(self.string):
+                current_depth = root[len(self.string) :].count(os.sep)
+                if current_depth < depth:
+                    for d in dirs:
+                        children.append(os.path.join(root, d))
+                    for f in files:
+                        children.append(os.path.join(root, f))
 
-                for path in paths:
-                    children += dbutils.fs.ls(path.path)
+        else:
+            from databricks.sdk.runtime import dbutils
 
-                paths = children
-                i += 1
+            paths = dbutils.fs.ls(self.string)
+
+            if depth == 1:
+                children = paths
+            else:
+                i = 1
+                children = []
+                while True:
+                    if i == depth:
+                        break
+                    else:
+                        children = []
+
+                    for path in paths:
+                        children += dbutils.fs.ls(path.path)
+
+                    paths = children
+                    i += 1
 
         return [c.path for c in children]
 
     def _yield_file_info(self, path: str):
-        from databricks.sdk.runtime import dbutils
+        if localmode:
+            import os
+            import time
 
-        for child in dbutils.fs.ls(path):
-            if child.isDir():  # type: ignore
-                yield from self._yield_file_info(child.path)
-            else:
-                yield dbutils.fs.ls(child.path)[0]
+            for root, _, files in os.walk(path):
+                for f in files:
+                    full_path = os.path.join(root, f)
+                    stat = os.stat(full_path)
+                    yield {
+                        "path": full_path,
+                        "name": f,
+                        "size": stat.st_size,
+                        "modification_time": time.ctime(stat.st_mtime),
+                    }
+
+        else:
+            from databricks.sdk.runtime import dbutils
+
+            for child in dbutils.fs.ls(path):
+                if child.isDir():  # type: ignore
+                    yield from self._yield_file_info(child.path)
+                else:
+                    yield dbutils.fs.ls(child.path)[0]
 
     def _yield(self, path: str | PathlibPath):
         """Recursively yield all file paths in the distributed file system."""

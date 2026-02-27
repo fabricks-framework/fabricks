@@ -1,6 +1,6 @@
 from typing import Any, Tuple
 
-from databricks.sdk.runtime import dbutils, spark
+from fabricks.utils.spark import spark, dbutils
 from pyspark.errors.exceptions.base import IllegalArgumentException
 from pyspark.sql import DataFrame
 

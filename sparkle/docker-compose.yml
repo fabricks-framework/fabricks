@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  spark:
+    image: inseefrlab/onyxia-vscode-pyspark:py3.12.12-spark4.0.1-2025.12.29
+    container_name: sparkle
+    hostname: sparkle
+    ports:
+      - "8888:8888"  # Jupyter Lab
+      - "4040:4040"  # Spark UI
+    volumes:
+      - ./config:/home/onyxia/work/config
+      - ./home:/home/onyxia/work/home
+      - ./data:/home/onyxia/work/data
+      - ./requirements.txt:/tmp/requirements.txt:ro
+      # Mount local Fabricks framework for development (optional)
+      - ../framework:/opt/fabricks:ro
+      # Mount integration tests for examples and learning
+      - ../framework/tests/integration:/home/onyxia/work/tests/integration:ro
+    environment:
+      # Fabricks configuration
+      - FABRICKS_LOCALMODE=true
+      - DELTA_SPARK_VERSION=3.3.2
+      - SCALA_VERSION=2.13
+      # Pyspark configuration
+      - PYSPARK_PYTHON=python3
+      - PYSPARK_DRIVER_PYTHON=jupyter
+      - PYSPARK_DRIVER_PYTHON_OPTS=lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+      # Azurite connection
+      - AZURITE_ACCOUNT_NAME=devstoreaccount1
+      - AZURITE_ACCESS_KEY=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+      - AZURITE_CONNECTION_STRING=DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;
+    command: >
+      bash -c "
+      pip install --no-cache-dir jupyterlab notebook &&
+      pip install --no-cache-dir -r /tmp/requirements.txt 2>/dev/null || true &&
+      if [ -d /opt/fabricks ]; then pip install -e /opt/fabricks && echo 'Installed Fabricks from local mount'; fi &&
+      jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+      "
+    depends_on:
+      - azurite
+    networks:
+      - spark-network
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: azurite
+    hostname: azurite
+    ports:
+      - "10000:10000"  # Blob service
+      - "10001:10001"  # Queue service
+      - "10002:10002"  # Table service
+    volumes:
+      - azurite-data:/data
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose --skipApiVersionCheck
+    networks:
+      - spark-network
+
+networks:
+  spark-network:
+    driver: bridge
+
+volumes:
+  azurite-data:
+    driver: local
