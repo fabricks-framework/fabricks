@@ -1,6 +1,6 @@
 from sqlglot import exp, parse, parse_one, transpile
 from sqlglot.dialects.databricks import Databricks
-
+from sqlglot.dialects.spark import Spark
 
 class Fabricks(Databricks):
     class Generator(Databricks.Generator):
@@ -9,9 +9,8 @@ class Fabricks(Databricks):
             exp.Union,
         }
 
-
 def fix(sql: str, keep_comments: bool = True):
-    sql = transpile(
+    parts = transpile(
         sql,
         "fabricks",
         identify=True,
@@ -21,7 +20,8 @@ def fix(sql: str, keep_comments: bool = True):
         leading_comma=True,
         max_text_width=119,
         comments=keep_comments,
-    )[0]
+    )
+    sql = ";\n".join(parts)
     return sql
 
 

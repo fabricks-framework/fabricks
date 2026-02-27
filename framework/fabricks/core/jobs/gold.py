@@ -84,10 +84,6 @@ class Gold(BaseJob):
     @property
     def sql(self) -> str:
         sql = self.paths.to_runtime.get_sql()
-        # BUGFIX: https://github.com/tobymao/sqlglot/pull/7113
-        if self.options.script:
-            return sql
-
         return fix(sql, keep_comments=False)
 
     @deprecated("use sql instead")
