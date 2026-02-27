@@ -54,7 +54,7 @@
 - job:
     step: gold
     topic: scd1
-    item: update
+    item: script
     tags: [test]
     options:
       change_data_capture: scd1
