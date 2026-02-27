@@ -198,7 +198,6 @@ class Generator(Configurator):
 
             cluster_by = []
             partition_by = []
-            persisted__columns = []
 
             powerbi = False
             liquid_clustering = False
