@@ -65,7 +65,6 @@ class Configurator(ABC):
         foreign_keys: Optional[dict[str, Any]] = None,
         generated_columns: Optional[dict[str, str]] = None,
         comments: Optional[dict[str, Any]] = None,
-        extra__columns: Optional[List[str]] = None,
         **kwargs,
     ): ...
 
