@@ -26,19 +26,6 @@ def fix(sql: str, keep_comments: bool = True):
     return sql
 
 
-def is_global_temp_view(sql: str):
-    tables = parse_one_fabricks(sql).find_all(exp.Table)
-    for t in tables:
-        return "global_temp" in str(t)
-
-
-def get_global_temp_view(sql: str) -> str | None:
-    tables = parse_one_fabricks(sql).find_all(exp.Table)
-    for t in tables:
-        if "global_temp" in str(t):
-            return str(t)
-
-
 def parse_one_fabricks(sql: str) -> exp.Expression:
     return parse_one(sql, dialect="fabricks")
 

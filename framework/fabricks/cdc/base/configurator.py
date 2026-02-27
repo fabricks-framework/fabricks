@@ -211,6 +211,7 @@ class Configurator(ABC):
     def reorder_dataframe(self, df: DataFrame, extra__columns: Optional[List[str]] = None) -> DataFrame:
         columns = self.sort_columns(df.columns)
         if extra__columns:
+            extra__columns = [c for c in extra__columns if c in df.columns]
             columns += extra__columns
 
         columns = [f"`{c}`" for c in columns]

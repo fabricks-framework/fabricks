@@ -309,8 +309,6 @@ class Generator(Configurator):
                         "generated column name must start with '__' to avoid potential issue(s) with the CDC logic"
                     )
 
-                persisted__columns = list(generated_columns.keys())
-
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
             global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 == 2"), job=self)
@@ -329,7 +327,6 @@ class Generator(Configurator):
                 foreign_keys=foreign_keys,
                 generated_columns=generated_columns,
                 comments=comments,
-                persisted__columns=persisted__columns,
                 **cdc_options,
             )
 

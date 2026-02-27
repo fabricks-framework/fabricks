@@ -108,6 +108,7 @@ class Gold(BaseJob):
             matches = self._match_udfs(self.sql) or []
             if udfs:
                 matches += udfs
+
             if len(matches) > 0:
                 return list(set(matches))
 
@@ -160,8 +161,12 @@ class Gold(BaseJob):
 
             if self.options.script:
                 parts = parse_script(self.sql)
-                for p in parts:
-                    df = self.spark.sql(p)
+                if parts:
+                    for p in parts:
+                        df = self.spark.sql(p)
+                else:
+                    df = self.spark.sql(self.sql)
+
             else:
                 df = self.spark.sql(self.sql)
 
