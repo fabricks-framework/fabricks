@@ -311,9 +311,6 @@ class Generator(Configurator):
 
                 persisted__columns = list(generated_columns.keys())
 
-            if self.updater_options and self.updater_options.columns:
-                persisted__columns.extend(self.updater_options.columns.keys())
-
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
             global_temp_view = create_or_replace_global_temp_view(name=name, df=df.where("1 == 2"), job=self)
