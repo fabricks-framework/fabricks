@@ -381,33 +381,35 @@ class Gold(BaseJob):
         self.check_duplicate_identity()
 
     def for_each_run(self, **kwargs):
-        last_version = None
-
-        if self.options.persist_last_timestamp:
-            last_version = self.table.get_last_version()
-        if self.options.persist_last_updated_timestamp:
-            last_version = self.table.get_last_version()
-        if self.updater_options and self.updater_options.columns:
-            last_version = self.table.get_last_version()
-
         if self.mode == "invoke":
             schedule = kwargs.get("schedule", None)
             self.invoke(schedule=schedule)
+
         else:
+            last_version = None
+
+            if self.options.persist_last_timestamp:
+                last_version = self.table.get_last_version()
+            if self.options.persist_last_updated_timestamp:
+                last_version = self.table.get_last_version()
+            if self.updater_options and self.updater_options.columns:
+                last_version = self.table.get_last_version()
+
             super().for_each_run(**kwargs)
 
-        if self.options.persist_last_timestamp:
-            self._persist_timestamp(field="__timestamp", last_version=last_version)
+            if self.options.persist_last_timestamp:
+                self._persist_timestamp(field="__timestamp", last_version=last_version)
 
-        if self.options.persist_last_updated_timestamp:
-            self._persist_timestamp(field="__last_updated", last_version=last_version)
+            if self.options.persist_last_updated_timestamp:
+                self._persist_timestamp(field="__last_updated", last_version=last_version)
 
-        if self.updater_options and self.updater_options.columns:
-            self._update_post_run(last_version=last_version)
+            if self.updater_options and self.updater_options.columns:
+                self._update_post_run(last_version=last_version)
 
     def create(self):
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
+
         else:
             self.register_udfs()
             super().create()
@@ -424,6 +426,7 @@ class Gold(BaseJob):
 
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
+
         else:
             super().register()
 
@@ -560,9 +563,11 @@ class Gold(BaseJob):
                     self.table.add_column(c, type="variant")
 
     def overwrite_schema(self, df=None):
-        super().overwrite_schema(df)
-        self._update__columns(drop=True)
+        if not self.mode == "invoke":
+            super().overwrite_schema(df)
+            self._update__columns(drop=True)
 
     def update_schema(self, df=None, widen_types=False):
-        super().update_schema(df, widen_types)
-        self._update__columns(drop=False)
+        if not self.mode == "invoke":
+            super().update_schema(df, widen_types)
+            self._update__columns(drop=False)
