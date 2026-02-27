@@ -13,7 +13,7 @@ from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobGoldOptions, StepGoldConf, StepGoldOptions
 from fabricks.utils.path import GitPath
-from fabricks.utils.sqlglot import fix, get_tables
+from fabricks.utils.sqlglot import fix, get_tables, parse_script
 
 
 class Gold(BaseJob):
@@ -164,7 +164,13 @@ class Gold(BaseJob):
         else:
             assert self.sql, "sql not found"
             self.register_udfs()
-            df = self.spark.sql(self.sql)
+
+            if self.options.script:
+                parts = parse_script(self.sql)
+                for p in parts:
+                    df = self.spark.sql(p)
+            else:
+                df = self.spark.sql(self.sql)
 
         if transform:
             df = self.base_transform(df)
