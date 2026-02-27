@@ -300,6 +300,11 @@ class Generator(Configurator):
             primary_key = self.table_options.primary_key or {} if self.table_options else {}
             foreign_keys = self.table_options.foreign_keys or {} if self.table_options else {}
             comments = self.table_options.comments or {} if self.table_options else {}
+            generated_columns = self.table_options.generated_columns or {} if self.table_options else {}
+            for key in generated_columns.keys():
+                assert key.startswith("__"), (
+                    "generated column name must start with '__' to avoid potential issue(s) with the CDC logic"
+                )
 
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
@@ -317,12 +322,15 @@ class Generator(Configurator):
                 masks=masks,
                 primary_key=primary_key,
                 foreign_keys=foreign_keys,
+                generated_columns=generated_columns,
                 comments=comments,
                 **cdc_options,
             )
 
         if not self.table.exists():
             DEFAULT_LOGGER.debug("create table", extra={"label": self})
+
+            self.register_udfs()
 
             df = self.get_data(stream=self.stream, schema_only=True)
             if df:

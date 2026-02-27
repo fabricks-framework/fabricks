@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from typing import List, Optional, Union, cast
 
@@ -5,11 +6,13 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
+from fabricks.utils.helpers import add_hash
 from fabricks.cdc import SCD1, SCD2, NoCDC
 from fabricks.context import PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
 from fabricks.core.jobs.get_job_conf import get_job_conf
+from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.table import Table
 from fabricks.models import (
     AllowedChangeDataCaptures,
@@ -267,6 +270,11 @@ class Configurator(ABC):
     def extender_options(self) -> Optional[List[ExtenderOptions]]:
         """Direct access to typed extender options."""
         return self.conf.extender_options
+    
+    @property
+    def update_options(self) -> Optional[dict[str, str]]:
+        """Direct access to typed update options."""
+        return self.conf.update_options
 
     @property
     def change_data_capture(self) -> AllowedChangeDataCaptures:
@@ -310,6 +318,34 @@ class Configurator(ABC):
             assert _mode is not None
             self._mode = cast(AllowedModes, _mode)
         return self._mode
+
+    def get_udfs(self) -> Optional[list[str]]:
+        generated_columns = self.table_options.generated_columns if self.table_options else {}
+
+        if generated_columns:
+            udfs = []
+            for value in generated_columns.values():
+                matches = self._match_udfs(value)
+                if matches:
+                    udfs += matches
+
+            return list(set(udfs))
+
+    def register_udfs(self):
+        udfs = self.get_udfs()
+        if udfs:
+            for u in udfs:
+                if not is_registered(u, self.spark):
+                    DEFAULT_LOGGER.debug(f"register udf {u}", extra={"label": self})
+                    register_udf(u, spark=self.spark)
+
+    def _match_udfs(self, string: str) -> Optional[list[str]]:
+        if f"{UDF_PREFIX}" in string:
+            r = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
+            matches = re.findall(r, string)
+            matches = set(matches)
+            matches = list(matches)
+            return matches
 
     @abstractmethod
     def get_data(self, stream: bool = False, transform: Optional[bool] = None, **kwargs) -> Optional[DataFrame]: ...
@@ -383,3 +419,19 @@ class Configurator(ABC):
 
     def __str__(self):
         return f"{self.step}.{self.topic}_{self.item}"
+    
+    def add_hash(self, df: DataFrame) -> DataFrame:
+
+        if "__hash" not in df.columns:
+            fields = [f"`{c}`" for c in df.columns if not c.startswith("__")]
+            DEFAULT_LOGGER.debug("add hash", extra={"label": self})
+
+            if "__operation" in df.columns:
+                fields += ["__operation == 'delete'"]
+
+            if "__source" in df.columns:
+                fields += ["__source"]
+
+            df = add_hash("__hash", df, fields=fields)
+
+        return df

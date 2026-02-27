@@ -1,6 +1,10 @@
 [project]
 name = "fabricks"
+<<<<<<< HEAD
 version = "4.0.10"
+=======
+version = "4.0.9"
+>>>>>>> add-calculated-columns
 description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },

@@ -108,6 +108,7 @@ class Table(DbObject):
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
+        generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ): ...
 
@@ -125,6 +126,7 @@ class Table(DbObject):
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
+        generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ): ...
 
@@ -141,6 +143,7 @@ class Table(DbObject):
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
+        generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ):
         self._create(
@@ -155,6 +158,7 @@ class Table(DbObject):
             masks=masks,
             primary_key=primary_key,
             foreign_keys=foreign_keys,
+            generated_columns=generated_columns,
             comments=comments,
         )
 
@@ -203,6 +207,7 @@ class Table(DbObject):
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
+        generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ):
         DEFAULT_LOGGER.info("create table", extra={"label": self})
@@ -217,6 +222,7 @@ class Table(DbObject):
         ddl_tblproperties = "-- not tblproperties"
         ddl_primary_key = "-- no primary key"
         ddl_foreign_keys = "-- no foreign keys"
+        ddl_generated_columns = "-- no generated columns"
 
         if liquid_clustering:
             if cluster_by:
@@ -263,6 +269,10 @@ class Table(DbObject):
 
             ddl_foreign_keys = "," + ", ".join(fks)
 
+        if generated_columns:
+            cols = [f"`{col}` {expr}" for col, expr in generated_columns.items()]
+            ddl_generated_columns = "," + ",\n\t".join(cols)
+
         if not properties:
             special_char = False
 
@@ -291,6 +301,7 @@ class Table(DbObject):
         {ddl_columns}
         {ddl_foreign_keys}
         {ddl_primary_key}
+        {ddl_generated_columns}
         )
         {ddl_tblproperties}
         {ddl_partition_by}
@@ -658,13 +669,13 @@ class Table(DbObject):
     def enable_change_data_feed(self):
         assert self.registered, f"{self} not registered"
 
-        DEFAULT_LOGGER.debug("enable change data feed", extra={"label": self})
+        DEFAULT_LOGGER.info("enable change data feed", extra={"label": self})
         self.set_property("delta.enableChangeDataFeed", "true")
 
     def enable_column_mapping(self):
         assert self.registered, f"{self} not registered"
 
-        DEFAULT_LOGGER.debug("enable column mapping", extra={"label": self})
+        DEFAULT_LOGGER.info("enable column mapping", extra={"label": self})
 
         try:
             self.spark.sql(

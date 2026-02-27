@@ -970,7 +970,11 @@ wheels = [
 
 [[package]]
 name = "fabricks"
+<<<<<<< HEAD
 version = "4.0.10"
+=======
+version = "4.0.9"
+>>>>>>> add-calculated-columns
 source = { editable = "." }
 dependencies = [
     { name = "azure-data-tables" },

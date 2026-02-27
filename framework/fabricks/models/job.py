@@ -108,6 +108,7 @@ class GoldOptions(BaseOptions):
     correct_valid_from: bool | None = None
     persist_last_timestamp: bool | None = None
     persist_last_updated_timestamp: bool | None = None
+    persist_hash: bool | None = None
     table: str | None = None
     notebook: bool | None = None
     script: bool | None = None
@@ -139,6 +140,7 @@ class JobConfBase(BaseModel):
     check_options: CheckOptions | None = None
     spark_options: SparkOptions | None = None
     invoker_options: InvokerOptions | None = None
+    update_options: dict[str, str] | None = None
     extender_options: list[ExtenderOptions] | None = None
     tags: list[str] | None = None
     comment: str | None = None

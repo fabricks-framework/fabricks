@@ -1,4 +1,3 @@
-import re
 from collections.abc import Sequence
 from typing import List, Literal, Optional, Union, cast
 
@@ -9,7 +8,6 @@ from typing_extensions import deprecated
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobGoldOptions, StepGoldConf, StepGoldOptions
 from fabricks.utils.path import GitPath
@@ -90,33 +88,27 @@ class Gold(BaseJob):
     def get_sql(self) -> str:
         return self.sql
 
-    def get_udfs(self) -> List[str]:
+    def get_udfs(self) -> Optional[list[str]]:
+        udfs = super().get_udfs()
+
         # udf not allowed in invoke
         if self.mode == "invoke":
-            return []
+            return udfs
 
         # udf not allowed in notebook
         elif self.options.notebook:
-            return []
+            return udfs
 
         # udf not allowed in table
         elif self.options.table:
-            return []
+            return udfs
 
         else:
-            matches = []
-            if f"{UDF_PREFIX}" in self.sql:
-                r = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
-                matches = re.findall(r, self.sql)
-                matches = set(matches)
-                matches = list(matches)
-            return matches
-
-    def register_udfs(self):
-        for u in self.get_udfs():
-            if not is_registered(u):
-                DEFAULT_LOGGER.debug(f"register udf ({u})", extra={"label": self})
-                register_udf(udf=u, spark=self.spark)
+            matches = self._match_udfs(self.sql) or []
+            if udfs:
+                matches += udfs
+            if len(matches) > 0:
+                return list(set(matches))
 
     def base_transform(self, df: DataFrame) -> DataFrame:
         df = df.transform(self.extend)
