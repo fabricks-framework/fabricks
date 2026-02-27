@@ -26,6 +26,7 @@ class JobDependency(BaseModel):
     def check_no_circular_dependency(self):
         if self.job_id == self.parent_id:
             raise ValueError("Circular dependency detected")
+        
         return self
 
     @staticmethod
