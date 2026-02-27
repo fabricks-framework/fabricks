@@ -295,6 +295,21 @@ class Bronze(BaseJob):
 
         return df
 
+    def add_hash(self, df: DataFrame) -> DataFrame:
+        if "__hash" not in df.columns:
+            fields = [f"`{c}`" for c in df.columns if not c.startswith("__")]
+            DEFAULT_LOGGER.debug("add hash", extra={"label": self})
+
+            if "__operation" in df.columns:
+                fields += ["__operation == 'delete'"]
+
+            if "__source" in df.columns:
+                fields += ["__source"]
+
+            df = add_hash("__hash", df, fields=fields)
+
+        return df
+
     def add_source(self, df: DataFrame) -> DataFrame:
         if "__source" not in df.columns:
             source = self.options.source

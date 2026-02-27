@@ -88,6 +88,11 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
         return self.get_property("delta.parquet.vorder.enabled") == "true"
 
+    @property
+    def change_data_feed_enabled(self) -> bool:
+        assert self.registered, f"{self} not registered"
+        return self.get_property("delta.enableChangeDataFeed") == "true"
+
     def drop(self):
         super().drop()
         if self.delta_path.exists():
@@ -653,6 +658,16 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
 
         df = self.get_history()
+        version = df.select(max("version")).collect()[0][0]
+        return version
+
+    def get_last_merge(self) -> int | None:
+        assert self.registered, f"{self} not registered"
+
+        df = self.get_history().where("operation == 'MERGE'")
+        if df.count() == 0:
+            return None
+
         version = df.select(max("version")).collect()[0][0]
         return version
 

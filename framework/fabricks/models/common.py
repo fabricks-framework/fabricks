@@ -64,6 +64,14 @@ class ExtenderOptions(BaseModel):
     arguments: dict[str, str] | None = None
 
 
+class UpdaterOptions(BaseModel):
+    """Configuration for runtime updaters."""
+
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
+
+    columns: dict[str, str] | None = None
+
+
 class DatabasePathOptions(BaseModel):
     """Path configuration for databases."""
 

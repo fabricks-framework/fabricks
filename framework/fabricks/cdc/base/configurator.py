@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructType
@@ -59,7 +59,13 @@ class Configurator(ABC):
         identity: Optional[bool] = False,
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str]] = None,
+        properties: Optional[dict[str, str | bool | int]] = None,
+        masks: Optional[dict[str, str]] = None,
+        primary_key: Optional[dict[str, Any]] = None,
+        foreign_keys: Optional[dict[str, Any]] = None,
+        generated_columns: Optional[dict[str, str]] = None,
+        comments: Optional[dict[str, Any]] = None,
+        extra__columns: Optional[List[str]] = None,
         **kwargs,
     ): ...
 
@@ -202,8 +208,11 @@ class Configurator(ABC):
 
         return __leading + fields + __trailing
 
-    def reorder_dataframe(self, df: DataFrame) -> DataFrame:
+    def reorder_dataframe(self, df: DataFrame, extra__columns: Optional[List[str]] = None) -> DataFrame:
         columns = self.sort_columns(df.columns)
+        if extra__columns:
+            columns += extra__columns
+
         columns = [f"`{c}`" for c in columns]
         return df.select(columns)
 

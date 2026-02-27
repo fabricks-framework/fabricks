@@ -32,6 +32,7 @@ class Generator(Configurator):
         foreign_keys: Optional[dict[str, Any]] = None,
         generated_columns: Optional[dict[str, str]] = None,
         comments: Optional[dict[str, Any]] = None,
+        persisted__columns: Optional[List[str]] = None,
         **kwargs,
     ):
         kwargs["mode"] = "complete"
@@ -44,7 +45,7 @@ class Generator(Configurator):
         if partitioning is True:
             assert partition_by, "partitioning column(s) not found"
 
-        df = self.reorder_dataframe(df)
+        df = self.reorder_dataframe(df, extra__columns=persisted__columns)
 
         identity = False if identity is None else identity
         liquid_clustering = False if liquid_clustering is None else liquid_clustering

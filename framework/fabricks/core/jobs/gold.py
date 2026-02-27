@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from typing import List, Literal, Optional, Union, cast
 
 from pyspark.sql import DataFrame
+from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
@@ -169,6 +170,8 @@ class Gold(BaseJob):
 
         if schema_only:
             df = df.where("1 == 2")
+
+        df = self.add_post_run_column(df)
 
         return df
 
@@ -376,11 +379,15 @@ class Gold(BaseJob):
 
     def for_each_run(self, **kwargs):
         last_version = None
+        last_merge = None
 
         if self.options.persist_last_timestamp:
             last_version = self.table.get_last_version()
         if self.options.persist_last_updated_timestamp:
             last_version = self.table.get_last_version()
+        if self.updater_options and self.updater_options.columns:
+            last_version = self.table.get_last_version()
+            last_merge = self.table.get_last_merge()
 
         if self.mode == "invoke":
             schedule = kwargs.get("schedule", None)
@@ -393,6 +400,9 @@ class Gold(BaseJob):
 
         if self.options.persist_last_updated_timestamp:
             self._persist_timestamp(field="__last_updated", last_version=last_version)
+
+        if self.updater_options and self.updater_options.columns:
+            self.update_post_run(last_version=last_version, last_merge=last_merge)
 
     def create(self):
         if self.mode == "invoke":
@@ -472,3 +482,80 @@ class Gold(BaseJob):
 
         self.overwrite_schema()
         self.run(reload=True, schedule=schedule, invoke=invoke)
+
+    def add_post_run_column(self, df: DataFrame) -> DataFrame:
+        if self.updater_options and self.updater_options.columns:
+            columns = self.updater_options.columns
+            for c, expression in columns.items():
+                assert c.startswith("__"), f"{c} not allowed, columns must start with __"
+                df = df.withColumn(c, expr(expression))
+
+        return df
+
+    def update_post_run(self, last_version: Optional[int] = None, last_merge: Optional[int] = None):
+        if self.updater_options and self.updater_options.columns:
+            columns = self.updater_options.columns
+
+            assert self.mode == "update", f"{self.mode} not allowed for update post run"
+            assert self.change_data_capture == "scd1", f"{self.change_data_capture} not allowed for update post run"
+
+            DEFAULT_LOGGER.debug("update post run", extra={"label": self})
+
+            if self.table.change_data_feed_enabled:
+                if last_merge is not None:
+                    df = self.spark.sql(
+                        f"""
+                        select 
+                        * 
+                        from 
+                        table_changes({self}, {last_merge}) 
+                        where 
+                        __change_type = 'update'
+                        """
+                    )
+                else:
+                    df = self.spark.sql(f"select * from {self}")
+
+            else:
+                assert "__key" in self.table.columns, "__key required for update post run"
+                assert "__hash" in self.table.columns, "__hash required for update post run"
+
+                if last_version is not None:
+                    df_last_version = self.spark.sql(f"select * from {self} version as of {last_version}")
+                    df_current = self.spark.sql(f"select * from {self}")
+
+                    df = self.spark.sql(
+                        f"""
+                        select 
+                          c.* 
+                        from 
+                          {df_current} c 
+                          left anti join {df_last_version} l 
+                            on c.__key = l.__key 
+                            and c.__hash = l.__hash
+                        """,
+                        df_current=df_current,
+                        df_last_version=df_last_version,
+                    )
+
+                else:
+                    df = self.spark.sql(f"select * from {self}")
+
+                if not df.isEmpty():
+                    columns = self.updater_options.columns
+                    for c, expression in columns.items():
+                        assert c.startswith("__"), f"{c} not allowed, columns must start with __"
+                        df = df.withColumn(c, expr(expression))
+
+            global_temp_view = create_or_replace_global_temp_view(name=f"{self}_post_run_update", df=df, job=self)
+
+            merge = f"""
+            merge into {self} t using {global_temp_view} s
+              on t.__key = s.__key 
+              when
+                matched then update set {", ".join([f"t.{c} = s.{c}" for c in columns.keys()])}
+            """
+            merge = fix(merge)
+
+            DEFAULT_LOGGER.debug("exec merge", extra={"label": self, "sql": merge})
+            self.spark.sql(merge)

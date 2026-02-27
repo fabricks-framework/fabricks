@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from functools import partial
 
-from fabricks.utils.helpers import add_hash
 from pyspark.sql import DataFrame
 
 from fabricks.context import IS_TYPE_WIDENING
@@ -241,4 +240,3 @@ class Processor(Invoker):
 
     @abstractmethod
     def overwrite(self) -> None: ...
-    

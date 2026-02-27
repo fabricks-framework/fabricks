@@ -198,6 +198,7 @@ class Generator(Configurator):
 
             cluster_by = []
             partition_by = []
+            persisted__columns = []
 
             powerbi = False
             liquid_clustering = False
@@ -300,11 +301,18 @@ class Generator(Configurator):
             primary_key = self.table_options.primary_key or {} if self.table_options else {}
             foreign_keys = self.table_options.foreign_keys or {} if self.table_options else {}
             comments = self.table_options.comments or {} if self.table_options else {}
+
             generated_columns = self.table_options.generated_columns or {} if self.table_options else {}
-            for key in generated_columns.keys():
-                assert key.startswith("__"), (
-                    "generated column name must start with '__' to avoid potential issue(s) with the CDC logic"
-                )
+            if generated_columns:
+                for key in generated_columns.keys():
+                    assert key.startswith("__"), (
+                        "generated column name must start with '__' to avoid potential issue(s) with the CDC logic"
+                    )
+
+                persisted__columns = list(generated_columns.keys())
+
+            if self.updater_options and self.updater_options.columns:
+                persisted__columns.extend(self.updater_options.columns.keys())
 
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
@@ -324,6 +332,7 @@ class Generator(Configurator):
                 foreign_keys=foreign_keys,
                 generated_columns=generated_columns,
                 comments=comments,
+                persisted__columns=persisted__columns,
                 **cdc_options,
             )
 
