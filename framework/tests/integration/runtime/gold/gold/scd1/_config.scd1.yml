@@ -54,20 +54,34 @@
 - job:
     step: gold
     topic: scd1
-<<<<<<< HEAD
     item: script
-=======
-    item: generated_column
->>>>>>> add-calculated-columns
     tags: [test]
     options:
       change_data_capture: scd1
       mode: update
-<<<<<<< HEAD
       script: True
       wait_for: ["silver.monarch_scd2"]
-=======
+- job:
+    step: gold
+    topic: scd1
+    item: script
+    item: generated_column
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
     table_options:
       generated_columns:
         __generated_column: "string generated always as (concat_ws('*', monarch, cast(id as string)))"
->>>>>>> add-calculated-columns
+- job:
+    step: gold
+    topic: scd1
+    item: script
+    item: updated_column
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
+    updater_options:
+        columns:
+            - __extra_column: "add_now(monarch)"

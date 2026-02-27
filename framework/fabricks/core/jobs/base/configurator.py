@@ -320,11 +320,11 @@ class Configurator(ABC):
         return self._mode
 
     def get_udfs(self) -> Optional[list[str]]:
-        generated_columns = self.table_options.generated_columns if self.table_options else {}
+        updated_columns = self.updater_options.columns if self.updater_options else {}
 
-        if generated_columns:
+        if updated_columns:
             udfs = []
-            for value in generated_columns.values():
+            for value in updated_columns.values():
                 matches = self._match_udfs(value)
                 if matches:
                     udfs += matches
