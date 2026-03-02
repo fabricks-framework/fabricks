@@ -14,6 +14,7 @@ from fabricks.metastore.dbobject import DbObject
 from fabricks.models import ForeignKey, PrimaryKey
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.sqlglot import fix
+from sqlglot import diff
 
 
 class Table(DbObject):
@@ -410,6 +411,8 @@ class Table(DbObject):
 
         if len(diffs) > 0:
             DEFAULT_LOGGER.warning("difference(s) with delta table", extra={"label": self, "df": df})
+            for d in diffs:
+                DEFAULT_LOGGER.debug(f"{d.status} column {d.column} ({d.data_type} -> {d.new_data_type})", extra={"label": self})
 
         return diffs
 
