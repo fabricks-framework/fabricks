@@ -50,6 +50,7 @@ gold = [
     {"step": "gold", "topic": "scd2", "item": "memory"},
     {"step": "gold", "topic": "scd1", "item": "complete"},
     {"step": "gold", "topic": "scd2", "item": "complete"},
+    {"step": "gold", "topic": "scd0", "item": "update"},
     {"step": "gold", "topic": "scd1", "item": "update"},
     {"step": "gold", "topic": "scd2", "item": "update"},
     {"step": "gold", "topic": "scd1", "item": "identity"},
