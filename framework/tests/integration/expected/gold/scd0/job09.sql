@@ -1,15 +1,17 @@
 create or replace view expected.gold_scd0_job9 as
-select id,
+select
+    id,
+    monarch,
+    value
+from
+  expected.gold_scd0_job8
+union all
+select
+  id,
   monarch,
   value
-from expected.gold_scd2_job9 s0
+from
+  expected.gold_scd2_job9 s1
+  left anti join expected.gold_scd0_job8 s0 on s1.id = s0.id
 where
-  true
-  and exists (
-    select 1
-    from expected.gold_scd1_job9 s1
-    where s1.id = s0.id
-      and s1.`__is_current`
-  )
-
-qualify row_number() over (partition by id order by `__valid_from` asc) = 1
+  `__is_current`
