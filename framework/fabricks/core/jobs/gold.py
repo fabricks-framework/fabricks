@@ -527,7 +527,7 @@ class Gold(BaseJob):
             if not df.isEmpty():
                 columns = self.updater_options.columns
                 for c, expression in columns.items():
-                    assert c.startswith("__"), f"{c} not allowed, columns must start with __"
+                    assert c.startswith("__updated_"), f"{c} not allowed, columns must start with __updated_"
                     df = df.withColumn(c, expr(expression).cast("variant"))
 
             name = f"{self.step}_{self.topic}_{self.item}"
@@ -546,19 +546,16 @@ class Gold(BaseJob):
 
     def _update__columns(self, drop: bool = False):
         if self.updater_options and self.updater_options.columns:
-            updated__columns = [c for c in self.updater_options.columns.keys() if c.startswith("__")]
-            allowed__columns = self.cdc.allowed_input__columns + self.cdc.allowed_output_trailing__columns
-
-            __columns = updated__columns + allowed__columns
+            columns = [c for c in self.updater_options.columns.keys() if c.startswith("__updated_")]
 
             if drop:
                 # drop __columns (from the updater options) that are not in the table anymore
                 for c in self.table.columns:
-                    if c not in __columns and c.startswith("__"):
+                    if c not in columns and c.startswith("__updated_"):
                         self.table.drop_column(c)
 
             # add __columns (from the updater options) that are not in the table yet
-            for c in updated__columns:
+            for c in columns:
                 if c not in self.table.columns:
                     self.table.add_column(c, type="variant")
 

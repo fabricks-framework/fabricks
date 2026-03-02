@@ -304,8 +304,8 @@ class Generator(Configurator):
             generated_columns = self.table_options.generated_columns or {} if self.table_options else {}
             if generated_columns:
                 for key in generated_columns.keys():
-                    assert key.startswith("__"), (
-                        "generated column name must start with '__' to avoid potential issue(s) with the CDC logic"
+                    assert key.startswith("__generated_"), (
+                        "generated column name must start with '__generated_' to avoid potential issue(s) with the CDC logic"
                     )
 
             # if dataframe, reference is passed (BUG)

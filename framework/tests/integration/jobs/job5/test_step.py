@@ -5,9 +5,7 @@ import pytest
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_step
-
-from tests.integration.jobs.const import GOLD_DEPENDENCIES, GOLD_SCD1_DEPENDENCIES
-from tests.integration.jobs.const import GOLD_JOBS 
+from tests.integration.jobs.const import GOLD_DEPENDENCIES, GOLD_JOBS, GOLD_SCD1_DEPENDENCIES
 
 DEFAULT_LOGGER.setLevel(ERROR)
 

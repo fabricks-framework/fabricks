@@ -82,5 +82,5 @@
       mode: update
     updater_options:
       columns:
-        __extra_column: "udf_add_now(monarch)"
-        __new_column: "(1+1)"
+        __updated_extra_column: "udf_add_now(monarch)"
+        __updated_new_column: "(1+1)"

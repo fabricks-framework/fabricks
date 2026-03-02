@@ -14,7 +14,6 @@ from fabricks.metastore.dbobject import DbObject
 from fabricks.models import ForeignKey, PrimaryKey
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.sqlglot import fix
-from sqlglot import diff
 
 
 class Table(DbObject):
@@ -68,6 +67,11 @@ class Table(DbObject):
     def identity_enabled(self) -> bool:
         assert self.registered, f"{self} not registered"
         return self.get_property("delta.feature.identityColumns") == "supported"
+
+    @property
+    def generated_columns_enabled(self) -> bool:
+        assert self.registered, f"{self} not registered"
+        return self.get_property("delta.feature.generatedColumns") == "supported"
 
     @property
     def type_widening_enabled(self) -> bool:
@@ -358,16 +362,26 @@ class Table(DbObject):
         self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
-    def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: list[str] | None = None) -> bool:
+    def schema_drifted(
+        self,
+        df: DataFrame,
+        exclude_columns_with_prefix: list[str] | None = None,
+        exclude_columns: list[str] | None = None,
+    ) -> bool:
         assert self.registered, f"{self} not registered"
 
-        diffs = self.get_schema_differences(df, exclude_columns_with_prefix=exclude_columns_with_prefix)
+        diffs = self.get_schema_differences(
+            df,
+            exclude_columns_with_prefix=exclude_columns_with_prefix,
+            exclude_columns=exclude_columns,
+        )
         return len(diffs) > 0
 
     def get_schema_differences(
         self,
         df: DataFrame,
         exclude_columns_with_prefix: list[str] | None = None,
+        exclude_columns: list[str] | None = None,
     ) -> Sequence[SchemaDiff]:
         assert self.registered, f"{self} not registered"
 
@@ -377,11 +391,16 @@ class Table(DbObject):
         if self.identity_enabled:
             if "__identity" in df1.columns:
                 df1 = df1.drop("__identity")
+        if self.generated_columns_enabled:
+            generated_cols = [c for c in df1.columns if c.startswith("__generated_")]
+            df1 = df1.drop(*generated_cols)
 
         all_columns = set(df1.columns).union(set(df.columns))
         if exclude_columns_with_prefix:
             for excluded in exclude_columns_with_prefix:
                 all_columns = {c for c in all_columns if not c.startswith(excluded)}
+        if exclude_columns:
+            all_columns = {c for c in all_columns if c not in exclude_columns}
 
         df1_dict = {name: dtype for name, dtype in df1.dtypes}
         df2_dict = {name: dtype for name, dtype in df.dtypes}
@@ -412,7 +431,9 @@ class Table(DbObject):
         if len(diffs) > 0:
             DEFAULT_LOGGER.warning("difference(s) with delta table", extra={"label": self, "df": df})
             for d in diffs:
-                DEFAULT_LOGGER.debug(f"{d.status} column {d.column} ({d.data_type} -> {d.new_data_type})", extra={"label": self})
+                DEFAULT_LOGGER.debug(
+                    f"{d.status} column {d.column} ({d.data_type} -> {d.new_data_type})", extra={"label": self}
+                )
 
         return diffs
 
