@@ -66,44 +66,38 @@ class Table(DbObject):
 
     @property
     def identity_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.feature.identityColumns") == "supported"
 
     @property
     def generated_columns_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.feature.generatedColumns") == "supported"
 
     @property
     def type_widening_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.enableTypeWidening") == "true"
 
     @property
     def liquid_clustering_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.feature.clustering") == "supported"
 
     @property
     def auto_liquid_clustering_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.clusterByAuto") == "true"
 
     @property
     def vorder_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.parquet.vorder.enabled") == "true"
 
     @property
     def change_data_feed_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.enableChangeDataFeed") == "true"
 
     def drop(self):
-        super().drop()
         if self.delta_path.exists():
             DEFAULT_LOGGER.debug("delete delta folder", extra={"label": self})
             self.delta_path.rm()
+
+        super().drop()
 
     @overload
     def create(
@@ -707,8 +701,6 @@ class Table(DbObject):
             return None
 
     def enable_change_data_feed(self):
-        assert self.registered, f"{self} not registered"
-
         DEFAULT_LOGGER.info("enable change data feed", extra={"label": self})
         self.set_property("delta.enableChangeDataFeed", "true")
 
@@ -716,7 +708,6 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.info("enable column mapping", extra={"label": self})
-
         try:
             self.spark.sql(
                 f"""
@@ -850,8 +841,6 @@ class Table(DbObject):
         )
 
     def create_restore_point(self):
-        assert self.registered, f"{self} not registered"
-
         last_version = self.get_last_version() + 1
         self.set_property("fabricks.last_version", last_version)
 
@@ -873,8 +862,7 @@ class Table(DbObject):
     def describe_history(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
 
-        df = self.spark.sql(f"describe history {self.qualified_name}")
-        return df
+        return self.spark.sql(f"describe history {self.qualified_name}")
 
     def enable_liquid_clustering(self, columns: str | list[str] | None = None, auto: bool | None = False):
         assert self.registered, f"{self} not registered"

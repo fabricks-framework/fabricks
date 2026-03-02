@@ -448,7 +448,7 @@ class Bronze(BaseJob):
     def drop(self):
         if self.mode == "register":
             self.drop_external_table()
-            
+
         super().drop()
 
     def maintain(
