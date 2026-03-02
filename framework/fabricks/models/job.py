@@ -105,6 +105,7 @@ class GoldOptions(BaseOptions):
 
     update_where: str | None = None
     deduplicate: bool | None = None
+    hard_delete: bool | None = None
     rectify_as_upserts: bool | None = None
     correct_valid_from: bool | None = None
     persist_last_timestamp: bool | None = None

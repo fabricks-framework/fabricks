@@ -42,6 +42,12 @@ def test_gold_scd2_update():
 
 
 @pytest.mark.order(125)
+def test_gold_scd0_update():
+    j = get_job(step="gold", topic="scd0", item="update")
+    compare_gold_to_expected(j, "scd0", 1)
+
+
+@pytest.mark.order(125)
 def test_gold_scd2_correct_valid_from():
     df = SPARK.sql("select min(`__valid_from`) <> '1900-01-01' from gold.scd2_correct_valid_from")
     check = df.collect()[0][0]

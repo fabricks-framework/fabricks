@@ -1,3 +1,4 @@
+{% if cdc == "scd0" %} {% include 'merges/scd0.sql.jinja' %} {% endif %}
 {% if cdc == "scd1" %} {% include 'merges/scd1.sql.jinja' %} {% endif %}
 {% if cdc == "scd2" %} {% include 'merges/scd2.sql.jinja' %} {% endif %}
 {% if cdc == "nocdc" %} {% include 'merges/nocdc.sql.jinja' %} {% endif %}

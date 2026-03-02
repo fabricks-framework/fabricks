@@ -28,7 +28,7 @@ def test_update_dependencies():
 
     step.update_dependencies(topic="scd1", loglevel=ERROR)
     df = SPARK.sql("select * from fabricks.gold_dependencies")
-    assert df.count() == GOLD_SCD1_DEPENDENCIES, f"{df.count()} dependencies <> {GOLD_SCD1_DEPENDENCIES}"
+    assert df.count() == GOLD_DEPENDENCIES, f"{df.count()} dependencies <> {GOLD_DEPENDENCIES}"
 
     step.update_dependencies(topic="it_does_not_exist", loglevel=ERROR)
     df = SPARK.sql("select * from fabricks.gold_dependencies")

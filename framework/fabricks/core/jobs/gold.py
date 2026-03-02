@@ -7,6 +7,7 @@ from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
 from fabricks.cdc.nocdc import NoCDC
+from fabricks.cdc.scd0 import SCD0
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -247,6 +248,11 @@ class Gold(BaseJob):
         deduplicate = self.options.deduplicate
         # assume no reload in gold (to improve performance)
         rectify = self.options.rectify_as_upserts
+        # assume no soft delete in gold for scd1 and scd2 (unless specified otherwise)
+        if self.options.hard_delete is not None:
+            soft_delete = not self.options.hard_delete
+        else:
+            soft_delete = True if self.change_data_capture in ["scd1", "scd2"] else None
 
         add_metadata = self.options.metadata
         if add_metadata is None:
@@ -254,7 +260,7 @@ class Gold(BaseJob):
 
         context = {
             "add_metadata": add_metadata,
-            "soft_delete": True if self.slowly_changing_dimension else None,
+            "soft_delete": soft_delete,
             "deduplicate_key": None,
             "deduplicate_hash": True if self.slowly_changing_dimension else None,
             "deduplicate": False,
@@ -371,6 +377,7 @@ class Gold(BaseJob):
             self.cdc.append(sql, **context)
 
         elif self.mode == "complete":
+            assert not isinstance(self.cdc, SCD0), "SCD0 complete not allowed"
             self.cdc.complete(sql, **context)
 
         else:

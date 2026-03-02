@@ -7,6 +7,7 @@ from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
 from fabricks.cdc import SCD1, SCD2, NoCDC
+from fabricks.cdc.scd0 import SCD0
 from fabricks.context import PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
@@ -74,7 +75,7 @@ class Configurator(ABC):
     _paths: Optional[Paths] = None
     _table: Optional[Table] = None
 
-    _cdc: Optional[Union[NoCDC, SCD1, SCD2]] = None
+    _cdc: Optional[Union[NoCDC, SCD0, SCD1, SCD2]] = None
     _change_data_capture: Optional[AllowedChangeDataCaptures] = None
     _mode: Optional[AllowedModes] = None
 
@@ -284,22 +285,26 @@ class Configurator(ABC):
         return self._change_data_capture
 
     @property
-    def cdc(self) -> Union[NoCDC, SCD1, SCD2]:
+    def cdc(self) -> Union[NoCDC, SCD0, SCD1, SCD2]:
         if not self._cdc:
             if self.change_data_capture == "nocdc":
                 cdc = NoCDC(self.step, self.topic, self.item, spark=self.spark)
+            elif self.change_data_capture == "scd0":
+                cdc = SCD0(self.step, self.topic, self.item, spark=self.spark)
             elif self.change_data_capture == "scd1":
                 cdc = SCD1(self.step, self.topic, self.item, spark=self.spark)
             elif self.change_data_capture == "scd2":
                 cdc = SCD2(self.step, self.topic, self.item, spark=self.spark)
             else:
                 raise ValueError(f"{self.change_data_capture} not allowed")
+
             self._cdc = cdc
+
         return self._cdc
 
     @property
     def slowly_changing_dimension(self) -> bool:
-        return self.change_data_capture in ["scd1", "scd2"]
+        return self.change_data_capture in ["scd0", "scd1", "scd2"]
 
     @abstractmethod
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict: ...
