@@ -31,7 +31,7 @@ class DbObject:
     @property
     def registered(self) -> bool:
         try:
-            return self.spark.catalog.tableExists(self.name, self.database.name)
+            return self.spark.catalog.tableExists(self.qualified_name)
         except Exception:
             return False
 
