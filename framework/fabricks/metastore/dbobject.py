@@ -31,9 +31,9 @@ class DbObject:
     @property
     def registered(self) -> bool:
         try:
-            self._registered = self.spark.catalog.tableExists(self.qualified_name)
+            return self.spark.catalog.tableExists(self.qualified_name)
         except Exception:
-            self._registered = False
+            return False
 
     def get_spark_table(self) -> Table:
         return self.spark.catalog.getTable(self.qualified_name)
