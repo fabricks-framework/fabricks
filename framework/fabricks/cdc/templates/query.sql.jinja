@@ -10,6 +10,7 @@
     {% else %} {% include 'queries/nocdc/complete.sql.jinja' %}
     {% endif %}
 {% endif %}
+{% if cdc == "scd0" %} {% include 'queries/scd1.sql.jinja' %} {% endif %}
 {% if cdc == "scd1" %} {% include 'queries/scd1.sql.jinja' %} {% endif %}
 {% if cdc == "scd2" %} {% include 'queries/scd2.sql.jinja' %} {% endif %}
 {% include 'queries/final.sql.jinja' %}

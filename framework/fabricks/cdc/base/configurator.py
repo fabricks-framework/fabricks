@@ -148,7 +148,7 @@ class Configurator(ABC):
 
     @property
     def slowly_changing_dimension(self) -> bool:
-        return self.change_data_capture in ["scd1", "scd2"]
+        return self.change_data_capture in ["scd0", "scd1", "scd2"]
 
     def get_src(self, src: AllowedSources) -> DataFrame:
         if isinstance(src, DataFrameLike):

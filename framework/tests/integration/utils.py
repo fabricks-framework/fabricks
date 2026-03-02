@@ -159,3 +159,4 @@ def create_expected_views():
 
     _create_views("gold", "scd2")
     _create_views("gold", "scd1")
+    _create_views("gold", "scd0")
