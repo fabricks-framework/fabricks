@@ -321,7 +321,7 @@ class Table(DbObject):
         DEFAULT_LOGGER.debug("ddl", extra={"label": self, "sql": sql})
         self.spark.sql(sql)
 
-        self.set_register()
+        self.register()
 
     @property
     def is_deltatable(self) -> bool:
