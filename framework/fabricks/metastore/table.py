@@ -321,8 +321,6 @@ class Table(DbObject):
         DEFAULT_LOGGER.debug("ddl", extra={"label": self, "sql": sql})
         self.spark.sql(sql)
 
-        self.register()
-
     @property
     def is_deltatable(self) -> bool:
         try:
@@ -345,8 +343,6 @@ class Table(DbObject):
     def register(self):
         DEFAULT_LOGGER.debug("register table", extra={"label": self})
         self.spark.sql(f"create table if not exists {self.qualified_name} using delta location '{self.delta_path}'")
-
-        self.set_register()
 
     def restore_to_version(self, version: int):
         assert self.registered, f"{self} not registered"
@@ -538,6 +534,7 @@ class Table(DbObject):
 
         DEFAULT_LOGGER.debug(f"vacuum table (removing files older than {retention_days} days)", extra={"label": self})
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
+        
         try:
             self.create_restore_point()
             retention_hours = retention_days * 24
@@ -545,6 +542,7 @@ class Table(DbObject):
         finally:
             # finally
             pass
+
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
 
     def optimize(self, columns: str | list[str] | None = None):

@@ -20,8 +20,6 @@ class DbObject:
         assert spark is not None
         self.spark = spark
 
-    _registered = None
-
     @property
     def name(self) -> str:
         return "_".join(self.levels)
@@ -32,13 +30,10 @@ class DbObject:
 
     @property
     def registered(self) -> bool:
-        if self._registered is None:
-            try:
-                self._registered = self.spark.catalog.tableExists(self.qualified_name)
-            except Exception:
-                self._registered = False
-
-        return self._registered
+        try:
+            self._registered = self.spark.catalog.tableExists(self.qualified_name)
+        except Exception:
+            self._registered = False
 
     def get_spark_table(self) -> Table:
         return self.spark.catalog.getTable(self.qualified_name)
@@ -84,9 +79,6 @@ class DbObject:
 
         else:
             DEFAULT_LOGGER.debug("not found in metastore", extra={"label": self})
-
-    def set_register(self):
-        self._registered = True
 
     def __str__(self):
         return self.qualified_name
