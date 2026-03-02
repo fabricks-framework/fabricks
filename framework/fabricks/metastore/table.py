@@ -93,11 +93,11 @@ class Table(DbObject):
         return self.get_property("delta.enableChangeDataFeed") == "true"
 
     def drop(self):
+        super().drop()
+
         if self.delta_path.exists():
             DEFAULT_LOGGER.debug("delete delta folder", extra={"label": self})
             self.delta_path.rm()
-
-        super().drop()
 
     @overload
     def create(
@@ -692,15 +692,16 @@ class Table(DbObject):
         if df.count() == 0:
             return None
 
-        version = df.select(max("version")).collect()[0][0]
-        return version
+        return df.select(max("version")).collect()[0][0]
 
     def get_property(self, key: str) -> str | None:
         assert self.registered, f"{self} not registered"
 
         try:
-            return self.spark.sql(f"show tblproperties {self.qualified_name} ('{key}')").collect()[0][0]
-        except IndexError:
+            df = self.spark.sql(f"show tblproperties {self.qualified_name} ('{key}')")
+            return df.select("value").collect()[0][0]
+        
+        except (IndexError, ValueError):
             return None
 
     def enable_change_data_feed(self):
