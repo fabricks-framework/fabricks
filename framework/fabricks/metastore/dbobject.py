@@ -66,13 +66,16 @@ class DbObject:
             return False
 
     def drop(self):
-        if self.is_view:
-            DEFAULT_LOGGER.warning("drop view from metastore", extra={"label": self})
-            self.spark.sql(f"drop view if exists {self}")
+        if self.registered:
+            if self.is_view:
+                DEFAULT_LOGGER.warning("drop view from metastore", extra={"label": self})
+                self.spark.sql(f"drop view if exists {self}")
 
-        elif self.is_table:
-            DEFAULT_LOGGER.warning("drop table from metastore", extra={"label": self})
-            self.spark.sql(f"drop table if exists {self}")
+            elif self.is_table:
+                DEFAULT_LOGGER.warning("drop table from metastore", extra={"label": self})
+                self.spark.sql(f"drop table if exists {self}")
+        else:
+            DEFAULT_LOGGER.debug("not found in metastore", extra={"label": self})
 
     def __str__(self):
         return self.qualified_name
