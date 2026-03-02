@@ -43,19 +43,27 @@ class DbObject:
 
     @property
     def is_view(self) -> bool:
-        table = self.get_spark_table()
-        if table.tableType == "VIEW":
-            return True
+        try:
+            table = self.get_spark_table()
+            if table.tableType == "VIEW":
+                return True
 
-        return False
+            return False
+        
+        except Exception:
+            return False
 
     @property
     def is_table(self) -> bool:
-        table = self.get_spark_table()
-        if table.tableType == "VIEW":
-            return False
+        try:
+            table = self.get_spark_table()
+            if table.tableType == "VIEW":
+                return False
 
-        return True
+            return True
+        
+        except Exception:
+            return False
 
     def drop(self):
         if self.is_view:
