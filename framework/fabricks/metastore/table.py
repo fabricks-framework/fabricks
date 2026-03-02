@@ -535,7 +535,7 @@ class Table(DbObject):
 
         DEFAULT_LOGGER.debug(f"vacuum table (removing files older than {retention_days} days)", extra={"label": self})
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
-        
+
         try:
             self.create_restore_point()
             retention_hours = retention_days * 24
@@ -700,7 +700,7 @@ class Table(DbObject):
         try:
             df = self.spark.sql(f"show tblproperties {self.qualified_name} ('{key}')")
             return df.select("value").collect()[0][0]
-        
+
         except (IndexError, ValueError):
             return None
 
