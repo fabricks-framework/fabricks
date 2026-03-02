@@ -321,7 +321,7 @@ class Table(DbObject):
         DEFAULT_LOGGER.debug("ddl", extra={"label": self, "sql": sql})
         self.spark.sql(sql)
 
-        self.register()
+        self.set_register()
 
     @property
     def is_deltatable(self) -> bool:
@@ -345,6 +345,8 @@ class Table(DbObject):
     def register(self):
         DEFAULT_LOGGER.debug("register table", extra={"label": self})
         self.spark.sql(f"create table if not exists {self.qualified_name} using delta location '{self.delta_path}'")
+
+        self.set_register()
 
     def restore_to_version(self, version: int):
         assert self.registered, f"{self} not registered"
