@@ -85,5 +85,8 @@ class DbObject:
         else:
             DEFAULT_LOGGER.debug("not found in metastore", extra={"label": self})
 
+    def register(self):
+        self._registered = True
+
     def __str__(self):
         return self.qualified_name
