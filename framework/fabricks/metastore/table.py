@@ -408,7 +408,7 @@ class Table(DbObject):
                     )
                 )
 
-        if diffs:
+        if len(diffs) > 0:
             DEFAULT_LOGGER.warning("difference(s) with delta table", extra={"label": self, "df": df})
 
         return diffs
