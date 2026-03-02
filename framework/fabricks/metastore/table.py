@@ -41,13 +41,14 @@ class Table(DbObject):
     def dataframe(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
 
-        return self.spark.sql(f"select * from {self}")
+        return self.spark.table(self.qualified_name)
 
     @property
     def columns(self) -> list[str]:
         assert self.registered, f"{self} not registered"
 
-        return self.dataframe.columns
+        columns = self.get_spark_columns()
+        return [c.name for c in columns]
 
     @property
     def rows(self) -> int:
@@ -672,18 +673,20 @@ class Table(DbObject):
 
         return self.spark.sql(f"describe extended {self.qualified_name}")
 
-    def get_history(self) -> DataFrame:
+    def get_history(self, limit: int | None = None) -> DataFrame:
         assert self.registered, f"{self} not registered"
 
-        df = self.spark.sql(f"describe history {self.qualified_name}")
+        sql = f"describe history {self.qualified_name}"
+        if limit is not None:
+            sql += f" limit {limit}"
+        df = self.spark.sql(sql)
+
         return df
 
     def get_last_version(self) -> int:
         assert self.registered, f"{self} not registered"
 
-        df = self.get_history()
-        version = df.select(max("version")).collect()[0][0]
-        return version
+        return self.get_history(limit=1).select("version").collect()[0][0]
 
     def get_last_merge(self) -> int | None:
         assert self.registered, f"{self} not registered"
@@ -699,9 +702,7 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
 
         try:
-            value = self.get_properties().where(f"key == '{key}'").select("value").collect()[0][0]
-            return value
-
+            return self.spark.sql(f"show tblproperties {self.qualified_name} ('{key}')").collect()[0][0]
         except IndexError:
             return None
 

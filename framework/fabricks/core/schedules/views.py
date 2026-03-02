@@ -53,8 +53,8 @@ def create_or_replace_view(name: str):
 def create_or_replace_views():
     DEFAULT_LOGGER.info("create or replace (schedule) views")
 
-    df = get_schedules_df()
-    for row in df.collect():
+    rows = get_schedules_df().collect()
+    for row in rows:
         try:
             create_or_replace_view_internal(row.name, row.options.asDict())
         except Exception as e:

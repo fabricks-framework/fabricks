@@ -12,8 +12,8 @@ class DagTerminator(BaseDags):
         df = self.get_logs()
         self.write_logs(df)
 
-        error_df = SPARK.sql("select * from {df} where status = 'failed'", df=df)
-        for row in error_df.collect():
+        rows = SPARK.sql("select * from {df} where status = 'failed'", df=df).collect()
+        for row in rows:
             LOGGER.error(f"{row['job']} failed (🔥)")
 
         TABLE_LOG_HANDLER.table.truncate_partition(self.schedule_id)
@@ -21,5 +21,5 @@ class DagTerminator(BaseDags):
         table = self.get_table()
         table.drop()
 
-        if not error_df.isEmpty():
-            raise ValueError(f"{error_df.count()} job(s) failed")
+        if rows:
+            raise ValueError(f"{len(rows)} job(s) failed")

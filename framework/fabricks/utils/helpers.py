@@ -9,7 +9,6 @@ from typing_extensions import deprecated
 
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.path import GitPath
-from fabricks.utils.spark import spark
 
 
 def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str:
@@ -231,8 +230,9 @@ def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
 
 
 def xxhash64(s: Any) -> int:
-    df = spark.sql(f"select xxhash64(cast('{s}' as string)) as xxhash64")
-    return df.collect()[0][0]
+    import xxhash
+
+    return xxhash.xxh64(str(s)).intdigest()
 
 
 def load_module_from_path(name: str, path: GitPath):

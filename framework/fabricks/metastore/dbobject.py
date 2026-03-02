@@ -1,7 +1,7 @@
 from typing import Optional
 
-from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import SparkSession
+from pyspark.sql.catalog import Column, Table
 
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
@@ -31,27 +31,31 @@ class DbObject:
     @property
     def registered(self) -> bool:
         try:
-            df = self.spark.sql(f"show tables in {self.database}").where(f"tableName == '{self.name}'")
-            return not df.isEmpty()
-        # not found
-        except AnalysisException:
+            return self.spark.catalog.tableExists(self.name, self.database.name)
+        except Exception:
             return False
+
+    def get_spark_table(self) -> Table:
+        return self.spark.catalog.getTable(self.qualified_name)
+
+    def get_spark_columns(self) -> list[Column]:
+        return self.spark.catalog.listColumns(self.qualified_name)
 
     @property
     def is_view(self) -> bool:
-        try:
-            df = self.spark.sql(f"show views in {self.database}").where(f"viewName == '{self.name}'")
-            return not df.isEmpty()
-        # not found
-        except AnalysisException:
-            return False
+        table = self.get_spark_table()
+        if table.tableType == "VIEW":
+            return True
+
+        return False
 
     @property
     def is_table(self) -> bool:
-        if self.is_view:
+        table = self.get_spark_table()
+        if table.tableType == "VIEW":
             return False
-        else:
-            return self.registered
+
+        return True
 
     def drop(self):
         if self.is_view:

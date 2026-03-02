@@ -32,6 +32,7 @@ dependencies = [
     "tenacity>=9.1.2",
     "tomli>=2.2.1;python_version<\"3.11\"",
     "tqdm>=4.67.1",
+    "xxhash>=3.6.0",
 ]
 requires-python = ">=3.11,<4"
 
@@ -45,7 +46,7 @@ build-backend = "hatchling.build"
 [tool.pyright]
 venv = ".venv"
 venvPath = "."
-pythonVersion = "3.10"
+pythonVersion = "3.11"
 typeCheckingMode = "basic"
 exclude = [
     ".venv",
