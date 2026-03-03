@@ -74,5 +74,13 @@ class DbObject:
             DEFAULT_LOGGER.warning("drop table from metastore", extra={"label": self})
             self.spark.sql(f"drop table if exists {self}")
 
+        else:
+            df = self.spark.sql(f"show tables in {self.database} like '{self.name}'")
+            if not df.isEmpty():
+                DEFAULT_LOGGER.warning("drop object from metastore", extra={"label": self})
+                self.spark.sql(f"drop table if exists {self}")
+                self.spark.sql(f"drop view if exists {self}")
+          
+
     def __str__(self):
         return self.qualified_name
