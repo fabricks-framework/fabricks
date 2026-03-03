@@ -55,10 +55,10 @@ class Checker(Generator):
                         extra={"label": self},
                     )
 
-                if position == "pre_run":
-                    raise PreRunCheckWarning(rows[-1]["__message"], dataframe=df)
-                elif position == "post_run":
-                    raise PostRunCheckWarning(rows[-1]["__message"], dataframe=df)
+            if position == "pre_run":
+                raise PreRunCheckWarning(rows[-1]["__message"], dataframe=df)
+            elif position == "post_run":
+                raise PostRunCheckWarning(rows[-1]["__message"], dataframe=df)
 
     def check_post_run_extra(self):
         min_rows = self.check_options.min_rows if self.check_options else None
