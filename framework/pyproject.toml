@@ -49,13 +49,16 @@ venvPath = "."
 pythonVersion = "3.11"
 typeCheckingMode = "basic"
 exclude = [
+    "**/node_modules", 
+    "**/__pycache__",
+    ".*,
     ".venv",
     "fabricks/api/notebooks",
 ]
 
 [tool.ruff]
 line-length = 119
-target-version = "py310"
+target-version = "py311"
 
 [tool.yamlfix]
 line_length = 119
