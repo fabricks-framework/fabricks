@@ -38,9 +38,7 @@ requires-python = ">=3.11,<4"
 
 
 [build-system]
-requires = [
-    "hatchling",
-]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.pyright]
@@ -51,7 +49,7 @@ typeCheckingMode = "basic"
 exclude = [
     "**/node_modules", 
     "**/__pycache__",
-    ".*,
+    ".*",
     ".venv",
     "fabricks/api/notebooks",
 ]
@@ -74,18 +72,14 @@ remove-all-unused-imports = true
 remove-duplicate-keys = true
 remove-unused-variables = true
 expand-star-imports = true
-exclude = [
-    "_init__.py",
-]
+exclude = ["_init__.py"]
 
 [tool.uv]
 native-tls = true
 keyring-provider = "subprocess"
 
 [tool.hatch.build.targets.wheel]
-packages = [
-    "fabricks",
-]
+packages = ["fabricks"]
 
 [dependency-groups]
 test = [
