@@ -41,13 +41,14 @@ class Table(DbObject):
     def dataframe(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
 
-        return self.spark.sql(f"select * from {self}")
+        return self.spark.table(self.qualified_name)
 
     @property
     def columns(self) -> list[str]:
         assert self.registered, f"{self} not registered"
 
-        return self.dataframe.columns
+        columns = self.get_spark_columns()
+        return [c.name for c in columns]
 
     @property
     def rows(self) -> int:
@@ -65,31 +66,35 @@ class Table(DbObject):
 
     @property
     def identity_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.feature.identityColumns") == "supported"
 
     @property
+    def generated_columns_enabled(self) -> bool:
+        return self.get_property("delta.feature.generatedColumns") == "supported"
+
+    @property
     def type_widening_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.enableTypeWidening") == "true"
 
     @property
     def liquid_clustering_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.feature.clustering") == "supported"
 
     @property
     def auto_liquid_clustering_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.clusterByAuto") == "true"
 
     @property
     def vorder_enabled(self) -> bool:
-        assert self.registered, f"{self} not registered"
         return self.get_property("delta.parquet.vorder.enabled") == "true"
+
+    @property
+    def change_data_feed_enabled(self) -> bool:
+        return self.get_property("delta.enableChangeDataFeed") == "true"
 
     def drop(self):
         super().drop()
+
         if self.delta_path.exists():
             DEFAULT_LOGGER.debug("delete delta folder", extra={"label": self})
             self.delta_path.rm()
@@ -108,6 +113,7 @@ class Table(DbObject):
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
+        generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ): ...
 
@@ -125,6 +131,7 @@ class Table(DbObject):
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
+        generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ): ...
 
@@ -141,6 +148,7 @@ class Table(DbObject):
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
+        generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ):
         self._create(
@@ -155,6 +163,7 @@ class Table(DbObject):
             masks=masks,
             primary_key=primary_key,
             foreign_keys=foreign_keys,
+            generated_columns=generated_columns,
             comments=comments,
         )
 
@@ -203,104 +212,112 @@ class Table(DbObject):
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
+        generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ):
-        DEFAULT_LOGGER.info("create table", extra={"label": self})
-        if not df:
-            assert schema is not None
-            df = self.spark.createDataFrame([], schema)
+        if not self.registered:
+            DEFAULT_LOGGER.info("create table", extra={"label": self})
+            if not df:
+                assert schema is not None
+                df = self.spark.createDataFrame([], schema)
 
-        ddl_columns = ",\n\t".join(self._get_ddl_columns(df, masks=masks, comments=comments))
-        ddl_identity = "-- no identity" if "__identity" not in df.columns else ""
-        ddl_cluster_by = "-- no cluster by"
-        ddl_partition_by = "-- no partitioned by"
-        ddl_tblproperties = "-- not tblproperties"
-        ddl_primary_key = "-- no primary key"
-        ddl_foreign_keys = "-- no foreign keys"
+            ddl_columns = ",\n\t".join(self._get_ddl_columns(df, masks=masks, comments=comments))
+            ddl_identity = "-- no identity" if "__identity" not in df.columns else ""
+            ddl_cluster_by = "-- no cluster by"
+            ddl_partition_by = "-- no partitioned by"
+            ddl_tblproperties = "-- not tblproperties"
+            ddl_primary_key = "-- no primary key"
+            ddl_foreign_keys = "-- no foreign keys"
+            ddl_generated_columns = "-- no generated columns"
 
-        if liquid_clustering:
-            if cluster_by:
-                if isinstance(cluster_by, str):
-                    cluster_by = [cluster_by]
-                cluster_by = [f"`{c}`" for c in cluster_by]
-                ddl_cluster_by = "cluster by (" + ", ".join(cluster_by) + ")"
+            if liquid_clustering:
+                if cluster_by:
+                    if isinstance(cluster_by, str):
+                        cluster_by = [cluster_by]
+                    cluster_by = [f"`{c}`" for c in cluster_by]
+                    ddl_cluster_by = "cluster by (" + ", ".join(cluster_by) + ")"
 
-            else:
-                ddl_cluster_by = "cluster by auto"
+                else:
+                    ddl_cluster_by = "cluster by auto"
 
-        if partitioning:
-            assert partition_by
-            if isinstance(partition_by, str):
-                partition_by = [partition_by]
-            partition_by = [f"`{p}`" for p in partition_by]
-            ddl_partition_by = "partitioned by (" + ", ".join(partition_by) + ")"
+            if partitioning:
+                assert partition_by
+                if isinstance(partition_by, str):
+                    partition_by = [partition_by]
+                partition_by = [f"`{p}`" for p in partition_by]
+                ddl_partition_by = "partitioned by (" + ", ".join(partition_by) + ")"
 
-        if identity:
-            ddl_identity = "__identity bigint generated by default as identity (start with 1 increment by 1), "
+            if identity:
+                ddl_identity = "__identity bigint generated by default as identity (start with 1 increment by 1), "
 
-        if primary_key:
-            assert len(primary_key) == 1, "only one primary key allowed"
+            if primary_key:
+                assert len(primary_key) == 1, "only one primary key allowed"
 
-            for key, value in primary_key.items():
-                keys = value.keys
-                if isinstance(keys, str):
-                    keys = [keys]
+                for key, value in primary_key.items():
+                    keys = value.keys
+                    if isinstance(keys, str):
+                        keys = [keys]
 
-                ddl_primary_key = f", constraint {key} primary key (" + ", ".join(keys) + ")"
+                    ddl_primary_key = f", constraint {key} primary key (" + ", ".join(keys) + ")"
 
-        if foreign_keys:
-            fks = []
+            if foreign_keys:
+                fks = []
 
-            for key, value in foreign_keys.items():
-                reference = value.reference
-                keys = value.keys
-                if isinstance(keys, str):
-                    keys = [keys]
+                for key, value in foreign_keys.items():
+                    reference = value.reference
+                    keys = value.keys
+                    if isinstance(keys, str):
+                        keys = [keys]
 
-                keys = ", ".join([f"`{k}`" for k in keys])
-                fk = f"constraint {key} foreign key ({keys}) references {reference}"
-                fks.append(fk)
+                    keys = ", ".join([f"`{k}`" for k in keys])
+                    fk = f"constraint {key} foreign key ({keys}) references {reference}"
+                    fks.append(fk)
 
-            ddl_foreign_keys = "," + ", ".join(fks)
+                ddl_foreign_keys = "," + ", ".join(fks)
 
-        if not properties:
-            special_char = False
+            if generated_columns:
+                cols = [f"`{col}` {expr}" for col, expr in generated_columns.items()]
+                ddl_generated_columns = "," + ",\n\t".join(cols)
 
-            for c in df.columns:
-                match = re.search(r"[^a-zA-Z0-9_]", c)
-                if match:
-                    special_char = True
-                    break
+            if not properties:
+                special_char = False
 
-            if special_char:
-                properties = {
-                    "delta.columnMapping.mode": "name",
-                    "delta.minReaderVersion": "2",
-                    "delta.minWriterVersion": "5",
-                }
+                for c in df.columns:
+                    match = re.search(r"[^a-zA-Z0-9_]", c)
+                    if match:
+                        special_char = True
+                        break
 
-        if properties:
-            ddl_tblproperties = (
-                "tblproperties (" + ",".join(f"'{key}' = '{value}'" for key, value in properties.items()) + ")"
+                if special_char:
+                    properties = {
+                        "delta.columnMapping.mode": "name",
+                        "delta.minReaderVersion": "2",
+                        "delta.minWriterVersion": "5",
+                    }
+
+            if properties:
+                ddl_tblproperties = (
+                    "tblproperties (" + ",".join(f"'{key}' = '{value}'" for key, value in properties.items()) + ")"
+                )
+
+            sql = f""" 
+            create table {self.qualified_name} 
+            (
+            {ddl_identity}
+            {ddl_columns}
+            {ddl_foreign_keys}
+            {ddl_primary_key}
+            {ddl_generated_columns}
             )
-
-        sql = f""" 
-        create table if not exists {self.qualified_name} 
-        (
-        {ddl_identity}
-        {ddl_columns}
-        {ddl_foreign_keys}
-        {ddl_primary_key}
-        )
-        {ddl_tblproperties}
-        {ddl_partition_by}
-        {ddl_cluster_by}
-        location '{self.delta_path}'
-        """
-        try:
-            sql = fix(sql)
-        except Exception:
-            pass
+            {ddl_tblproperties}
+            {ddl_partition_by}
+            {ddl_cluster_by}
+            location '{self.delta_path}'
+            """
+            try:
+                sql = fix(sql)
+            except Exception:
+                pass
 
         DEFAULT_LOGGER.debug("ddl", extra={"label": self, "sql": sql})
         self.spark.sql(sql)
@@ -341,16 +358,26 @@ class Table(DbObject):
         self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
-    def schema_drifted(self, df: DataFrame, exclude_columns_with_prefix: list[str] | None = None) -> bool:
+    def schema_drifted(
+        self,
+        df: DataFrame,
+        exclude_columns_with_prefix: list[str] | None = None,
+        exclude_columns: list[str] | None = None,
+    ) -> bool:
         assert self.registered, f"{self} not registered"
 
-        diffs = self.get_schema_differences(df, exclude_columns_with_prefix=exclude_columns_with_prefix)
+        diffs = self.get_schema_differences(
+            df,
+            exclude_columns_with_prefix=exclude_columns_with_prefix,
+            exclude_columns=exclude_columns,
+        )
         return len(diffs) > 0
 
     def get_schema_differences(
         self,
         df: DataFrame,
         exclude_columns_with_prefix: list[str] | None = None,
+        exclude_columns: list[str] | None = None,
     ) -> Sequence[SchemaDiff]:
         assert self.registered, f"{self} not registered"
 
@@ -360,11 +387,16 @@ class Table(DbObject):
         if self.identity_enabled:
             if "__identity" in df1.columns:
                 df1 = df1.drop("__identity")
+        if self.generated_columns_enabled:
+            generated_cols = [c for c in df1.columns if c.startswith("__generated_")]
+            df1 = df1.drop(*generated_cols)
 
         all_columns = set(df1.columns).union(set(df.columns))
         if exclude_columns_with_prefix:
             for excluded in exclude_columns_with_prefix:
                 all_columns = {c for c in all_columns if not c.startswith(excluded)}
+        if exclude_columns:
+            all_columns = {c for c in all_columns if c not in exclude_columns}
 
         df1_dict = {name: dtype for name, dtype in df1.dtypes}
         df2_dict = {name: dtype for name, dtype in df.dtypes}
@@ -392,8 +424,12 @@ class Table(DbObject):
                     )
                 )
 
-        if diffs:
+        if len(diffs) > 0:
             DEFAULT_LOGGER.warning("difference(s) with delta table", extra={"label": self, "df": df})
+            for d in diffs:
+                DEFAULT_LOGGER.debug(
+                    f"{d.status} column {d.column} ({d.data_type} -> {d.new_data_type})", extra={"label": self}
+                )
 
         return diffs
 
@@ -499,6 +535,7 @@ class Table(DbObject):
 
         DEFAULT_LOGGER.debug(f"vacuum table (removing files older than {retention_days} days)", extra={"label": self})
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
+
         try:
             self.create_restore_point()
             retention_hours = retention_days * 24
@@ -506,6 +543,7 @@ class Table(DbObject):
         finally:
             # finally
             pass
+
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
 
     def optimize(self, columns: str | list[str] | None = None):
@@ -632,40 +670,48 @@ class Table(DbObject):
 
         return self.spark.sql(f"describe extended {self.qualified_name}")
 
-    def get_history(self) -> DataFrame:
+    def get_history(self, limit: int | None = None) -> DataFrame:
         assert self.registered, f"{self} not registered"
 
-        df = self.spark.sql(f"describe history {self.qualified_name}")
+        sql = f"describe history {self.qualified_name}"
+        if limit is not None:
+            sql += f" limit {limit}"
+        df = self.spark.sql(sql)
+
         return df
 
     def get_last_version(self) -> int:
         assert self.registered, f"{self} not registered"
 
-        df = self.get_history()
-        version = df.select(max("version")).collect()[0][0]
-        return version
+        return self.get_history(limit=1).select("version").collect()[0][0]
+
+    def get_last_merge(self) -> int | None:
+        assert self.registered, f"{self} not registered"
+
+        df = self.get_history().where("operation == 'MERGE'")
+        if df.count() == 0:
+            return None
+
+        return df.select(max("version")).collect()[0][0]
 
     def get_property(self, key: str) -> str | None:
         assert self.registered, f"{self} not registered"
 
         try:
-            value = self.get_properties().where(f"key == '{key}'").select("value").collect()[0][0]
-            return value
+            df = self.spark.sql(f"show tblproperties {self.qualified_name} ('{key}')")
+            return df.select("value").collect()[0][0]
 
-        except IndexError:
+        except (IndexError, ValueError):
             return None
 
     def enable_change_data_feed(self):
-        assert self.registered, f"{self} not registered"
-
-        DEFAULT_LOGGER.debug("enable change data feed", extra={"label": self})
+        DEFAULT_LOGGER.info("enable change data feed", extra={"label": self})
         self.set_property("delta.enableChangeDataFeed", "true")
 
     def enable_column_mapping(self):
         assert self.registered, f"{self} not registered"
 
-        DEFAULT_LOGGER.debug("enable column mapping", extra={"label": self})
-
+        DEFAULT_LOGGER.info("enable column mapping", extra={"label": self})
         try:
             self.spark.sql(
                 f"""
@@ -799,8 +845,6 @@ class Table(DbObject):
         )
 
     def create_restore_point(self):
-        assert self.registered, f"{self} not registered"
-
         last_version = self.get_last_version() + 1
         self.set_property("fabricks.last_version", last_version)
 
@@ -822,8 +866,7 @@ class Table(DbObject):
     def describe_history(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
 
-        df = self.spark.sql(f"describe history {self.qualified_name}")
-        return df
+        return self.spark.sql(f"describe history {self.qualified_name}")
 
     def enable_liquid_clustering(self, columns: str | list[str] | None = None, auto: bool | None = False):
         assert self.registered, f"{self} not registered"

@@ -13,6 +13,7 @@ from fabricks.models.common import (
     ExtenderOptions,
     InvokerOptions,
     SparkOptions,
+    UpdaterOptions,
 )
 from fabricks.models.config import config
 from fabricks.models.table import TableOptions
@@ -104,12 +105,14 @@ class GoldOptions(BaseOptions):
 
     update_where: str | None = None
     deduplicate: bool | None = None
+    hard_delete: bool | None = None
     rectify_as_upserts: bool | None = None
     correct_valid_from: bool | None = None
     persist_last_timestamp: bool | None = None
     persist_last_updated_timestamp: bool | None = None
     table: str | None = None
     notebook: bool | None = None
+    script: bool | None = None
     requirements: bool | None = None
     metadata: bool | None = None
     last_updated: bool | None = None
@@ -139,6 +142,7 @@ class JobConfBase(BaseModel):
     spark_options: SparkOptions | None = None
     invoker_options: InvokerOptions | None = None
     extender_options: list[ExtenderOptions] | None = None
+    updater_options: UpdaterOptions | None = None
     tags: list[str] | None = None
     comment: str | None = None
 

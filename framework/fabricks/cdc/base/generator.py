@@ -30,6 +30,7 @@ class Generator(Configurator):
         masks: Optional[dict[str, str]] = None,
         primary_key: Optional[dict[str, Any]] = None,
         foreign_keys: Optional[dict[str, Any]] = None,
+        generated_columns: Optional[dict[str, str]] = None,
         comments: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
@@ -59,6 +60,7 @@ class Generator(Configurator):
             masks=masks,
             primary_key=primary_key,
             foreign_keys=foreign_keys,
+            generated_columns=generated_columns,
             comments=comments,
         )
 

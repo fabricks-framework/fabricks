@@ -381,11 +381,13 @@ class Silver(BaseJob):
                   {global_temp_view}
                 where
                   __operation <> 'reload'
-                limit 
+                limit
                   1
                 """
             )
-            assert check_df.isEmpty(), f"{check_df.collect()[0][0]} not allowed"
+            # Collect once to avoid double scan
+            check_rows = check_df.collect()
+            assert not check_rows, f"{check_rows[0][0]} not allowed"
             self.cdc.complete(sql, **context)
 
         else:

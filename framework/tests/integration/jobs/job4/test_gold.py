@@ -37,3 +37,9 @@ def test_gold_scd2_complete():
 def test_gold_scd2_update():
     j = get_job(step="gold", topic="scd2", item="update")
     compare_gold_to_expected(j, "scd2", 11)
+
+
+@pytest.mark.order(425)
+def test_gold_scd0_update():
+    j = get_job(step="gold", topic="scd0", item="update")
+    compare_gold_to_expected(j, "scd0", 11)

@@ -225,9 +225,12 @@ class BaseStep:
             df = SPARK.createDataFrame(jobs, schema=schema)  # type: ignore
             df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
 
+            # Collect once to avoid double scan
             duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")
-            duplicates = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in duplicated_df.collect())
-            assert duplicated_df.isEmpty(), f"duplicated job(s) ({duplicates})"
+            rows = duplicated_df.collect()
+            if rows:
+                duplicates = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in rows)
+                raise AssertionError(f"duplicated job(s) ({duplicates})")
 
             if not df:
                 raise ValueError("no jobs found")

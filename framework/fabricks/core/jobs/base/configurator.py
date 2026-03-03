@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from typing import List, Optional, Union, cast
 
@@ -6,10 +7,12 @@ from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
 from fabricks.cdc import SCD1, SCD2, NoCDC
+from fabricks.cdc.scd0 import SCD0
 from fabricks.context import PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
 from fabricks.core.jobs.get_job_conf import get_job_conf
+from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.table import Table
 from fabricks.models import (
     AllowedChangeDataCaptures,
@@ -31,6 +34,7 @@ from fabricks.models import (
     TOptions,
     get_job_id,
 )
+from fabricks.models.common import UpdaterOptions
 from fabricks.models.runtime import RuntimeConf
 
 
@@ -71,7 +75,7 @@ class Configurator(ABC):
     _paths: Optional[Paths] = None
     _table: Optional[Table] = None
 
-    _cdc: Optional[Union[NoCDC, SCD1, SCD2]] = None
+    _cdc: Optional[Union[NoCDC, SCD0, SCD1, SCD2]] = None
     _change_data_capture: Optional[AllowedChangeDataCaptures] = None
     _mode: Optional[AllowedModes] = None
 
@@ -264,6 +268,11 @@ class Configurator(ABC):
         return self.conf.invoker_options
 
     @property
+    def updater_options(self) -> Optional[UpdaterOptions]:
+        """Direct access to typed updater options."""
+        return self.conf.updater_options
+
+    @property
     def extender_options(self) -> Optional[List[ExtenderOptions]]:
         """Direct access to typed extender options."""
         return self.conf.extender_options
@@ -276,22 +285,26 @@ class Configurator(ABC):
         return self._change_data_capture
 
     @property
-    def cdc(self) -> Union[NoCDC, SCD1, SCD2]:
+    def cdc(self) -> Union[NoCDC, SCD0, SCD1, SCD2]:
         if not self._cdc:
             if self.change_data_capture == "nocdc":
                 cdc = NoCDC(self.step, self.topic, self.item, spark=self.spark)
+            elif self.change_data_capture == "scd0":
+                cdc = SCD0(self.step, self.topic, self.item, spark=self.spark)
             elif self.change_data_capture == "scd1":
                 cdc = SCD1(self.step, self.topic, self.item, spark=self.spark)
             elif self.change_data_capture == "scd2":
                 cdc = SCD2(self.step, self.topic, self.item, spark=self.spark)
             else:
                 raise ValueError(f"{self.change_data_capture} not allowed")
+
             self._cdc = cdc
+
         return self._cdc
 
     @property
     def slowly_changing_dimension(self) -> bool:
-        return self.change_data_capture in ["scd1", "scd2"]
+        return self.change_data_capture in ["scd0", "scd1", "scd2"]
 
     @abstractmethod
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict: ...
@@ -310,6 +323,34 @@ class Configurator(ABC):
             assert _mode is not None
             self._mode = cast(AllowedModes, _mode)
         return self._mode
+
+    def get_udfs(self) -> Optional[list[str]]:
+        updated_columns = self.updater_options.columns if self.updater_options else {}
+
+        if updated_columns:
+            udfs = []
+            for value in updated_columns.values():
+                matches = self._match_udfs(value)
+                if matches:
+                    udfs += matches
+
+            return list(set(udfs))
+
+    def register_udfs(self):
+        udfs = self.get_udfs()
+        if udfs:
+            for u in udfs:
+                if not is_registered(u, self.spark):
+                    DEFAULT_LOGGER.debug(f"register udf {u}", extra={"label": self})
+                    register_udf(u, spark=self.spark)
+
+    def _match_udfs(self, string: str) -> Optional[list[str]]:
+        if f"{UDF_PREFIX}" in string:
+            r = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
+            matches = re.findall(r, string)
+            matches = set(matches)
+            matches = list(matches)
+            return matches
 
     @abstractmethod
     def get_data(self, stream: bool = False, transform: Optional[bool] = None, **kwargs) -> Optional[DataFrame]: ...

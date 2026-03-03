@@ -1,7 +1,7 @@
 from typing import Optional
 
-from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import SparkSession
+from pyspark.sql.catalog import Column, Table
 
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
@@ -31,27 +31,39 @@ class DbObject:
     @property
     def registered(self) -> bool:
         try:
-            df = self.spark.sql(f"show tables in {self.database}").where(f"tableName == '{self.name}'")
-            return not df.isEmpty()
-        # not found
-        except AnalysisException:
+            return self.spark.catalog.tableExists(self.qualified_name)
+        except Exception:
             return False
+
+    def get_spark_table(self) -> Table:
+        return self.spark.catalog.getTable(self.qualified_name)
+
+    def get_spark_columns(self) -> list[Column]:
+        return self.spark.catalog.listColumns(self.qualified_name)
 
     @property
     def is_view(self) -> bool:
         try:
-            df = self.spark.sql(f"show views in {self.database}").where(f"viewName == '{self.name}'")
-            return not df.isEmpty()
-        # not found
-        except AnalysisException:
+            table = self.get_spark_table()
+            if table.tableType == "VIEW":
+                return True
+
+            return False
+
+        except Exception:
             return False
 
     @property
     def is_table(self) -> bool:
-        if self.is_view:
+        try:
+            table = self.get_spark_table()
+            if table.tableType == "VIEW":
+                return False
+
+            return True
+
+        except Exception:
             return False
-        else:
-            return self.registered
 
     def drop(self):
         if self.is_view:
@@ -61,6 +73,14 @@ class DbObject:
         elif self.is_table:
             DEFAULT_LOGGER.warning("drop table from metastore", extra={"label": self})
             self.spark.sql(f"drop table if exists {self}")
+
+        else:
+            df = self.spark.sql(f"show tables in {self.database} like '{self.name}'")
+            if not df.isEmpty():
+                DEFAULT_LOGGER.warning("drop object from metastore", extra={"label": self})
+                self.spark.sql(f"drop table if exists {self}")
+                self.spark.sql(f"drop view if exists {self}")
+          
 
     def __str__(self):
         return self.qualified_name

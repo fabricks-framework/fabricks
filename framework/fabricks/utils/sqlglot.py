@@ -1,6 +1,4 @@
-from typing import List, Optional
-
-from sqlglot import exp, parse_one, transpile
+from sqlglot import exp, parse, parse_one, transpile
 from sqlglot.dialects.databricks import Databricks
 
 
@@ -13,7 +11,7 @@ class Fabricks(Databricks):
 
 
 def fix(sql: str, keep_comments: bool = True):
-    sql = transpile(
+    parts = transpile(
         sql,
         "fabricks",
         identify=True,
@@ -23,34 +21,41 @@ def fix(sql: str, keep_comments: bool = True):
         leading_comma=True,
         max_text_width=119,
         comments=keep_comments,
-    )[0]
+    )
+    sql = ";\n".join(parts)
     return sql
 
 
-def is_global_temp_view(sql: str):
-    tables = parse_one(sql, dialect="fabricks").find_all(exp.Table)
-    for t in tables:
-        return "global_temp" in str(t)
-
-
-def get_global_temp_view(sql: str) -> Optional[str]:
-    tables = parse_one(sql, dialect="fabricks").find_all(exp.Table)
-    for t in tables:
-        if "global_temp" in str(t):
-            return str(t)
-
-
-def parse(sql: str) -> exp.Expression:
+def parse_one_fabricks(sql: str) -> exp.Expression:
     return parse_one(sql, dialect="fabricks")
 
 
-def get_tables(sql: str, allowed_databases: Optional[List[str]] = None) -> List[str]:
-    tables = set()
-    for table in parse(sql).find_all(exp.Table):
-        if len(table.db) > 0:  # exclude CTEs
-            if allowed_databases:
-                if table.db not in allowed_databases:
-                    continue
-            tables.add(f"{table.db}.{table.name}")
-    tables = list(tables)
-    return tables
+def parse_fabricks(sql: str) -> list[exp.Expression | None]:
+    return parse(sql, dialect="fabricks")
+
+
+def get_tables(sql: str, allowed_databases: list[str] | None = None) -> list[str]:
+    tables = []
+    parts = [p for p in parse_fabricks(sql) if p is not None]
+
+    for part in parts:
+        for table in part.find_all(exp.Table):
+            if len(table.db) > 0:  # exclude CTEs
+                if allowed_databases:
+                    if table.db not in allowed_databases:
+                        continue
+
+                tables.append(f"{table.db}.{table.name}")
+
+    # Remove duplicates
+    return list(set(tables))
+
+
+def parse_script(sql: str) -> list[str]:
+    parts = [p for p in parse_fabricks(sql) if p is not None]
+    return [p.sql(dialect="fabricks") for p in parts]
+
+
+def parse_script_expressions(sql: str) -> list[exp.Expression]:
+    parts = [p for p in parse_fabricks(sql) if p is not None]
+    return parts

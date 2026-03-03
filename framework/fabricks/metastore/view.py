@@ -2,12 +2,12 @@ from typing import Any, Optional, Union
 from uuid import uuid4
 
 import pandas as pd
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import DataFrame
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.dbobject import DbObject
-from fabricks.utils._types import DataFrameLike
+from fabricks.utils._types import DataFrameLike, SparkSessionLike
 
 
 class View(DbObject):
@@ -15,7 +15,7 @@ class View(DbObject):
     def create_or_replace(
         df: Union[DataFrame, pd.DataFrame],
         *dependencies,
-        spark: Optional[SparkSession] = None,
+        spark: Optional[SparkSessionLike] = None,
     ) -> str:
         if spark is None:
             if isinstance(df, DataFrameLike):

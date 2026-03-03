@@ -1,19 +1,19 @@
-import re
 from collections.abc import Sequence
 from typing import List, Literal, Optional, Union, cast
 
 from pyspark.sql import DataFrame
+from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
 from fabricks.cdc.nocdc import NoCDC
+from fabricks.cdc.scd0 import SCD0
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobGoldOptions, StepGoldConf, StepGoldOptions
 from fabricks.utils.path import GitPath
-from fabricks.utils.sqlglot import fix, get_tables
+from fabricks.utils.sqlglot import fix, get_tables, parse_script
 
 
 class Gold(BaseJob):
@@ -90,33 +90,28 @@ class Gold(BaseJob):
     def get_sql(self) -> str:
         return self.sql
 
-    def get_udfs(self) -> List[str]:
+    def get_udfs(self) -> Optional[list[str]]:
+        udfs = super().get_udfs()
+
         # udf not allowed in invoke
         if self.mode == "invoke":
-            return []
+            return udfs
 
         # udf not allowed in notebook
         elif self.options.notebook:
-            return []
+            return udfs
 
         # udf not allowed in table
         elif self.options.table:
-            return []
+            return udfs
 
         else:
-            matches = []
-            if f"{UDF_PREFIX}" in self.sql:
-                r = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
-                matches = re.findall(r, self.sql)
-                matches = set(matches)
-                matches = list(matches)
-            return matches
+            matches = self._match_udfs(self.sql) or []
+            if udfs:
+                matches += udfs
 
-    def register_udfs(self):
-        for u in self.get_udfs():
-            if not is_registered(u):
-                DEFAULT_LOGGER.debug(f"register udf ({u})", extra={"label": self})
-                register_udf(udf=u, spark=self.spark)
+            if len(matches) > 0:
+                return list(set(matches))
 
     def base_transform(self, df: DataFrame) -> DataFrame:
         df = df.transform(self.extend)
@@ -164,7 +159,17 @@ class Gold(BaseJob):
         else:
             assert self.sql, "sql not found"
             self.register_udfs()
-            df = self.spark.sql(self.sql)
+
+            if self.options.script:
+                parts = parse_script(self.sql)
+                if parts:
+                    for p in parts:
+                        df = self.spark.sql(p)
+                else:
+                    df = self.spark.sql(self.sql)
+
+            else:
+                df = self.spark.sql(self.sql)
 
         if transform:
             df = self.base_transform(df)
@@ -243,6 +248,11 @@ class Gold(BaseJob):
         deduplicate = self.options.deduplicate
         # assume no reload in gold (to improve performance)
         rectify = self.options.rectify_as_upserts
+        # assume no soft delete in gold for scd1 and scd2 (unless specified otherwise)
+        if self.options.hard_delete is not None:
+            soft_delete = not self.options.hard_delete
+        else:
+            soft_delete = True if self.change_data_capture in ["scd1", "scd2"] else None
 
         add_metadata = self.options.metadata
         if add_metadata is None:
@@ -250,7 +260,7 @@ class Gold(BaseJob):
 
         context = {
             "add_metadata": add_metadata,
-            "soft_delete": True if self.slowly_changing_dimension else None,
+            "soft_delete": soft_delete,
             "deduplicate_key": None,
             "deduplicate_hash": True if self.slowly_changing_dimension else None,
             "deduplicate": False,
@@ -367,6 +377,7 @@ class Gold(BaseJob):
             self.cdc.append(sql, **context)
 
         elif self.mode == "complete":
+            assert not isinstance(self.cdc, SCD0), "SCD0 complete not allowed"
             self.cdc.complete(sql, **context)
 
         else:
@@ -377,33 +388,44 @@ class Gold(BaseJob):
         self.check_duplicate_identity()
 
     def for_each_run(self, **kwargs):
-        last_version = None
-
-        if self.options.persist_last_timestamp:
-            last_version = self.table.get_last_version()
-        if self.options.persist_last_updated_timestamp:
-            last_version = self.table.get_last_version()
-
         if self.mode == "invoke":
             schedule = kwargs.get("schedule", None)
             self.invoke(schedule=schedule)
+
         else:
+            last_version = None
+
+            if self.options.persist_last_timestamp:
+                last_version = self.table.get_last_version()
+            if self.options.persist_last_updated_timestamp:
+                last_version = self.table.get_last_version()
+            if self.updater_options and self.updater_options.columns:
+                last_version = self.table.get_last_version()
+
             super().for_each_run(**kwargs)
 
-        if self.options.persist_last_timestamp:
-            self._persist_timestamp(field="__timestamp", last_version=last_version)
+            if self.options.persist_last_timestamp:
+                self._persist_timestamp(field="__timestamp", last_version=last_version)
 
-        if self.options.persist_last_updated_timestamp:
-            self._persist_timestamp(field="__last_updated", last_version=last_version)
+            if self.options.persist_last_updated_timestamp:
+                self._persist_timestamp(field="__last_updated", last_version=last_version)
+
+            if self.updater_options and self.updater_options.columns:
+                self._update_post_run(last_version=last_version)
 
     def create(self):
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
+
         else:
             self.register_udfs()
             super().create()
+
             if self.options.persist_last_timestamp:
                 self._persist_timestamp(create=True)
+
+            if self.updater_options and self.updater_options.columns:
+                self._update__columns(drop=False)
 
     def register(self):
         if self.options.persist_last_timestamp:
@@ -411,6 +433,7 @@ class Gold(BaseJob):
 
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
+
         else:
             super().register()
 
@@ -474,3 +497,81 @@ class Gold(BaseJob):
 
         self.overwrite_schema()
         self.run(reload=True, schedule=schedule, invoke=invoke)
+
+    def _update_post_run(self, last_version: Optional[int] = None):
+        if self.updater_options and self.updater_options.columns:
+            DEFAULT_LOGGER.info("update post run", extra={"label": self})
+
+            columns = self.updater_options.columns
+
+            assert self.mode == "update", f"{self.mode} not allowed for update post run"
+            assert self.change_data_capture == "scd1", f"{self.change_data_capture} not allowed for update post run"
+
+            assert "__key" in self.table.columns, "__key required for update post run"
+            assert "__hash" in self.table.columns, "__hash required for update post run"
+
+            if last_version is not None:
+                df_last_version = self.spark.sql(f"select * from {self} version as of {last_version}")
+                df_current = self.spark.sql(f"select * from {self}")
+
+                df = self.spark.sql(
+                    """
+                    select
+                        c.*
+                    from
+                        {df_current} c
+                        left anti join {df_last_version} l
+                          on c.__key = l.__key
+                          and c.__hash = l.__hash
+                    """,
+                    df_current=df_current,
+                    df_last_version=df_last_version,
+                )
+
+            else:
+                df = self.spark.sql(f"select * from {self}")
+
+            if not df.isEmpty():
+                columns = self.updater_options.columns
+                for c, expression in columns.items():
+                    assert c.startswith("__updated_"), f"{c} not allowed, columns must start with __updated_"
+                    df = df.withColumn(c, expr(expression).cast("variant"))
+
+            name = f"{self.step}_{self.topic}_{self.item}"
+            global_temp_view = create_or_replace_global_temp_view(name=f"{name}__update_post_run", df=df, job=self)
+
+            merge = f"""
+            merge into {self} t using {global_temp_view} s
+              on t.__key = s.__key 
+              when
+                matched then update set {", ".join([f"t.{c} = s.{c}" for c in columns.keys()])}
+            """
+            merge = fix(merge)
+
+            DEFAULT_LOGGER.debug("exec merge", extra={"label": self, "sql": merge})
+            self.spark.sql(merge)
+
+    def _update__columns(self, drop: bool = False):
+        if self.updater_options and self.updater_options.columns:
+            columns = [c for c in self.updater_options.columns.keys() if c.startswith("__updated_")]
+
+            if drop:
+                # drop __columns (from the updater options) that are not in the table anymore
+                for c in self.table.columns:
+                    if c not in columns and c.startswith("__updated_"):
+                        self.table.drop_column(c)
+
+            # add __columns (from the updater options) that are not in the table yet
+            for c in columns:
+                if c not in self.table.columns:
+                    self.table.add_column(c, type="variant")
+
+    def overwrite_schema(self, df=None):
+        if not self.mode == "invoke":
+            super().overwrite_schema(df)
+            self._update__columns(drop=True)
+
+    def update_schema(self, df=None, widen_types=False):
+        if not self.mode == "invoke":
+            super().update_schema(df, widen_types)
+            self._update__columns(drop=False)

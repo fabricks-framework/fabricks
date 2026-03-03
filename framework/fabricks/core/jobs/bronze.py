@@ -281,6 +281,20 @@ class Bronze(BaseJob):
 
         return df
 
+    def add_key(self, df: DataFrame) -> DataFrame:
+        if "__key" not in df.columns:
+            fields = self.options.keys or []
+            if fields:
+                DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"label": self})
+
+                if "__source" in df.columns:
+                    fields = fields + ["__source"]
+
+                fields = [f"`{f}`" for f in fields]
+                df = add_hash("__key", df, fields=fields)
+
+        return df
+
     def add_hash(self, df: DataFrame) -> DataFrame:
         if "__hash" not in df.columns:
             fields = [f"`{c}`" for c in df.columns if not c.startswith("__")]
@@ -293,20 +307,6 @@ class Bronze(BaseJob):
                 fields += ["__source"]
 
             df = add_hash("__hash", df, fields=fields)
-
-        return df
-
-    def add_key(self, df: DataFrame) -> DataFrame:
-        if "__key" not in df.columns:
-            fields = self.options.keys or []
-            if fields:
-                DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"label": self})
-
-                if "__source" in df.columns:
-                    fields = fields + ["__source"]
-
-                fields = [f"`{f}`" for f in fields]
-                df = add_hash("__key", df, fields=fields)
 
         return df
 
@@ -448,6 +448,7 @@ class Bronze(BaseJob):
     def drop(self):
         if self.mode == "register":
             self.drop_external_table()
+
         super().drop()
 
     def maintain(

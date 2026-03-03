@@ -46,12 +46,13 @@ class Processor(Invoker):
                 if self.table.get_last_version() > _last_version:
                     self.table.restore_to_version(_last_version)
 
-            if last_batch is not None:
-                current_batch = int(last_batch) + 1
-                self.rm_commit(current_batch)
+            if self.stream:
+                if last_batch is not None:
+                    current_batch = int(last_batch) + 1
+                    self.rm_commit(current_batch)
 
-                assert last_batch == self.table.get_property("fabricks.last_batch")
-                assert self.paths.to_commits.joinpath(last_batch).exists()
+                    assert last_batch == self.table.get_property("fabricks.last_batch")
+                    assert self.paths.to_commits.joinpath(last_batch).exists()
 
     def _for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs):
         DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
@@ -143,9 +144,10 @@ class Processor(Invoker):
             else:
                 last_version = str(self.table.last_version)
 
-            last_batch = self.table.get_property("fabricks.last_batch")
-            if last_batch is not None:
-                DEFAULT_LOGGER.debug(f"last batch {last_batch}", extra={"label": self})
+            if self.stream:
+                last_batch = self.table.get_property("fabricks.last_batch")
+                if last_batch is not None:
+                    DEFAULT_LOGGER.debug(f"last batch {last_batch}", extra={"label": self})
 
         try:
             DEFAULT_LOGGER.info("start (run)", extra={"label": self})

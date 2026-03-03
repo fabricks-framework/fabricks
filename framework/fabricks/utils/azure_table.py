@@ -124,7 +124,7 @@ class AzureTable:
 
     def delete(self, data: Union[List, DataFrame, dict]):
         if isinstance(data, DataFrameLike):
-            data = [row.asDict() for row in data.collect()]
+            data = data.toPandas().to_dict("records")
         elif not isinstance(data, List):
             data = [data]
 
@@ -133,7 +133,7 @@ class AzureTable:
 
     def upsert(self, data: Union[List, DataFrame, dict]):
         if isinstance(data, DataFrameLike):
-            data = [row.asDict() for row in data.collect()]
+            data = data.toPandas().to_dict("records")
         elif not isinstance(data, List):
             data = [data]
 

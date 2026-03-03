@@ -32,29 +32,33 @@ class Checker(Generator):
             fail_df = df.where("__action == 'fail'")
             warning_df = df.where("__action == 'warning'")
 
-            if not fail_df.isEmpty():
-                for row in fail_df.collect():
+            # Collect once to avoid double scan
+            rows = fail_df.collect()
+            if rows:
+                for row in rows:
                     DEFAULT_LOGGER.warning(
                         f"check {position} failed due to {row['__message']}",
                         extra={"label": self},
                     )
 
                 if position == "pre_run":
-                    raise PreRunCheckException(row["__message"], dataframe=df)
+                    raise PreRunCheckException(rows[-1]["__message"], dataframe=df)
                 elif position == "post_run":
-                    raise PostRunCheckException(row["__message"], dataframe=df)
+                    raise PostRunCheckException(rows[-1]["__message"], dataframe=df)
 
-            elif not warning_df.isEmpty():
-                for row in warning_df.collect():
+            # Collect once to avoid double scan
+            rows = warning_df.collect()
+            if rows:
+                for row in rows:
                     DEFAULT_LOGGER.warning(
                         f"check {position} failed due to {row['__message']}",
                         extra={"label": self},
                     )
 
                 if position == "pre_run":
-                    raise PreRunCheckWarning(row["__message"], dataframe=df)
+                    raise PreRunCheckWarning(rows[-1]["__message"], dataframe=df)
                 elif position == "post_run":
-                    raise PostRunCheckWarning(row["__message"], dataframe=df)
+                    raise PostRunCheckWarning(rows[-1]["__message"], dataframe=df)
 
     def check_post_run_extra(self):
         min_rows = self.check_options.min_rows if self.check_options else None
@@ -104,8 +108,10 @@ class Checker(Generator):
             cols = ", ".join(cols)
             df = self.spark.sql(f"select {cols} from {self} group by all having count(*) > 1 limit 5")
 
-            if not df.isEmpty():
-                duplicates = ",".join([str(row[column]) for row in df.collect()])
+            # Collect once to avoid double scan
+            duplicate_rows = df.collect()
+            if duplicate_rows:
+                duplicates = ",".join([str(row[column]) for row in duplicate_rows])
                 raise PostRunCheckException(
                     f"duplicate {column} check failed ({duplicates})",
                     dataframe=df,
@@ -132,14 +138,17 @@ class Checker(Generator):
 
             df = self.spark.sql(p.get_sql())
             skip_df = df.where("__skip")
-            if not skip_df.isEmpty():
-                for row in skip_df.collect():
+
+            # Collect once to avoid double scan
+            skip_rows = skip_df.collect()
+            if skip_rows:
+                for row in skip_rows:
                     DEFAULT_LOGGER.warning(
                         f"skip run due to {row['__message']}",
                         extra={"label": self},
                     )
 
-                raise SkipRunCheckWarning(row["__message"], dataframe=df)
+                raise SkipRunCheckWarning(skip_rows[-1]["__message"], dataframe=df)
 
     def check_run_before(self):
         if self.check_options and self.check_options.before:

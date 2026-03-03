@@ -23,7 +23,7 @@ AllowedConstraintOptions = Literal["not enforced", "deferrable", "initially defe
 AllowedForeignKeyOptions = Literal["match full", "on update no action", "on delete no action"]
 
 # Change Data Capture types
-AllowedChangeDataCaptures = Literal["nocdc", "scd1", "scd2"]
+AllowedChangeDataCaptures = Literal["nocdc", "scd0", "scd1", "scd2"]
 
 
 class SparkOptions(BaseModel):
@@ -62,6 +62,14 @@ class ExtenderOptions(BaseModel):
 
     extender: str
     arguments: dict[str, str] | None = None
+
+
+class UpdaterOptions(BaseModel):
+    """Configuration for runtime updaters."""
+
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
+
+    columns: dict[str, str] | None = None
 
 
 class DatabasePathOptions(BaseModel):

@@ -51,3 +51,36 @@
       change_data_capture: scd1
       mode: update
       last_updated: True
+- job:
+    step: gold
+    topic: scd1
+    item: script
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
+      script: True
+      wait_for: ["silver.monarch_scd2"]
+- job:
+    step: gold
+    topic: scd1
+    item: generated_column
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
+    table_options:
+      generated_columns:
+        __generated_column: "string generated always as (concat_ws('*', monarch, cast(id as string)))"
+- job:
+    step: gold
+    topic: scd1
+    item: updated_column
+    tags: [test]
+    options:
+      change_data_capture: scd1
+      mode: update
+    updater_options:
+      columns:
+        __updated_extra_column: "udf_add_now(monarch)"
+        __updated_new_column: "(1+1)"
