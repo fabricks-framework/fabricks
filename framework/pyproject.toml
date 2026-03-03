@@ -49,7 +49,7 @@ typeCheckingMode = "basic"
 exclude = [
     "**/node_modules", 
     "**/__pycache__",
-    ".*,
+    ".*",
     ".venv",
     "fabricks/api/notebooks",
 ]
