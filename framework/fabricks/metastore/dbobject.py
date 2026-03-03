@@ -81,9 +81,9 @@ class DbObject:
                     DEFAULT_LOGGER.warning("drop object from metastore", extra={"label": self})
                     self.spark.sql(f"drop table if exists {self}")
                     self.spark.sql(f"drop view if exists {self}")
-                    
+
             except Exception:
-                pass
+                DEFAULT_LOGGER.debug("object not found in metastore, skipping drop", extra={"label": self})
             
 
     def __str__(self):
