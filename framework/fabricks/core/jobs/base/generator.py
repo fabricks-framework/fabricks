@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import types
 from typing import List, Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
@@ -172,31 +173,26 @@ class Generator(Configurator):
             return columns
 
         columns = []
-        types = df.dtypes
-   
-        if "__source" in types:
-            if types["__source"] == "string":
-                columns.append("__source")
-            else:
-                DEFAULT_LOGGER.debug(f"__source column found but type is {types['__source']}, expected string", extra={"label": self})
+        df_types = dict(df.dtypes)
 
-        if "__is_current" in types:
-            if types["__is_current"] == "string":
-                columns.append("__is_current")
-            else:
-                DEFAULT_LOGGER.debug(f"__is_current column found but type is {types['__is_current']}, expected string", extra={"label": self})
+        def _add_if_string(column: str):
+            c_type = df_types[column]
+            if column in df_types:
+                if c_type == "string":
+                    columns.append(column)
+                else:
+                    DEFAULT_LOGGER.debug(f"{column} column found but type is {c_type}, expected string", extra={"label": self})
 
-        if "__key" in types:
-            if types["__key"] == "string":
-                columns.append("__key")
-            else:
-                DEFAULT_LOGGER.debug(f"__key column found but type is {types['__key']}, expected string", extra={"label": self})
+        if "__source" in df_types:
+            _add_if_string("__source")
 
-        elif "__hash" in types:
-            if types["__hash"] == "string":
-                columns.append("__hash")
-            else:
-                DEFAULT_LOGGER.debug(f"__hash column found but type is {types['__hash']}, expected string", extra={"label": self})
+        if "__is_current" in df_types:
+            _add_if_string("__is_current")
+
+        if "__key" in df_types:
+            _add_if_string  ("__key")
+        elif "__hash" in df_types:
+            _add_if_string("__hash")
 
         if columns:
             DEFAULT_LOGGER.debug(f"found clustering columns ({', '.join(columns)})", extra={"label": self})
