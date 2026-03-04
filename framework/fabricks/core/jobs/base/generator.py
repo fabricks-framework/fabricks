@@ -1,5 +1,4 @@
 from abc import abstractmethod
-import types
 from typing import List, Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
@@ -177,11 +176,13 @@ class Generator(Configurator):
 
         def _add_if_string(column: str):
             c_type = df_types[column]
-            if column in df_types:
-                if c_type == "string":
-                    columns.append(column)
-                else:
-                    DEFAULT_LOGGER.debug(f"{column} column found but type is {c_type}, expected string", extra={"label": self})
+            if c_type == "string":
+                columns.append(column)
+            else:
+                DEFAULT_LOGGER.debug(
+                    f"{column} column found but type is {c_type}, expected string",
+                    extra={"label": self},
+                )
 
         if "__source" in df_types:
             _add_if_string("__source")
@@ -190,7 +191,7 @@ class Generator(Configurator):
             _add_if_string("__is_current")
 
         if "__key" in df_types:
-            _add_if_string  ("__key")
+            _add_if_string("__key")
         elif "__hash" in df_types:
             _add_if_string("__hash")
 

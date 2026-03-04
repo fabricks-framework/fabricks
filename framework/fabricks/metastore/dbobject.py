@@ -84,7 +84,6 @@ class DbObject:
 
             except Exception:
                 DEFAULT_LOGGER.debug("object not found in metastore, skipping drop", extra={"label": self})
-            
 
     def __str__(self):
         return self.qualified_name
