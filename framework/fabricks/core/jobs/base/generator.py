@@ -172,19 +172,34 @@ class Generator(Configurator):
             return columns
 
         columns = []
+        df_types = dict(df.dtypes)
 
-        if "__source" in df.columns:
-            columns = ["__source"]
-        if "__is_current" in df.columns:
-            columns.append("__is_current")
+        def _add_if_allowed(column: str):
+            c_type = df_types[column]
+            if c_type not in ["boolean"]:
+                columns.append(column)
+            else:
+                DEFAULT_LOGGER.warning(
+                    f"{column} found but {c_type} not allowed for clustering column",
+                    extra={"label": self},
+                )
 
-        if "__key" in df.columns:
-            columns.append("__key")
-        elif "__hash" in df.columns:
-            columns.append("__hash")
+        if "__source" in df_types:
+            _add_if_allowed("__source")
+
+        if "__is_current" in df_types:
+            _add_if_allowed("__is_current")
+
+        if "__key" in df_types:
+            _add_if_allowed("__key")
+        elif "__hash" in df_types:
+            _add_if_allowed("__hash")
 
         if columns:
-            DEFAULT_LOGGER.debug(f"found clustering columns ({', '.join(columns)})", extra={"label": self})
+            DEFAULT_LOGGER.debug(
+                f"found {len(columns)} clustering column(s) ({', '.join(columns)})",
+                extra={"label": self},
+            )
             return columns
 
         else:
