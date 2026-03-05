@@ -13,5 +13,5 @@
     item: register
     options:
       mode: register
-      uri: abfss://test@$datahub/raw/3/delta/regent
+      uri: abfss://test@bmsstatsteuwfabrickssnd.dfs.core.windows.net/raw/3/delta/regent
       file_format: delta
