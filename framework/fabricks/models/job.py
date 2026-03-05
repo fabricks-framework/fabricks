@@ -12,6 +12,7 @@ from fabricks.models.common import (
     AllowedTypes,
     ExtenderOptions,
     InvokerOptions,
+    RegisterOptions,
     SparkOptions,
     UpdaterOptions,
 )
@@ -164,6 +165,7 @@ class JobConfGold(JobConfBase):
     """Gold-specific job configuration."""
 
     options: GoldOptions
+    register_options: RegisterOptions | None = None
 
 
 JobConf = JobConfBronze | JobConfSilver | JobConfGold

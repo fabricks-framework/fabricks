@@ -21,6 +21,7 @@ from fabricks.models import (
     ExtenderOptions,
     InvokerOptions,
     Paths,
+    RuntimeConf,
     RuntimeOptions,
     SparkOptions,
     StepBronzeConf,
@@ -32,10 +33,9 @@ from fabricks.models import (
     StepTableOptions,
     TableOptions,
     TOptions,
+    UpdaterOptions,
     get_job_id,
 )
-from fabricks.models.common import UpdaterOptions
-from fabricks.models.runtime import RuntimeConf
 
 
 class Configurator(ABC):
@@ -78,6 +78,8 @@ class Configurator(ABC):
     _cdc: Optional[Union[NoCDC, SCD0, SCD1, SCD2]] = None
     _change_data_capture: Optional[AllowedChangeDataCaptures] = None
     _mode: Optional[AllowedModes] = None
+
+    _udf_registered: Optional[bool] = None
 
     @property
     @abstractmethod
@@ -336,13 +338,16 @@ class Configurator(ABC):
 
             return list(set(udfs))
 
-    def register_udfs(self):
-        udfs = self.get_udfs()
-        if udfs:
-            for u in udfs:
-                if not is_registered(u, self.spark):
-                    DEFAULT_LOGGER.debug(f"register udf {u}", extra={"label": self})
-                    register_udf(u, spark=self.spark)
+    def register_udfs(self, force: bool | None = False):
+        if not self._udf_registered or force:
+            udfs = self.get_udfs()
+            if udfs:
+                for u in udfs:
+                    if not is_registered(u, self.spark):
+                        DEFAULT_LOGGER.debug(f"register udf {u}", extra={"label": self})
+                        register_udf(u, spark=self.spark)
+
+            self._udf_registered = True
 
     def _match_udfs(self, string: str) -> Optional[list[str]]:
         if f"{UDF_PREFIX}" in string:

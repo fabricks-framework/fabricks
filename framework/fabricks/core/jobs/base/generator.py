@@ -502,3 +502,15 @@ class Generator(Configurator):
 
         else:
             DEFAULT_LOGGER.debug("liquid clustering disabled", extra={"label": self})
+
+    def _register_external_table(self, file_format: str, uri: str):
+        try:
+            self.spark.sql(f"create table if not exists {self.qualified_name} using {file_format} location '{uri}'")
+
+        except Exception as e:
+            DEFAULT_LOGGER.exception("could not register external table", extra={"label": self})
+            raise e
+
+    def _drop_external_table(self):
+        DEFAULT_LOGGER.warning("remove external table from metastore", extra={"label": self})
+        self.spark.sql(f"drop table if exists {self.qualified_name}")

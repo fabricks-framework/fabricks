@@ -7,3 +7,12 @@
     tags: [test]
     options:
       mode: memory
+- job:
+    step: transf
+    topic: fact
+    item: register
+    options:
+      mode: register
+    register_options:
+      uri: abfss://test@bmsstatsteuwfabrickssnd.dfs.core.windows.net/raw/3/delta/regent
+      file_format: delta

@@ -109,6 +109,7 @@ class Bronze(BaseJob):
 
         try:
             df = self.spark.sql(f"select * from {file_format}.`{self.data_path}`")
+
             assert len(df.columns) > 1, "external table must have at least one column"
             if "__timestamp" in df.columns:
                 assert isinstance(df.schema["__timestamp"].dataType, TimestampType), (
@@ -119,13 +120,7 @@ class Bronze(BaseJob):
             DEFAULT_LOGGER.exception("read external table failed", extra={"label": self})
             raise e
 
-        self.spark.sql(
-            f"create table if not exists {self.qualified_name} using {file_format} location '{self.data_path}'"
-        )
-
-    def drop_external_table(self):
-        DEFAULT_LOGGER.warning("remove external table from metastore", extra={"label": self})
-        self.spark.sql(f"drop table if exists {self.qualified_name}")
+        self._register_external_table(file_format=file_format, uri=self.data_path.string)
 
     def compute_statistics_external_table(self):
         DEFAULT_LOGGER.debug("compute statistics (external table)", extra={"label": self})
@@ -412,42 +407,50 @@ class Bronze(BaseJob):
     def for_each_run(self, **kwargs):
         if self.mode == "register":
             DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})
+
         elif self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no run)", extra={"label": self})
+
         else:
             super().for_each_run(**kwargs)
 
     def create(self):
         if self.mode == "register":
             self.register_external_table()
+
         elif self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
+
         else:
             super().create()
 
     def register(self):
         if self.mode == "register":
             self.register_external_table()
+
         elif self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
+
         else:
             super().register()
 
     def truncate(self):
         if self.mode == "register":
             DEFAULT_LOGGER.info("register (no truncate)", extra={"label": self})
+
         else:
             super().truncate()
 
     def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
         if self.mode == "register":
             DEFAULT_LOGGER.info("register (no restore)", extra={"label": self})
+
         else:
             super().restore()
 
     def drop(self):
         if self.mode == "register":
-            self.drop_external_table()
+            self._drop_external_table()
 
         super().drop()
 
@@ -459,14 +462,17 @@ class Bronze(BaseJob):
     ):
         if self.mode == "register":
             self.maintain_external_table(vacuum=vacuum, compute_statistics=compute_statistics)
+
         else:
             super().maintain(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
 
     def vacuum(self):
         if self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no vacuum)", extra={"label": self})
+
         elif self.mode == "register":
             self.vacuum_external_table()
+
         else:
             super().vacuum()
 

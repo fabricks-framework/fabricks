@@ -17,7 +17,9 @@ from fabricks.models.common import (
     DatabasePathOptions,
     ExtenderOptions,
     InvokerOptions,
+    RegisterOptions,
     SparkOptions,
+    UpdaterOptions,
 )
 from fabricks.models.dependency import JobDependency, SchemaDependencies
 
@@ -76,6 +78,8 @@ __all__ = [
     "DatabasePathOptions",
     "ExtenderOptions",
     "SparkOptions",
+    "UpdaterOptions",
+    "RegisterOptions",
     # Job models
     "CheckOptions",
     "InvokerOptions",
