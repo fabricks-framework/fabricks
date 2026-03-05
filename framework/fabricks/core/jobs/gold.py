@@ -132,6 +132,13 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             df = self.spark.createDataFrame([{}])  # type: ignore
 
+        elif self.mode == "register":
+            file_format = self.options.file_format or "delta"
+            uri = self.options.uri
+            assert uri is not None, "uri required for register mode"
+
+            df = self.spark.sql(f"select * from {file_format}.`{uri}`")
+
         elif self.options.notebook:
             invokers = self.invoker_options.run or [] if self.invoker_options else []
             assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
@@ -392,6 +399,9 @@ class Gold(BaseJob):
             schedule = kwargs.get("schedule", None)
             self.invoke(schedule=schedule)
 
+        elif self.mode == "register":
+            DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})
+
         else:
             last_version = None
 
@@ -417,6 +427,9 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
 
+        elif self.mode == "register":
+            self.register_external_table()
+
         else:
             self.register_udfs()
             super().create()
@@ -427,6 +440,15 @@ class Gold(BaseJob):
             if self.updater_options and self.updater_options.columns:
                 self._update__columns(drop=False)
 
+    def register_external_table(self):
+        DEFAULT_LOGGER.info("register", extra={"label": self})
+
+        file_format = self.options.file_format or "delta"
+        uri = self.options.uri
+        assert uri is not None, "uri required for register mode"
+
+        self._register_external_table(file_format=file_format, uri=uri)
+
     def register(self):
         if self.options.persist_last_timestamp:
             self.cdc_last_timestamp.table.register()
@@ -434,12 +456,18 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
 
+        elif self.mode == "register":
+            self.register_external_table()
+
         else:
             super().register()
 
     def drop(self):
         if self.options.persist_last_timestamp:
             self.cdc_last_timestamp.drop()
+
+        if self.mode == "register":
+            self._drop_external_table()
 
         super().drop()
 

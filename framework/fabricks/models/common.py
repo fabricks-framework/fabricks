@@ -9,7 +9,7 @@ from fabricks.models.config import config
 # Mode type definitions
 AllowedModesBronze = Literal["memory", "append", "register"]
 AllowedModesSilver = Literal["memory", "append", "latest", "update", "combine"]
-AllowedModesGold = Literal["memory", "append", "complete", "update", "invoke"]
+AllowedModesGold = Literal["memory", "append", "complete", "update", "invoke", "register"]
 AllowedModes = Literal[AllowedModesBronze, AllowedModesSilver, AllowedModesGold]
 
 # File and operation types
@@ -17,6 +17,7 @@ AllowedFileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "d
 AllowedOperations = Literal["upsert", "reload", "delete"]
 AllowedTypes = Literal["manual", "default"]
 AllowedOrigins = Literal["parser", "parent", "wait_for"]
+AllowedFileFormatsRegister = Literal["delta", "parquet"]
 
 # Constraint types
 AllowedConstraintOptions = Literal["not enforced", "deferrable", "initially deferred", "norely", "rely"]

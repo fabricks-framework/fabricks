@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from fabricks.models.common import (
     AllowedChangeDataCaptures,
+    AllowedFileFormatsRegister,
     AllowedModes,
     AllowedModesBronze,
     AllowedModesGold,
@@ -116,6 +117,8 @@ class GoldOptions(BaseOptions):
     requirements: bool | None = None
     metadata: bool | None = None
     last_updated: bool | None = None
+    uri: str | None = None
+    file_format: AllowedFileFormatsRegister | None = None
 
 
 TOptions = BronzeOptions | SilverOptions | GoldOptions
