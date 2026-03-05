@@ -11,7 +11,7 @@ from fabricks.cdc.scd0 import SCD0
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobDependency, JobGoldOptions, StepGoldConf, StepGoldOptions
+from fabricks.models import JobDependency, JobGoldOptions, RegisterOptions, StepGoldConf, StepGoldOptions
 from fabricks.utils.path import GitPath
 from fabricks.utils.sqlglot import fix, get_tables, parse_script
 
@@ -60,6 +60,11 @@ class Gold(BaseJob):
     def step_options(self) -> StepGoldOptions:
         """Direct access to typed gold step options."""
         return self.base_step_conf.options  # type: ignore
+
+    @property
+    def register_options(self) -> Optional[RegisterOptions]:
+        """Direct access to typed register options."""
+        return self.conf.register_options  # type: ignore
 
     @property
     def stream(self) -> bool:
@@ -133,8 +138,10 @@ class Gold(BaseJob):
             df = self.spark.createDataFrame([{}])  # type: ignore
 
         elif self.mode == "register":
-            file_format = self.options.file_format or "delta"
-            uri = self.options.uri
+            assert self.register_options is not None, "register_options required for register mode"
+
+            file_format = self.register_options.file_format or "delta"
+            uri = self.register_options.uri
             assert uri is not None, "uri required for register mode"
 
             df = self.spark.sql(f"select * from {file_format}.`{uri}`")
@@ -443,8 +450,10 @@ class Gold(BaseJob):
     def register_external_table(self):
         DEFAULT_LOGGER.info("register", extra={"label": self})
 
-        file_format = self.options.file_format or "delta"
-        uri = self.options.uri
+        assert self.register_options is not None, "register_options required for register mode"
+
+        file_format = self.register_options.file_format or "delta"
+        uri = self.register_options.uri
         assert uri is not None, "uri required for register mode"
 
         self._register_external_table(file_format=file_format, uri=uri)

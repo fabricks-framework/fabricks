@@ -21,6 +21,7 @@ from fabricks.models import (
     ExtenderOptions,
     InvokerOptions,
     Paths,
+    RuntimeConf,
     RuntimeOptions,
     SparkOptions,
     StepBronzeConf,
@@ -32,10 +33,9 @@ from fabricks.models import (
     StepTableOptions,
     TableOptions,
     TOptions,
+    UpdaterOptions,
     get_job_id,
 )
-from fabricks.models.common import UpdaterOptions
-from fabricks.models.runtime import RuntimeConf
 
 
 class Configurator(ABC):

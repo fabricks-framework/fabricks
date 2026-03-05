@@ -73,6 +73,15 @@ class UpdaterOptions(BaseModel):
     columns: dict[str, str] | None = None
 
 
+class RegisterOptions(BaseModel):
+    """Options for registering tables."""
+
+    model_config = ConfigDict(extra=config.extra_config, frozen=True)
+
+    uri: str | None = None
+    file_format: AllowedFileFormatsRegister | None = None
+
+
 class DatabasePathOptions(BaseModel):
     """Path configuration for databases."""
 
