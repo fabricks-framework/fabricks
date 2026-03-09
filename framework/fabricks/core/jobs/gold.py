@@ -11,7 +11,7 @@ from fabricks.cdc.scd0 import SCD0
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobDependency, JobGoldOptions, StepGoldConf, StepGoldOptions
+from fabricks.models import JobDependency, JobGoldOptions, RegisterOptions, StepGoldConf, StepGoldOptions
 from fabricks.utils.path import GitPath
 from fabricks.utils.sqlglot import fix, get_tables, parse_script
 
@@ -60,6 +60,11 @@ class Gold(BaseJob):
     def step_options(self) -> StepGoldOptions:
         """Direct access to typed gold step options."""
         return self.base_step_conf.options  # type: ignore
+
+    @property
+    def register_options(self) -> Optional[RegisterOptions]:
+        """Direct access to typed register options."""
+        return self.conf.register_options  # type: ignore
 
     @property
     def stream(self) -> bool:
@@ -131,6 +136,15 @@ class Gold(BaseJob):
 
         if self.mode == "invoke":
             df = self.spark.createDataFrame([{}])  # type: ignore
+
+        elif self.mode == "register":
+            assert self.register_options is not None, "register_options required for register mode"
+
+            file_format = self.register_options.file_format or "delta"
+            uri = self.register_options.uri
+            assert uri is not None, "uri required for register mode"
+
+            df = self.spark.sql(f"select * from {file_format}.`{uri}`")
 
         elif self.options.notebook:
             invokers = self.invoker_options.run or [] if self.invoker_options else []
@@ -392,6 +406,9 @@ class Gold(BaseJob):
             schedule = kwargs.get("schedule", None)
             self.invoke(schedule=schedule)
 
+        elif self.mode == "register":
+            DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})
+
         else:
             last_version = None
 
@@ -417,6 +434,9 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
 
+        elif self.mode == "register":
+            self.register_external_table()
+
         else:
             self.register_udfs()
             super().create()
@@ -427,6 +447,17 @@ class Gold(BaseJob):
             if self.updater_options and self.updater_options.columns:
                 self._update__columns(drop=False)
 
+    def register_external_table(self):
+        DEFAULT_LOGGER.info("register", extra={"label": self})
+
+        assert self.register_options is not None, "register_options required for register mode"
+
+        file_format = self.register_options.file_format or "delta"
+        uri = self.register_options.uri
+        assert uri is not None, "uri required for register mode"
+
+        self._register_external_table(file_format=file_format, uri=uri)
+
     def register(self):
         if self.options.persist_last_timestamp:
             self.cdc_last_timestamp.table.register()
@@ -434,12 +465,18 @@ class Gold(BaseJob):
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
 
+        elif self.mode == "register":
+            self.register_external_table()
+
         else:
             super().register()
 
     def drop(self):
         if self.options.persist_last_timestamp:
             self.cdc_last_timestamp.drop()
+
+        if self.mode == "register":
+            self._drop_external_table()
 
         super().drop()
 
