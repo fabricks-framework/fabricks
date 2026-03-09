@@ -36,6 +36,7 @@ if CATALOG:
     try:
         spark.sql(f"use catalog {CATALOG}")
         spark.sql("drop schema if exists bronze cascade")
+        spark.sql("drop table if exists transf.fact_register")
 
     except Exception:
         pass
