@@ -14,5 +14,5 @@
     options:
       mode: register
     register_options:
-      uri: abfss://test@bmsstatsteuwfabrickssnd.dfs.core.windows.net/raw/3/delta/regent
+      uri: abfss://test@bmsstatsteuwfabrickssnd.dfs.core.windows.net/raw/4/delta/regent
       file_format: delta
