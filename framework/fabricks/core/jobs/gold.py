@@ -96,7 +96,7 @@ class Gold(BaseJob):
             assert uri is not None, "uri required for register mode"
 
             sql = f"select * from {file_format}.`{uri}`"
-        
+
         else:
             sql = self.paths.to_runtime.get_sql()
 
