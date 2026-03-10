@@ -88,7 +88,18 @@ class Gold(BaseJob):
 
     @property
     def sql(self) -> str:
-        sql = self.paths.to_runtime.get_sql()
+        if self.mode == "register":
+            assert self.register_options is not None, "register_options required for register mode"
+
+            file_format = self.register_options.file_format or "delta"
+            uri = self.register_options.uri
+            assert uri is not None, "uri required for register mode"
+
+            sql = f"select * from {file_format}.`{uri}`"
+
+        else:
+            sql = self.paths.to_runtime.get_sql()
+
         return fix(sql, keep_comments=False)
 
     @deprecated("use sql instead")
@@ -98,8 +109,8 @@ class Gold(BaseJob):
     def get_udfs(self) -> Optional[list[str]]:
         udfs = super().get_udfs()
 
-        # udf not allowed in invoke
-        if self.mode == "invoke":
+        # udf not allowed in invoke or register
+        if self.mode in ["invoke", "register"]:
             return udfs
 
         # udf not allowed in notebook
@@ -136,15 +147,6 @@ class Gold(BaseJob):
 
         if self.mode == "invoke":
             df = self.spark.createDataFrame([{}])  # type: ignore
-
-        elif self.mode == "register":
-            assert self.register_options is not None, "register_options required for register mode"
-
-            file_format = self.register_options.file_format or "delta"
-            uri = self.register_options.uri
-            assert uri is not None, "uri required for register mode"
-
-            df = self.spark.sql(f"select * from {file_format}.`{uri}`")
 
         elif self.options.notebook:
             invokers = self.invoker_options.run or [] if self.invoker_options else []
@@ -209,7 +211,7 @@ class Gold(BaseJob):
                 data.append(JobDependency.from_parts(self.job_id, p, "parent"))
 
         else:
-            if self.mode == "invoke":
+            if self.mode in ["invoke", "register"]:
                 dependencies = []
             elif self.options.notebook:
                 dependencies = self._get_notebook_dependencies()
