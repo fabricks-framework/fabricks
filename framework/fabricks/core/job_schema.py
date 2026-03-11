@@ -1,8 +1,9 @@
+import json
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 
-from fabricks.models import JobConf
+from fabricks.models import JobConf, JobConfBronze, JobConfGold, JobConfSilver
 
 
 class JobWrapper(BaseModel):
@@ -11,14 +12,30 @@ class JobWrapper(BaseModel):
     job: JobConf
 
 
-def get_job_schema() -> str:
-    import json
+class BronzeJobWrapper(JobWrapper):
+    job: JobConfBronze
 
-    # Generate JSON schema using Pydantic's built-in method
+
+class SilverJobWrapper(JobWrapper):
+    job: JobConfSilver
+
+
+class GoldJobWrapper(JobWrapper):
+    job: JobConfGold
+
+
+def get_job_schema(step: str | None = None) -> str:
+    if step == "bronze":
+        wrapper = BronzeJobWrapper
+    elif step == "silver":
+        wrapper = SilverJobWrapper
+    elif step == "gold":
+        wrapper = GoldJobWrapper
+    else:
+        wrapper = JobWrapper
+
     # Use List[JobWrapper] to create the array schema
-    from pydantic import TypeAdapter
-
-    adapter = TypeAdapter(List[JobWrapper])
+    adapter = TypeAdapter(List[wrapper])
     sc = adapter.json_schema()
 
     # Remove properties that are not defined in YAML
@@ -38,5 +55,5 @@ def get_job_schema() -> str:
     return json.dumps(sc, indent=4)
 
 
-def print_job_schema():
-    print(get_job_schema())
+def print_job_schema(step: str | None = None) -> None:
+    print(get_job_schema(step))

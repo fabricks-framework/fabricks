@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
+from fabricks.models.common import PrimitiveTypes
 from fabricks.models.config import config
 
 
@@ -11,7 +12,7 @@ class ScheduleOptions(BaseModel):
     steps: list[str] | None = None
     tag: str | None = None
     view: str | None = None
-    variables: dict[str, str | bool | int] | None = None
+    variables: dict[str, PrimitiveTypes] | None = None
 
 
 class Schedule(BaseModel):

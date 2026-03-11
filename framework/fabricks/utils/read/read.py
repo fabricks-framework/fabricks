@@ -4,6 +4,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructType
 
 from fabricks.context import SPARK
+from fabricks.models.common import PrimitiveTypes
 from fabricks.utils.path import FileSharePath
 
 
@@ -13,7 +14,7 @@ def read_stream(
     file_format: str,
     *,
     schema: StructType,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
 
@@ -24,7 +25,7 @@ def read_stream(
     file_format: str,
     schema_path: Union[FileSharePath, str],
     *,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
 
@@ -34,7 +35,7 @@ def read_stream(
     src: Union[FileSharePath, str],
     file_format: str,
     *,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
 
@@ -45,7 +46,7 @@ def read_stream(
     schema_path: Optional[Union[FileSharePath, str]] = None,
     hints: Optional[Union[str, List[str]]] = None,
     schema: Optional[StructType] = None,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     return _read_stream(
@@ -65,7 +66,7 @@ def _read_stream(
     schema_path: Optional[Union[FileSharePath, str]] = None,
     hints: Optional[Union[str, List[str]]] = None,
     schema: Optional[StructType] = None,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     if spark is None:
@@ -106,6 +107,7 @@ def _read_stream(
         reader.option("ignoreDeletes", "true")
         if file_format == "csv":
             reader.option("header", "true")
+
         # custom / override options
         if options:
             for key, value in options.items():
@@ -113,6 +115,7 @@ def _read_stream(
 
         df = reader.load(src.string)
         df = df.withColumnRenamed("_rescued_data", "__rescued_data")
+
         return df
 
 
@@ -121,7 +124,7 @@ def read_batch(
     src: Union[FileSharePath, str],
     file_format: str,
     schema: StructType,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
 
@@ -131,7 +134,7 @@ def read_batch(
     src: Union[FileSharePath, str],
     file_format: str,
     *,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
 
@@ -140,7 +143,7 @@ def read_batch(
     src: Union[FileSharePath, str],
     file_format: str,
     schema: Optional[StructType] = None,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     return _read_batch(
@@ -156,7 +159,7 @@ def _read_batch(
     src: Union[FileSharePath, str],
     file_format: str,
     schema: Optional[StructType] = None,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     if spark is None:
@@ -181,10 +184,12 @@ def _read_batch(
             reader = reader.option("mergeSchema", "true")
         if file_format == "csv":
             reader = reader.option("header", "true")
+
         # custom / override options
         if options:
             for key, value in options.items():
                 reader = reader.option(key, value)
+
         return reader.load(src.string)
 
 
@@ -216,7 +221,7 @@ def read(
     path: Union[FileSharePath, str],
     file_format: str,
     schema: StructType,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     metadata: Optional[bool] = True,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
@@ -229,7 +234,7 @@ def read(
     path: Union[FileSharePath, str],
     file_format: str,
     schema_path: Union[FileSharePath, str],
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     metadata: Optional[bool] = True,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
@@ -243,7 +248,7 @@ def read(
     schema_path: Optional[Union[FileSharePath, str]] = None,
     schema: Optional[StructType] = None,
     hints: Optional[Union[str, List[str]]] = None,
-    options: Optional[dict[str, str]] = None,
+    options: Optional[dict[str, PrimitiveTypes]] = None,
     metadata: Optional[bool] = True,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
@@ -303,4 +308,5 @@ def read(
                     ) as __metadata
                 """,
             )
+
     return df

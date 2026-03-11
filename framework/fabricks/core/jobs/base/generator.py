@@ -10,6 +10,7 @@ from fabricks.core.jobs.base.configurator import Configurator
 from fabricks.metastore.table import SchemaDiff
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency
+from fabricks.models.common import PrimitiveTypes
 
 
 class Generator(Configurator):
@@ -239,7 +240,7 @@ class Generator(Configurator):
 
             maximum_compatibility = self.table_options.maximum_compatibility if self.table_options else False
 
-            default_properties: dict[str, str | bool | int] = {}
+            default_properties: dict[str, PrimitiveTypes] = {}
 
             if maximum_compatibility:
                 default_properties = {
