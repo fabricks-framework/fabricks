@@ -1,6 +1,6 @@
 """Common types and type aliases used across all models."""
 
-from typing import Literal, Optional, Union
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -26,17 +26,14 @@ AllowedForeignKeyOptions = Literal["match full", "on update no action", "on dele
 # Change Data Capture types
 AllowedChangeDataCaptures = Literal["nocdc", "scd0", "scd1", "scd2"]
 
-PrimitiveTypes = Union[bool, int, str]
-OptionalPrimitiveTypes = Optional[PrimitiveTypes]
-
 
 class SparkOptions(BaseModel):
     """Spark SQL and configuration options."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
-    sql: dict[str, PrimitiveTypes] | None = None
-    conf: dict[str, PrimitiveTypes] | None = None
+    sql: dict[str, str | bool | int] | None = None
+    conf: dict[str, str | bool | int] | None = None
 
 
 class BaseInvokerOptions(BaseModel):
@@ -46,7 +43,7 @@ class BaseInvokerOptions(BaseModel):
 
     notebook: str | None = None
     timeout: int | None = None
-    arguments: dict[str, PrimitiveTypes] | None = None
+    arguments: dict[str, str | bool | int] | None = None
 
 
 class InvokerOptions(BaseModel):

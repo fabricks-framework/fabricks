@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, ConfigDict
 
-from fabricks.models.common import AllowedConstraintOptions, AllowedForeignKeyOptions, PrimitiveTypes
+from fabricks.models.common import AllowedConstraintOptions, AllowedForeignKeyOptions
 from fabricks.models.config import config
 
 
@@ -55,13 +55,13 @@ class TableOptions(BaseModel):
     powerbi: bool | None = None
     maximum_compatibility: bool | None = None
     bloomfilter_by: list[str] | None = None
-    constraints: dict[str, PrimitiveTypes] | None = None
-    properties: dict[str, PrimitiveTypes] | None = None
+    constraints: dict[str, str | bool | int] | None = None
+    properties: dict[str, str | bool | int] | None = None
     comment: str | None = None
-    calculated_columns: dict[str, PrimitiveTypes] | None = None
+    calculated_columns: dict[str, str | bool | int] | None = None
     generated_columns: dict[str, str] | None = None
     masks: dict[str, str] | None = None
-    comments: dict[str, PrimitiveTypes] | None = None
+    comments: dict[str, str | bool | int] | None = None
     retention_days: int | None = None
     primary_key: dict[str, PrimaryKey] | None = None
     foreign_keys: dict[str, ForeignKey] | None = None
@@ -74,6 +74,6 @@ class StepTableOptions(BaseModel):
 
     powerbi: bool | None = None
     liquid_clustering: bool | None = None
-    properties: dict[str, PrimitiveTypes] | None = None
+    properties: dict[str, str | bool | int] | None = None
     retention_days: int | None = None
     masks: dict[str, str] | None = None

@@ -12,7 +12,6 @@ from fabricks.models.common import (
     AllowedTypes,
     ExtenderOptions,
     InvokerOptions,
-    PrimitiveTypes,
     RegisterOptions,
     SparkOptions,
     UpdaterOptions,
@@ -43,7 +42,7 @@ class ParserOptions(BaseModel):
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
     file_format: str | None = None
-    read_options: dict[str, PrimitiveTypes] | None = None
+    read_options: dict[str, str | bool | int] | None = None
     clean: bool | None = None
 
 
@@ -76,7 +75,7 @@ class BronzeOptions(BaseOptions):
     keys: list[str] | None = None
 
     parser: str | None = None
-    source: PrimitiveTypes | None = None
+    source: str | bool | int | None = None
     filter_where: str | None = None
     encrypted_columns: list[str] | None = None
     calculated_columns: dict[str, str] | None = None

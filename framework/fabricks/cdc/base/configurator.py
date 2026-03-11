@@ -11,7 +11,6 @@ from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
-from fabricks.models.common import PrimitiveTypes
 from fabricks.utils._types import DataFrameLike
 
 
@@ -60,7 +59,7 @@ class Configurator(ABC):
         identity: Optional[bool] = False,
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, PrimitiveTypes]] = None,
+        properties: Optional[dict[str, str | bool | int]] = None,
         masks: Optional[dict[str, str]] = None,
         primary_key: Optional[dict[str, Any]] = None,
         foreign_keys: Optional[dict[str, Any]] = None,

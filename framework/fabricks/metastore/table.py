@@ -12,7 +12,6 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore._types import AddedColumn, ChangedColumn, DroppedColumn, SchemaDiff
 from fabricks.metastore.dbobject import DbObject
 from fabricks.models import ForeignKey, PrimaryKey
-from fabricks.models.common import PrimitiveTypes
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.sqlglot import fix
 
@@ -110,7 +109,7 @@ class Table(DbObject):
         identity: bool | None = False,
         liquid_clustering: bool | None = False,
         cluster_by: list[str] | str | None = None,
-        properties: dict[str, PrimitiveTypes] | None = None,
+        properties: dict[str, str | bool | int] | None = None,
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
@@ -128,7 +127,7 @@ class Table(DbObject):
         identity: bool | None = False,
         liquid_clustering: bool | None = False,
         cluster_by: list[str] | str | None = None,
-        properties: dict[str, PrimitiveTypes] | None = None,
+        properties: dict[str, str | bool | int] | None = None,
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
@@ -145,7 +144,7 @@ class Table(DbObject):
         identity: bool | None = False,
         liquid_clustering: bool | None = False,
         cluster_by: list[str] | str | None = None,
-        properties: dict[str, PrimitiveTypes] | None = None,
+        properties: dict[str, str | bool | int] | None = None,
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,
@@ -209,7 +208,7 @@ class Table(DbObject):
         identity: bool | None = False,
         liquid_clustering: bool | None = False,
         cluster_by: list[str] | str | None = None,
-        properties: dict[str, PrimitiveTypes] | None = None,
+        properties: dict[str, str | bool | int] | None = None,
         masks: dict[str, str] | None = None,
         primary_key: dict[str, PrimaryKey] | None = None,
         foreign_keys: dict[str, ForeignKey] | None = None,

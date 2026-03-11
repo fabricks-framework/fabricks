@@ -10,7 +10,6 @@ from fabricks.cdc.base._types import AllowedSources
 from fabricks.cdc.base.configurator import Configurator
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import SchemaDiff, Table
-from fabricks.models.common import PrimitiveTypes
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.sqlglot import fix as fix_sql
 
@@ -27,7 +26,7 @@ class Generator(Configurator):
         identity: Optional[bool] = False,
         liquid_clustering: Optional[bool] = False,
         cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, PrimitiveTypes]] = None,
+        properties: Optional[dict[str, str | bool | int]] = None,
         masks: Optional[dict[str, str]] = None,
         primary_key: Optional[dict[str, Any]] = None,
         foreign_keys: Optional[dict[str, Any]] = None,

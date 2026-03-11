@@ -4,19 +4,10 @@ from fabricks.models import JobConfBronze, JobConfGold, JobConfSilver
 
 def get_step_conf(step: str):
     if step in Bronzes:
-        expand = "bronze"
+        return JobConfBronze
     elif step in Silvers:
-        expand = "silver"
+        return JobConfSilver
     elif step in Golds:
-        expand = "gold"
-    else:
-        raise ValueError(f"{step} - not found")
+        return JobConfGold
 
-    conf = {
-        "bronze": JobConfBronze,
-        "silver": JobConfSilver,
-        "gold": JobConfGold,
-    }.get(expand, None)
-
-    assert conf
-    return conf
+    raise ValueError(f"{step} - not found")
