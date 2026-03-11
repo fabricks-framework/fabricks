@@ -1,0 +1,1089 @@
+{
+    "$defs": {
+        "BaseInvokerOptions": {
+            "description": "Options for invoking notebooks during pre/post run operations.",
+            "properties": {
+                "notebook": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Notebook"
+                },
+                "timeout": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Timeout"
+                },
+                "arguments": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Arguments"
+                }
+            },
+            "title": "BaseInvokerOptions",
+            "type": "object"
+        },
+        "CheckOptions": {
+            "description": "Data quality check options for jobs.",
+            "properties": {
+                "skip": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Skip"
+                },
+                "pre_run": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Pre Run"
+                },
+                "post_run": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Post Run"
+                },
+                "min_rows": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Min Rows"
+                },
+                "max_rows": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Max Rows"
+                },
+                "count_must_equal": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Count Must Equal"
+                },
+                "before": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Before"
+                },
+                "after": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "After"
+                }
+            },
+            "title": "CheckOptions",
+            "type": "object"
+        },
+        "ExtenderOptions": {
+            "description": "Configuration for runtime extenders.",
+            "properties": {
+                "extender": {
+                    "title": "Extender",
+                    "type": "string"
+                },
+                "arguments": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Arguments"
+                }
+            },
+            "required": [
+                "extender"
+            ],
+            "title": "ExtenderOptions",
+            "type": "object"
+        },
+        "ForeignKey": {
+            "description": "Foreign key constraint definition.",
+            "properties": {
+                "keys": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Keys",
+                    "type": "array"
+                },
+                "reference": {
+                    "title": "Reference",
+                    "type": "string"
+                },
+                "options": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ForeignKeyOptions"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                }
+            },
+            "required": [
+                "keys",
+                "reference"
+            ],
+            "title": "ForeignKey",
+            "type": "object"
+        },
+        "ForeignKeyOptions": {
+            "description": "Options for foreign key constraints.",
+            "properties": {
+                "foreign_key": {
+                    "anyOf": [
+                        {
+                            "enum": [
+                                "match full",
+                                "on update no action",
+                                "on delete no action"
+                            ],
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Foreign Key"
+                },
+                "constraint": {
+                    "anyOf": [
+                        {
+                            "enum": [
+                                "not enforced",
+                                "deferrable",
+                                "initially deferred",
+                                "norely",
+                                "rely"
+                            ],
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Constraint"
+                }
+            },
+            "title": "ForeignKeyOptions",
+            "type": "object"
+        },
+        "InvokerOptions": {
+            "description": "Grouped invoker operations for pre/run/post execution.",
+            "properties": {
+                "pre_run": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/BaseInvokerOptions"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Pre Run"
+                },
+                "run": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/BaseInvokerOptions"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Run"
+                },
+                "post_run": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/BaseInvokerOptions"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Post Run"
+                }
+            },
+            "title": "InvokerOptions",
+            "type": "object"
+        },
+        "JobConfSilver": {
+            "description": "Silver-specific job configuration.",
+            "properties": {
+                "step": {
+                    "title": "Step",
+                    "type": "string"
+                },
+                "topic": {
+                    "title": "Topic",
+                    "type": "string"
+                },
+                "item": {
+                    "title": "Item",
+                    "type": "string"
+                },
+                "options": {
+                    "$ref": "#/$defs/SilverOptions"
+                },
+                "table_options": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/TableOptions"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "check_options": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/CheckOptions"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "spark_options": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/SparkOptions"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "invoker_options": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/InvokerOptions"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "extender_options": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/ExtenderOptions"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Extender Options"
+                },
+                "updater_options": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/UpdaterOptions"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                },
+                "tags": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Tags"
+                },
+                "comment": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Comment"
+                }
+            },
+            "required": [
+                "step",
+                "topic",
+                "item",
+                "options"
+            ],
+            "title": "JobConfSilver",
+            "type": "object"
+        },
+        "PrimaryKey": {
+            "description": "Primary key constraint definition.",
+            "properties": {
+                "keys": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "title": "Keys",
+                    "type": "array"
+                },
+                "options": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/PrimaryKeyOptions"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
+                }
+            },
+            "required": [
+                "keys"
+            ],
+            "title": "PrimaryKey",
+            "type": "object"
+        },
+        "PrimaryKeyOptions": {
+            "description": "Options for primary key constraints.",
+            "properties": {
+                "constraint": {
+                    "anyOf": [
+                        {
+                            "enum": [
+                                "not enforced",
+                                "deferrable",
+                                "initially deferred",
+                                "norely",
+                                "rely"
+                            ],
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Constraint"
+                }
+            },
+            "title": "PrimaryKeyOptions",
+            "type": "object"
+        },
+        "SilverJobWrapper": {
+            "properties": {
+                "job": {
+                    "$ref": "#/$defs/JobConfSilver"
+                }
+            },
+            "required": [
+                "job"
+            ],
+            "title": "SilverJobWrapper",
+            "type": "object"
+        },
+        "SilverOptions": {
+            "description": "Silver layer job options.",
+            "properties": {
+                "mode": {
+                    "enum": [
+                        "memory",
+                        "append",
+                        "latest",
+                        "update",
+                        "combine"
+                    ],
+                    "title": "Mode",
+                    "type": "string"
+                },
+                "change_data_capture": {
+                    "anyOf": [
+                        {
+                            "enum": [
+                                "nocdc",
+                                "scd0",
+                                "scd1",
+                                "scd2"
+                            ],
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": "nocdc",
+                    "title": "Change Data Capture"
+                },
+                "parents": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Parents"
+                },
+                "wait_for": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Wait For"
+                },
+                "optimize": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Optimize"
+                },
+                "compute_statistics": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Compute Statistics"
+                },
+                "vacuum": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Vacuum"
+                },
+                "no_drop": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "No Drop"
+                },
+                "timeout": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Timeout"
+                },
+                "type": {
+                    "anyOf": [
+                        {
+                            "enum": [
+                                "manual",
+                                "default"
+                            ],
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Type"
+                },
+                "filter_where": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Filter Where"
+                },
+                "deduplicate": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Deduplicate"
+                },
+                "stream": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Stream"
+                },
+                "order_duplicate_by": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Order Duplicate By"
+                }
+            },
+            "required": [
+                "mode"
+            ],
+            "title": "SilverOptions",
+            "type": "object"
+        },
+        "SparkOptions": {
+            "description": "Spark SQL and configuration options.",
+            "properties": {
+                "sql": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Sql"
+                },
+                "conf": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Conf"
+                }
+            },
+            "title": "SparkOptions",
+            "type": "object"
+        },
+        "TableOptions": {
+            "description": "Comprehensive table configuration options for jobs.",
+            "properties": {
+                "identity": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Identity"
+                },
+                "liquid_clustering": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Liquid Clustering"
+                },
+                "partition_by": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Partition By"
+                },
+                "zorder_by": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Zorder By"
+                },
+                "cluster_by": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Cluster By"
+                },
+                "powerbi": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Powerbi"
+                },
+                "maximum_compatibility": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Maximum Compatibility"
+                },
+                "bloomfilter_by": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Bloomfilter By"
+                },
+                "constraints": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Constraints"
+                },
+                "properties": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Properties"
+                },
+                "comment": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Comment"
+                },
+                "calculated_columns": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Calculated Columns"
+                },
+                "generated_columns": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Generated Columns"
+                },
+                "masks": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Masks"
+                },
+                "comments": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Comments"
+                },
+                "retention_days": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Retention Days"
+                },
+                "primary_key": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "$ref": "#/$defs/PrimaryKey"
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Primary Key"
+                },
+                "foreign_keys": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "$ref": "#/$defs/ForeignKey"
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Foreign Keys"
+                }
+            },
+            "title": "TableOptions",
+            "type": "object"
+        },
+        "UpdaterOptions": {
+            "description": "Configuration for runtime updaters.",
+            "properties": {
+                "columns": {
+                    "anyOf": [
+                        {
+                            "additionalProperties": {
+                                "type": "string"
+                            },
+                            "type": "object"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Columns"
+                }
+            },
+            "title": "UpdaterOptions",
+            "type": "object"
+        }
+    },
+    "items": {
+        "$ref": "#/$defs/SilverJobWrapper"
+    },
+    "type": "array"
+}

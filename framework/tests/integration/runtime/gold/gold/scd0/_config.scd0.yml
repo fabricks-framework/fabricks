@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=../../../job-schema.json
+# yaml-language-server: $schema=../../../../../../../job-schema-gold.json
 - job:
     step: gold
     topic: scd0

@@ -1,5 +1,4 @@
----
-# yaml-language-server: $schema=../../job-schema.json
+# yaml-language-server: $schema=../../../../../job-schema-silver.json
 - job:
     step: silver
     topic: king_and_queen
