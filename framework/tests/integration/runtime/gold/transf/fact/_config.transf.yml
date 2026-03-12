@@ -16,3 +16,12 @@
     register_options:
       uri: abfss://test@bmsstatsteuwfabrickssnd.dfs.core.windows.net/raw/4/delta/regent
       file_format: delta
+- job:
+    step: transf
+    topic: fact
+    item: wait_for
+    tags: [test]
+    options:
+      mode: complete
+      parents: []
+      wait_for: [gold.dim_time, transf.fact_memory, silver.king_and_queen_scd1, transf.fact_memory]
