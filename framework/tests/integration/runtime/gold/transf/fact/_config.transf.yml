@@ -23,5 +23,4 @@
     tags: [test]
     options:
       mode: complete
-      parents: []
-      wait_for: [gold.dim_time, transf.fact_memory, silver.king_and_queen_scd1, transf.fact_memory]
+      wait_for: [transf.fact_memory, silver.monarch_scd1]
