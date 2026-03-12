@@ -203,34 +203,38 @@ class Gold(BaseJob):
         self.cdc.create_or_replace_view(self.sql, **cdc_options)
 
     def get_dependencies(self) -> Sequence[JobDependency]:
-        data = []
+        dependencies = []
 
         parents = self.options.parents or []
+        parents = [] if len(parents) == 1 and parents[0].lower() in ["none", "null", "0"] else parents
         if parents:
             for p in parents:
-                data.append(JobDependency.from_parts(self.job_id, p, "parent"))
+                d = JobDependency.from_parts(self.job_id, p, "parent")
+                dependencies.append(d)
 
         else:
             if self.mode in ["invoke", "register"]:
-                dependencies = []
+                parsed = []
             elif self.options.notebook:
-                dependencies = self._get_notebook_dependencies()
+                parsed = self._get_notebook_dependencies()
             else:
-                dependencies = self._get_sql_dependencies()
+                parsed = self._get_sql_dependencies()
 
-            dependencies = [d for d in dependencies if d not in parents]
-            dependencies = [d.replace("__current", "") for d in dependencies]
-            dependencies = list(set(dependencies))
+            parsed = [p.replace("__current", "") for p in parsed]
+            parsed = list(set(parsed))
 
-            for d in dependencies:
-                data.append(JobDependency.from_parts(self.job_id, d, "parser"))
+            for d in parsed:
+                d = JobDependency.from_parts(self.job_id, d, "parser")
+                dependencies.append(d)
 
         wait_for = self.options.wait_for or []
         if wait_for:
             for w in wait_for:
-                data.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
+                if w.lower() not in parents and w.lower() not in parsed:
+                    d = JobDependency.from_parts(self.job_id, w, "wait_for")
+                    dependencies.append(d)
 
-        return data
+        return dependencies
 
     def _get_sql_dependencies(self) -> List[str]:
         from fabricks.context import Steps

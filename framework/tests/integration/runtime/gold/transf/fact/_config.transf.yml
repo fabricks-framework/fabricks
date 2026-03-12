@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=../../../job-schema.json
+# yaml-language-server: $schema=../../../../../../../job-schema-gold.json
 - job:
     step: transf
     topic: fact
@@ -16,3 +16,11 @@
     register_options:
       uri: abfss://test@bmsstatsteuwfabrickssnd.dfs.core.windows.net/raw/4/delta/regent
       file_format: delta
+- job:
+    step: transf
+    topic: fact
+    item: wait_for
+    tags: [test]
+    options:
+      mode: complete
+      wait_for: [transf.fact_memory, silver.monarch_scd1]

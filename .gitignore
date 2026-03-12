@@ -159,3 +159,9 @@ cython_debug/
 
 # Debug
 .debug
+
+# Skills
+.claude/skills/*
+!.claude/skills/doc-coauthoring
+!.claude/skills/skill-creator
+!.claude/skills/fabricks
