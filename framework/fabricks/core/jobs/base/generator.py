@@ -321,19 +321,18 @@ class Generator(Configurator):
             if not partitioning:
                 liquid_clustering = self._get_option_hierarchy("liquid_clustering", into="table", default=None)
 
-                if liquid_clustering is not None:
-                    if liquid_clustering == "auto":
+                if liquid_clustering == "auto":
+                    liquid_clustering = True
+                    cluster_by = []
+
+                elif liquid_clustering is not False:
+                    cluster_by = self._get_clustering_columns(df)
+
+                    if cluster_by:
                         liquid_clustering = True
-                        cluster_by = []
-
                     else:
-                        cluster_by = self._get_clustering_columns(df)
-
-                        if cluster_by:
-                            liquid_clustering = True
-                        else:
-                            liquid_clustering = None
-                            cluster_by = None
+                        liquid_clustering = None
+                        cluster_by = None
 
             if not powerbi:
                 properties = self._get_option_hierarchy("properties", into="table", default=None)
