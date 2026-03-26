@@ -4,7 +4,7 @@ This helper explains how to initialize Fabricks on a Databricks cluster or local
 
 - Installing the Fabricks library
 - Pointing Fabricks to your runtime
-- Running the ``armageddon`` script to bootstrap metadata and objects
+- Running the `armageddon` script to bootstrap metadata and objects
 
 ## 1) Install Fabricks
 
@@ -24,7 +24,8 @@ Python >=3.9,<4 is recommended; align with your Databricks LTS runtime.
 
 Fabricks discovers its runtime via either environment variables or `[tool.fabricks]` in your `pyproject.toml`. The core lookup logic is implemented in `fabricks/context/runtime.py`.
 
-*Option A*: Configure via `pyproject.toml` (preferred for repo-managed projects):
+_Option A_: Configure via `pyproject.toml` (preferred for repo-managed projects):
+
 ```toml
 [tool.fabricks]
 runtime = "path/to/your/runtime"                   # e.g., tests/integration/runtime or examples/runtime
@@ -35,32 +36,35 @@ debugmode = false                                  # optional
 config = "path/to/your/runtime/fabricks/conf.fabricks.yml"  # main runtime YAML
 ```
 
-*Option B*: Configure via environment variables (useful on clusters):
+_Option B_: Configure via environment variables (useful on clusters):
 
-```python
+````python
 # FABRICKS_RUNTIME: path to your runtime (jobs, SQL, configs)
 # FABRICKS_CONFIG: full path to your main conf.fabricks.yml (if not set, Fabricks tries to infer a conf.uc.<orgId>.yml)
 # FABRICKS_NOTEBOOKS: optional helper notebook path
 # FABRICKS_IS_JOB_CONFIG_FROM_YAML, FABRICKS_LOGLEVEL, FABRICKS_IS_DEBUGMODE: optional toggles
 ```Example\non Databricks (Cluster → Configuration → Advanced options → Environment variables):
-```
+````
+
 FABRICKS_RUNTIME=/Workspace/Repos/your/repo/examples/runtime
 FABRICKS_CONFIG=/Workspace/Repos/your/repo/examples/runtime/fabricks/conf.fabricks.yml
 FABRICKS_LOGLEVEL=INFO
-```You\ncan also set env vars in a notebook before importing Fabricks:
+
+````You\ncan also set env vars in a notebook before importing Fabricks:
 ```python
 import os
 os.environ["FABRICKS_RUNTIME"] = "/Workspace/Repos/your/repo/examples/runtime"
 os.environ["FABRICKS_CONFIG"] = "/Workspace/Repos/your/repo/examples/runtime/fabricks/conf.fabricks.yml"
 # Optional:
 # os.environ["FABRICKS_LOGLEVEL"] = "INFO"
-```
+````
 
-## 3) Run ``armageddon``
+## 3) Run `armageddon`
 
-``armageddon`` performs a one-time setup based on your runtime configuration (e.g., preparing databases/metadata, registering views).
+`armageddon` performs a one-time setup based on your runtime configuration (e.g., preparing databases/metadata, registering views).
 
 Import and call:
+
 ```python
 # Databricks or local
 from fabricks.core.scripts.`armageddon` import `armageddon`
@@ -76,7 +80,7 @@ from fabricks.core.scripts.`armageddon` import `armageddon`
 
 Create a new notebook (Python) named initialize and include:
 
-```python
+````python
 # (Optional) set env vars if not using pyproject.toml
 # import os
 # os.environ["FABRICKS_RUNTIME"] = "/Workspace/Repos/your/repo/examples/runtime"
@@ -109,3 +113,4 @@ from fabricks.core.scripts.`armageddon` import `armageddon`
 - Step Helper: `./step.md`
 - Job Helper: `./job.md`
 
+````

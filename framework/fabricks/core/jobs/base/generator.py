@@ -203,7 +203,7 @@ class Generator(Configurator):
         ...
 
     def _get_partitioning_columns(self, df: DataFrame) -> Optional[List[str]]:
-        columns = self.table_options.partition_by or [] if self.table_options else []
+        columns = self.table_options.partition_by if self.table_options and self.table_options.partition_by else []
         if columns:
             return columns
 
@@ -220,7 +220,7 @@ class Generator(Configurator):
             return None
 
     def _get_clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
-        columns = self.table_options.cluster_by or [] if self.table_options else []
+        columns = self.table_options.cluster_by if self.table_options and self.table_options.cluster_by else []
         if columns:
             return columns
 

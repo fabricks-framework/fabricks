@@ -3,20 +3,23 @@
 This helper describes a widget-driven approach to manage a Fabricks job.
 
 Core imports used:
+
 ```python
 from fabricks.api import get_job
 ```
 
 ## Typical usage
 
-1) Resolve the job:
+1. Resolve the job:
+
 ```python
 from fabricks.api import get_job
 
 j = get_job(job="gold.sales.orders")  # or pass step/topic/item explicitly
 ```
 
-2) Run actions:
+2. Run actions:
+
 ```python
 # Examples:
 j.run()
@@ -33,7 +36,8 @@ j.create()
 # j.drop()
 ```
 
-3) Gold jobs:
+3. Gold jobs:
+
 ```python
 # If your job is gold, ensure UDFs are registered before actions:
 if getattr(j, "expand", None) == "gold":
@@ -62,7 +66,7 @@ dbutils.widgets.multiselect(
         "`register`",               -- Register the table
         "create",                 -- Create the job
         "truncate",               -- Truncate the table
-        "run",                    -- Run the job 
+        "run",                    -- Run the job
         "for-each-run",           -- Run the job (excluding the invoker(s) and the check(s))
         "overwrite",              -- Overwrite the schema and run the job
         "pre-run-`invoke`",         -- Run the pre-run invoker(s)
@@ -205,4 +209,3 @@ dbutils.notebook.exit("exit (0)")  # type: ignore
 - Checks & Data Quality: [Checks and Data Quality](../reference/checks-data-quality.md)
 - Table options and storage layout: [Table Options](../reference/table-options.md)
 - Extenders, UDFs & Views: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
-

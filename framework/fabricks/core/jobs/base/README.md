@@ -29,11 +29,11 @@ This document provides detailed documentation for all job configuration options 
 
 Fabricks uses a **tiered data processing architecture** with three layers:
 
-| Tier | Purpose | Description |
-|------|---------|-------------|
-| **🥉 Bronze** | Raw Data Ingestion | Ingest raw data from external sources with minimal transformation |
-| **🥈 Silver** | Data Cleaning & Validation | Clean, validate, deduplicate, and apply quality checks |
-| **🥇 Gold** | Business Analytics | Create business-ready aggregated and transformed data |
+| Tier          | Purpose                    | Description                                                       |
+| ------------- | -------------------------- | ----------------------------------------------------------------- |
+| **🥉 Bronze** | Raw Data Ingestion         | Ingest raw data from external sources with minimal transformation |
+| **🥈 Silver** | Data Cleaning & Validation | Clean, validate, deduplicate, and apply quality checks            |
+| **🥇 Gold**   | Business Analytics         | Create business-ready aggregated and transformed data             |
 
 Each tier has specific configuration options that control how data is processed, stored, and managed.
 
@@ -73,6 +73,7 @@ TGold = Literal["gold"]      # Business-ready analytics layer
 <td>
 
 Specifies the job execution type:
+
 - `"default"` - Standard automated job processing
 - `"manual"` - Manual intervention required, job skips automatic execution
 
@@ -93,6 +94,7 @@ Specifies the job execution type:
 List of parent job names that this job depends on. The job will only execute after all parent jobs have completed successfully.
 
 **Example:**
+
 ```python
 parents=["bronze__customers", "bronze__orders"]
 ```
@@ -114,6 +116,7 @@ parents=["bronze__customers", "bronze__orders"]
 SQL WHERE clause to filter data during processing. Applied to the source data before any transformations.
 
 **Example:**
+
 ```python
 filter_where="status = 'active' AND created_date >= '2024-01-01'"
 ```
@@ -220,11 +223,11 @@ Bronze tier is responsible for ingesting raw data from external sources with min
 
 Defines how data is loaded into the bronze table:
 
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| `"memory"` | Load data into memory only, don't persist | Temporary or test data |
-| `"append"` | Append new data without checking duplicates | Raw data ingestion |
-| `"register"` | Register external table without moving data | External data sources |
+| Mode         | Description                                 | Use Case               |
+| ------------ | ------------------------------------------- | ---------------------- |
+| `"memory"`   | Load data into memory only, don't persist   | Temporary or test data |
+| `"append"`   | Append new data without checking duplicates | Raw data ingestion     |
+| `"register"` | Register external table without moving data | External data sources  |
 
 </details>
 
@@ -241,6 +244,7 @@ URI or path to the source data. Supports multiple formats:
 - **Database connection string**
 
 **Example:**
+
 ```python
 uri="/mnt/raw/customers/2024/*.parquet"
 ```
@@ -255,6 +259,7 @@ uri="/mnt/raw/customers/2024/*.parquet"
 Name of the parser to use for reading and transforming the source data. Parsers define how to interpret the source format.
 
 **Example:**
+
 ```python
 parser="json_customer_parser"
 ```
@@ -269,6 +274,7 @@ parser="json_customer_parser"
 Name or identifier of the source system providing the data.
 
 **Example:**
+
 ```python
 source="salesforce_api"
 ```
@@ -283,6 +289,7 @@ source="salesforce_api"
 List of column names that uniquely identify a record. Used for deduplication and change tracking.
 
 **Example:**
+
 ```python
 keys=["customer_id"]
 ```
@@ -297,6 +304,7 @@ keys=["customer_id"]
 List of column names containing encrypted data that should be decrypted during ingestion.
 
 **Example:**
+
 ```python
 encrypted_columns=["ssn", "credit_card"]
 ```
@@ -311,6 +319,7 @@ encrypted_columns=["ssn", "credit_card"]
 Dictionary mapping new column names to SQL expressions for calculating derived values.
 
 **Example:**
+
 ```python
 calculated_columns={
     "full_name": "concat(first_name, ' ', last_name)",
@@ -327,11 +336,11 @@ calculated_columns={
 
 Specifies the operation type for CDC (Change Data Capture):
 
-| Operation | Description |
-|-----------|-------------|
-| `"upsert"` | Insert new records or update existing ones |
+| Operation  | Description                                              |
+| ---------- | -------------------------------------------------------- |
+| `"upsert"` | Insert new records or update existing ones               |
 | `"reload"` | Full reload of all data (marks timestamp for downstream) |
-| `"delete"` | Mark records as deleted |
+| `"delete"` | Mark records as deleted                                  |
 
 </details>
 
@@ -387,13 +396,13 @@ Silver tier processes bronze data with quality checks, deduplication, and change
 
 Defines how data is processed and loaded:
 
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| `"memory"` | Process in memory only without persisting | Testing transformations |
-| `"append"` | Append all new data without checking existing | Accumulate all data |
-| `"latest"` | Process only the most recent data | Latest snapshot processing |
-| `"update"` | Incremental updates, only new/changed records | Efficient incremental loads |
-| `"combine"` | Combine multiple sources into single table | Multi-source consolidation |
+| Mode        | Description                                   | Use Case                    |
+| ----------- | --------------------------------------------- | --------------------------- |
+| `"memory"`  | Process in memory only without persisting     | Testing transformations     |
+| `"append"`  | Append all new data without checking existing | Accumulate all data         |
+| `"latest"`  | Process only the most recent data             | Latest snapshot processing  |
+| `"update"`  | Incremental updates, only new/changed records | Efficient incremental loads |
+| `"combine"` | Combine multiple sources into single table    | Multi-source consolidation  |
 
 </details>
 
@@ -404,11 +413,11 @@ Defines how data is processed and loaded:
 
 Change Data Capture strategy for tracking changes:
 
-| Strategy | Description | History Tracking |
-|----------|-------------|------------------|
-| `"nocdc"` | No change tracking, simple updates/inserts | ❌ None |
-| `"scd1"` | Slowly Changing Dimension Type 1 - Overwrite | ⚠️ Current state only |
-| `"scd2"` | Slowly Changing Dimension Type 2 - Versioning | ✅ Full history |
+| Strategy  | Description                                   | History Tracking      |
+| --------- | --------------------------------------------- | --------------------- |
+| `"nocdc"` | No change tracking, simple updates/inserts    | ❌ None               |
+| `"scd1"`  | Slowly Changing Dimension Type 1 - Overwrite  | ⚠️ Current state only |
+| `"scd2"`  | Slowly Changing Dimension Type 2 - Versioning | ✅ Full history       |
 
 </details>
 
@@ -438,6 +447,7 @@ When `True`, processes data using Spark Structured Streaming for real-time data 
 Dictionary specifying columns and sort order for determining which duplicate record to keep.
 
 **Example:**
+
 ```python
 order_duplicate_by={
     "updated_at": "desc",
@@ -488,6 +498,7 @@ Gold tier creates business-ready data with aggregations, transformations, and an
 ### 🔧 Gold-Specific Options
 
 #### mode (Required)
+
 **Type:** `Literal["memory", "append", "complete", "update", "invoke"]`
 
 Defines how data is processed and loaded:
@@ -499,28 +510,33 @@ Defines how data is processed and loaded:
 - **`"invoke"`**: Execute external notebook or process
 
 #### change_data_capture (Required)
+
 **Type:** `Literal["nocdc", "scd1", "scd2"]`
 
 Same as Silver tier - defines the CDC strategy.
 
 #### update_where
+
 **Type:** `Optional[str]`
 **Default:** `None`
 
 SQL WHERE clause to filter which records should be updated. Only applicable in `"update"` mode.
 
 **Example:**
+
 ```python
 update_where="last_modified >= current_date() - INTERVAL 7 DAYS"
 ```
 
 #### deduplicate
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
 Remove duplicates based on keys and hash values.
 
 #### rectify_as_upserts
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
@@ -529,6 +545,7 @@ When `True`, converts reload operations into individual upsert and delete operat
 **Use Case:** Handle scenarios where records are deleted between full reloads without explicit delete operations.
 
 #### correct_valid_from
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
@@ -537,47 +554,55 @@ When `True` and using SCD2, sets the `__valid_from` timestamp of the earliest re
 **Use Case:** Standardize historical record start dates for reporting purposes.
 
 #### persist_last_timestamp
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
 When `True`, persists the maximum timestamp from the processed data to be used as a watermark for the next incremental run.
 
 #### persist_last_updated_timestamp
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
 When `True`, persists the maximum `__last_updated` timestamp for incremental processing tracking.
 
 #### table
+
 **Type:** `Optional[str]`
 **Default:** `None`
 
 Override the default target table name with a custom table name.
 
 **Example:**
+
 ```python
 table="custom_schema.custom_table_name"
 ```
 
 #### notebook
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
 When `True`, generates a notebook for this job that can be executed independently.
 
 #### requirements
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
 When `True`, generates a requirements file for dependencies needed by this job.
 
 #### metadata
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
 When `True`, adds or updates metadata tracking columns (`__metadata.inserted`, `__metadata.updated`).
 
 #### last_updated
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
@@ -617,24 +642,28 @@ GoldOptions(
 Table options control the physical table structure and optimization features.
 
 ### identity
+
 **Type:** `Optional[bool]`
 **Default:** `None`
 
 When `True`, adds an auto-incrementing identity column to the table.
 
 ### liquid_clustering
+
 **Type:** `Optional[bool]`
 **Default:** `None`
 
 When `True`, enables Databricks liquid clustering for improved query performance with automatic optimization.
 
 ### partition_by
+
 **Type:** `Optional[List[str]]`
 **Default:** `None`
 
 List of columns to partition the table by. Partitioning physically organizes data for faster queries on partition columns.
 
 **Example:**
+
 ```python
 partition_by=["year", "month"]
 ```
@@ -642,57 +671,67 @@ partition_by=["year", "month"]
 **Use Case:** Date-based partitioning for time-series data.
 
 ### zorder_by
+
 **Type:** `Optional[List[str]]`
 **Default:** `None`
 
 List of columns to Z-order (multi-dimensional clustering). Improves query performance for columns frequently used in filters.
 
 **Example:**
+
 ```python
 zorder_by=["customer_id", "product_id"]
 ```
 
 ### cluster_by
+
 **Type:** `Optional[List[str]]`
 **Default:** `None`
 
 List of columns to cluster by. Alternative to liquid clustering for organizing data.
 
 **Example:**
+
 ```python
 cluster_by=["region", "category"]
 ```
 
 ### powerbi
+
 **Type:** `Optional[bool]`
 **Default:** `None`
 
 When `True`, optimizes table settings for Power BI connectivity and performance.
 
 ### maximum_compatibility
+
 **Type:** `Optional[bool]`
 **Default:** `None`
 
 When `True`, creates tables with maximum compatibility settings for older Spark/Delta versions.
 
 ### bloomfilter_by
+
 **Type:** `Optional[List[str]]`
 **Default:** `None`
 
 List of columns to create bloom filters on for faster equality lookups.
 
 **Example:**
+
 ```python
 bloomfilter_by=["email", "phone_number"]
 ```
 
 ### constraints
+
 **Type:** `Optional[dict[str, str]]`
 **Default:** `None`
 
 Dictionary mapping constraint names to SQL constraint expressions.
 
 **Example:**
+
 ```python
 constraints={
     "valid_email": "email LIKE '%@%.%'",
@@ -701,12 +740,14 @@ constraints={
 ```
 
 ### properties
+
 **Type:** `Optional[dict[str, str]]`
 **Default:** `None`
 
 Dictionary of custom table properties as key-value pairs.
 
 **Example:**
+
 ```python
 properties={
     "owner": "data_team",
@@ -715,23 +756,27 @@ properties={
 ```
 
 ### comment
+
 **Type:** `Optional[str]`
 **Default:** `None`
 
 Description or comment for the table.
 
 **Example:**
+
 ```python
 comment="Customer master data with full history tracking"
 ```
 
 ### calculated_columns
+
 **Type:** `Optional[dict[str, str]]`
 **Default:** `None`
 
 Dictionary mapping column names to SQL expressions for computed/generated columns.
 
 **Example:**
+
 ```python
 calculated_columns={
     "full_address": "concat(street, ', ', city, ', ', state)",
@@ -740,12 +785,14 @@ calculated_columns={
 ```
 
 ### masks
+
 **Type:** `Optional[dict[str, str]]`
 **Default:** `None`
 
 Dictionary mapping column names to masking expressions for data privacy/security.
 
 **Example:**
+
 ```python
 masks={
     "ssn": "concat('***-**-', right(ssn, 4))",
@@ -754,12 +801,14 @@ masks={
 ```
 
 ### comments
+
 **Type:** `Optional[dict[str, str]]`
 **Default:** `None`
 
 Dictionary mapping column names to their descriptions.
 
 **Example:**
+
 ```python
 comments={
     "customer_id": "Unique identifier for each customer",
@@ -768,23 +817,27 @@ comments={
 ```
 
 ### retention_days
+
 **Type:** `Optional[int]`
 **Default:** `None`
 
 Number of days to retain old versions of data before they can be vacuumed.
 
 **Example:**
+
 ```python
 retention_days=90
 ```
 
 ### primary_key
+
 **Type:** `Optional[dict[str, PrimaryKey]]`
 **Default:** `None`
 
 Dictionary defining primary key constraint with name and configuration.
 
 **Example:**
+
 ```python
 primary_key={
     "pk_customers": {
@@ -795,12 +848,14 @@ primary_key={
 ```
 
 ### foreign_keys
+
 **Type:** `Optional[dict[str, ForeignKey]]`
 **Default:** `None`
 
 Dictionary defining foreign key constraints with names and configurations.
 
 **Example:**
+
 ```python
 foreign_keys={
     "fk_orders_customer": {
@@ -872,52 +927,61 @@ TableOptions(
 Data quality and validation checks that run before or after job execution.
 
 ### skip
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
 When `True`, skips all data quality checks for this job.
 
 ### pre_run
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
 When `True`, runs data quality checks before job execution. Job fails if checks don't pass.
 
 ### post_run
+
 **Type:** `Optional[bool]`
 **Default:** `False`
 
 When `True`, runs data quality checks after job execution. Job fails if checks don't pass.
 
 ### min_rows
+
 **Type:** `Optional[int]`
 **Default:** `None`
 
 Minimum number of rows expected in the result. Check fails if row count is below this threshold.
 
 **Example:**
+
 ```python
 min_rows=1000
 ```
 
 ### max_rows
+
 **Type:** `Optional[int]`
 **Default:** `None`
 
 Maximum number of rows expected in the result. Check fails if row count exceeds this threshold.
 
 **Example:**
+
 ```python
 max_rows=1000000
 ```
 
 ### count_must_equal
+
 **Type:** `Optional[str]`
 **Default:** `None`
 
 SQL expression or table name to compare row counts. Check fails if counts don't match.
 
 **Example:**
+
 ```python
 count_must_equal="bronze__source_table"
 ```
@@ -942,12 +1006,14 @@ CheckOptions(
 Spark configuration for the job execution.
 
 ### sql
+
 **Type:** `Optional[dict[str, str]]`
 **Default:** `None`
 
 Dictionary of Spark SQL configuration parameters.
 
 **Example:**
+
 ```python
 sql={
     "spark.sql.adaptive.enabled": "true",
@@ -956,12 +1022,14 @@ sql={
 ```
 
 ### conf
+
 **Type:** `Optional[dict[str, str]]`
 **Default:** `None`
 
 Dictionary of general Spark configuration parameters.
 
 **Example:**
+
 ```python
 conf={
     "spark.executor.memory": "8g",
@@ -1003,18 +1071,21 @@ class _InvokeOptions(TypedDict):
 ```
 
 ### pre_run
+
 **Type:** `Optional[List[_InvokeOptions]]`
 **Default:** `None`
 
 List of notebooks to execute before the main job runs.
 
 ### run
+
 **Type:** `Optional[List[_InvokeOptions]]`
 **Default:** `None`
 
 List of notebooks to execute as the main job (replaces default job logic).
 
 ### post_run
+
 **Type:** `Optional[List[_InvokeOptions]]`
 **Default:** `None`
 
@@ -1057,22 +1128,26 @@ InvokerOptions(
 Options for extending job functionality with custom logic.
 
 ### extender (Required)
+
 **Type:** `str`
 
 Name or path of the extender class to use.
 
 **Example:**
+
 ```python
 extender="CustomDataProcessor"
 ```
 
 ### arguments
+
 **Type:** `Optional[dict[str, str]]`
 **Default:** `None`
 
 Dictionary of arguments to pass to the extender.
 
 **Example:**
+
 ```python
 arguments={
     "transformation": "advanced",
@@ -1460,6 +1535,7 @@ Jobs can depend on other jobs via the `parents` option. The dependency system en
 ✅ **Automatic retry** - Failed dependencies trigger retries
 
 **Example:**
+
 ```python
 # This job waits for both bronze jobs to complete
 parents=["bronze__customers", "bronze__orders"]
@@ -1469,12 +1545,13 @@ parents=["bronze__customers", "bronze__orders"]
 
 Quality checks can run at different stages:
 
-| Stage | Description | Failure Behavior |
-|-------|-------------|------------------|
-| **pre_run** | Validate input before processing | Job fails before execution |
-| **post_run** | Validate output after processing | Job fails after execution |
+| Stage        | Description                      | Failure Behavior           |
+| ------------ | -------------------------------- | -------------------------- |
+| **pre_run**  | Validate input before processing | Job fails before execution |
+| **post_run** | Validate output after processing | Job fails after execution  |
 
 **Check Types:**
+
 - ✅ **Row counts** - Validate min/max row thresholds
 - ✅ **Data equality** - Compare counts with other tables
 - ✅ **Custom assertions** - SQL constraints and validations
@@ -1485,56 +1562,56 @@ Quality checks can run at different stages:
 
 ### 🥉 Bronze Layer
 
-| ✅ Best Practice | 💡 Recommendation | 📝 Rationale |
-|-----------------|-------------------|--------------|
-| **Mode Selection** | Use `mode="append"` | Capture all raw data without loss |
-| **CDC Operation** | Set `operation="upsert"` or `"reload"` | Enable change tracking for downstream processing |
-| **Performance** | Enable `optimize=True` for large datasets | Compact small files, improve query speed |
-| **Security** | Use `encrypted_columns` for sensitive fields | Protect PII during ingestion |
-| **Retention** | Keep short (`retention_days=30`) | Bronze is transient; Silver is source of truth |
+| ✅ Best Practice   | 💡 Recommendation                            | 📝 Rationale                                     |
+| ------------------ | -------------------------------------------- | ------------------------------------------------ |
+| **Mode Selection** | Use `mode="append"`                          | Capture all raw data without loss                |
+| **CDC Operation**  | Set `operation="upsert"` or `"reload"`       | Enable change tracking for downstream processing |
+| **Performance**    | Enable `optimize=True` for large datasets    | Compact small files, improve query speed         |
+| **Security**       | Use `encrypted_columns` for sensitive fields | Protect PII during ingestion                     |
+| **Retention**      | Keep short (`retention_days=30`)             | Bronze is transient; Silver is source of truth   |
 
 ### 🥈 Silver Layer
 
-| ✅ Best Practice | 💡 Recommendation | 📝 Rationale |
-|-----------------|-------------------|--------------|
-| **CDC Strategy** | Always use `scd1` or `scd2` | Systematic change tracking required |
-| **Data Quality** | Enable `deduplicate=True` | Remove duplicates for clean data |
-| **Processing Mode** | Use `mode="update"` | Efficient incremental processing |
-| **Validation** | Configure `check_options` | Enforce data quality standards |
-| **Retention** | Use longer period (`retention_days=90`) | Silver is the authoritative source |
+| ✅ Best Practice    | 💡 Recommendation                       | 📝 Rationale                        |
+| ------------------- | --------------------------------------- | ----------------------------------- |
+| **CDC Strategy**    | Always use `scd1` or `scd2`             | Systematic change tracking required |
+| **Data Quality**    | Enable `deduplicate=True`               | Remove duplicates for clean data    |
+| **Processing Mode** | Use `mode="update"`                     | Efficient incremental processing    |
+| **Validation**      | Configure `check_options`               | Enforce data quality standards      |
+| **Retention**       | Use longer period (`retention_days=90`) | Silver is the authoritative source  |
 
 ### 🥇 Gold Layer
 
-| ✅ Best Practice | 💡 Recommendation | 📝 Rationale |
-|-----------------|-------------------|--------------|
-| **CDC Strategy** | Choose based on business needs | Balance history requirements vs performance |
-| **Rectification** | Enable `rectify_as_upserts=True` | Ensure historical data consistency |
-| **Watermarking** | Use `persist_last_timestamp=True` | Enable efficient incremental loads |
-| **Audit Tracking** | Enable `metadata=True` + `last_updated=True` | Support troubleshooting and audits |
-| **BI Optimization** | Set `powerbi=True` for analytics workloads | Optimize for business intelligence tools |
-| **Enrichment** | Use extenders for ML scoring | Add predictive intelligence |
+| ✅ Best Practice    | 💡 Recommendation                            | 📝 Rationale                                |
+| ------------------- | -------------------------------------------- | ------------------------------------------- |
+| **CDC Strategy**    | Choose based on business needs               | Balance history requirements vs performance |
+| **Rectification**   | Enable `rectify_as_upserts=True`             | Ensure historical data consistency          |
+| **Watermarking**    | Use `persist_last_timestamp=True`            | Enable efficient incremental loads          |
+| **Audit Tracking**  | Enable `metadata=True` + `last_updated=True` | Support troubleshooting and audits          |
+| **BI Optimization** | Set `powerbi=True` for analytics workloads   | Optimize for business intelligence tools    |
+| **Enrichment**      | Use extenders for ML scoring                 | Add predictive intelligence                 |
 
 ### ⚡ Performance Optimization
 
-| 🚀 Technique | 💡 Implementation | 🎯 Use Case |
-|-------------|-------------------|-------------|
-| **Liquid Clustering** | `liquid_clustering=True` | Modern Delta tables with auto-optimization |
-| **Partitioning** | `partition_by=["year", "month"]` | Time-series data and date-based queries |
-| **Z-Ordering** | `zorder_by=["customer_id"]` | High-cardinality columns in WHERE clauses |
-| **Bloom Filters** | `bloomfilter_by=["email"]` | Fast equality lookups on strings |
-| **Spark Tuning** | Configure `spark_options` | Match cluster resources to workload |
+| 🚀 Technique          | 💡 Implementation                | 🎯 Use Case                                |
+| --------------------- | -------------------------------- | ------------------------------------------ |
+| **Liquid Clustering** | `liquid_clustering=True`         | Modern Delta tables with auto-optimization |
+| **Partitioning**      | `partition_by=["year", "month"]` | Time-series data and date-based queries    |
+| **Z-Ordering**        | `zorder_by=["customer_id"]`      | High-cardinality columns in WHERE clauses  |
+| **Bloom Filters**     | `bloomfilter_by=["email"]`       | Fast equality lookups on strings           |
+| **Spark Tuning**      | Configure `spark_options`        | Match cluster resources to workload        |
 
 > **💡 Pro Tip:** Liquid clustering is self-optimizing and recommended for new tables over manual partitioning.
 
 ### 🔒 Data Governance
 
-| 📋 Area | 💡 Recommendation | ✅ Benefit |
-|---------|-------------------|------------|
-| **Documentation** | Add detailed `comments` and `comment` | Enable knowledge sharing and understanding |
-| **Validation** | Define `constraints` for business rules | Enforce data quality at write-time |
-| **Metadata** | Set `properties` for classification | Improve discoverability and compliance |
-| **Privacy** | Use `masks` for PII fields | Protect sensitive data, meet regulations |
-| **Organization** | Apply meaningful `tags` | Enable filtering, cost tracking, ownership |
+| 📋 Area           | 💡 Recommendation                       | ✅ Benefit                                 |
+| ----------------- | --------------------------------------- | ------------------------------------------ |
+| **Documentation** | Add detailed `comments` and `comment`   | Enable knowledge sharing and understanding |
+| **Validation**    | Define `constraints` for business rules | Enforce data quality at write-time         |
+| **Metadata**      | Set `properties` for classification     | Improve discoverability and compliance     |
+| **Privacy**       | Use `masks` for PII fields              | Protect sensitive data, meet regulations   |
+| **Organization**  | Apply meaningful `tags`                 | Enable filtering, cost tracking, ownership |
 
 ---
 

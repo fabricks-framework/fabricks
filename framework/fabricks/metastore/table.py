@@ -902,20 +902,3 @@ class Table(DbObject):
 
         elif columns is not None:
             self.enable_liquid_clustering(columns=columns)
-
-    def update_partitioning(self, columns: str | list[str] | None = None):
-        assert self.registered, f"{self} not registered"
-
-        if columns is not None:
-            if isinstance(columns, str):
-                columns = [columns]
-            columns = [f"`{c}`" for c in columns]
-            cols = ", ".join(columns)
-
-            DEFAULT_LOGGER.info(f"update partitioning to {cols}", extra={"label": self})
-            self.spark.sql(
-                f"""
-                alter table {self.qualified_name}
-                partitioned by ({cols})
-                """
-            )

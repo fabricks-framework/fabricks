@@ -12,19 +12,19 @@ This page introduces Fabricks core concepts so you can read and write pipelines 
 
 **Jobs vs Steps**
 
-- *Step*: A processing layer/type that defines behavior and defaults (Bronze, Silver, Gold).
-- *Job*: A concrete unit of work within a step (identified by topic + item) that you schedule/run.
+- _Step_: A processing layer/type that defines behavior and defaults (Bronze, Silver, Gold).
+- _Job_: A concrete unit of work within a step (identified by topic + item) that you schedule/run.
 
 **Layers (Bronze â†' Silver â†' Gold)**
 
-- Bronze: Land raw data (``append``/``register``/``memory``). Keep logic light.
+- Bronze: Land raw data (`append`/`register`/`memory`). Keep logic light.
 - Silver: Standardize/clean/enrich. Optional CDC (SCD1/SCD2) and convenience views.
-- Gold: Consumption models and marts. Supports merge/``update`` and SCD patterns.
+- Gold: Consumption models and marts. Supports merge/`update` and SCD patterns.
 
 **Change Data Capture (CDC)**
 
-- SCD1: Current state with optional soft deletes (__is_current, __is_deleted) and a {table}__current view.
-- SCD2: Historical validity windows (__valid_from, __valid_to). Gold consumers use (__key, __timestamp, __operation).
+- SCD1: Current state with optional soft deletes (**is_current, **is_deleted) and a {table}\_\_current view.
+- SCD2: Historical validity windows (**valid_from, **valid_to). Gold consumers use (**key, **timestamp, \_\_operation).
 - Reload rectification: A snapshot boundary that reconciles target state (see CDC reference).
 
 **Data Quality (Checks)**
@@ -46,4 +46,3 @@ Navigation
 - Data Quality â†' [Checks & Data Quality](../reference/checks-data-quality.md)
 - Table and storage options â†' [Table Options](../reference/table-options.md)
 - Extensibility â†' [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
-

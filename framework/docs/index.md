@@ -13,7 +13,7 @@ Fabricks organizes your Lakehouse into clear layers. Each step has a dedicated r
 
 Raw ingestion from source systems (files, streams, existing tables). Keep logic light; land data for downstream processing.
 
-- Typical modes: ``memory``, ``append``, ``register``
+- Typical modes: `memory`, `append`, `register`
 - Focus: lightweight parsing/landing; no business logic
 - Output: raw tables or temporary views
 
@@ -23,8 +23,8 @@ Read the full reference: [Bronze Step](steps/bronze.md)
 
 Standardize, clean, and enrich data; optionally apply CDC (SCD1/SCD2). Produces conformed datasets and convenience views.
 
-- Typical modes: ``memory``, ``append``, ``latest``, ``update``, ``combine``
-- CDC: ``nocdc``, ``scd1``, ``scd2`` with built-in helpers and views
+- Typical modes: `memory`, `append`, `latest`, `update`, `combine`
+- CDC: `nocdc`, `scd1`, `scd2` with built-in helpers and views
 - Output: conformed tables and curated views
 
 Read the full reference: [Silver Step](steps/silver.md)
@@ -33,7 +33,7 @@ Read the full reference: [Silver Step](steps/silver.md)
 
 Curated business models for analytics and reporting; dimensional or mart-style outputs. Can also `invoke` notebooks when needed.
 
-- Typical modes: ``memory``, ``append``, ``complete``, ``update``, ``invoke`` (notebooks)
+- Typical modes: `memory`, `append`, `complete`, `update`, `invoke` (notebooks)
 - Focus: dimensional models, marts, KPI-ready data
 - Output: business-consumption tables and views
 
@@ -48,4 +48,3 @@ Read the full reference: [Gold Step](steps/gold.md)
 - Table properties, clustering, and layout: [Table Options](reference/table-options.md)
 - Custom logic and reusable SQL assets: [Extenders, UDFs & Parsers](reference/extenders-udfs-parsers.md)
 - Change Data Capture (CDC): [CDC](reference/cdc.md)
-

@@ -3,6 +3,7 @@
 Views provide a simple, declarative way to define a set of jobs to run in a schedule. Instead of listing jobs manually, you create a SQL view that filters the canonical `fabricks.jobs` table, and then reference that view by name from a schedule.
 
 Typical use cases:
+
 - Run all jobs for a given domain/topic (e.g., monarch)
 - Run only certain steps (e.g., all Gold jobs)
 - Run a curated subset of jobs for adâ€'hoc backfills or smoke tests
@@ -54,7 +55,7 @@ path_options:
 
 Create a file `monarch.sql` in your runtime `views` directory:
 
-```sql title:monarch.sql
+````sql title:monarch.sql
 -- Select all jobs with a specific topic
 select *
 from fabricks.jobs j
@@ -73,9 +74,10 @@ where j.topic = 'monarch'
       steps: [silver, gold]    # optional: restrict to these steps
       tag: nightly             # optional: only jobs having this tag
       # variables, timeouts, etc. can still be provided as needed
-```
+````
 
 Behavior:
+
 - Fabricks loads all jobs returned by `fabricks.monarch` and further filters by `steps` and `tag` if provided.
 - Scheduleâ€'level options like `variables`, `timeouts`, etc., still apply to execution.
 - In most cases the view alone defines the job set; `steps`/`tag` refine it.
@@ -101,10 +103,12 @@ where true
 ```
 
 Notes:
+
 - The inner join requires the data view to expose `job_id`. Returning `j.*` from `fabricks.jobs` guarantees this.
 - Manual jobs are excluded from schedule views by design.
 
 Quick validation:
+
 ```sql
 select count(*) from fabricks.run-monarch_schedule;         -- schedule membership size
 select step, topic, item from fabricks.run-monarch_schedule limit 20;
@@ -117,6 +121,7 @@ select step, topic, item from fabricks.run-monarch_schedule limit 20;
 You can (re)create both data views and schedule views programmatically.
 
 - Data views (from `.sql` files under `path_options.views`):
+
   ```python
   from fabricks.core.views import (
       create_or_replace_view,   # single data view by name
@@ -128,6 +133,7 @@ You can (re)create both data views and schedule views programmatically.
   ```
 
 - Schedule views (one per schedule defined in runtime):
+
   ```python
   from fabricks.core.schedules import (
       create_or_replace_view as create_or_replace_schedule_view,  # single schedule by name
@@ -146,7 +152,8 @@ You can (re)create both data views and schedule views programmatically.
 ## Additional data view examples
 
 Filter by step:
-```sql title:gold_only.sql
+
+````sql title:gold_only.sql
 select *
 from fabricks.jobs j
 where j.step = 'gold'
@@ -167,9 +174,10 @@ select *
 from fabricks.jobs j
 where (j.step = 'silver' and j.topic = 'monarch' and j.item = 'scd1__current')
    or (j.step = 'gold'   and j.topic = 'monarch' and j.item = 'orders')
-```
+````
 
 Tip:
+
 - You may project specific columns, but for schedules that use `options.view`, ensure `job_id` is present in the projection. Returning `j.*` is simplest.
 
 ---
@@ -188,4 +196,3 @@ Tip:
 - Steps overview (Bronze/Silver/Gold): ../steps/gold.md and siblings
 - Data quality checks: ./checks-data-quality.md
 - Table options and storage layout: ./table-options.md
-

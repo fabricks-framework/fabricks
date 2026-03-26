@@ -11,25 +11,25 @@ Layer summary
 When to use each layer
 
 - Bronze
-    - Ingest from external sources with minimal logic
-    - Keep provenance and raw fidelity
-    - Typical modes: ``memory``, ``append``, ``register``
+  - Ingest from external sources with minimal logic
+  - Keep provenance and raw fidelity
+  - Typical modes: `memory`, `append`, `register`
 
 - Silver
-    - Standardize schemas, apply business keys, deduplicate
-    - Apply CDC: ``scd1``/``scd2`` with convenience views (e.g., table__current)
-    - Typical modes: ``memory``, ``append``, ``latest``, ``update``, ``combine``
+  - Standardize schemas, apply business keys, deduplicate
+  - Apply CDC: `scd1`/`scd2` with convenience views (e.g., table\_\_current)
+  - Typical modes: `memory`, `append`, `latest`, `update`, `combine`
 
 - Gold
-    - Aggregate, reshape, and model data for analytics/reporting
-    - Implement SCD patterns at the desired consumption grain
-    - Typical modes: ``memory``, ``append``, ``complete``, ``update``, ``invoke`` (notebook)
+  - Aggregate, reshape, and model data for analytics/reporting
+  - Implement SCD patterns at the desired consumption grain
+  - Typical modes: `memory`, `append`, `complete`, `update`, `invoke` (notebook)
 
 Data flow
 
 - Bronze: raw sources â†' (light parsing, optional filters/calculated columns) â†' raw tables/views
-- Silver: bronze tables/views â†' (standardize/enrich, optional CDC) â†' conformed tables + {table}__current view
-- Gold: silver conformed outputs â†' (marts/dim/fact, SCD merges or ``complete`` refresh) â†' business-consumption tables/views
+- Silver: bronze tables/views â†' (standardize/enrich, optional CDC) â†' conformed tables + {table}\_\_current view
+- Gold: silver conformed outputs â†' (marts/dim/fact, SCD merges or `complete` refresh) â†' business-consumption tables/views
 
 Quality and governance
 
@@ -44,4 +44,3 @@ Related
 - CDC reference: ../reference/cdc.md
 - Data quality checks: ../reference/checks-data-quality.md
 - Table options: ../reference/table-options.md
-

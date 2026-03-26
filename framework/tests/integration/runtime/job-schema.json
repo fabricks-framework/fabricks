@@ -1,1030 +1,837 @@
 {
-    "type": "array",
-    "items": {
-        "$ref": "#/$defs/JobWrapper"
-    },
-    "$defs": {
-        "BronzeOptions": {
-            "type": "object",
-            "properties": {
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/JobWrapper"
+  },
+  "$defs": {
+    "BronzeOptions": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["manual", "default"]
+        },
+        "mode": {
+          "enum": ["memory", "append", "register"]
+        },
+        "uri": {
+          "type": "string"
+        },
+        "parser": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filter_where": {
+          "type": ["string", "null"]
+        },
+        "optimize": {
+          "type": ["boolean", "null"]
+        },
+        "compute_statistics": {
+          "type": ["boolean", "null"]
+        },
+        "vacuum": {
+          "type": ["boolean", "null"]
+        },
+        "no_drop": {
+          "type": ["boolean", "null"]
+        },
+        "encrypted_columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "calculated_columns": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
                 "type": {
-                    "enum": [
-                        "manual",
-                        "default"
-                    ]
-                },
-                "mode": {
-                    "enum": [
-                        "memory",
-                        "append",
-                        "register"
-                    ]
-                },
-                "uri": {
-                    "type": "string"
-                },
-                "parser": {
-                    "type": "string"
-                },
-                "source": {
-                    "type": "string"
-                },
-                "keys": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "parents": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "filter_where": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "optimize": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "compute_statistics": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "vacuum": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "no_drop": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "encrypted_columns": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "calculated_columns": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                },
-                "operation": {
-                    "enum": [
-                        "upsert",
-                        "reload",
-                        "delete"
-                    ]
-                },
-                "timeout": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                  "type": "string"
                 }
+              }
             }
+          ]
         },
-        "PrimaryKeyOptions": {
-            "type": "object",
-            "properties": {
-                "constraint": {
-                    "enum": [
-                        "not enforced",
-                        "deferrable",
-                        "initially deferred",
-                        "norely",
-                        "rely"
-                    ]
-                }
-            }
+        "operation": {
+          "enum": ["upsert", "reload", "delete"]
         },
-        "PrimaryKey": {
-            "type": "object",
-            "properties": {
-                "keys": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/PrimaryKeyOptions"
-                        }
-                    ]
-                }
-            }
-        },
-        "ForeignKeyOptions": {
-            "type": "object",
-            "properties": {
-                "foreign_key": {
-                    "enum": [
-                        "match full",
-                        "on update no action",
-                        "on delete no action"
-                    ]
-                },
-                "constraint": {
-                    "enum": [
-                        "not enforced",
-                        "deferrable",
-                        "initially deferred",
-                        "norely",
-                        "rely"
-                    ]
-                }
-            }
-        },
-        "ForeignKey": {
-            "type": "object",
-            "properties": {
-                "keys": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "reference": {
-                    "type": "string"
-                },
-                "options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/ForeignKeyOptions"
-                        }
-                    ]
-                }
-            }
-        },
-        "TableOptions": {
-            "type": "object",
-            "properties": {
-                "identity": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "liquid_clustering": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "partition_by": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "zorder_by": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "cluster_by": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "powerbi": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "maximum_compatibility": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "bloomfilter_by": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "constraints": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                },
-                "properties": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                },
-                "comment": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "calculated_columns": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                },
-                "masks": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                },
-                "comments": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                },
-                "retention_days": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
-                },
-                "primary_key": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "$ref": "#/$defs/PrimaryKey"
-                            }
-                        }
-                    ]
-                },
-                "foreign_keys": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "$ref": "#/$defs/ForeignKey"
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        "ParserOptions": {
-            "type": "object",
-            "properties": {
-                "file_format": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "read_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        "CheckOptions": {
-            "type": "object",
-            "properties": {
-                "skip": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "pre_run": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "post_run": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "min_rows": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
-                },
-                "max_rows": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
-                },
-                "count_must_equal": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                }
-            }
-        },
-        "SparkOptions": {
-            "type": "object",
-            "properties": {
-                "sql": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                },
-                "conf": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        "_InvokeOptions": {
-            "type": "object",
-            "properties": {
-                "notebook": {
-                    "type": "string"
-                },
-                "timeout": {
-                    "type": "integer"
-                },
-                "arguments": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        "InvokerOptions": {
-            "type": "object",
-            "properties": {
-                "pre_run": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/_InvokeOptions"
-                    }
-                },
-                "run": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/_InvokeOptions"
-                    }
-                },
-                "post_run": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/_InvokeOptions"
-                    }
-                }
-            }
-        },
-        "ExtenderOptions": {
-            "type": "object",
-            "properties": {
-                "extender": {
-                    "type": "string"
-                },
-                "arguments": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        "JobConfBronze": {
-            "type": "object",
-            "required": [
-                "topic",
-                "item",
-                "step",
-                "options"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "topic": {
-                    "type": "string"
-                },
-                "item": {
-                    "type": "string"
-                },
-                "step": {
-                    "enum": [
-                        "bronze"
-                    ]
-                },
-                "options": {
-                    "$ref": "#/$defs/BronzeOptions"
-                },
-                "table_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/TableOptions"
-                        }
-                    ]
-                },
-                "parser_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/ParserOptions"
-                        }
-                    ]
-                },
-                "check_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/CheckOptions"
-                        }
-                    ]
-                },
-                "spark_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/SparkOptions"
-                        }
-                    ]
-                },
-                "invoker_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/InvokerOptions"
-                        }
-                    ]
-                },
-                "extender_options": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/ExtenderOptions"
-                    }
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "comment": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                }
-            }
-        },
-        "SilverOptions": {
-            "type": "object",
-            "properties": {
-                "type": {
-                    "enum": [
-                        "manual",
-                        "default"
-                    ]
-                },
-                "mode": {
-                    "enum": [
-                        "memory",
-                        "append",
-                        "latest",
-                        "update",
-                        "combine"
-                    ]
-                },
-                "change_data_capture": {
-                    "enum": [
-                        "nocdc",
-                        "scd1",
-                        "scd2"
-                    ]
-                },
-                "parents": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "filter_where": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "optimize": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "compute_statistics": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "vacuum": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "no_drop": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "deduplicate": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "stream": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "order_duplicate_by": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    ]
-                },
-                "timeout": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
-                }
-            }
-        },
-        "JobConfSilver": {
-            "type": "object",
-            "required": [
-                "topic",
-                "item",
-                "step",
-                "options"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "topic": {
-                    "type": "string"
-                },
-                "item": {
-                    "type": "string"
-                },
-                "step": {
-                    "enum": [
-                        "silver"
-                    ]
-                },
-                "options": {
-                    "$ref": "#/$defs/SilverOptions"
-                },
-                "table_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/TableOptions"
-                        }
-                    ]
-                },
-                "check_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/CheckOptions"
-                        }
-                    ]
-                },
-                "spark_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/SparkOptions"
-                        }
-                    ]
-                },
-                "invoker_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/InvokerOptions"
-                        }
-                    ]
-                },
-                "extender_options": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/ExtenderOptions"
-                    }
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "comment": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                }
-            }
-        },
-        "GoldOptions": {
-            "type": "object",
-            "properties": {
-                "type": {
-                    "enum": [
-                        "manual",
-                        "default"
-                    ]
-                },
-                "mode": {
-                    "enum": [
-                        "memory",
-                        "append",
-                        "complete",
-                        "update",
-                        "invoke"
-                    ]
-                },
-                "change_data_capture": {
-                    "enum": [
-                        "nocdc",
-                        "scd1",
-                        "scd2"
-                    ]
-                },
-                "update_where": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "parents": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "optimize": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "compute_statistics": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "vacuum": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "no_drop": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "deduplicate": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "rectify_as_upserts": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "correct_valid_from": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "persist_last_timestamp": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "table": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "notebook": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "requirements": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "timeout": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
-                }
-            }
-        },
-        "JobConfGold": {
-            "type": "object",
-            "required": [
-                "topic",
-                "item",
-                "step",
-                "options"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "topic": {
-                    "type": "string"
-                },
-                "item": {
-                    "type": "string"
-                },
-                "step": {
-                    "enum": [
-                        "gold"
-                    ]
-                },
-                "options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/GoldOptions"
-                        }
-                    ]
-                },
-                "table_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/TableOptions"
-                        }
-                    ]
-                },
-                "check_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/CheckOptions"
-                        }
-                    ]
-                },
-                "spark_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/SparkOptions"
-                        }
-                    ]
-                },
-                "invoker_options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/InvokerOptions"
-                        }
-                    ]
-                },
-                "extender_options": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/ExtenderOptions"
-                    }
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "comment": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                }
-            }
-        },
-        "JobWrapper": {
-            "type": "object",
-            "required": [
-                "job"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "job": {
-                    "oneOf": [
-                        {
-                            "$ref": "#/$defs/JobConfBronze"
-                        },
-                        {
-                            "$ref": "#/$defs/JobConfSilver"
-                        },
-                        {
-                            "$ref": "#/$defs/JobConfGold"
-                        }
-                    ]
-                }
-            }
+        "timeout": {
+          "type": ["integer", "null"]
         }
+      }
     },
-    "$schema": "https://json-schema.org/draft/2020-12/schema"
+    "PrimaryKeyOptions": {
+      "type": "object",
+      "properties": {
+        "constraint": {
+          "enum": [
+            "not enforced",
+            "deferrable",
+            "initially deferred",
+            "norely",
+            "rely"
+          ]
+        }
+      }
+    },
+    "PrimaryKey": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/PrimaryKeyOptions"
+            }
+          ]
+        }
+      }
+    },
+    "ForeignKeyOptions": {
+      "type": "object",
+      "properties": {
+        "foreign_key": {
+          "enum": ["match full", "on update no action", "on delete no action"]
+        },
+        "constraint": {
+          "enum": [
+            "not enforced",
+            "deferrable",
+            "initially deferred",
+            "norely",
+            "rely"
+          ]
+        }
+      }
+    },
+    "ForeignKey": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reference": {
+          "type": "string"
+        },
+        "options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/ForeignKeyOptions"
+            }
+          ]
+        }
+      }
+    },
+    "TableOptions": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": ["boolean", "null"]
+        },
+        "liquid_clustering": {
+          "type": ["boolean", "null"]
+        },
+        "partition_by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "zorder_by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cluster_by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "powerbi": {
+          "type": ["boolean", "null"]
+        },
+        "maximum_compatibility": {
+          "type": ["boolean", "null"]
+        },
+        "bloomfilter_by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "constraints": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "properties": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "comment": {
+          "type": ["string", "null"]
+        },
+        "calculated_columns": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "masks": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "comments": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "retention_days": {
+          "type": ["integer", "null"]
+        },
+        "primary_key": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/PrimaryKey"
+              }
+            }
+          ]
+        },
+        "foreign_keys": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/ForeignKey"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ParserOptions": {
+      "type": "object",
+      "properties": {
+        "file_format": {
+          "type": ["string", "null"]
+        },
+        "read_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "CheckOptions": {
+      "type": "object",
+      "properties": {
+        "skip": {
+          "type": ["boolean", "null"]
+        },
+        "pre_run": {
+          "type": ["boolean", "null"]
+        },
+        "post_run": {
+          "type": ["boolean", "null"]
+        },
+        "min_rows": {
+          "type": ["integer", "null"]
+        },
+        "max_rows": {
+          "type": ["integer", "null"]
+        },
+        "count_must_equal": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "SparkOptions": {
+      "type": "object",
+      "properties": {
+        "sql": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "conf": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "_InvokeOptions": {
+      "type": "object",
+      "properties": {
+        "notebook": {
+          "type": "string"
+        },
+        "timeout": {
+          "type": "integer"
+        },
+        "arguments": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "InvokerOptions": {
+      "type": "object",
+      "properties": {
+        "pre_run": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/_InvokeOptions"
+          }
+        },
+        "run": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/_InvokeOptions"
+          }
+        },
+        "post_run": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/_InvokeOptions"
+          }
+        }
+      }
+    },
+    "ExtenderOptions": {
+      "type": "object",
+      "properties": {
+        "extender": {
+          "type": "string"
+        },
+        "arguments": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "JobConfBronze": {
+      "type": "object",
+      "required": ["topic", "item", "step", "options"],
+      "additionalProperties": false,
+      "properties": {
+        "topic": {
+          "type": "string"
+        },
+        "item": {
+          "type": "string"
+        },
+        "step": {
+          "enum": ["bronze"]
+        },
+        "options": {
+          "$ref": "#/$defs/BronzeOptions"
+        },
+        "table_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/TableOptions"
+            }
+          ]
+        },
+        "parser_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/ParserOptions"
+            }
+          ]
+        },
+        "check_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/CheckOptions"
+            }
+          ]
+        },
+        "spark_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/SparkOptions"
+            }
+          ]
+        },
+        "invoker_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/InvokerOptions"
+            }
+          ]
+        },
+        "extender_options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExtenderOptions"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "SilverOptions": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["manual", "default"]
+        },
+        "mode": {
+          "enum": ["memory", "append", "latest", "update", "combine"]
+        },
+        "change_data_capture": {
+          "enum": ["nocdc", "scd1", "scd2"]
+        },
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "filter_where": {
+          "type": ["string", "null"]
+        },
+        "optimize": {
+          "type": ["boolean", "null"]
+        },
+        "compute_statistics": {
+          "type": ["boolean", "null"]
+        },
+        "vacuum": {
+          "type": ["boolean", "null"]
+        },
+        "no_drop": {
+          "type": ["boolean", "null"]
+        },
+        "deduplicate": {
+          "type": ["boolean", "null"]
+        },
+        "stream": {
+          "type": ["boolean", "null"]
+        },
+        "order_duplicate_by": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "timeout": {
+          "type": ["integer", "null"]
+        }
+      }
+    },
+    "JobConfSilver": {
+      "type": "object",
+      "required": ["topic", "item", "step", "options"],
+      "additionalProperties": false,
+      "properties": {
+        "topic": {
+          "type": "string"
+        },
+        "item": {
+          "type": "string"
+        },
+        "step": {
+          "enum": ["silver"]
+        },
+        "options": {
+          "$ref": "#/$defs/SilverOptions"
+        },
+        "table_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/TableOptions"
+            }
+          ]
+        },
+        "check_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/CheckOptions"
+            }
+          ]
+        },
+        "spark_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/SparkOptions"
+            }
+          ]
+        },
+        "invoker_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/InvokerOptions"
+            }
+          ]
+        },
+        "extender_options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExtenderOptions"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "GoldOptions": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": ["manual", "default"]
+        },
+        "mode": {
+          "enum": ["memory", "append", "complete", "update", "invoke"]
+        },
+        "change_data_capture": {
+          "enum": ["nocdc", "scd1", "scd2"]
+        },
+        "update_where": {
+          "type": ["string", "null"]
+        },
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "optimize": {
+          "type": ["boolean", "null"]
+        },
+        "compute_statistics": {
+          "type": ["boolean", "null"]
+        },
+        "vacuum": {
+          "type": ["boolean", "null"]
+        },
+        "no_drop": {
+          "type": ["boolean", "null"]
+        },
+        "deduplicate": {
+          "type": ["boolean", "null"]
+        },
+        "rectify_as_upserts": {
+          "type": ["boolean", "null"]
+        },
+        "correct_valid_from": {
+          "type": ["boolean", "null"]
+        },
+        "persist_last_timestamp": {
+          "type": ["boolean", "null"]
+        },
+        "table": {
+          "type": ["string", "null"]
+        },
+        "notebook": {
+          "type": ["boolean", "null"]
+        },
+        "requirements": {
+          "type": ["boolean", "null"]
+        },
+        "timeout": {
+          "type": ["integer", "null"]
+        }
+      }
+    },
+    "JobConfGold": {
+      "type": "object",
+      "required": ["topic", "item", "step", "options"],
+      "additionalProperties": false,
+      "properties": {
+        "topic": {
+          "type": "string"
+        },
+        "item": {
+          "type": "string"
+        },
+        "step": {
+          "enum": ["gold"]
+        },
+        "options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/GoldOptions"
+            }
+          ]
+        },
+        "table_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/TableOptions"
+            }
+          ]
+        },
+        "check_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/CheckOptions"
+            }
+          ]
+        },
+        "spark_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/SparkOptions"
+            }
+          ]
+        },
+        "invoker_options": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/InvokerOptions"
+            }
+          ]
+        },
+        "extender_options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExtenderOptions"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "comment": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "JobWrapper": {
+      "type": "object",
+      "required": ["job"],
+      "additionalProperties": false,
+      "properties": {
+        "job": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/JobConfBronze"
+            },
+            {
+              "$ref": "#/$defs/JobConfSilver"
+            },
+            {
+              "$ref": "#/$defs/JobConfGold"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

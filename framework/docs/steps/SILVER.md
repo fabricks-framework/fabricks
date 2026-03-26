@@ -7,17 +7,17 @@ Key responsibilities
 - Ingest and unify upstream outputs (from Bronze or other Silver jobs).
 - Enforce schema, apply business keys, and compute derived columns.
 - Deduplicate, order, and resolve conflicting records.
-- Optionally apply CDC semantics (scd1 or scd2) and produce convenience views such as {table}__current.
+- Optionally apply CDC semantics (scd1 or scd2) and produce convenience views such as {table}\_\_current.
 - Write conformed Delta tables or register transient views for consumption.
 
 Modes
 
-| Mode      | When to use / behavior |
-|-----------|------------------------|
-| memory  | In-session temporary view only. Use for ad-hoc runs and tests; no persisted table is written. |
-| append  | Append-only writes. Ideal for additive feeds where merges are not required. |
-| latest  | Keep only the latest row per business key within the incoming batch (batch-local). |
-| update  | Merge/upsert semantics against an existing target; used for CDC and idempotent updates. |
+| Mode    | When to use / behavior                                                                              |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| memory  | In-session temporary view only. Use for ad-hoc runs and tests; no persisted table is written.       |
+| append  | Append-only writes. Ideal for additive feeds where merges are not required.                         |
+| latest  | Keep only the latest row per business key within the incoming batch (batch-local).                  |
+| update  | Merge/upsert semantics against an existing target; used for CDC and idempotent updates.             |
 | combine | Union results from multiple parents into a single logical output. Useful for multi-source catalogs. |
 
 Behavior notes
@@ -36,11 +36,11 @@ Behavior notes
 
 CDC strategies
 
-| Strategy | Effect | Output convention |
-|----------|--------|------------------|
-| nocdc  | No CDC metadata; write the result as-is. | — |
-| scd1   | Current-state model with __is_current, __is_deleted flags. | {table}__current view available. |
-| scd2   | Full-history model with validity windows __valid_from, __valid_to. | {table}__current view available. |
+| Strategy | Effect                                                             | Output convention                  |
+| -------- | ------------------------------------------------------------------ | ---------------------------------- |
+| nocdc    | No CDC metadata; write the result as-is.                           | —                                  |
+| scd1     | Current-state model with **is_current, **is_deleted flags.         | {table}\_\_current view available. |
+| scd2     | Full-history model with validity windows **valid_from, **valid_to. | {table}\_\_current view available. |
 
 Common options (summary)
 
@@ -68,6 +68,7 @@ Options guidance
 **Examples**
 
 Basic SCD2 update
+
 ```yaml
 - job:
     step: silver
@@ -148,3 +149,4 @@ Related
 - Extensibility: [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
 - Sample runtime: [Sample runtime](../helpers/runtime.md)
 
+```

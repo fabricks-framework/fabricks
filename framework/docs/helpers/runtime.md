@@ -6,7 +6,8 @@ The Fabricks runtime is the folder where your Lakehouse project lives (configs, 
 
 This quick path gets a working runtime running end-to-end using the sample included with Fabricks.
 
-1) Prepare pyproject configuration
+1. Prepare pyproject configuration
+
 - Ensure your `pyproject.toml` contains a `[tool.fabricks]` block pointing to the sample runtime:
   ```toml
   [tool.fabricks]
@@ -18,18 +19,21 @@ This quick path gets a working runtime running end-to-end using the sample inclu
   config = "examples/runtime/fabricks/conf.fabricks.yml"
   ```
 
-2) Inspect the sample runtime
+2. Inspect the sample runtime
+
 - Directory: `examples/runtime` (see structure in â€œSample runtimeâ€ below).
 - It contains a minimal schedule and a Gold `hello_world.sql` full-refresh job.
 
-3) Run a schedule
+3. Run a schedule
+
 - Use your Databricks bundle/job or orchestration to run the schedule named `example` from `examples/runtime/fabricks/schedules/schedule.yml`.
 - You can also run step-by-step via the shipped notebooks referenced by `notebooks`.
 
 Expected outputs
+
 - Tables/views:
   - A Gold table for the `hello_world` job (full refresh).
-  - If using ``memory`` mode jobs, temporary views are registered for downstream steps.
+  - If using `memory` mode jobs, temporary views are registered for downstream steps.
 - Logs:
   - A completion line indicating job success; warnings/errors surfaced from checks/contracts if configured.
 - Data quality (if enabled):
@@ -62,7 +66,7 @@ config = "tests/integration/runtime/fabricks/conf.uc.fabricks.yml"  # Main runti
 
 Define project-level options, step defaults, and step path mappings in `fabricks/conf.fabricks.yml`:
 
-```yaml
+````yaml
 name: MyFabricksProject
 options:
   secret_scope: my_secret_scope
@@ -140,21 +144,23 @@ Schedules group jobs and define step order. Place schedules in your runtime (com
 
 A minimal runtime can look like:
 
-```
+````
+
 fabricks/
-  conf.fabricks.yml
-  schedules/
-    schedule.yml
+conf.fabricks.yml
+schedules/
+schedule.yml
 bronze/
-  _config.example.yml
+\_config.example.yml
 silver/
-  _config.example.yml
+\_config.example.yml
 gold/
-  gold/
-    _config.example.yml
-    hello_world.sql
+gold/
+\_config.example.yml
+hello_world.sql
 semantic/
-  _config.example.yml
+\_config.example.yml
+
 ```
 
 - bronze/silver/gold/semantic: step folders with YAML configs and SQL
@@ -172,21 +178,23 @@ What this is
 
 Directory overview
 ```
+
 examples/runtime/
-  fabricks/
-    conf.fabricks.yml
-    schedules/
-      schedule.yml
-  bronze/
-    _config.example.yml
-  silver/
-    _config.example.yml
-  gold/
-    gold/
-      _config.example.yml
-      hello_world.sql
-  semantic/
-    _config.example.yml
+fabricks/
+conf.fabricks.yml
+schedules/
+schedule.yml
+bronze/
+\_config.example.yml
+silver/
+\_config.example.yml
+gold/
+gold/
+\_config.example.yml
+hello_world.sql
+semantic/
+\_config.example.yml
+
 ```Key\nfiles and purpose
 - `fabricks/conf.fabricks.yml`: project-level configuration (secret scope, timeouts, workers, storage paths, schedules path)
 - `fabricks/schedules/schedule.yml`: minimal schedule to run the gold step
@@ -206,3 +214,4 @@ How to use this sample
 - Table properties and physical layout: [Table Options](../reference/table-options.md)
 - Custom logic integration: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
 
+```
