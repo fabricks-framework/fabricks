@@ -22,7 +22,8 @@ def deploy_views():
 
 
 def create_or_replace_jobs_view():
-    dmls = []
+    ctes = []
+    selects = []
 
     for step in Steps:
         table = f"{step}_jobs"
@@ -33,7 +34,10 @@ def create_or_replace_jobs_view():
             except Exception:
                 change_data_capture = "'nocdc' as change_data_capture"
 
-            dml = f"""
+            SPARK.sql(f"select 1 from fabricks.{table} limit 1")
+
+            cte = f"""
+              {step} as (
                 select 
                   j.step, 
                   s.expand,
@@ -63,14 +67,20 @@ def create_or_replace_jobs_view():
                 from
                   fabricks.{table} j
                   left join fabricks.steps s on s.step = j.step
+              )
             """
-            SPARK.sql(dml)  # Check if the table exists
-            dmls.append(dml)
+            ctes.append(cte)
+            selects.append(f"select * from {step}")
 
         except Exception:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{table}", extra={"label": "fabricks"})
 
-    sql = f"""create or replace view fabricks.jobs with schema evolution as {" union all ".join(dmls)}"""
+    sql = f"""
+    create or replace view fabricks.jobs with schema evolution as
+    with
+      {", ".join(ctes)}
+    {" union all ".join(selects)}
+    """
     sql = fix_sql(sql)
 
     DEFAULT_LOGGER.debug("create or replace fabricks.jobs", extra={"sql": sql})
@@ -78,26 +88,36 @@ def create_or_replace_jobs_view():
 
 
 def create_or_replace_tables_view():
-    dmls = []
+    ctes = []
+    selects = []
 
     for step in Steps:
         table = f"{step}_tables"
         try:
-            dml = f"""
+            SPARK.sql(f"select 1 from fabricks.{table} limit 1")
+
+            cte = f"""
+                {step} as (
                 select 
                   '{step}' as step, 
                   job_id, 
                   table 
                 from
                   fabricks.{table}
+                )
                 """
-            SPARK.sql(dml)  # Check if the table exists
-            dmls.append(dml)
+            ctes.append(cte)
+            selects.append(f"select * from {step}")
 
         except Exception:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_tables", extra={"label": "fabricks"})
 
-    sql = f"""create or replace view fabricks.tables with schema evolution as {" union all ".join(dmls)}"""
+    sql = f"""
+    create or replace view fabricks.tables with schema evolution as
+    with
+      {", ".join(ctes)}
+    {" union all ".join(selects)}
+    """
     sql = fix_sql(sql)
 
     DEFAULT_LOGGER.debug("create or replace fabricks.tables", extra={"sql": sql})
@@ -105,26 +125,36 @@ def create_or_replace_tables_view():
 
 
 def create_or_replace_views_view():
-    dmls = []
+    ctes = []
+    selects = []
 
     for step in Steps:
         table = f"{step}_views"
         try:
-            dml = f"""
+            SPARK.sql(f"select 1 from fabricks.{table} limit 1")
+
+            cte = f"""
+                {step} as (
                 select 
                   '{step}' as step, 
                   job_id, 
                   view
                 from 
                   fabricks.{table}
+                )
                 """
-            SPARK.sql(dml)  # Check if the table exists
-            dmls.append(dml)
+            ctes.append(cte)
+            selects.append(f"select * from {step}")
 
         except Exception:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_views", extra={"label": "fabricks"})
 
-    sql = f"""create or replace view fabricks.views with schema evolution as {" union all ".join(dmls)}"""
+    sql = f"""
+    create or replace view fabricks.views with schema evolution as
+    with
+      {", ".join(ctes)}
+    {" union all ".join(selects)}
+    """
     sql = fix_sql(sql)
 
     DEFAULT_LOGGER.debug("create or replace fabricks.views", extra={"sql": sql})
@@ -132,12 +162,16 @@ def create_or_replace_views_view():
 
 
 def create_or_replace_dependencies_view():
-    dmls = []
+    ctes = []
+    selects = []
 
     for step in Steps:
-        f"{step}_dependencies"
+        table = f"{step}_dependencies"
         try:
-            dml = f"""
+            SPARK.sql(f"select 1 from fabricks.{table} limit 1")
+
+            cte = f"""
+              {step} as (
               select
                 '{step}' as step,
                 dependency_id,
@@ -146,15 +180,21 @@ def create_or_replace_dependencies_view():
                 parent,
                 origin
               from
-                fabricks.{step}_dependencies d
+                fabricks.{table} d
+              )
               """
-            SPARK.sql(dml)  # Check if the table exists
-            dmls.append(dml)
+            ctes.append(cte)
+            selects.append(f"select * from {step}")
 
         except Exception:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_dependencies", extra={"label": "fabricks"})
 
-    sql = f"""create or replace view fabricks.dependencies with schema evolution  as {" union all ".join(dmls)}"""
+    sql = f"""
+    create or replace view fabricks.dependencies with schema evolution as
+    with
+      {", ".join(ctes)}
+    {" union all ".join(selects)}
+    """
     sql = fix_sql(sql)
 
     DEFAULT_LOGGER.debug("create or replace fabricks.dependencies", extra={"sql": sql})
