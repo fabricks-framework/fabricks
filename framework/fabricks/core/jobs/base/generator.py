@@ -207,7 +207,7 @@ class Generator(Configurator):
         if columns:
             return columns
 
-        columns = [c for c in df.columns if c.startswith("__partition_")]
+        columns = [c for c in df.columns if c.startswith("__partition")]
         if columns:
             DEFAULT_LOGGER.debug(
                 f"found {len(columns)} partitioning column(s) ({', '.join(columns)})",
@@ -249,7 +249,7 @@ class Generator(Configurator):
             _add_if_allowed("__hash")
 
         for column in df.columns:
-            if column.startswith("__cluster_"):
+            if column.startswith("__cluster"):
                 _add_if_allowed(column)
 
         if columns:
