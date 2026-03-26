@@ -3,46 +3,49 @@
 Gold steps produce consumption-ready models, typically implemented in SQL. Gold focuses on dimensional models, facts and marts, and prepares data for analytics and reporting.
 
 What Gold does
+
 - Runs curated SQL transformations or notebooks to produce business-ready tables and views.
 - Supports full-refresh (`complete`), append, and merge/update semantics; can also invoke notebooks for complex workflows.
 - Implements CDC logic for downstream consumers when required (SCD1/SCD2 patterns).
 
 Modes
 
-| Mode       | Behavior |
-|------------|----------|
-| `memory`   | In-session view only; no persisted table. Useful for testing or transient outputs. |
-| `append`   | Append-only writes to the target table. |
+| Mode       | Behavior                                                                             |
+| ---------- | ------------------------------------------------------------------------------------ |
+| `memory`   | In-session view only; no persisted table. Useful for testing or transient outputs.   |
+| `append`   | Append-only writes to the target table.                                              |
 | `complete` | Full refresh/overwrite of the target table. Use when you need a consistent snapshot. |
-| `update`   | Merge/upsert semantics for idempotent updates and CDC. |
-| `invoke`   | Execute a notebook as the job body (configured via `invoker_options`). |
+| `update`   | Merge/upsert semantics for idempotent updates and CDC.                               |
+| `invoke`   | Execute a notebook as the job body (configured via `invoker_options`).               |
 
 CDC and inputs
+
 - Gold jobs often receive CDC-style inputs. Required CDC fields include `__key`, `__timestamp`, and `__operation` for change-point driven inputs.
 - CDC strategies supported: `nocdc`, `scd1`, `scd2`. See the CDC reference for full details: [Change Data Capture (CDC)](../reference/cdc.md)
 
 Common options (summary)
 
-| Option | Purpose |
-|--------|---------|
-| `type` | `default` vs `manual`. `manual` disables Fabricks auto-DDL/DML. |
-| `mode` | One of: `memory`, `append`, `complete`, `update`, `invoke`. |
-| `change_data_capture` | CDC strategy: `nocdc` \| `scd1` \| `scd2`. |
-| `update_where` | Predicate to limit rows affected during merge/upsert. |
-| `parents` | Upstream dependencies for scheduling and recomputation. |
-| `deduplicate` | Drop duplicate keys in the result before writing. |
-| `persist_last_timestamp` | Persist the last processed timestamp for incremental loads. |
-| `correct_valid_from` | Adjust SCD2 start timestamps for sentinel handling. |
-| `table` | Target table override (useful for semantic/table-copy scenarios). |
-| `table_options` | Delta table options and metadata (identity, clustering, properties, comments). |
-| `spark_options` | Per-job Spark SQL/session options. |
-| `udfs` | Path/registry of UDFs to load before executing the job. |
-| `check_options` | Configure DQ checks (`pre_run`, `post_run`, `min_rows`, `max_rows`, etc.). |
-| `notebook` / `invoker_options` | Configure notebook invocation for `mode: invoke`. |
-| `requirements` | If true, install/resolve additional dependencies for this job. |
-| `timeout` | Per-job timeout seconds (overrides step defaults). |
+| Option                         | Purpose                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| `type`                         | `default` vs `manual`. `manual` disables Fabricks auto-DDL/DML.                |
+| `mode`                         | One of: `memory`, `append`, `complete`, `update`, `invoke`.                    |
+| `change_data_capture`          | CDC strategy: `nocdc` \| `scd1` \| `scd2`.                                     |
+| `update_where`                 | Predicate to limit rows affected during merge/upsert.                          |
+| `parents`                      | Upstream dependencies for scheduling and recomputation.                        |
+| `deduplicate`                  | Drop duplicate keys in the result before writing.                              |
+| `persist_last_timestamp`       | Persist the last processed timestamp for incremental loads.                    |
+| `correct_valid_from`           | Adjust SCD2 start timestamps for sentinel handling.                            |
+| `table`                        | Target table override (useful for semantic/table-copy scenarios).              |
+| `table_options`                | Delta table options and metadata (identity, clustering, properties, comments). |
+| `spark_options`                | Per-job Spark SQL/session options.                                             |
+| `udfs`                         | Path/registry of UDFs to load before executing the job.                        |
+| `check_options`                | Configure DQ checks (`pre_run`, `post_run`, `min_rows`, `max_rows`, etc.).     |
+| `notebook` / `invoker_options` | Configure notebook invocation for `mode: invoke`.                              |
+| `requirements`                 | If true, install/resolve additional dependencies for this job.                 |
+| `timeout`                      | Per-job timeout seconds (overrides step defaults).                             |
 
 Operational guidance
+
 - Use `type: manual` when you need explicit control over table DDL or persistence.
 - When using SCD patterns, ensure your inputs include the expected `__` CDC columns.
 - Use `update_where` to scope merges and avoid unintended updates.
@@ -51,6 +54,7 @@ Operational guidance
 **Examples**
 
 Append example
+
 ```yaml
 - job:
     step: gold
@@ -61,6 +65,7 @@ Append example
 ```
 
 Complete/overwrite example
+
 ```yaml
 - job:
     step: gold
@@ -74,6 +79,7 @@ Complete/overwrite example
 ```
 
 Deduplicate and ordering examples
+
 ```yaml
 - job:
     step: gold
@@ -85,6 +91,7 @@ Deduplicate and ordering examples
 ```
 
 SQL examples (dedupe/order)
+
 ```sql
 -- deduplicate.sql
 select 1 as __key, 2 as dummy
@@ -102,6 +109,7 @@ select 1 as __key, 2 as dummy, 2 as __order_duplicate_by_desc
 SCD2 header-line change points (example)
 
 This example shows how to generate SCD2 change points when combining header and line SCD2 sources.
+
 - Emit upserts at each validity start across header and lines.
 - Emit a delete for the header-only row as soon as a corresponding line exists (to close the sentinel header row).
 - Emit deletes at validity end for deleted intervals.
@@ -173,11 +181,13 @@ left join silver.order_line_scd2 l
 ```
 
 Notes
-- The null-sentinel header row (order_line_id = null -> coerced to -1 in __key) is closed via a `delete` when any line appears at the same boundary.
+
+- The null-sentinel header row (order_line_id = null -> coerced to -1 in \_\_key) is closed via a `delete` when any line appears at the same boundary.
 - Additional SCD2 inputs (e.g., item_price_scd2) can be unioned into the dates set to force change points whenever related dimensions change.
 - The output stream conforms to Gold SCD2 input fields: `__key`, `__timestamp`, `__operation`.
 
 Related
+
 - Next steps: [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
 - Extensibility: [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)

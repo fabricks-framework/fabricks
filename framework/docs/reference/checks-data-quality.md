@@ -6,7 +6,7 @@ Fabricks provides built-in mechanisms to validate data before and/or after a job
 
 Enable checks per job using `check_options`:
 
-```yaml
+````yaml
 - job:
     step: gold
     topic: check
@@ -71,12 +71,12 @@ select "fail" as __action, "Please don't fail on me :(" as __message;
 
 -- warning.post_run.sql
 select "warning" as __action, "I want you to warn me !" as __message;
-```
+````
 
 ## Behavior and rollback
 
 - For physical tables (`append`/`complete`/`update` modes), a failed check triggers an automatic rollback to the previous successful version.
-- For ``memory`` mode (views), results are not persisted and failures are logged only.
+- For `memory` mode (views), results are not persisted and failures are logged only.
 
 ## CI integration
 
@@ -92,6 +92,7 @@ Checks produce two observable signals that are useful in CI and orchestration sy
   - When `__action = 'warning'`, the job continues and exits with code 0. Ensure your CI surfaces logs so warnings are visible in pull requests.
 
 Example contract outputs (see â€œSQL contractsâ€):
+
 ```sql
 -- Fails the job and rolls back (physical tables)
 select 'fail'    as __action, 'Row count below threshold' as __message;
@@ -101,6 +102,7 @@ select 'warning' as __action, 'Null rate above target'    as __message;
 ```
 
 Tips:
+
 - Prefer `post_run` for checks that must consider the final persisted state.
 - Use built-in bounds for simple invariants; reserve contracts for multi-table logic and nuanced policies.
 - If you need to gate on warnings, implement a small CI step that scans logs for known warning markers and decides policy for your repository.
@@ -117,4 +119,3 @@ Tips:
 - Steps: [Bronze](../steps/bronze.md) | [Silver](../steps/silver.md) | [Gold](../steps/gold.md)
 - Table properties and physical layout: [Table Options](./table-options.md)
 - Custom logic integration: [Extenders, UDFs & Parsers](./extenders-udfs-parsers.md)
-

@@ -893,3 +893,12 @@ class Table(DbObject):
                 cluster by ({cols})
                 """
             )
+
+    def update_clustering(self, columns: str | list[str] | None = None, auto: bool | None = False):
+        assert self.registered, f"{self} not registered"
+
+        if auto:
+            self.enable_liquid_clustering(auto=True)
+
+        elif columns is not None:
+            self.enable_liquid_clustering(columns=columns)

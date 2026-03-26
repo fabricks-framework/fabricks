@@ -107,7 +107,7 @@ A more advanced config can be found in the [tests](tests/integration/runtime/fab
 
 The initial stage for raw data ingestion.
 
-You usually either want to gather data from existing parquet/json files, 
+You usually either want to gather data from existing parquet/json files,
 or directly create a delta file using a pre-run, which we'll show below:
 
 ```yaml
@@ -131,7 +131,7 @@ or directly create a delta file using a pre-run, which we'll show below:
       mode: register
       uri: abfss://fabricks@$datahub/raw/http_api # It's a delta file located here
       keys: [transaction_id]
-    
+
     invoker_options: # we could directly write to this delta file using an invoker
       pre_run:
         - notebook: bronze/invokers/http_call
@@ -201,33 +201,31 @@ so you could create a transf step, a gold step, a power bi step, all of which ar
 There are a number of check_options you can use:
 
 ```yaml
-  
-    check_options: 
-      min_rows: 10 # Table must have at least 10 rows
-      max_rows: 10000 # Table must not have more than 10000 rows
-      count_must_equal: fabricks.dummy # Must have exactly the same number of rows as another table, makes sense if you just have joins to add columns and want to avoid duplicates 
-      post_run: true # A custom script to be run after the load
-      pre_run: true # A custom script to be run before the load
+check_options:
+  min_rows: 10 # Table must have at least 10 rows
+  max_rows: 10000 # Table must not have more than 10000 rows
+  count_must_equal: fabricks.dummy # Must have exactly the same number of rows as another table, makes sense if you just have joins to add columns and want to avoid duplicates
+  post_run: true # A custom script to be run after the load
+  pre_run: true # A custom script to be run before the load
 ```
 
 For Pre and Post Run, you have to provide a `table_name.pre_run.sql` / `table_name.post_run.sql` script which returns at least these two columns:
 
 - `__message`, an error message that will show up in the logs
-- `__action`, which can be either `'fail'` or `'warning'` 
+- `__action`, which can be either `'fail'` or `'warning'`
 
 All other columns are ignored. If a table is of type `memory` (meaning it's a view only), then
 the logs will contain the error, but nothing else happens. Otherwise the data is restored to the previous version
 on failure.
 
-
 ### SCD2 in gold Steps
 
-Fabricks provides an easy way to create an scd2 table containing `__valid_from` and `__valid_to` out of 
+Fabricks provides an easy way to create an scd2 table containing `__valid_from` and `__valid_to` out of
 a base select that requires three important fields:
 
 - `__key`: A Unique Key, can be of any data type
 - `__timestamp`: The date where your record was either changed or deleted
-- `__operation`: Must be either `'upsert'` or `'delete'` 
+- `__operation`: Must be either `'upsert'` or `'delete'`
 
 A common pattern is to aggregate a (silver) scd2 table like this:
 
@@ -236,22 +234,22 @@ with
     -- ask yourself, what you want to aggregate on and which columns should now be part of your new key
     newkey as (select only_offer_id as __key, * except(__key) from offer_and_lines_table d),
     deletes as (
-        select only_offer_id as __key, max(__valid_to) + interval 1 second as deleted_date -- we simply delete on last deleted thing. that's a simplification that usually is good enough. 
+        select only_offer_id as __key, max(__valid_to) + interval 1 second as deleted_date -- we simply delete on last deleted thing. that's a simplification that usually is good enough.
         -- alternatively, you could delete if you cannot join on a new __valid_from (meaning there is no record afterwards anymore)
         from offer_and_lines_table
         group by only_offer_id
         having max(`__valid_to`) < '9999-12-31'
     ),
     dates as (
-        
+
         select __key, __valid_from as __timestamp, 'upsert' as __operation -- each source valid from is an update
         from newkey
         union
-        select __key, deleted_date as __timestamp, 'delete' as __operation 
+        select __key, deleted_date as __timestamp, 'delete' as __operation
         from deletes
     )
     select
-        d.__key,      
+        d.__key,
         d.__timestamp,
         d.__operation,
         sum(

@@ -19,22 +19,23 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 
 ## Option matrix (types | defaults | compatibility)
 
-| Option             | Type                   | Default | Applies to modes                  | Notes                                                                                  |
-|--------------------|------------------------|---------|-----------------------------------|----------------------------------------------------------------------------------------|
-| identity           | boolean                | false   | `append`, `complete`, `update`          | Creates a Delta identity column on table create.                                       |
-| liquid_clustering  | boolean                | false   | `append`, `complete`, `update`          | Requires Databricks runtime support.                                                   |
-| partition_by       | array[string]          | â€"       | `append`, `complete`, `update`          | Low-cardinality columns recommended.                                                   |
-| zorder_by          | array[string]          | â€"       | `append`, `complete`, `update`          | Improves data skipping on frequently filtered columns.                                 |
-| cluster_by         | array[string]          | â€"       | `append`, `complete`, `update`          | Logical clustering; materialization depends on runtime features.                        |
-| bloomfilter_by     | array[string]          | â€"       | `append`, `complete`, `update`          | Use selectively for point-lookups.                                                     |
-| constraints        | map[string,string]     | â€"       | `append`, `complete`, `update`          | E.g., `primary key(__key)`.                                                            |
-| properties         | map[string,string]     | â€"       | `append`, `complete`, `update`          | Arbitrary Delta table properties.                                                      |
-| comment            | string                 | â€"       | `append`, `complete`, `update`          | Table description.                                                                     |
-| calculated_columns | map[string,string]     | â€"       | `append`, `complete`, `update`          | Computed at write time.                                                                |
-| retention_days     | integer                | â€"       | `append`, `complete`, `update`          | VACUUM retention (days).                                                               |
-| powerbi            | boolean                | false   | `append`, `complete`, `update`          | Applies Power BIâ€"specific metadata where supported.                                    |
+| Option             | Type               | Default | Applies to modes               | Notes                                                            |
+| ------------------ | ------------------ | ------- | ------------------------------ | ---------------------------------------------------------------- |
+| identity           | boolean            | false   | `append`, `complete`, `update` | Creates a Delta identity column on table create.                 |
+| liquid_clustering  | boolean            | false   | `append`, `complete`, `update` | Requires Databricks runtime support.                             |
+| partition_by       | array[string]      | â€"     | `append`, `complete`, `update` | Low-cardinality columns recommended.                             |
+| zorder_by          | array[string]      | â€"     | `append`, `complete`, `update` | Improves data skipping on frequently filtered columns.           |
+| cluster_by         | array[string]      | â€"     | `append`, `complete`, `update` | Logical clustering; materialization depends on runtime features. |
+| bloomfilter_by     | array[string]      | â€"     | `append`, `complete`, `update` | Use selectively for point-lookups.                               |
+| constraints        | map[string,string] | â€"     | `append`, `complete`, `update` | E.g., `primary key(__key)`.                                      |
+| properties         | map[string,string] | â€"     | `append`, `complete`, `update` | Arbitrary Delta table properties.                                |
+| comment            | string             | â€"     | `append`, `complete`, `update` | Table description.                                               |
+| calculated_columns | map[string,string] | â€"     | `append`, `complete`, `update` | Computed at write time.                                          |
+| retention_days     | integer            | â€"     | `append`, `complete`, `update` | VACUUM retention (days).                                         |
+| powerbi            | boolean            | false   | `append`, `complete`, `update` | Applies Power BIâ€"specific metadata where supported.            |
 
 Notes:
+
 - table_options are ignored in `memory` mode (view-only).
 - Defaults may also be set at step level in your runtime and overridden per job.
 
@@ -84,7 +85,7 @@ Notes:
 
 ## Notes and guidance
 
-- Scope: `table_options` apply to physical table modes (``append``, ``complete``, ``update``). They do not apply to ``memory`` mode (view-only).
+- Scope: `table_options` apply to physical table modes (`append`, `complete`, `update`). They do not apply to `memory` mode (view-only).
 - Identity: When `identity: true` is enabled, the identity column is defined at create time - See [Identity](https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using).
 - Layout vs performance: Start with `partition_by` on low-cardinality columns; add `zorder_by` for frequently filtered high-cardinality columns. Use Bloom filters selectively for point-lookups.
 - Defaults: You can specify step-level defaults in your runtime config and override them per job.
@@ -95,4 +96,3 @@ Notes:
 - Data quality checks: [Checks & Data Quality](./checks-data-quality.md)
 - Custom logic integration: [Extenders, UDFs & Parsers](./extenders-udfs-parsers.md)
 - Runtime configuration: [Runtime](../helpers/runtime.md)
-

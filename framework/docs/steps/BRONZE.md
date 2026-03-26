@@ -10,11 +10,11 @@ What Bronze does
 
 Modes
 
-| Mode       | Behavior                                                                 |
-|------------|--------------------------------------------------------------------------|
-| `memory`   | Register a temporary view only; no Delta table is written. Useful for quick testing or transient inputs.
-| `append`   | Append records to the target Delta table (no merge/upsert). Typical for landing raw files.
-| `register` | Register an existing Delta table or view available at `uri`. Parser is not used in this mode.
+| Mode       | Behavior                                                                                                 |
+| ---------- | -------------------------------------------------------------------------------------------------------- |
+| `memory`   | Register a temporary view only; no Delta table is written. Useful for quick testing or transient inputs. |
+| `append`   | Append records to the target Delta table (no merge/upsert). Typical for landing raw files.               |
+| `register` | Register an existing Delta table or view available at `uri`. Parser is not used in this mode.            |
 
 When to use each mode
 
@@ -23,6 +23,7 @@ When to use each mode
 - `register`: Use when the source is already materialized as a table/view and you only want to reference it.
 
 Minimal example
+
 ```yaml
 - job:
     step: bronze
@@ -38,6 +39,7 @@ Minimal example
 **Examples**
 
 Memory (temporary view only)
+
 ```yaml
 - job:
     step: bronze
@@ -51,6 +53,7 @@ Memory (temporary view only)
 ```
 
 Register an existing table/view
+
 ```yaml
 - job:
     step: bronze
@@ -65,22 +68,22 @@ Common options (summary)
 
 This section lists the most common options for a Bronze job. Options can be defined at the job level (recommended) or inherited from step-level defaults.
 
-| Option             | Type                      | Default | Required | Purpose / notes
-|--------------------|---------------------------|---------|----------|---------------------------------------------------------------------------------
-| `type`             | enum: `default`, `manual` | `default` | no    | `manual` disables auto DDL/DML; you manage persistence yourself.
-| `mode`             | enum: `memory`,`append`,`register` | - | yes | Controls ingestion behavior.
-| `uri`              | string (path or table)    | -       | cond.     | Source location or existing table/view (required for `append`/`register`).
-| `parser`           | string                    | -       | cond.     | Input parser (`parquet`, `csv`, `json`) or custom parser. Not used in `register`.
-| `source`           | string                    | -       | no        | Logical source label for lineage/logging.
-| `keys`             | array[string]             | -       | no        | Business keys used for dedup and downstream CDC; recommended.
-| `parents`          | array[string]             | -       | no        | Upstream job dependencies to enforce ordering.
-| `filter_where`     | string (SQL predicate)    | -       | no        | Row-level filter applied during ingestion.
-| `calculated_columns` | map[string,string      | -       | no        | New columns defined as SQL expressions evaluated at load time.
-| `encrypted_columns`| array[string]             | -       | no        | Columns to encrypt during write.
-| `extender`         | string                    | -       | no        | Python extender to transform the DataFrame (see Extenders).
-| `extender_options` | map[string,any]           | {}      | no        | Arguments passed to the extender.
-| `operation`        | enum: `upsert`,`reload`,`delete` | - | no     | Changelog semantics for certain feeds.
-| `timeout`          | integer (seconds)         | -       | no        | Per-job timeout; overrides step default.
+| Option               | Type                               | Default   | Required | Purpose / notes                                                                   |
+| -------------------- | ---------------------------------- | --------- | -------- | --------------------------------------------------------------------------------- |
+| `type`               | enum: `default`, `manual`          | `default` | no       | `manual` disables auto DDL/DML; you manage persistence yourself.                  |
+| `mode`               | enum: `memory`,`append`,`register` | -         | yes      | Controls ingestion behavior.                                                      |
+| `uri`                | string (path or table)             | -         | cond.    | Source location or existing table/view (required for `append`/`register`).        |
+| `parser`             | string                             | -         | cond.    | Input parser (`parquet`, `csv`, `json`) or custom parser. Not used in `register`. |
+| `source`             | string                             | -         | no       | Logical source label for lineage/logging.                                         |
+| `keys`               | array[string]                      | -         | no       | Business keys used for dedup and downstream CDC; recommended.                     |
+| `parents`            | array[string]                      | -         | no       | Upstream job dependencies to enforce ordering.                                    |
+| `filter_where`       | string (SQL predicate)             | -         | no       | Row-level filter applied during ingestion.                                        |
+| `calculated_columns` | map[string,string                  | -         | no       | New columns defined as SQL expressions evaluated at load time.                    |
+| `encrypted_columns`  | array[string]                      | -         | no       | Columns to encrypt during write.                                                  |
+| `extender`           | string                             | -         | no       | Python extender to transform the DataFrame (see Extenders).                       |
+| `extender_options`   | map[string,any]                    | {}        | no       | Arguments passed to the extender.                                                 |
+| `operation`          | enum: `upsert`,`reload`,`delete`   | -         | no       | Changelog semantics for certain feeds.                                            |
+| `timeout`            | integer (seconds)                  | -         | no       | Per-job timeout; overrides step default.                                          |
 
 Notes
 
@@ -107,4 +110,3 @@ Related
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
 - Extensibility: [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
 - Sample runtime: [Sample runtime](../helpers/runtime.md)
-

@@ -1,22 +1,25 @@
 ﻿# Step Helper (Databricks Notebook)
 
-This helper describes a widget-driven approach in a Databricks notebook to manage a Fabricks step (bronze, silver, gold). 
+This helper describes a widget-driven approach in a Databricks notebook to manage a Fabricks step (bronze, silver, gold).
 
 Core imports used:
+
 ```python
 from fabricks.api import get_step
 ```
 
 ## Typical usage
 
-1) Resolve the step:
+1. Resolve the step:
+
 ```python
 from fabricks.api import get_step
 
 s = get_step("gold")  # or "bronze"/"silver"
 ```
 
-2) Run actions:
+2. Run actions:
+
 ```python
 # Examples:
 s.update_jobs()
@@ -159,4 +162,3 @@ dbutils.notebook.exit("exit (0)")  # type: ignore
 - Checks & Data Quality: [Checks and Data Quality](../reference/checks-data-quality.md)
 - Table options and storage layout: [Table Options](../reference/table-options.md)
 - Extenders, UDFs & Views: [Extenders, UDFs & Views](../reference/extenders-udfs-parsers.md)
-

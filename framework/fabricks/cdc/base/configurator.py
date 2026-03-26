@@ -202,6 +202,12 @@ class Configurator(ABC):
         leading = self.allowed_ouput_leading__columns
         trailing = self.allowed_output_trailing__columns
 
+        for c in columns:
+            if c.startswith("__cluster_"):
+                leading.append(c)  # need to be at the front to have statistics for clustering
+            elif c.startswith("__partition_"):
+                trailing.append(c)  # need to be at the end to avoid issues with generated columns
+
         __leading = [c for c in leading if c in columns]
         __trailing = [c for c in trailing if c in columns]
 

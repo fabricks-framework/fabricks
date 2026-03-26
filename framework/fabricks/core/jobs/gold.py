@@ -204,6 +204,7 @@ class Gold(BaseJob):
 
     def get_dependencies(self) -> Sequence[JobDependency]:
         dependencies = []
+        parsed = []  # make sure parsed is always defined to avoid unbound error in wait_for check
 
         parents = self.options.parents or []
         parents = [] if len(parents) == 1 and parents[0].lower() in ["none", "null", "0"] else parents

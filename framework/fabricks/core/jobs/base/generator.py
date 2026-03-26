@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import List, Optional, Sequence, Union, cast
+from typing import List, Literal, Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
@@ -13,6 +13,42 @@ from fabricks.models import JobDependency
 
 
 class Generator(Configurator):
+    def _get_option_hierarchy(self, attribute: str, into: Literal["table", "spark"] = "table", default=None):
+        """
+        Get a table option value with fallback priority: job options → step options → default.
+
+        Args:
+            attribute: The attribute name to retrieve from the options.
+            into: The type of options to look into ("table" or "spark").
+            default: Default value if attribute is not found in either location
+
+        Returns:
+            The first non-None value found, or default if none found
+        """
+        if into == "table":
+            job_value = getattr(self.table_options, attribute, None) if self.table_options else None
+            if job_value is not None:
+                return job_value
+
+            step_value = (
+                getattr(self.step_conf.table_options, attribute, None) if self.step_conf.table_options else None
+            )
+            if step_value is not None:
+                return step_value
+
+        elif into == "spark":
+            job_value = getattr(self.spark_options, attribute, None) if self.spark_options else None
+            if job_value is not None:
+                return job_value
+
+            step_value = (
+                getattr(self.step_conf.spark_options, attribute, None) if self.step_conf.spark_options else None
+            )
+            if step_value is not None:
+                return step_value
+
+        return default
+
     def update_dependencies(self):
         DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
 
@@ -166,8 +202,25 @@ class Generator(Configurator):
         """
         ...
 
+    def _get_partitioning_columns(self, df: DataFrame) -> Optional[List[str]]:
+        columns = self.table_options.partition_by if self.table_options and self.table_options.partition_by else []
+        if columns:
+            return columns
+
+        columns = [c for c in df.columns if c.startswith("__partition_")]
+        if columns:
+            DEFAULT_LOGGER.debug(
+                f"found {len(columns)} partitioning column(s) ({', '.join(columns)})",
+                extra={"label": self},
+            )
+            return columns
+
+        else:
+            DEFAULT_LOGGER.debug("could not determine any partitioning column", extra={"label": self})
+            return None
+
     def _get_clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
-        columns = self.table_options.cluster_by or [] if self.table_options else []
+        columns = self.table_options.cluster_by if self.table_options and self.table_options.cluster_by else []
         if columns:
             return columns
 
@@ -195,6 +248,10 @@ class Generator(Configurator):
         elif "__hash" in df_types:
             _add_if_allowed("__hash")
 
+        for column in df.columns:
+            if column.startswith("__cluster_"):
+                _add_if_allowed(column)
+
         if columns:
             DEFAULT_LOGGER.debug(
                 f"found {len(columns)} clustering column(s) ({', '.join(columns)})",
@@ -211,31 +268,15 @@ class Generator(Configurator):
             df = self.base_transform(df)
             cdc_options = self.get_cdc_context(df)
 
+            liquid_clustering = False
             cluster_by = []
+
+            partitioning = False
             partition_by = []
 
-            powerbi = False
-            liquid_clustering = False
-            partitioning = False
+            powerbi = self._get_option_hierarchy("powerbi", into="table", default=False)
+            masks = self._get_option_hierarchy("masks", into="table", default=None)
             identity = False
-
-            # first take from job options, then from step options
-            job_powerbi = self.table_options.powerbi if self.table_options else None
-            step_powerbi = self.step_conf.table_options.powerbi if self.step_conf.table_options else None
-            if job_powerbi is not None:
-                powerbi = job_powerbi
-            elif step_powerbi is not None:
-                powerbi = step_powerbi
-
-            # first take from job options, then from step options
-            job_masks = self.table_options.masks if self.table_options else None
-            step_masks = self.step_conf.table_options.masks if self.step_conf.table_options else None
-            if job_masks is not None:
-                masks = job_masks
-            elif step_masks is not None:
-                masks = step_masks
-            else:
-                masks = None
 
             maximum_compatibility = self.table_options.maximum_compatibility if self.table_options else False
 
@@ -270,44 +311,33 @@ class Generator(Configurator):
             else:
                 identity = self.table_options.identity if self.table_options else False
 
-            # first take from job options, then from step options
-            liquid_clustering_job = self.table_options.liquid_clustering if self.table_options else None
-            liquid_clustering_step = (
-                self.step_conf.table_options.liquid_clustering if self.step_conf.table_options else None
-            )
-            if liquid_clustering_job is not None:
-                liquid_clustering = liquid_clustering_job
-            elif liquid_clustering_step:
-                liquid_clustering = liquid_clustering_step
+            # first, check for partitioning columns
+            partition_by = self._get_partitioning_columns(df)
+            if partition_by:
+                cluster_by = None
+                partitioning = True
 
-            if liquid_clustering is not None:
+            # second, check for clustering columns if partitioning is not enabled
+            if not partitioning:
+                liquid_clustering = self._get_option_hierarchy("liquid_clustering", into="table", default=None)
+
                 if liquid_clustering == "auto":
                     liquid_clustering = True
                     cluster_by = []
 
-                else:
+                elif liquid_clustering is not False:
                     cluster_by = self._get_clustering_columns(df)
 
                     if cluster_by:
                         liquid_clustering = True
-
                     else:
                         liquid_clustering = None
                         cluster_by = None
 
-            if liquid_clustering is None:
-                cluster_by = None
-                partition_by = self.table_options.partition_by or [] if self.table_options else []
-                if partition_by:
-                    partitioning = True
-
-            properties = None
             if not powerbi:
-                # first take from job options, then from step options
-                if self.table_options and self.table_options.properties:
-                    properties = self.table_options.properties
-                elif self.step_conf.table_options and self.step_conf.table_options.properties:
-                    properties = self.step_conf.table_options.properties
+                properties = self._get_option_hierarchy("properties", into="table", default=None)
+            else:
+                properties = None
 
             if properties is None:
                 properties = default_properties
@@ -479,29 +509,6 @@ class Generator(Configurator):
         if d is None:
             return None
         return len(d) > 0
-
-    def enable_liquid_clustering(self):
-        df = self.table.dataframe
-        enable = False
-
-        # first take from job options, then from step options
-        enable_job = self.table_options.liquid_clustering if self.table_options else None
-        enable_step = self.step_conf.table_options.liquid_clustering if self.step_conf.table_options else None
-        if enable_job is not None:
-            enable = enable_job
-        elif enable_step:
-            enable = enable_step
-
-        if enable:
-            cluster_by = self._get_clustering_columns(df)
-
-            if cluster_by and len(cluster_by) > 0:
-                self.table.enable_liquid_clustering(cluster_by, auto=False)
-            else:
-                self.table.enable_liquid_clustering(auto=True)
-
-        else:
-            DEFAULT_LOGGER.debug("liquid clustering disabled", extra={"label": self})
 
     def _register_external_table(self, file_format: str, uri: str):
         try:
