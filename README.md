@@ -61,7 +61,8 @@ dependencies = [
 ]
 ```
 
-> **Note:** The `sqlglot[c]` extra (C-based parser with Cython optimizations) cannot be used with Fabricks.
+> [!WARNING]
+> The `sqlglot[c]` extra (C-based parser with Cython optimizations) cannot be used with Fabricks.
 
 ## Related Projects 🔗
 - We use [odbc2deltalake](https://github.com/bmsuisse/odbc2deltalake) for extensive SQL Server data ingestion in a pre_run notebook. 🔌🏊‍♂️
