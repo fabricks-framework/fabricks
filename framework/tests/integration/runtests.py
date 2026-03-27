@@ -12,6 +12,7 @@ from databricks.sdk.runtime import dbutils
 from fabricks.context import IS_TESTMODE, PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER, send_message_to_channel
 from fabricks.utils.helpers import run_notebook
+from fabricks.utils.pip import pip_list
 
 # COMMAND ----------
 
@@ -52,6 +53,11 @@ fix_notebooks = dbutils.widgets.get("fix_notebooks").lower() == "true"
 tests = [t for t in dbutils.widgets.get("tests").split(",")]
 if "*" in tests:
     tests = Tests
+
+# COMMAND ----------
+
+packages = pip_list(format="pyproject")
+print(packages)
 
 # COMMAND ----------
 
