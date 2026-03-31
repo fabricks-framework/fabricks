@@ -24,3 +24,16 @@
     options:
       mode: complete
       wait_for: [transf.fact_memory, silver.monarch_scd1]
+- job:
+    step: transf
+    topic: fact
+    item: dummy
+    options:
+      mode: complete
+- job:
+    step: transf
+    topic: fact
+    item: sample
+    options:
+      mode: complete
+      notebook: true
