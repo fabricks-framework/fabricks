@@ -32,7 +32,6 @@ dependencies = [
     "tenacity>=9.1.2",
     "tomli>=2.2.1;python_version<\"3.11\"",
     "tqdm>=4.67.1",
-    "ty>=0.0.29",
     "xxhash>=3.6.0",
 ]
 requires-python = ">=3.11,<4"
@@ -81,10 +80,10 @@ dev = [
     "isort >=5.13.2,<6",
     "notebook >=6.4.12",
     "pycln >=2.4.0,<3",
-    "pyright >=1.1.261",
     "ruff >=0.4.3",
     "shandy-sqlfmt >=0.23.2",
     "yamlfix >=1.14.0",
+    "ty>=0.0.29",
 ]
 docs = [
     "mkdocs-material>=9.6.18",
