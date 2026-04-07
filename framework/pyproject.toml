@@ -12,7 +12,6 @@ dependencies = [
     "azure-identity >=1.10.0",
     "azure-storage-blob >=12.14.1",
     "azure-storage-queue >=12.10.0,<13",
-    "basedpyright>=1.38.3",
     "databricks-cli>=0.18.0",
     "databricks-connect >=11.0.0",
     "databricks-sdk >=0.20.0",
@@ -33,6 +32,7 @@ dependencies = [
     "tenacity>=9.1.2",
     "tomli>=2.2.1;python_version<\"3.11\"",
     "tqdm>=4.67.1",
+    "ty>=0.0.29",
     "xxhash>=3.6.0",
 ]
 requires-python = ">=3.11,<4"
@@ -41,19 +41,6 @@ requires-python = ">=3.11,<4"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.pyright]
-venv = ".venv"
-venvPath = "."
-pythonVersion = "3.11"
-typeCheckingMode = "basic"
-exclude = [
-    "**/node_modules", 
-    "**/__pycache__",
-    ".*",
-    ".venv",
-    "fabricks/api/notebooks",
-]
 
 [tool.ruff]
 line-length = 119
