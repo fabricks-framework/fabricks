@@ -85,9 +85,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -246,9 +244,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -261,9 +257,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -282,9 +276,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -297,9 +289,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -312,9 +302,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -370,9 +358,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -431,9 +417,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -446,9 +430,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -472,9 +454,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -518,9 +498,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]
@@ -702,9 +680,7 @@
                         {
                             "type": "object",
                             "additionalProperties": {
-                                "type": {
-                                    "type": "string"
-                                }
+                                "type": "string"
                             }
                         }
                     ]

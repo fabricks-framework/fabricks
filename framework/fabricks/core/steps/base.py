@@ -32,7 +32,7 @@ from fabricks.utils.read.read_yaml import read_yaml
 
 class BaseStep:
     def __init__(self, step: str):
-        self.name = cast(str, step)
+        self.name = step
 
         if self.name in Bronzes:
             self.expand = "bronze"
@@ -208,7 +208,7 @@ class BaseStep:
         for res in [res for res in results if res.get("dependencies")]:
             dependencies.extend(res.get("dependencies"))
 
-        df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)  # type: ignore
+        df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)
         return df, errors
 
     def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:
@@ -222,7 +222,7 @@ class BaseStep:
             schema = create_spark_schema(conf)
             jobs = self.get_jobs_iter(topic=topic)
 
-            df = SPARK.createDataFrame(jobs, schema=schema)  # type: ignore
+            df = SPARK.createDataFrame(jobs, schema=schema)
             df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
 
             # Collect once to avoid double scan

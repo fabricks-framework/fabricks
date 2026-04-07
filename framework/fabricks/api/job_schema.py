@@ -1,4 +1,4 @@
-from fabricks.core.job_schema import get_job_schema, print_job_schema
+from fabricks.models.job_schema import get_job_schema, print_job_schema
 
 job_schema = get_job_schema()
 job_schema_bronze = get_job_schema("bronze")

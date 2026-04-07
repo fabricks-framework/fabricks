@@ -486,7 +486,7 @@ class Table(DbObject):
                         (
                             self.deltatable.alias("dt")
                             .merge(update_df.alias("df"), "1 == 2")
-                            .withSchemaEvolution()  # type: ignore
+                            .withSchemaEvolution()
                             .whenMatchedUpdateAll()
                             .whenNotMatchedInsertAll()
                             .execute()

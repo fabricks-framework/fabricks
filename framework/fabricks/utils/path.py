@@ -135,6 +135,7 @@ class GitPath(BasePath):
 
     def walk(
         self,
+        depth: int | None = None,
         convert: bool | None = False,
         file_format: str | None = None,
     ) -> list:

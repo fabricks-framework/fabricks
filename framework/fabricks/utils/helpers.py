@@ -27,8 +27,8 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
 def md5(s: Any) -> str:
     from hashlib import md5
 
-    md5 = md5(str(s).encode())
-    return md5.hexdigest()
+    hash_obj = md5(str(s).encode())
+    return hash_obj.hexdigest()
 
 
 def add_hash(column: str, df: DataFrame, fields: Union[str, List[str]]):
@@ -74,7 +74,7 @@ def _run_in_parallel_legacy(
 ) -> List[Any]:
     from concurrent.futures import ThreadPoolExecutor
 
-    iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
+    iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         if progress_bar:
@@ -130,7 +130,7 @@ def run_in_parallel(
         )
 
     else:
-        iterables = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
+        iterables = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable
         results = []
 
         if run_as == "Queue":

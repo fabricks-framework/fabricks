@@ -5,7 +5,7 @@ from multiprocessing import Process
 from typing import Any, List
 
 from azure.core.exceptions import AzureError
-from databricks.sdk.runtime import dbutils, spark
+from databricks.sdk.runtime import dbutils
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from fabricks.context import PATH_NOTEBOOKS
@@ -79,7 +79,6 @@ class DagProcessor(BaseDags):
         with self.get_azure_queue() as queue, self.get_azure_table() as azure_table:
             while True:
                 scheduled = self.get_scheduled()
-                assert isinstance(scheduled, List)
                 if len(scheduled) == 0:
                     for _ in range(self.step.workers):
                         queue.send_sentinel()
@@ -119,16 +118,17 @@ class DagProcessor(BaseDags):
 
                     try:
                         if self.notebook:
-                            dbutils.notebook.run(  # type: ignore
-                                PATH_NOTEBOOKS.joinpath("run").get_notebook_path(),  # type: ignore
-                                self.step.timeouts.job,  # type: ignore
-                                {
+                            path: str = PATH_NOTEBOOKS.joinpath("run").get_notebook_path()
+                            dbutils.notebook.run(
+                                path=path,  # ty:ignore[unknown-argument]
+                                timeout_seconds=self.step.timeouts.job,  # ty:ignore[unknown-argument]
+                                arguments={
                                     "schedule_id": self.schedule_id,
                                     "schedule": self.schedule,  # needed to pass schedule variables to the job
                                     "step": str(self.step),
                                     "job_id": j.get("JobId"),
                                     "job": j.get("Job"),
-                                },  # type: ignore
+                                },  # ty:ignore[unknown-argument]
                             )
 
                         else:
@@ -154,20 +154,16 @@ class DagProcessor(BaseDags):
                     )
                     azure_table.delete(dependencies)
 
-    def get_scheduled(self, convert: bool = False):
+    def get_scheduled(self) -> list[dict]:
         with self.get_azure_table() as azure_table:
             scheduled = azure_table.query(
                 f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
             )
 
-            if convert:
-                return spark.createDataFrame(scheduled)
-            else:
-                return scheduled
+        return scheduled
 
     def _process(self):
         scheduled = self.get_scheduled()
-        assert isinstance(scheduled, List)
 
         if len(scheduled) > 0:
             sender = threading.Thread(
@@ -193,7 +189,6 @@ class DagProcessor(BaseDags):
 
     def process(self):
         scheduled = self.get_scheduled()
-        assert isinstance(scheduled, List)
 
         if len(scheduled) > 0:
             LOGGER.info("start", extra={"label": str(self.step)})

@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union, cast
+from typing import Optional, Sequence, Union
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
@@ -25,7 +25,7 @@ class Bronze(BaseJob):
         item: Optional[str] = None,
         job_id: Optional[str] = None,
         conf: Optional[Union[dict, Row]] = None,
-    ):  # type: ignore
+    ):
         super().__init__(
             "bronze",
             step=step,
@@ -157,7 +157,7 @@ class Bronze(BaseJob):
             parser = self.options.parser
             assert parser is not None, "parser not found"
 
-            self._parser = cast(str, parser)
+            self._parser = parser
 
         return self._parser
 

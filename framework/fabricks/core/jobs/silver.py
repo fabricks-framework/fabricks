@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -23,7 +23,7 @@ class Silver(BaseJob):
         item: Optional[str] = None,
         job_id: Optional[str] = None,
         conf: Optional[Union[dict, Row]] = None,
-    ):  # type: ignore
+    ):
         super().__init__(
             "silver",
             step=step,
@@ -66,7 +66,7 @@ class Silver(BaseJob):
             if _stream is None:
                 _stream = self.step_conf.options.stream
             self._stream = _stream if _stream is not None else True
-        return self._stream  # type: ignore
+        return self._stream
 
     @property
     def schema_drift(self) -> bool:
@@ -313,7 +313,7 @@ class Silver(BaseJob):
                 rectify = True
                 DEFAULT_LOGGER.debug("rectify enabled", extra={"label": self})
 
-        context = {
+        context: dict[str, Any] = {
             "soft_delete": self.slowly_changing_dimension,
             "deduplicate": self.options.deduplicate if self.options.deduplicate is not None else not_append,
             "rectify": rectify,
