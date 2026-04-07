@@ -24,10 +24,10 @@ def get_spark() -> SparkSession:
     else:
         pass
 
-        spark = SparkSession.builder.getOrCreate()  # type: ignore
+        spark = SparkSession.builder.getOrCreate()
 
     assert spark is not None
-    return spark  # type: ignore
+    return spark
 
 
 def display(df: DataFrame, limit: Optional[int] = None) -> None:

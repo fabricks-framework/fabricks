@@ -36,7 +36,7 @@ class LogFormatter(logging.Formatter):
         "CRITICAL": "",
     }
 
-    def formatTime(self, record) -> str:
+    def formatTime(self, record, datefmt: str | None = None) -> str:
         ct = datetime.fromtimestamp(record.created, tz=tz.utc).astimezone(self.timezone)
         s = ct.strftime("%d/%m/%y %H:%M:%S")
         return f"{self.COLORS[logging.DEBUG]}{s}{self.RESET}"
@@ -58,7 +58,7 @@ class LogFormatter(logging.Formatter):
         extra = ""
         if hasattr(record, "exc_info") and record.exc_info:
             exc_info = record.__dict__.get("exc_info", None)
-            extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"  # type: ignore
+            extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
 
         if hasattr(record, "json"):
             json_data = record.__dict__.get("json")

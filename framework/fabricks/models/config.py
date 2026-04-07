@@ -19,10 +19,6 @@ for var in os.environ:
 class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
     """Custom settings source for hierarchical file configuration."""
 
-    def get_field_value(self, field):
-        # Not used in this implementation
-        return None, None, False
-
     def __call__(self):
         """Load settings from hierarchical file search."""
         data = self._load_hierarchical_file()

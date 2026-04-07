@@ -41,7 +41,7 @@ def get_jobs_internal_df() -> DataFrame:
         schema = create_spark_schema(JobConfGeneric)
 
         def _read_yaml(path: GitPath):
-            df = SPARK.createDataFrame(read_yaml(path, root="job"), schema=schema)  # type: ignore
+            df = SPARK.createDataFrame(read_yaml(path, root="job"), schema=schema)
             if df:
                 df = df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))
                 return df

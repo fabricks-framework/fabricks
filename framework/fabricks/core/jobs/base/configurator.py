@@ -1,6 +1,6 @@
 import re
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union, cast
+from typing import List, Optional, Union
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
@@ -323,7 +323,7 @@ class Configurator(ABC):
         if not self._mode:
             _mode = self.options.mode
             assert _mode is not None
-            self._mode = cast(AllowedModes, _mode)
+            self._mode = _mode
         return self._mode
 
     def get_udfs(self) -> Optional[list[str]]:
