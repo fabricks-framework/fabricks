@@ -12,9 +12,10 @@ class DagTerminator(BaseDags):
         df = self.get_logs()
         self.write_logs(df)
 
-        rows = SPARK.sql("select * from {df} where status = 'failed'", df=df).collect()
+        not_done_df =  SPARK.sql("select job, not array_contains(collect_list(status), 'done') as not_done from {df} group by job", df=df).where("not_done")
+        rows = not_done_df.collect()
         for row in rows:
-            LOGGER.error(f"{row['job']} failed (🔥)")
+            LOGGER.error(f"{row['job']} failed")
 
         TABLE_LOG_HANDLER.table.truncate_partition(self.schedule_id)
 
