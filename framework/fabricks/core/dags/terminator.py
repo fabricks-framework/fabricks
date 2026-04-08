@@ -9,10 +9,30 @@ class DagTerminator(BaseDags):
         super().__init__(schedule_id=schedule_id)
 
     def terminate(self):
-        df = self.get_logs()
-        self.write_logs(df)
+        logs_df = self.get_logs()
+        self.write_logs(logs_df)
 
-        not_done_df =  SPARK.sql("select job, not array_contains(collect_list(status), 'done') as not_done from {df} group by job", df=df).where("not_done")
+        not_done_df = SPARK.sql(
+            """
+            with base as (
+              select
+                job,
+                not array_contains(collect_list(status), 'done') as not_done
+              from
+                {logs}
+              group by
+                job
+            )
+            select
+              *
+            from
+              base
+            where
+              not_done
+            """,
+            logs=logs_df,
+        )
+
         rows = not_done_df.collect()
         for row in rows:
             LOGGER.error(f"{row['job']} failed")
