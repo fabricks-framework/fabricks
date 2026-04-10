@@ -705,9 +705,9 @@ class Table(DbObject):
             value = df.select("value").collect()[0][0]
             if value is not None and isinstance(value, str) and "does not have property:" in value:
                 return None
-                
+
             return value
-                
+
         except (IndexError, ValueError):
             return None
 
