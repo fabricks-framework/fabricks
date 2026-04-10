@@ -2,7 +2,7 @@ import json
 import threading
 import time
 from multiprocessing import Process
-from typing import Any, List
+from typing import Any, List, Optional
 
 from azure.core.exceptions import AzureError
 from databricks.sdk.runtime import dbutils
@@ -78,7 +78,7 @@ class DagProcessor(BaseDags):
     def send(self):
         with self.get_azure_queue() as queue, self.get_azure_table() as azure_table:
             while True:
-                scheduled = self.get_scheduled()
+                scheduled = self.get_scheduled(azure_table=azure_table)
                 if len(scheduled) == 0:
                     for _ in range(self.step.workers):
                         queue.send_sentinel()
@@ -154,13 +154,12 @@ class DagProcessor(BaseDags):
                     )
                     azure_table.delete(dependencies)
 
-    def get_scheduled(self) -> list[dict]:
-        with self.get_azure_table() as azure_table:
-            scheduled = azure_table.query(
-                f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
-            )
-
-        return scheduled
+    def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict]:
+        query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
+        if azure_table is not None:
+            return azure_table.query(query)
+        with self.get_azure_table() as at:
+            return at.query(query)
 
     def _process(self):
         scheduled = self.get_scheduled()
