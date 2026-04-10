@@ -111,7 +111,8 @@ def pip_list(
         if path is None:
             path = find_upward("pyproject.toml")
 
-        assert path is not None, "pyproject.toml not found nor provided"
+        if path is None:
+            raise FileNotFoundError("pyproject.toml not found nor provided")
 
         with open(str(path), "rb") as f:
             content = tomllib.load(f)
