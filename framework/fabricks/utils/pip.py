@@ -145,3 +145,9 @@ def pip_list(
             lines.append(f'    "{pkg}=={ver}",')
         lines.append("]")
         return "\n".join(lines)
+
+    else:
+        raise ValueError(
+            f"Invalid format: {format}. Supported formats are: "
+            '"freeze", "pretty", "dict", "pyproject"'
+        )
