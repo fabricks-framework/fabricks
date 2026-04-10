@@ -2,9 +2,10 @@ import logging
 import os
 import pathlib
 from pathlib import Path as PathLibPath
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic.fields import FieldInfo
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from fabricks.utils.path import GitPath, resolve_git_path
@@ -19,9 +20,8 @@ for var in os.environ:
 class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
     """Custom settings source for hierarchical file configuration."""
 
-    def get_field_value(self, field):
-        # Not used in this implementation
-        return None, None, False
+    def get_field_value(self, field: FieldInfo, field_name: str) -> tuple[Any, str, bool]:
+        return super().get_field_value(field, field_name)
 
     def __call__(self):
         """Load settings from hierarchical file search."""

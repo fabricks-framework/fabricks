@@ -1,6 +1,6 @@
 [project]
 name = "fabricks"
-version = "4.0.17"
+version = "4.0.18"
 description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },
@@ -12,7 +12,6 @@ dependencies = [
     "azure-identity >=1.10.0",
     "azure-storage-blob >=12.14.1",
     "azure-storage-queue >=12.10.0,<13",
-    "basedpyright>=1.38.3",
     "databricks-cli>=0.18.0",
     "databricks-connect >=11.0.0",
     "databricks-sdk >=0.20.0",
@@ -41,19 +40,6 @@ requires-python = ">=3.11,<4"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.pyright]
-venv = ".venv"
-venvPath = "."
-pythonVersion = "3.11"
-typeCheckingMode = "basic"
-exclude = [
-    "**/node_modules", 
-    "**/__pycache__",
-    ".*",
-    ".venv",
-    "fabricks/api/notebooks",
-]
 
 [tool.ruff]
 line-length = 119
@@ -94,10 +80,10 @@ dev = [
     "isort >=5.13.2,<6",
     "notebook >=6.4.12",
     "pycln >=2.4.0,<3",
-    "pyright >=1.1.261",
     "ruff >=0.4.3",
     "shandy-sqlfmt >=0.23.2",
     "yamlfix >=1.14.0",
+    "ty>=0.0.29",
 ]
 docs = [
     "mkdocs-material>=9.6.18",
@@ -107,14 +93,11 @@ docs = [
 [tool.pytest.ini_options]
 python_files = ["test_*.py"]
 
-[tool.fabricks]
-runtime = "tests/integration/runtime"
-notebooks = "tests/integration/runtime/fabricks/notebooks"
-job_config_from_yaml = true
-loglevel = "debug"
-debugmode = true
-config = "tests/integration/runtime/fabricks/conf.uc.fabricks.yml"
-devmode = true
+[tool.ty.rules]
+deprecated = "ignore"
+
+[tool.ty.terminal]
+output-format = "full"
 
 [tool.deptry]
 ignore = ["DEP003"]
@@ -126,3 +109,12 @@ DEP002 = [
     "deptry", 
     "databricks-cli",
 ]
+
+[tool.fabricks]
+runtime = "tests/integration/runtime"
+notebooks = "tests/integration/runtime/fabricks/notebooks"
+job_config_from_yaml = true
+loglevel = "debug"
+debugmode = true
+config = "tests/integration/runtime/fabricks/conf.uc.fabricks.yml"
+devmode = true

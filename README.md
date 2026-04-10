@@ -36,7 +36,33 @@ For the latest releases and detailed changelogs, please visit the [Fabricks Rele
 
 [✔] `Fabricks 4.0.0` was successfully tested on Databricks Runtime `16.4 LTS`.
 
-[✔] `Fabricks 4.0.10` was successfully tested on Databricks Runtime `17.3 LTS`.
+[✔] `Fabricks 4.0.18` was successfully tested on Databricks Runtime `17.3 LTS` with the following dependencies:
+
+```yaml
+dependencies = [
+    "Jinja2==3.1.6",
+    "PyYAML==6.0.2",
+    "azure-data-tables==12.7.0",
+    "azure-identity==1.20.0",
+    "azure-storage-blob==12.23.0",
+    "azure-storage-queue==12.15.0",
+    "databricks-sdk==0.49.0",
+    "ipython==8.30.0",
+    "mermaid-magic==0.1.4",
+    "pandas==2.2.3",
+    "pydantic==2.10.6",
+    "pydantic-settings==2.13.1",
+    "python-dotenv==1.2.2",
+    "sparkdantic==2.8.0",
+    "sqlglot==30.1.0",
+    "tenacity==9.0.0",
+    "tomli==2.0.1",
+    "tqdm==4.67.3",
+]
+```
+
+> [!WARNING]
+> The `sqlglot[c]` extra (C-based parser with Cython optimizations) cannot be used with Fabricks.
 
 ## Related Projects 🔗
 - We use [odbc2deltalake](https://github.com/bmsuisse/odbc2deltalake) for extensive SQL Server data ingestion in a pre_run notebook. 🔌🏊‍♂️

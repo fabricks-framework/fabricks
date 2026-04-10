@@ -37,7 +37,7 @@ class BaseDags:
     def get_table(self) -> AzureTable:
         if not self._table:
             cs = self.get_connection_info()
-            self._table = AzureTable(f"t{self.schedule_id}", **dict(cs))  # type: ignore
+            self._table = AzureTable(f"t{self.schedule_id}", **dict(cs))
 
         if self._table is None:
             raise ValueError("Azure table for logs not found")

@@ -54,7 +54,7 @@ class Generator(Configurator):
 
         deps = self.get_dependencies()
         if deps:
-            df = self.spark.createDataFrame([d.model_dump() for d in deps])  # type: ignore
+            df = self.spark.createDataFrame([d.model_dump() for d in deps])
             cdc = NoCDC("fabricks", self.step, "dependencies")
             cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
 

@@ -56,7 +56,7 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
 
     else:
         _spark = (
-            SparkSession.builder.appName(app_name)  # type: ignore
+            SparkSession.builder.appName(app_name)
             .config("spark.driver.allowMultipleContexts", "true")
             .enableHiveSupport()
             .getOrCreate()

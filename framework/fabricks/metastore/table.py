@@ -486,7 +486,7 @@ class Table(DbObject):
                         (
                             self.deltatable.alias("dt")
                             .merge(update_df.alias("df"), "1 == 2")
-                            .withSchemaEvolution()  # type: ignore
+                            .withSchemaEvolution()
                             .whenMatchedUpdateAll()
                             .whenNotMatchedInsertAll()
                             .execute()
@@ -702,7 +702,11 @@ class Table(DbObject):
 
         try:
             df = self.spark.sql(f"show tblproperties {self.qualified_name} ('{key}')")
-            return df.select("value").collect()[0][0]
+            value = df.select("value").collect()[0][0]
+            if value is not None and isinstance(value, str) and "does not have property:" in value:
+                return None
+
+            return value
 
         except (IndexError, ValueError):
             return None

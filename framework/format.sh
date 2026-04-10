@@ -58,6 +58,14 @@ check_dependencies(){
     log "all dependencies are satisfied"
 }
 
+check_ty() {
+    local target_dir="${1:-.}"
+    header "checking types with ty"
+
+    uv run ty check "$target_dir" || warn "ty found type issues"
+    log "type checking completed"
+}
+
 format_python() {
 	local target_dir="${1:-.}"
 	header "python formatting started (target: $target_dir)"
@@ -77,8 +85,7 @@ format_python() {
 	log "running ruff check..."
 	uv run ruff check "$target_dir" --fix || warn "ruff check failed"
 
-    log "running basedpyright..."
-    uv run basedpyright "$target_dir" --level error || warn "basedpyright found issues"
+    check_ty "$target_dir"
 
 	log "Python formatting completed"
 }
@@ -144,15 +151,16 @@ format_commit(){
 show_help() {
 		echo -e "   ${MAGENTA}Usage: $0 <command> [folder]${RESET}"
 		echo -e "   ${CYAN}Available commands:${RESET}"
-		echo -e "       - ${GREEN}python [folder]${RESET}   : Run Python code formatters and linters"
-        echo -e "       - ${GREEN}sql [folder]${RESET}      : Run SQL formatter"
-        echo -e "       - ${GREEN}yaml [folder]${RESET}     : Run YAML formatter"
-        echo -e "       - ${GREEN}all [folder]${RESET}      : Run all formatters"
-        echo -e "       - ${GREEN}prettier [folder]${RESET} : Run prettier for all non-Python files"
-        echo -e "       - ${GREEN}commit [folder]${RESET}   : Format code and commit changes"
-        echo -e "       - ${GREEN}install-dependencies${RESET}     : Install dev and test dependencies"
-		echo -e "       - ${GREEN}check-dependencies${RESET}       : Check for missing dependencies"
-		echo -e "       - ${GREEN}help${RESET}                     : Show help"
+		echo -e "       - ${GREEN}python [folder]${RESET}           : Run Python code formatters and linters"
+        echo -e "       - ${GREEN}sql [folder]${RESET}              : Run SQL formatter"
+        echo -e "       - ${GREEN}yaml [folder]${RESET}             : Run YAML formatter"
+        echo -e "       - ${GREEN}ty [folder]${RESET}               : Run type checking with ty"
+        echo -e "       - ${GREEN}all [folder]${RESET}              : Run all formatters"
+        echo -e "       - ${GREEN}prettier [folder]${RESET}         : Run prettier for all non-Python files"
+        echo -e "       - ${GREEN}commit [folder]${RESET}           : Format code and commit changes"
+        echo -e "       - ${GREEN}install-dependencies${RESET}      : Install dev and test dependencies"
+		echo -e "       - ${GREEN}check-dependencies${RESET}        : Check for missing dependencies"
+		echo -e "       - ${GREEN}help${RESET}                      : Show help"
 		echo ""
 		echo -e "   ${CYAN}Examples:${RESET}"
 		echo -e "       $0 python                    # Format all Python files in current directory"
@@ -193,6 +201,9 @@ main() {
             ;;
         check-dependencies)
             check_dependencies "$@"
+            ;;
+        ty)
+            check_ty "$@"
             ;;
         help|*)
             show_help

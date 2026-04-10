@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import List, Literal, Optional, Union, cast
+from typing import Any, List, Literal, Optional, Union
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -24,7 +24,7 @@ class Gold(BaseJob):
         item: Optional[str] = None,
         job_id: Optional[str] = None,
         conf: Optional[Union[dict, Row]] = None,
-    ):  # type: ignore
+    ):
         super().__init__(
             "gold",
             step=step,
@@ -75,7 +75,7 @@ class Gold(BaseJob):
         if not self._schema_drift:
             _schema_drift = self.step_conf.options.schema_drift or False
             assert _schema_drift is not None
-            self._schema_drift = cast(bool, _schema_drift)
+            self._schema_drift = _schema_drift
         return self._schema_drift
 
     @property
@@ -146,7 +146,7 @@ class Gold(BaseJob):
             sys.path.append("/dbfs/mnt/fabricks/site-packages")
 
         if self.mode == "invoke":
-            df = self.spark.createDataFrame([{}])  # type: ignore
+            df = self.spark.createDataFrame([{}])
 
         elif self.options.notebook:
             invokers = self.invoker_options.run or [] if self.invoker_options else []
@@ -170,7 +170,7 @@ class Gold(BaseJob):
 
         elif self.options.table:
             table = self.options.table
-            df = self.spark.read.table(table)  # type: ignore
+            df = self.spark.read.table(table)
 
         else:
             assert self.sql, "sql not found"
@@ -279,7 +279,7 @@ class Gold(BaseJob):
         if add_metadata is None:
             add_metadata = self.step_conf.options.metadata or False
 
-        context = {
+        context: dict[str, Any] = {
             "add_metadata": add_metadata,
             "soft_delete": soft_delete,
             "deduplicate_key": None,

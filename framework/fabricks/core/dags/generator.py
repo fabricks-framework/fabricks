@@ -150,7 +150,7 @@ class DagGenerator(BaseDags):
         for row in rows:
             step = self.remove_invalid_characters(row.Step)
 
-            with AzureQueue(f"q{step}{self.schedule_id}", **dict(cs)) as queue:  # type: ignore
+            with AzureQueue(f"q{step}{self.schedule_id}", **dict(cs)) as queue:
                 queue.create_if_not_exists()
                 queue.clear()
 

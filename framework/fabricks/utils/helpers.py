@@ -1,6 +1,7 @@
 import logging
 import sys
 from functools import reduce
+from pathlib import Path
 from queue import Queue
 from typing import Any, Callable, Iterable, List, Literal, Optional, Union
 
@@ -26,8 +27,8 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
 def md5(s: Any) -> str:
     from hashlib import md5
 
-    md5 = md5(str(s).encode())
-    return md5.hexdigest()
+    hash_obj = md5(str(s).encode())
+    return hash_obj.hexdigest()
 
 
 def add_hash(column: str, df: DataFrame, fields: Union[str, List[str]]):
@@ -73,7 +74,7 @@ def _run_in_parallel_legacy(
 ) -> List[Any]:
     from concurrent.futures import ThreadPoolExecutor
 
-    iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
+    iterable = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable
 
     with ThreadPoolExecutor(max_workers=workers) as executor:
         if progress_bar:
@@ -129,7 +130,7 @@ def run_in_parallel(
         )
 
     else:
-        iterables = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable  # type: ignore
+        iterables = iterable.collect() if isinstance(iterable, DataFrameLike) else iterable
         results = []
 
         if run_as == "Queue":
@@ -249,3 +250,44 @@ def load_module_from_path(name: str, path: GitPath):
     spec.loader.exec_module(textwrap_module)
 
     return textwrap_module
+
+
+def find_upward(
+    filename: str,
+    root: Optional[Union[str, Path]] = None,
+) -> Optional[GitPath]:
+    """
+    Find a file by searching upward through the directory hierarchy.
+
+    Args:
+        filename: Name of the file to search for (e.g., "pyproject.toml", ".git")
+        root: Directory to start searching from. Defaults to current working directory.
+
+    Returns:
+        Path to the file if found, None otherwise.
+
+    Example:
+        >>> pyproject = find_upward("pyproject.toml")
+        >>> if pyproject:
+        ...     print(f"Found: {pyproject}")
+        >>> # Search from a specific location
+        >>> config = find_upward(".env", root="/path/to/start")
+    """
+    if root is None:
+        current = Path.cwd()
+    else:
+        current = Path(root).resolve()
+
+    if current.is_file():
+        current = current.parent
+
+    while True:
+        candidate = current / filename
+        if candidate.exists():
+            return GitPath(candidate)
+
+        parent = current.parent
+        if parent == current:  # Reached filesystem root
+            return None
+
+        current = parent

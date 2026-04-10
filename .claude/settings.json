@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./framework/format.sh ty:*)"
+    ]
+  }
+}

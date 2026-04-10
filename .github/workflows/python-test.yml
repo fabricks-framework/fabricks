@@ -31,8 +31,8 @@ jobs:
         run: uv sync --all-extras --group test --group dev
         working-directory: framework
       
-      - name: Pyright
-        run: uv run pyright fabricks
+      - name: Ty
+        run: uv run ty check fabricks
         working-directory: framework
 
       - name: Deploy Bundle
