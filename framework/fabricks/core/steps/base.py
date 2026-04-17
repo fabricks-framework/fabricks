@@ -20,7 +20,7 @@ from fabricks.context import (
     Silvers,
 )
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.get_job import get_job
+from fabricks.core.jobs.get_job import get_job, get_job_internal
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
@@ -148,7 +148,12 @@ class BaseStep:
         else:
             self.update()
 
-    def update(self, update_dependencies: Optional[bool] = True, progress_bar: Optional[bool] = False):
+    def update(
+        self,
+        update_dependencies: Optional[bool] = True,
+        progress_bar: Optional[bool] = False,
+        incremental: Optional[bool] = False,
+    ):
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
 
@@ -157,7 +162,7 @@ class BaseStep:
                 self.database.create()
 
             self.update_configurations()
-            errors = self.create_db_objects()
+            errors = self.create_db_objects(incremental=incremental)
 
             for e in errors:
                 DEFAULT_LOGGER.exception("fail to create db object", extra={"label": e["job"]}, exc_info=e["error"])
@@ -274,10 +279,20 @@ class BaseStep:
 
         errors = [res for res in results if res.get("error")]
 
-        if errors:
-            if retry:
-                DEFAULT_LOGGER.warning("retry to create jobs", extra={"label": self})
-                return self.create_db_objects(retry=False, update_lists=update_lists, incremental=incremental)
+        if errors and retry:
+            DEFAULT_LOGGER.warning("retry to create jobs", extra={"label": self})
+            failed_job_ids = [e["job_id"] for e in errors if e.get("job_id")]
+            failed_df = df.where(df["job_id"].isin(failed_job_ids))
+            if failed_df:
+                retry_results = run_in_parallel(
+                    _create_db_object,
+                    failed_df,
+                    workers=16,
+                    progress_bar=True,
+                    logger=DEFAULT_LOGGER,
+                    loglevel=logging.CRITICAL,
+                )
+                errors = [res for res in retry_results if res.get("error")]
 
         return errors
 
@@ -416,7 +431,7 @@ class BaseStep:
 
 # to avoid AttributeError: can't pickle local object
 def _get_dependencies(row: Row):
-    job = get_job(step=row["step"], job_id=row["job_id"])
+    job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
     try:
         return {"job": str(job), "dependencies": job.get_dependencies()}
     except Exception as e:
@@ -425,13 +440,13 @@ def _get_dependencies(row: Row):
 
 
 def _create_db_object(row: Row):
-    job = get_job(step=row["step"], job_id=row["job_id"])
+    job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
     try:
         job.create()
-        return {"job": str(job)}
+        return {"job": str(job), "job_id": row["job_id"]}
     except Exception as e:  # noqa E722
         DEFAULT_LOGGER.exception("fail to create db object", extra={"label": job})
-        return {"job": str(job), "error": e}
+        return {"job": str(job), "job_id": row["job_id"], "error": e}
 
 
 def _register(row: Row):
