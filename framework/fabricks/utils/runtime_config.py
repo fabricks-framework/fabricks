@@ -67,7 +67,7 @@ def _substitute_value(value: Any, lookup: dict[str, Any]) -> Any:
         return value
 
     return re.sub(
-        r"\$[A-Za-z0-9_]+",
+        r"\$[A-Za-z0-9_.-]+",
         lambda match: str(lookup.get(match.group(0), match.group(0))),
         value,
     )

@@ -16,7 +16,7 @@ raw_conf_data = [d["conf"] for d in data][0]
 conf_data = prepare_runtime_conf_data(
     conf_data=raw_conf_data,
     config_path=Path(str(PATH_CONFIG)),
-    external_variables_file=CONFIG.variables,
+    external_variables_file=CONFIG.variables_file,
 )
 assert conf_data, "conf mandatory"
 CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(conf_data)
