@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import Any
 
@@ -62,11 +63,14 @@ def _substitute_value(value: Any, lookup: dict[str, Any]) -> Any:
     if value in lookup:
         return lookup[value]
 
-    new_value = value
-    for key, variable_value in sorted(lookup.items(), key=lambda item: len(item[0]), reverse=True):
-        new_value = new_value.replace(key, str(variable_value))
+    if "$" not in value:
+        return value
 
-    return new_value
+    return re.sub(
+        r"\$[A-Za-z0-9_]+",
+        lambda match: str(lookup.get(match.group(0), match.group(0))),
+        value,
+    )
 
 
 def prepare_runtime_conf_data(

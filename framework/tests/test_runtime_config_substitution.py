@@ -9,9 +9,22 @@ from fabricks.utils.runtime_config import prepare_runtime_conf_data
 def test_prepare_runtime_conf_data_substitutes_all_fields() -> None:
     conf_data = {
         "name": "test",
-        "options": {"workers": "$workers", "catalog": "$catalog", "retention_days": "$retention_days"},
+        "options": {
+            "workers": "$workers",
+            "catalog": "$catalog",
+            "retention_days": "$retention_days",
+            "timeout_multiplier": "$timeout_multiplier",
+            "feature_enabled": "$feature_enabled",
+        },
         "path_options": {"storage": "abfss://fabricks@$storage/fabricks"},
-        "variables": {"$workers": 8, "$catalog": "stg_dev_dwh", "$storage": "account.dfs.core.windows.net", "$retention_days": 14},
+        "variables": {
+            "$workers": 8,
+            "$catalog": "stg_dev_dwh",
+            "$storage": "account.dfs.core.windows.net",
+            "$retention_days": 14,
+            "$timeout_multiplier": 1.5,
+            "$feature_enabled": True,
+        },
     }
 
     prepared = prepare_runtime_conf_data(conf_data=conf_data, config_path=Path("/tmp/conf.fabricks.yml"))
@@ -19,6 +32,8 @@ def test_prepare_runtime_conf_data_substitutes_all_fields() -> None:
     assert prepared["options"]["workers"] == 8
     assert prepared["options"]["catalog"] == "stg_dev_dwh"
     assert prepared["options"]["retention_days"] == 14
+    assert prepared["options"]["timeout_multiplier"] == 1.5
+    assert prepared["options"]["feature_enabled"] is True
     assert prepared["path_options"]["storage"] == "abfss://fabricks@account.dfs.core.windows.net/fabricks"
 
 
