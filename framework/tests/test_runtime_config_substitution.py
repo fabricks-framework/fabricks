@@ -11,7 +11,7 @@ def test_prepare_runtime_conf_data_substitutes_all_fields() -> None:
         "name": "test",
         "options": {"workers": "$workers", "catalog": "$catalog", "retention_days": "$retention_days"},
         "path_options": {"storage": "abfss://fabricks@$storage/fabricks"},
-        "variables": {"\\$workers": 8, "\\$catalog": "stg_dev_dwh", "\\$storage": "account.dfs.core.windows.net", "\\$retention_days": 14},
+        "variables": {"$workers": 8, "$catalog": "stg_dev_dwh", "$storage": "account.dfs.core.windows.net", "$retention_days": 14},
     }
 
     prepared = prepare_runtime_conf_data(conf_data=conf_data, config_path=Path("/tmp/conf.fabricks.yml"))
@@ -60,6 +60,18 @@ def test_prepare_runtime_conf_data_external_variables_file_takes_precedence(tmp_
     assert prepared["options"]["workers"] == 16
 
 
+def test_prepare_runtime_conf_data_supports_escaped_variable_keys() -> None:
+    conf_data = {
+        "name": "test",
+        "options": {"workers": "$workers"},
+        "variables": {"\\$workers": 6},
+    }
+
+    prepared = prepare_runtime_conf_data(conf_data=conf_data, config_path=Path("/tmp/conf.fabricks.yml"))
+
+    assert prepared["options"]["workers"] == 6
+
+
 def test_prepare_runtime_conf_data_raises_for_missing_variables_file(tmp_path: Path) -> None:
     conf_data = {
         "name": "test",
@@ -68,7 +80,7 @@ def test_prepare_runtime_conf_data_raises_for_missing_variables_file(tmp_path: P
         "variables": {"$workers": 4},
     }
 
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(FileNotFoundError, match="referenced by config"):
         prepare_runtime_conf_data(
             conf_data=conf_data,
             config_path=tmp_path / "conf.fabricks.yml",

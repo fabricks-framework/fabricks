@@ -84,8 +84,13 @@ def prepare_runtime_conf_data(
 
     file_variables: dict[str, Any] = {}
     if variables_path:
-        with open(variables_path, encoding="utf-8") as f:
-            file_variables = _as_variables(yaml.safe_load(f), source=str(variables_path))
+        try:
+            with open(variables_path, encoding="utf-8") as f:
+                file_variables = _as_variables(yaml.safe_load(f), source=str(variables_path))
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(
+                f"variables file '{variables_path}' referenced by config '{config_path}' was not found",
+            ) from exc
 
     merged_variables = {**base_variables, **file_variables}
     prepared["variables"] = merged_variables
