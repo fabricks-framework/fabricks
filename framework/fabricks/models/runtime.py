@@ -120,9 +120,13 @@ class RuntimeConf(BaseModel):
         Returns:
             RuntimeResolvedPathOptions with all paths resolved
         """
+        path_variables = None
+        if self.variables:
+            path_variables = {key: str(value) for key, value in self.variables.items()}
+
         # Collect all storage paths with variable substitution
         storage_paths: dict[str, FileSharePath] = {
-            "fabricks": resolve_fileshare_path(self.path_options.storage, variables=self.variables),
+            "fabricks": resolve_fileshare_path(self.path_options.storage, variables=path_variables),
         }
 
         # Add storage paths for bronze/silver/gold/databases
@@ -131,7 +135,7 @@ class RuntimeConf(BaseModel):
                 for obj in objects:
                     storage_paths[obj.name] = resolve_fileshare_path(
                         obj.path_options.storage,
-                        variables=self.variables,
+                        variables=path_variables,
                     )
 
         root = self.config.resolved_paths.runtime

@@ -117,6 +117,10 @@ class ConfigOptions(BaseSettings):
         validation_alias=AliasChoices("FABRICKS_RUNTIME", "runtime"),
         default="none",
     )
+    variables: str = Field(
+        validation_alias=AliasChoices("FABRICKS_VARIABLES", "variables"),
+        default="none",
+    )
     notebooks: str = Field(
         validation_alias=AliasChoices("FABRICKS_NOTEBOOKS", "notebooks"),
         default="none",
