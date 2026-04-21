@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 import yaml
 
 from fabricks.utils.runtime_config import prepare_runtime_conf_data
@@ -57,3 +58,18 @@ def test_prepare_runtime_conf_data_external_variables_file_takes_precedence(tmp_
     )
 
     assert prepared["options"]["workers"] == 16
+
+
+def test_prepare_runtime_conf_data_raises_for_missing_variables_file(tmp_path: Path) -> None:
+    conf_data = {
+        "name": "test",
+        "options": {"workers": "$workers"},
+        "variables_file": "variables.dev.yml",
+        "variables": {"$workers": 4},
+    }
+
+    with pytest.raises(FileNotFoundError):
+        prepare_runtime_conf_data(
+            conf_data=conf_data,
+            config_path=tmp_path / "conf.fabricks.yml",
+        )
