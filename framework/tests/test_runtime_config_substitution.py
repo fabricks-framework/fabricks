@@ -88,6 +88,8 @@ def test_prepare_runtime_conf_data_supports_escaped_variable_keys() -> None:
 
 
 def test_prepare_runtime_conf_data_raises_for_missing_variables_file(tmp_path: Path) -> None:
+    config_path = tmp_path / "conf.fabricks.yml"
+    expected_variables_path = tmp_path / "variables.dev.yml"
     conf_data = {
         "name": "test",
         "options": {"workers": "$workers"},
@@ -95,8 +97,11 @@ def test_prepare_runtime_conf_data_raises_for_missing_variables_file(tmp_path: P
         "variables": {"$workers": 4},
     }
 
-    with pytest.raises(FileNotFoundError, match="referenced by config"):
+    with pytest.raises(
+        FileNotFoundError,
+        match=f"variables file '{expected_variables_path}' referenced by config '{config_path}' was not found",
+    ):
         prepare_runtime_conf_data(
             conf_data=conf_data,
-            config_path=tmp_path / "conf.fabricks.yml",
+            config_path=config_path,
         )
