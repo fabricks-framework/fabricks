@@ -4,7 +4,7 @@ from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
 from typing_extensions import deprecated
 
-from fabricks.context import PATHS_STORAGE, SPARK
+from fabricks.context import IS_UNITY_CATALOG, PATHS_STORAGE, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.utils import get_tables, get_views
 from fabricks.utils.path import FileSharePath
@@ -48,12 +48,22 @@ class Database:
 
     def exists(self) -> bool:
         try:
-            self.spark.sql(f"show tables in {self.name}")
+            if IS_UNITY_CATALOG:
+                result = self.spark.sql(
+                    f"""
+                    select schema_name
+                    from system.information_schema.schemata
+                    where schema_name = '{self.name}'
+                    """
+                )
+                return not result.isEmpty()
+            else:
+                self.spark.sql(f"show tables in {self.name}")
+                return True
+
         # database not found
         except AnalysisException:
             return False
-
-        return True
 
     def __str__(self):
         return self.name

@@ -3,6 +3,7 @@ from typing import Optional
 from pyspark.sql import SparkSession
 from pyspark.sql.catalog import Column, Table
 
+from fabricks.context import IS_UNITY_CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 
@@ -76,7 +77,18 @@ class DbObject:
 
         else:
             try:
-                df = self.spark.sql(f"show tables in {self.database.name} like '{self.name}'")
+                if IS_UNITY_CATALOG:
+                    df = self.spark.sql(
+                        f"""
+                        select table_name
+                        from system.information_schema.tables
+                        where table_schema = '{self.database.name}'
+                        and table_name = '{self.name}'
+                        """
+                    )
+                else:
+                    df = self.spark.sql(f"show tables in {self.database.name} like '{self.name}'")
+
                 if not df.isEmpty():
                     DEFAULT_LOGGER.warning("drop object from metastore", extra={"label": self})
                     self.spark.sql(f"drop table if exists {self}")
