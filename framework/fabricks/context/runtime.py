@@ -1,16 +1,23 @@
+from pathlib import Path
 from typing import Final, Optional
 from zoneinfo import ZoneInfo
 
 import yaml
 
-from fabricks.context.config import PATH_CONFIG
+from fabricks.context.config import CONFIG, PATH_CONFIG
 from fabricks.models import Database, RuntimeConf, StepBronzeConf, StepGoldConf, StepSilverConf
 from fabricks.utils.path import FileSharePath, GitPath
+from fabricks.utils.runtime_config import prepare_runtime_conf_data
 
 with open(str(PATH_CONFIG)) as f:
     data = yaml.safe_load(f)
 
-conf_data = [d["conf"] for d in data][0]
+raw_conf_data = [d["conf"] for d in data][0]
+conf_data = prepare_runtime_conf_data(
+    conf_data=raw_conf_data,
+    config_path=Path(str(PATH_CONFIG)),
+    external_variables_file=CONFIG.variables_file,
+)
 assert conf_data, "conf mandatory"
 CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(conf_data)
 

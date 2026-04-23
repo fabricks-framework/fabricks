@@ -122,6 +122,7 @@ Multiple layers of configuration can influence a run. When the same setting appe
 Notes
 - `spark_options` are merged; job-level `spark_options` override keys from step/global levels.
 - `path_options` (e.g., `storage`, `runtime`) can be set globally, then refined per step instance.
+- Runtime `variables` are substituted before validation across string and numeric fields (not only paths). You can also load environment-specific overrides via `variables_file` in `conf.fabricks.yml` or `FABRICKS_VARIABLES`.
 - Some options only make sense at specific levels (e.g., `check_options` at job level).
 - For CDC and write behavior, job `options` (e.g., `mode`, `change_data_capture`) take precedence over step defaults.
 
