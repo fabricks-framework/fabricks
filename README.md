@@ -36,7 +36,7 @@ For the latest releases and detailed changelogs, please visit the [Fabricks Rele
 
 [✔] `Fabricks 4.0.0` was successfully tested on Databricks Runtime `16.4 LTS`.
 
-[✔] `Fabricks 4.0.18` was successfully tested on Databricks Runtime `17.3 LTS` with the following dependencies:
+[✔] `Fabricks 4.0.19` was successfully tested on Databricks Runtime `17.3 LTS` with the following dependencies:
 
 ```yaml
 dependencies = [
@@ -51,10 +51,10 @@ dependencies = [
     "mermaid-magic==0.1.4",
     "pandas==2.2.3",
     "pydantic==2.10.6",
-    "pydantic-settings==2.13.1",
+    "pydantic-settings==2.14.0",
     "python-dotenv==1.2.2",
     "sparkdantic==2.8.0",
-    "sqlglot==30.1.0",
+    "sqlglot==30.6.0",
     "tenacity==9.0.0",
     "tomli==2.0.1",
     "tqdm==4.67.3",
