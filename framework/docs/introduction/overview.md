@@ -1,8 +1,8 @@
-﻿# Key Concepts Overview
+# Key Concepts Overview
 
 This page introduces Fabricks core concepts so you can read and write pipelines with confidence.
 
-**What Fabricks is ?**
+**What Fabricks is**
 
 - SQL-first transformations
 - YAML-based orchestration for jobs, steps, schedules, and dependencies
@@ -15,7 +15,7 @@ This page introduces Fabricks core concepts so you can read and write pipelines 
 - _Step_: A processing layer/type that defines behavior and defaults (Bronze, Silver, Gold).
 - _Job_: A concrete unit of work within a step (identified by topic + item) that you schedule/run.
 
-**Layers (Bronze â†' Silver â†' Gold)**
+**Layers (Bronze → Silver → Gold)**
 
 - Bronze: Land raw data (`append`/`register`/`memory`). Keep logic light.
 - Silver: Standardize/clean/enrich. Optional CDC (SCD1/SCD2) and convenience views.
@@ -23,8 +23,8 @@ This page introduces Fabricks core concepts so you can read and write pipelines 
 
 **Change Data Capture (CDC)**
 
-- SCD1: Current state with optional soft deletes (**is_current, **is_deleted) and a {table}\_\_current view.
-- SCD2: Historical validity windows (**valid_from, **valid_to). Gold consumers use (**key, **timestamp, \_\_operation).
+- SCD1: Current state with optional soft deletes (`__is_current`, `__is_deleted`) and a `{table}__current` view.
+- SCD2: Historical validity windows (`__valid_from`, `__valid_to`). Gold consumers use (`__key`, `__timestamp`, `__operation`).
 - Reload rectification: A snapshot boundary that reconciles target state (see CDC reference).
 
 **Data Quality (Checks)**
@@ -38,11 +38,11 @@ This page introduces Fabricks core concepts so you can read and write pipelines 
 - Parsers: Custom readers/cleaners for sources (return a DataFrame).
 - Extenders: Small Python transforms applied right before writing.
 
-Navigation
+**Navigation**
 
-- Layers guide: Layers (Bronze/Silver/Gold) â†' [Layers](./layers.md)
-- CDC strategies and contracts â†' [CDC](../reference/cdc.md)
-- Step references â†' [Bronze](../steps/bronze.md) | [Silver](../steps/silver.md) | [Gold](../steps/gold.md)
-- Data Quality â†' [Checks & Data Quality](../reference/checks-data-quality.md)
-- Table and storage options â†' [Table Options](../reference/table-options.md)
-- Extensibility â†' [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)
+- Layers guide → [Layers](./layers.md)
+- CDC strategies and contracts → [CDC](../reference/cdc.md)
+- Step references → [Bronze](../steps/BRONZE.md) | [Silver](../steps/SILVER.md) | [Gold](../steps/GOLD.md)
+- Data Quality → [Checks & Data Quality](../reference/checks-data-quality.md)
+- Table and storage options → [Table Options](../reference/table-options.md)
+- Extensibility → [Extenders, UDFs & Parsers](../reference/extenders-udfs-parsers.md)

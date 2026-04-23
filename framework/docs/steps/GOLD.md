@@ -1,14 +1,14 @@
-﻿# Gold Step Reference
+# Gold Step Reference
 
 Gold steps produce consumption-ready models, typically implemented in SQL. Gold focuses on dimensional models, facts and marts, and prepares data for analytics and reporting.
 
-What Gold does
+## What Gold does
 
 - Runs curated SQL transformations or notebooks to produce business-ready tables and views.
 - Supports full-refresh (`complete`), append, and merge/update semantics; can also invoke notebooks for complex workflows.
 - Implements CDC logic for downstream consumers when required (SCD1/SCD2 patterns).
 
-Modes
+## Modes
 
 | Mode       | Behavior                                                                             |
 | ---------- | ------------------------------------------------------------------------------------ |
@@ -17,13 +17,14 @@ Modes
 | `complete` | Full refresh/overwrite of the target table. Use when you need a consistent snapshot. |
 | `update`   | Merge/upsert semantics for idempotent updates and CDC.                               |
 | `invoke`   | Execute a notebook as the job body (configured via `invoker_options`).               |
+| `register` | Register an existing external table or view at `register_options.uri`.               |
 
-CDC and inputs
+## CDC and inputs
 
 - Gold jobs often receive CDC-style inputs. Required CDC fields include `__key`, `__timestamp`, and `__operation` for change-point driven inputs.
 - CDC strategies supported: `nocdc`, `scd1`, `scd2`. See the CDC reference for full details: [Change Data Capture (CDC)](../reference/cdc.md)
 
-Common options (summary)
+## Common options (summary)
 
 | Option                         | Purpose                                                                        |
 | ------------------------------ | ------------------------------------------------------------------------------ |
@@ -44,16 +45,16 @@ Common options (summary)
 | `requirements`                 | If true, install/resolve additional dependencies for this job.                 |
 | `timeout`                      | Per-job timeout seconds (overrides step defaults).                             |
 
-Operational guidance
+## Operational guidance
 
 - Use `type: manual` when you need explicit control over table DDL or persistence.
 - When using SCD patterns, ensure your inputs include the expected `__` CDC columns.
 - Use `update_where` to scope merges and avoid unintended updates.
 - For heavy operations, configure `table_options` (clustering, partitioning, properties) and `spark_options` appropriately.
 
-**Examples**
+## Examples
 
-Append example
+**Append**
 
 ```yaml
 - job:
@@ -61,10 +62,10 @@ Append example
     topic: fact
     item: append
     options:
-      mode: `append`
+      mode: append
 ```
 
-Complete/overwrite example
+**Complete/overwrite with SCD1 and identity**
 
 ```yaml
 - job:
@@ -72,13 +73,13 @@ Complete/overwrite example
     topic: dim
     item: overwrite
     options:
-      mode: `complete`
-      change_data_capture: `scd1`
+      mode: complete
+      change_data_capture: scd1
     table_options:
       identity: true
 ```
 
-Deduplicate and ordering examples
+**Deduplicate**
 
 ```yaml
 - job:
@@ -86,11 +87,11 @@ Deduplicate and ordering examples
     topic: fact
     item: deduplicate
     options:
-      mode: `complete`
+      mode: complete
       deduplicate: true
 ```
 
-SQL examples (dedupe/order)
+**SQL examples (dedupe/order)**
 
 ```sql
 -- deduplicate.sql
@@ -106,7 +107,7 @@ union all
 select 1 as __key, 2 as dummy, 2 as __order_duplicate_by_desc
 ```
 
-SCD2 header-line change points (example)
+## SCD2 header-line change points (advanced example)
 
 This example shows how to generate SCD2 change points when combining header and line SCD2 sources.
 
@@ -180,13 +181,13 @@ left join silver.order_line_scd2 l
  and p.__timestamp between l.__valid_from and l.__valid_to
 ```
 
-Notes
+**Notes**
 
-- The null-sentinel header row (order_line_id = null -> coerced to -1 in \_\_key) is closed via a `delete` when any line appears at the same boundary.
-- Additional SCD2 inputs (e.g., item_price_scd2) can be unioned into the dates set to force change points whenever related dimensions change.
+- The null-sentinel header row (`order_line_id = null` coerced to `-1` in `__key`) is closed via a `delete` when any line appears at the same boundary.
+- Additional SCD2 inputs (e.g., `item_price_scd2`) can be unioned into the dates set to force change points whenever related dimensions change.
 - The output stream conforms to Gold SCD2 input fields: `__key`, `__timestamp`, `__operation`.
 
-Related
+## Related
 
 - Next steps: [Table Options](../reference/table-options.md)
 - Data quality: [Checks & Data Quality](../reference/checks-data-quality.md)
