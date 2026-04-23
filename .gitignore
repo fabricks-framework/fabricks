@@ -157,7 +157,8 @@ cython_debug/
 # Debug
 .debug
 
-# Skills
+# Claude
+.claude/settings.local.json
 .claude/skills/*
 !.claude/skills/doc-coauthoring
 !.claude/skills/skill-creator

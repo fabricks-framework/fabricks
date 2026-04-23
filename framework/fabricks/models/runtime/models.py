@@ -1,21 +1,17 @@
 """Runtime configuration models."""
 
 from datetime import timezone as tz
+from functools import cached_property
 from pathlib import Path
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from fabricks.models.common import Database, ExtenderOptions, SparkOptions
 from fabricks.models.config import ConfigOptions, config
-from fabricks.models.runtime.utils import (
-    _as_variables,
-    _build_variable_lookup,
-    _resolve_variables_path,
-    _substitute_value,
-)
+from fabricks.models.runtime.utils import load_variables, perform_variable_substitution, resolve_runtime_paths
 from fabricks.models.step import BronzeConf, GoldConf, PowerBI, SilverConf
-from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, resolve_git_path
+from fabricks.utils.path import FileSharePath, GitPath
 
 
 class RuntimePathOptions(BaseModel):
@@ -32,6 +28,7 @@ class RuntimePathOptions(BaseModel):
     storage_credential: str | None = None
     extenders: str | None = None
     masks: str | None = None
+    variables: str | None = None
 
 
 class UDFOptions(BaseModel):
@@ -90,7 +87,11 @@ class RuntimeOptions(BaseModel):
 
 
 class RuntimeConf(BaseModel):
-    """Complete runtime configuration."""
+    """Complete runtime configuration.
+
+    Variables can be defined inline as a dict, or loaded from a file specified in
+    path_options.variables (relative to runtime config directory or absolute path).
+    """
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True, arbitrary_types_allowed=True)
 
@@ -113,139 +114,44 @@ class RuntimeConf(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _substitute_variables(cls, data: Any, info) -> Any:
+    def _substitute_variables(cls, data: Any) -> Any:
         """Perform variable substitution during parsing.
 
-        Requires context with 'config_path' and optionally 'external_variables_file'.
-        Example:
-            RuntimeConf.model_validate(
-                data,
-                context={"config_path": Path(...), "external_variables_file": "..."}
-            )
+        Loads variables from path_options.variables if defined, otherwise uses
+        inline variables dict. Uses config.path_to_config to resolve relative paths.
         """
         if not isinstance(data, dict):
             return data
 
-        context = info.context or {}
-        config_path = context.get("config_path")
-        if not config_path:
-            return data
+        # Get config path from ConfigOptions
+        config_path = Path(cls.config.path_to_config)
 
-        if isinstance(config_path, str):
-            config_path = Path(config_path)
+        # Extract variables path from path_options if present
+        variables_path = None
+        if isinstance(data.get("path_options"), dict):
+            variables_path = data["path_options"].get("variables")
 
-        external_variables_file = context.get("external_variables_file")
-
-        prepared = dict(data)
-        base_variables = _as_variables(prepared.get("variables"), source="runtime config")
-        variables_path = _resolve_variables_path(
-            conf_data=prepared,
+        # Step 1: Load variables
+        variables = load_variables(
+            data=data,
             config_path=config_path,
-            external_variables_file=external_variables_file,
+            variables_path=variables_path,
         )
 
-        file_variables: dict[str, Any] = {}
-        if variables_path:
-            try:
-                import yaml
+        # Step 2: Perform substitution
+        return perform_variable_substitution(data=data, variables=variables)
 
-                with open(variables_path, encoding="utf-8") as f:
-                    file_variables = _as_variables(yaml.safe_load(f), source=str(variables_path))
-            except FileNotFoundError as exc:
-                raise FileNotFoundError(
-                    f"variables file '{variables_path}' referenced by config '{config_path}' was not found",
-                ) from exc
-
-        merged_variables = {**base_variables, **file_variables}
-        prepared["variables"] = merged_variables
-        prepared.pop("variables_file", None)
-
-        if not merged_variables:
-            return prepared
-
-        return _substitute_value(prepared, _build_variable_lookup(merged_variables))
-
-    @computed_field
-    @property
+    @cached_property
     def resolved_path_options(self) -> RuntimeResolvedPathOptions:
-        """Get all runtime paths resolved as Path objects."""
-        return self._resolve_paths()
-
-    def _resolve_paths(self) -> RuntimeResolvedPathOptions:
-        """
-        Get all runtime paths resolved as Path objects.
-
-        Args:
-            runtime: The base runtime path (e.g., PATH_RUNTIME)
-
-        Returns:
-            RuntimeResolvedPathOptions with all paths resolved
-        """
-        variables_as_strings = None
-        if self.variables:
-            variables_as_strings = {key: str(value) for key, value in self.variables.items()}
-
-        # Collect all storage paths with variable substitution
-        storage_paths: dict[str, FileSharePath] = {
-            "fabricks": resolve_fileshare_path(
-                self.path_options.storage,
-                variables=variables_as_strings,
-            ),
-        }
-
-        # Add storage paths for bronze/silver/gold/databases
-        for objects in [self.bronze, self.silver, self.gold, self.databases]:
-            if objects:
-                for obj in objects:
-                    storage_paths[obj.name] = resolve_fileshare_path(
-                        obj.path_options.storage,
-                        variables=variables_as_strings,
-                    )
-
-        root = self.config.resolved_paths.runtime
-
-        # Collect all runtime paths with base path joining
-        runtime_paths: dict[str, GitPath] = {}
-        for objects in [self.bronze, self.silver, self.gold]:
-            if objects:
-                for obj in objects:
-                    runtime_paths[obj.name] = resolve_git_path(
-                        obj.path_options.runtime,
-                        base=root,
-                    )
-
-        return RuntimeResolvedPathOptions(
-            storage=storage_paths["fabricks"],
-            udfs=resolve_git_path(
-                path=self.path_options.udfs,
-                base=root,
-            ),
-            parsers=resolve_git_path(
-                path=self.path_options.parsers,
-                base=root,
-            ),
-            schedules=resolve_git_path(
-                path=self.path_options.schedules,
-                base=root,
-            ),
-            views=resolve_git_path(
-                path=self.path_options.views,
-                base=root,
-            ),
-            requirements=resolve_git_path(
-                path=self.path_options.requirements,
-                base=root,
-            ),
-            extenders=resolve_git_path(
-                path=self.path_options.extenders,
-                base=root,
-                default="fabricks/extenders",
-            ),
-            masks=resolve_git_path(
-                path=self.path_options.masks,
-                base=root,
-                default="fabricks/masks",
-            ),
-            storages=storage_paths,
-            runtimes=runtime_paths,
+        """Get all runtime paths resolved as Path objects (cached)."""
+        resolved = resolve_runtime_paths(
+            path_options=self.path_options.model_dump(),
+            variables=self.variables,
+            bronze=self.bronze,
+            silver=self.silver,
+            gold=self.gold,
+            databases=self.databases,
+            base_runtime=self.config.resolved_paths.runtime,
         )
+
+        return RuntimeResolvedPathOptions(**resolved)

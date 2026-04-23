@@ -1,5 +1,5 @@
 ---
-name: test
+name: test_inline
 options:
   secret_scope: $secret_scope
   workers: $workers
@@ -17,6 +17,7 @@ path_options:
   schedules: fabricks/schedules
   views: fabricks/views
   requirements: fabricks/requirements
+# Inline variables defined directly in config
 variables:
   $workers: '8'
   $catalog: stg_dev_dwh

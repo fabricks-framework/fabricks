@@ -1,25 +1,19 @@
-from pathlib import Path
 from typing import Final, Optional
 from zoneinfo import ZoneInfo
 
 import yaml
 
-from fabricks.context.config import CONFIG, PATH_CONFIG
+from fabricks.context.config import PATH_CONFIG
 from fabricks.models import Database, RuntimeConf, StepBronzeConf, StepGoldConf, StepSilverConf
 from fabricks.utils.path import FileSharePath, GitPath
 
 with open(str(PATH_CONFIG)) as f:
     data = yaml.safe_load(f)
 
-raw_conf_data = [d["conf"] for d in data][0]
-assert raw_conf_data, "conf mandatory"
-CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(
-    raw_conf_data,
-    context={
-        "config_path": Path(str(PATH_CONFIG)),
-        "external_variables_file": CONFIG.variables_file,
-    },
-)
+conf = [d["conf"] for d in data][0]
+assert conf, "conf mandatory"
+
+CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(conf)
 
 BRONZE: list[StepBronzeConf] = CONF_RUNTIME.bronze or []
 SILVER: list[StepSilverConf] = CONF_RUNTIME.silver or []
