@@ -43,7 +43,8 @@ def test_variable_substitution_loads_from_path_options_variables(tmp_path: Path,
 
 
 def test_variable_substitution_path_options_takes_precedence_over_inline(
-    tmp_path: Path, runtime_config_factory,
+    tmp_path: Path,
+    runtime_config_factory,
 ) -> None:
 
     variables_file = tmp_path / "variables.prd.yml"

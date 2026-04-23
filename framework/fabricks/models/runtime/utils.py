@@ -17,7 +17,7 @@ def _as_variables(data: Any, source: str) -> dict[str, Any]:
         variables = data.get("variables", data)
         if not isinstance(variables, dict):
             raise ValueError(f"variables in {source} must be a mapping")
-            
+
         return dict(variables)
 
     if isinstance(data, list) and len(data) == 1 and isinstance(data[0], dict):
@@ -129,7 +129,7 @@ def load_variables(
         file_path = Path(variables_path)
         if not file_path.is_absolute():
             file_path = config_path.parent / file_path
-            
+
         return load_variables_from_file(file_path, config_path)
 
     if inline_variables:
