@@ -125,11 +125,11 @@ class GitPath(BasePath):
 
     def get_notebook_path(self) -> str:
         """Get the notebook path for Databricks workspace."""
-        path = self.path.replace("Workspace/", "")
+        path = self.path
         if path.endswith(".ipynb"):
-            path = path.replace(".ipynb", "")
-        if path.endswith(".py"):
-            path = path.replace(".py", "")
+            path = path[:-len(".ipynb")]
+        elif path.endswith(".py"):
+            path = path[:-len(".py")]
 
         return path
 
