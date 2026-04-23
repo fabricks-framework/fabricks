@@ -158,7 +158,7 @@ class DagProcessor(BaseDags):
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
         if azure_table is not None:
             return azure_table.query(query)
-            
+
         with self.get_azure_table() as at:
             return at.query(query)
 

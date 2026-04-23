@@ -92,6 +92,10 @@ docs = [
 
 [tool.pytest.ini_options]
 python_files = ["test_*.py"]
+markers = [
+    "unit: marks tests as unit tests (no spark dependencies)",
+    "integration: marks tests as integration tests (slower)",
+]
 
 [tool.ty.rules]
 deprecated = "ignore"

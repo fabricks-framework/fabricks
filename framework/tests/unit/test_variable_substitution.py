@@ -6,7 +6,7 @@ import yaml
 from fabricks.utils.runtime_config import prepare_runtime_conf_data
 
 
-def test_prepare_runtime_conf_data_substitutes_all_fields() -> None:
+def test_variable_substitution_substitutes_all_fields() -> None:
     conf_data = {
         "name": "test",
         "options": {
@@ -37,7 +37,7 @@ def test_prepare_runtime_conf_data_substitutes_all_fields() -> None:
     assert prepared["path_options"]["storage"] == "abfss://fabricks@account.dfs.core.windows.net/fabricks"
 
 
-def test_prepare_runtime_conf_data_merges_variables_file_with_override(tmp_path: Path) -> None:
+def test_variable_substitution_merges_variables_file_with_override(tmp_path: Path) -> None:
     variables_file = tmp_path / "variables.dev.yml"
     variables_file.write_text(yaml.safe_dump({"$workers": 2, "$catalog": "stg_dev_dwh"}), encoding="utf-8")
 
@@ -55,7 +55,7 @@ def test_prepare_runtime_conf_data_merges_variables_file_with_override(tmp_path:
     assert "variables_file" not in prepared
 
 
-def test_prepare_runtime_conf_data_external_variables_file_takes_precedence(tmp_path: Path) -> None:
+def test_variable_substitution_external_variables_file_takes_precedence(tmp_path: Path) -> None:
     external_variables_file = tmp_path / "variables.prd.yml"
     external_variables_file.write_text(yaml.safe_dump({"$workers": 16}), encoding="utf-8")
 
@@ -75,7 +75,7 @@ def test_prepare_runtime_conf_data_external_variables_file_takes_precedence(tmp_
     assert prepared["options"]["workers"] == 16
 
 
-def test_prepare_runtime_conf_data_supports_escaped_variable_keys() -> None:
+def test_variable_substitution_supports_escaped_variable_keys() -> None:
     conf_data = {
         "name": "test",
         "options": {"workers": "$workers"},
@@ -87,7 +87,7 @@ def test_prepare_runtime_conf_data_supports_escaped_variable_keys() -> None:
     assert prepared["options"]["workers"] == 6
 
 
-def test_prepare_runtime_conf_data_raises_for_missing_variables_file(tmp_path: Path) -> None:
+def test_variable_substitution_raises_for_missing_variables_file(tmp_path: Path) -> None:
     config_path = tmp_path / "conf.fabricks.yml"
     expected_variables_path = tmp_path / "variables.dev.yml"
     conf_data = {

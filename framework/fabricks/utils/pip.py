@@ -147,7 +147,4 @@ def pip_list(
         return "\n".join(lines)
 
     else:
-        raise ValueError(
-            f"Invalid format: {format}. Supported formats are: "
-            '"freeze", "pretty", "dict", "pyproject"'
-        )
+        raise ValueError(f'Invalid format: {format}. Supported formats are: "freeze", "pretty", "dict", "pyproject"')
