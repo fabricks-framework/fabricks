@@ -2,8 +2,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 
 def _as_variables(data: Any, source: str) -> dict[str, Any]:
     if data is None:
@@ -71,36 +69,3 @@ def _substitute_value(value: Any, lookup: dict[str, Any]) -> Any:
         lambda match: str(lookup.get(match.group(0), match.group(0))),
         value,
     )
-
-
-def prepare_runtime_conf_data(
-    conf_data: dict[str, Any],
-    config_path: Path,
-    external_variables_file: str | None = None,
-) -> dict[str, Any]:
-    prepared = dict(conf_data)
-    base_variables = _as_variables(prepared.get("variables"), source="runtime config")
-    variables_path = _resolve_variables_path(
-        conf_data=prepared,
-        config_path=config_path,
-        external_variables_file=external_variables_file,
-    )
-
-    file_variables: dict[str, Any] = {}
-    if variables_path:
-        try:
-            with open(variables_path, encoding="utf-8") as f:
-                file_variables = _as_variables(yaml.safe_load(f), source=str(variables_path))
-        except FileNotFoundError as exc:
-            raise FileNotFoundError(
-                f"variables file '{variables_path}' referenced by config '{config_path}' was not found",
-            ) from exc
-
-    merged_variables = {**base_variables, **file_variables}
-    prepared["variables"] = merged_variables
-    prepared.pop("variables_file", None)
-
-    if not merged_variables:
-        return prepared
-
-    return _substitute_value(prepared, _build_variable_lookup(merged_variables))

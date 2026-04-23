@@ -38,7 +38,7 @@ def get_tables(schema: str) -> DataFrame:
                 tables=table_df,
                 views=view_df,
             )
-            
+
         return df
 
     except AnalysisException:

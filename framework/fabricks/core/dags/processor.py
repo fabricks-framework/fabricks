@@ -4,7 +4,7 @@ import time
 from multiprocessing import Process
 from typing import Any, List, Optional
 
-from azure.core.exceptions import AzureError, ResourceNotFoundError
+from azure.core.exceptions import AzureError
 from databricks.sdk.runtime import dbutils
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
@@ -201,7 +201,8 @@ class DagProcessor(BaseDags):
             try:
                 with self.get_azure_queue() as queue:
                     queue.delete()
-            except ResourceNotFoundError:
+            except AzureError:
+                # Queue may already be deleted or not exist
                 pass
 
             if p.exitcode is None:

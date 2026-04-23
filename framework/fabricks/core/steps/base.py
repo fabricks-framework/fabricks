@@ -252,7 +252,22 @@ class BaseStep:
         update_lists: Optional[bool] = True,
         incremental: Optional[bool] = False,
     ) -> List[Dict]:
-        DEFAULT_LOGGER.info("create db objects", extra={"label": self})
+        def _create_db_objects(df: DataFrame) -> List[Dict]:
+            DEFAULT_LOGGER.info("create db objects", extra={"label": self})
+            results = run_in_parallel(
+                _create_db_object,
+                df,
+                workers=16,
+                progress_bar=True,
+                logger=DEFAULT_LOGGER,
+                loglevel=logging.CRITICAL,
+            )
+            errors = [res for res in results if res.get("error")]
+            DEFAULT_LOGGER.debug(
+                f"{len(results) - len(errors)} db objects created, {len(errors)} errors",
+                extra={"label": self},
+            )
+            return errors
 
         df = self.get_jobs()
 
@@ -264,35 +279,19 @@ class BaseStep:
             df = df.join(view_df, "job_id", how="left_anti")
 
         if df:
-            results = run_in_parallel(
-                _create_db_object,
-                df,
-                workers=16,
-                progress_bar=True,
-                logger=DEFAULT_LOGGER,
-                loglevel=logging.CRITICAL,
-            )
+            errors = _create_db_objects(df)
 
         if update_lists:
             self.update_tables_list()
             self.update_views_list()
 
-        errors = [res for res in results if res.get("error")]
-
         if errors and retry:
-            DEFAULT_LOGGER.warning("retry to create jobs", extra={"label": self})
-            failed_job_ids = [e["job_id"] for e in errors if e.get("job_id")]
-            failed_df = df.where(df["job_id"].isin(failed_job_ids))
-            if failed_df:
-                retry_results = run_in_parallel(
-                    _create_db_object,
-                    failed_df,
-                    workers=16,
-                    progress_bar=True,
-                    logger=DEFAULT_LOGGER,
-                    loglevel=logging.CRITICAL,
-                )
-                errors = [res for res in retry_results if res.get("error")]
+            DEFAULT_LOGGER.warning("retry enabled", extra={"label": self})
+            errors_ids = [e["job_id"] for e in errors if e.get("job_id")]
+
+            errors_df = df.where(df["job_id"].isin(errors_ids))
+            if errors_df:
+                errors = _create_db_objects(errors_df)
 
         return errors
 
