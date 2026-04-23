@@ -10,9 +10,10 @@ from fabricks.utils.path import FileSharePath, GitPath
 with open(str(PATH_CONFIG)) as f:
     data = yaml.safe_load(f)
 
-conf_data = [d["conf"] for d in data][0]
-assert conf_data, "conf mandatory"
-CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(conf_data)
+conf = [d["conf"] for d in data][0]
+assert conf, "conf mandatory"
+
+CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(conf)
 
 BRONZE: list[StepBronzeConf] = CONF_RUNTIME.bronze or []
 SILVER: list[StepSilverConf] = CONF_RUNTIME.silver or []

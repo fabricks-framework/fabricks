@@ -151,16 +151,14 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# Visual Studio Code
-.vscode
-
 # Ruff
 .ruff_cache
 
 # Debug
 .debug
 
-# Skills
+# Claude
+.claude/settings.local.json
 .claude/skills/*
 !.claude/skills/doc-coauthoring
 !.claude/skills/skill-creator

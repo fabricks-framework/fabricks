@@ -158,7 +158,7 @@ class DagProcessor(BaseDags):
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
         if azure_table is not None:
             return azure_table.query(query)
-            
+
         with self.get_azure_table() as at:
             return at.query(query)
 
@@ -193,13 +193,17 @@ class DagProcessor(BaseDags):
         if len(scheduled) > 0:
             LOGGER.info("start", extra={"label": str(self.step)})
 
-            p = Process(target=self._process())
+            p = Process(target=self._process)
             p.start()
             p.join(timeout=self.step.timeouts.step)
             p.terminate()
 
-            with self.get_azure_queue() as queue:
-                queue.delete()
+            try:
+                with self.get_azure_queue() as queue:
+                    queue.delete()
+            except AzureError:
+                # Queue may already be deleted or not exist
+                pass
 
             if p.exitcode is None:
                 LOGGER.critical("timeout", extra={"label": str(self.step)})

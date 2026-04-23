@@ -1,8 +1,6 @@
 """Utility functions for job and dependency ID generation."""
 
-from typing import Optional, overload
-
-from fabricks.utils.helpers import md5
+from typing import Any, Optional, overload
 
 
 @overload
@@ -31,3 +29,10 @@ def get_job_id(
 def get_dependency_id(parent: str, job_id: str) -> str:
     base = f"{job_id}*{parent}"
     return md5(base)
+
+
+def md5(s: Any) -> str:
+    from hashlib import md5
+
+    hash_obj = md5(str(s).encode())
+    return hash_obj.hexdigest()

@@ -5,47 +5,45 @@ from fabricks.context import SPARK
 
 
 def get_tables(schema: str) -> DataFrame:
-    table_df = SPARK.sql(f"show tables in {schema}")
-    view_df = SPARK.sql(f"show views in {schema}")
-
     try:
-        df = SPARK.sql(
+        table_df = SPARK.sql(f"show tables in {schema}")
+        view_df = SPARK.sql(f"show views in {schema}")
+
+        return SPARK.sql(
             """
-            select 
-              database,
-              concat_ws('.', database, tableName) as table,
-              md5(table) as job_id
-            from 
-              {tables} 
-              left anti join {views} on tableName = viewName
-            """,
+              select
+                database,
+                concat_ws('.', database, tableName) as table,
+                md5(table) as job_id
+              from
+                {tables}
+                left anti join {views} on tableName = viewName
+              """,
             tables=table_df,
             views=view_df,
         )
-        return df
 
     except AnalysisException:
         return SPARK.sql("select null::string as database, null::string as table")
 
 
 def get_views(schema: str) -> DataFrame:
-    view_df = SPARK.sql(f"show views in {schema}")
-
     try:
-        df = SPARK.sql(
+        view_df = SPARK.sql(f"show views in {schema}")
+
+        return SPARK.sql(
             """
-            select 
-              namespace as database,
-              concat_ws('.', namespace, viewName) as view,
-              md5(view) as job_id
-            from 
-                {views}
-            where
-              not isTemporary
-            """,
+                select
+                  namespace as database,
+                  concat_ws('.', namespace, viewName) as view,
+                  md5(view) as job_id
+                from
+                    {views}
+                where
+                  not isTemporary
+                """,
             views=view_df,
         )
-        return df
 
     except AnalysisException:
         return SPARK.sql("select null::string as database, null::string as view")

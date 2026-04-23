@@ -1,0 +1,7 @@
+---
+# Variables file for conf_path_variables.yml
+$workers: '16'
+$catalog: prd_dwh
+$storage: production.dfs.core.windows.net
+$retention_days: '30'
+$secret_scope: production_scope
