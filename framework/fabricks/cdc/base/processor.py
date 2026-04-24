@@ -92,8 +92,10 @@ class Processor(Generator):
         correct_valid_from = kwargs.get("correct_valid_from", None)
 
         try:
-            has_rows = self.table.rows > 0
+            rows = self.table.rows
+            has_rows = rows > 0
         except Exception:
+            rows = None
             has_rows = None
 
         # only needed when comparing to current
@@ -126,7 +128,7 @@ class Processor(Generator):
 
         # only correct valid_from on first load
         if self.slowly_changing_dimension and mode == "update":
-            correct_valid_from = correct_valid_from and self.table.rows == 0
+            correct_valid_from = correct_valid_from and not has_rows
 
         # override slice for incremental load if timestamp and rows are present
         if slice is None:

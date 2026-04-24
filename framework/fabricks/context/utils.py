@@ -20,10 +20,12 @@ def pprint_runtime(extended: bool = True) -> None:
 
     print("\n⚙️ STEPS:")
 
-    def _print_steps(steps: list[r.StepBronzeConf] | list[r.StepSilverConf] | list[r.StepGoldConf], layer, icon):
+    def _print_steps(
+        steps: dict[str, r.StepBronzeConf] | dict[str, r.StepSilverConf] | dict[str, r.StepGoldConf], layer, icon
+    ):
         if steps:
             print(f"   {icon} {layer}:")
-            for step in steps:
+            for step in steps.values():
                 print(f"      • {step.name}")
                 if extended:
                     print(f"         - 📖 {r.PATHS_RUNTIME.get(step.name)}")

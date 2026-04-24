@@ -1,4 +1,5 @@
 import posixpath
+import re
 from abc import ABC, abstractmethod
 from pathlib import Path as PathlibPath
 
@@ -30,8 +31,6 @@ class BasePath(ABC):
         """Create a path from a URI with optional regex substitution."""
         uri = uri.strip()
         if regex:
-            import re
-
             for key, value in regex.items():
                 uri = re.sub(rf"{key}", value, uri)
 

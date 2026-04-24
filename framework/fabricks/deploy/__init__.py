@@ -72,6 +72,7 @@ class Deploy:
 
         if steps is None:
             steps = Steps
+
         assert steps is not None
 
         if isinstance(steps, str):

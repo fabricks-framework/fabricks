@@ -3,7 +3,7 @@ import pyspark.sql.types as T
 from pyspark.sql import Column, DataFrame
 
 
-def _convert_null_like_values(col: Column) -> Column:
+def _value_to_none(col: Column) -> Column:
     col_str = col.cast("string")
 
     return (
@@ -18,14 +18,23 @@ def _convert_null_like_values(col: Column) -> Column:
     )
 
 
+def _trim(col: Column) -> Column:
+    return F.trim(col)
+
+
+def _decimal_to_float(col: Column) -> Column:
+    return col.cast(T.FloatType())
+
+
+def _decimal_to_double(col: Column) -> Column:
+    return col.cast(T.DoubleType())
+
+
 def value_to_none(df: DataFrame) -> DataFrame:
     cols_to_transform = {name for name, dtype in df.dtypes if not name.startswith("__")}
 
     return df.select(
-        [
-            _convert_null_like_values(df[f"`{c}`"]).alias(c) if c in cols_to_transform else df[f"`{c}`"]
-            for c in df.columns
-        ]
+        [_value_to_none(df[f"`{c}`"]).alias(c) if c in cols_to_transform else df[f"`{c}`"] for c in df.columns]
     )
 
 
@@ -33,7 +42,7 @@ def decimal_to_float(df: DataFrame) -> DataFrame:
     decimal_cols = {name for name, dtype in df.dtypes if dtype.startswith("decimal") and not name.startswith("__")}
 
     return df.select(
-        [df[f"`{c}`"].cast(T.FloatType()).alias(c) if c in decimal_cols else df[f"`{c}`"] for c in df.columns]
+        [_decimal_to_float(df[f"`{c}`"]).alias(c) if c in decimal_cols else df[f"`{c}`"] for c in df.columns]
     )
 
 
@@ -41,7 +50,7 @@ def decimal_to_double(df: DataFrame) -> DataFrame:
     decimal_cols = {name for name, dtype in df.dtypes if dtype.startswith("decimal") and not name.startswith("__")}
 
     return df.select(
-        [df[f"`{c}`"].cast(T.DoubleType()).alias(c) if c in decimal_cols else df[f"`{c}`"] for c in df.columns]
+        [_decimal_to_double(df[f"`{c}`"]).alias(c) if c in decimal_cols else df[f"`{c}`"] for c in df.columns]
     )
 
 
@@ -56,7 +65,7 @@ def tinyint_to_int(df: DataFrame) -> DataFrame:
 def trim(df: DataFrame) -> DataFrame:
     string_cols = {name for name, dtype in df.dtypes if dtype.startswith("string") and not name.startswith("__")}
 
-    return df.select([F.trim(df[f"`{c}`"]).alias(c) if c in string_cols else df[f"`{c}`"] for c in df.columns])
+    return df.select([_trim(df[f"`{c}`"]).alias(c) if c in string_cols else df[f"`{c}`"] for c in df.columns])
 
 
 def timestamp_as_string(df: DataFrame) -> DataFrame:

@@ -15,10 +15,10 @@ assert conf, "conf mandatory"
 
 CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(conf)
 
-BRONZE: list[StepBronzeConf] = CONF_RUNTIME.bronze or []
-SILVER: list[StepSilverConf] = CONF_RUNTIME.silver or []
-GOLD: list[StepGoldConf] = CONF_RUNTIME.gold or []
-STEPS = BRONZE + SILVER + GOLD
+BRONZE: dict[str, StepBronzeConf] = {s.name: s for s in CONF_RUNTIME.bronze or []}
+SILVER: dict[str, StepSilverConf] = {s.name: s for s in CONF_RUNTIME.silver or []}
+GOLD: dict[str, StepGoldConf] = {g.name: g for g in CONF_RUNTIME.gold or []}
+STEPS = {**BRONZE, **SILVER, **GOLD}
 
 databases: list[Database] = CONF_RUNTIME.databases or []
 credentials = CONF_RUNTIME.credentials or {}
@@ -55,7 +55,7 @@ PATH_MASKS: Final[GitPath] = PATHS_RESOLVED.masks
 PATHS_STORAGE: Final[dict[str, FileSharePath]] = PATHS_RESOLVED.storages
 PATHS_RUNTIME: Final[dict[str, GitPath]] = PATHS_RESOLVED.runtimes
 
-Bronzes = [b.name for b in BRONZE]
-Silvers = [s.name for s in SILVER]
-Golds = [g.name for g in GOLD]
+Bronzes = list(BRONZE.keys())
+Silvers = list(SILVER.keys())
+Golds = list(GOLD.keys())
 Steps = Bronzes + Silvers + Golds

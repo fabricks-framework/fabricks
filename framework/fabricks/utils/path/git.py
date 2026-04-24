@@ -30,18 +30,18 @@ class GitPath(BasePath):
         convert: bool | None = False,
         file_format: str | None = None,
     ) -> list:
-        out = []
-        if self.exists():
-            if self.pathlibpath.is_file():
-                out = [self.string]
-            else:
-                out = list(self._yield(self.string))
+        if not self.exists():
+            return []
 
-        if file_format:
-            out = [o for o in out if o.endswith(file_format)]
+        if self.pathlibpath.is_file():
+            out = [self.string]
+        elif file_format:
+            out = [o for o in self._yield(self.string) if o.endswith(file_format)]
+        else:
+            out = list(self._yield(self.string))
 
         if convert:
-            out = [self.__class__(o) for o in out]
+            out = [self.__class__(path=o) for o in out]
 
         return out
 

@@ -1,12 +1,19 @@
 """Utility functions for config loading and resolution."""
 
+import json
 import os
 import pathlib
+import sys
 from pathlib import Path as PathLibPath
 from typing import Any
 
 from pydantic.fields import FieldInfo
 from pydantic_settings import PydanticBaseSettingsSource
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib  # type: ignore
 
 
 class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
@@ -26,13 +33,6 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
         def pyproject_settings(base: PathLibPath):
             pyproject_path = base / "pyproject.toml"
             if pyproject_path.exists():
-                import sys
-
-                if sys.version_info >= (3, 11):
-                    import tomllib
-                else:
-                    import tomli as tomllib  # type: ignore
-
                 with open(pyproject_path, "rb") as f:
                     data = tomllib.load(f)
 
@@ -46,8 +46,6 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
         def json_settings(base: PathLibPath):
             json_path = base / "fabricksconfig.json"
             if json_path.exists():
-                import json
-
                 with open(json_path, "r") as f:
                     data = json.load(f)
 

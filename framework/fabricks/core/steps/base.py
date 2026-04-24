@@ -1,4 +1,5 @@
 import logging
+from functools import cached_property
 from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 
 from pyspark.sql import DataFrame
@@ -25,7 +26,7 @@ from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
-from fabricks.models import SchemaDependencies, StepBronzeOptions, StepGoldOptions, StepSilverOptions
+from fabricks.models import SchemaDependencies
 from fabricks.utils.helpers import run_in_parallel
 from fabricks.utils.read.read_yaml import read_yaml
 
@@ -54,58 +55,35 @@ class BaseStep:
         self.runtime = _runtime
         self.database = Database(self.name)
 
-    _conf: Optional[dict] = None
-    _options: Optional[Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]] = None
-
-    _workers: Optional[int] = None
-    _timeouts: Optional[Timeouts] = None
-
-    @property
+    @cached_property
     def workers(self):
-        if not self._workers:
-            w = self.options.workers
-            if w is None:
-                w = CONF_RUNTIME.options.workers
-            assert w is not None
-            self._workers = cast(int, w)
-
-        return self._workers
+        w = self.options.workers
+        if w is None:
+            w = CONF_RUNTIME.options.workers
+        assert w is not None
+        return cast(int, w)
 
     def _get_timeout(self, what: str) -> int:
         t = getattr(self.options.timeouts, what, None)
         if t is None:
             t = getattr(CONF_RUNTIME.options.timeouts, what)
         assert t is not None
-
         return int(t)
 
-    @property
+    @cached_property
     def timeouts(self) -> Timeouts:
-        if not self._timeouts:
-            self._timeouts = Timeouts(
-                job=self._get_timeout("job"),
-                step=self._get_timeout("step"),
-            )
+        return Timeouts(
+            job=self._get_timeout("job"),
+            step=self._get_timeout("step"),
+        )
 
-        return self._timeouts
-
-    @property
+    @cached_property
     def conf(self) -> dict:
-        if not self._conf:
-            _conf = [s for s in STEPS if s.name == self.name][0]
-            assert _conf is not None
-            self._conf = _conf.model_dump()
+        return STEPS[self.name].model_dump()
 
-        return self._conf
-
-    @property
+    @cached_property
     def options(self):
-        if not self._options:
-            _step = [s for s in STEPS if s.name == self.name][0]
-            assert _step is not None
-            self._options = _step.options
-
-        return self._options
+        return STEPS[self.name].options
 
     def drop(self):
         DEFAULT_LOGGER.warning("drop", extra={"label": self})
@@ -208,10 +186,14 @@ class BaseStep:
             loglevel=logging.CRITICAL,
         )
 
-        errors = [res for res in results if res.get("error")]
+        errors = []
         dependencies = []
-        for res in [res for res in results if res.get("dependencies")]:
-            dependencies.extend(res.get("dependencies"))
+
+        for res in results:
+            if res.get("error"):
+                errors.append(res)
+            elif res.get("dependencies"):
+                dependencies.extend(res.get("dependencies"))
 
         df = self.spark.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)
         return df, errors

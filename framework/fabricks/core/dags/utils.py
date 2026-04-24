@@ -1,3 +1,4 @@
+import os
 from typing import Optional, cast
 
 from fabricks.context import DBUTILS, FABRICKS_STORAGE, FABRICKS_STORAGE_CREDENTIAL, IS_UNITY_CATALOG, SECRET_SCOPE
@@ -12,8 +13,6 @@ def _get_access_key_from_secret_scope(storage_account: str) -> str:
 
 
 def _get_access_key_from_os() -> Optional[str]:
-    import os
-
     return os.environ.get("FABRICKS_ACCESS_KEY")
 
 

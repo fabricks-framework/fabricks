@@ -11,6 +11,7 @@ from fabricks.cdc.base.configurator import Configurator
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import SchemaDiff, Table
 from fabricks.utils._types import DataFrameLike
+from fabricks.utils.helpers import backticks
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
@@ -72,7 +73,7 @@ class Generator(Configurator):
 
         df = self.spark.sql(sql)
         df = self.reorder_dataframe(df)
-        columns = [f"`{c}`" for c in df.columns]
+        columns = backticks(df.columns)
 
         sql = f"""
         create or replace view {self}

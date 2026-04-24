@@ -28,25 +28,38 @@ class AccessKey(Secret):
     key: str
 
 
-_scopes = None
+_scopes_cache: list[str] | None = None
 
 
-@lru_cache(maxsize=None)
-def _get_secret_from_secret_scope(secret_scope: str, name: str) -> str:
+def _get_scopes() -> list[str]:
+    """Get list of available secret scopes. Cached at module level."""
+    global _scopes_cache
+    if _scopes_cache is None:
+        from databricks.sdk.runtime import dbutils
+
+        _scopes_cache = [s.name for s in dbutils.secrets.listScopes()]
+    return _scopes_cache
+
+
+@lru_cache(maxsize=256)
+def _get_secret_from_secret_scope_cached(secret_scope: str, name: str) -> str:
+    """Get secret value with bounded cache. Max 256 unique (scope, name) pairs cached."""
     from databricks.sdk.runtime import dbutils
 
-    global _scopes
+    scopes = _get_scopes()
+    if secret_scope not in scopes:
+        # Refresh scopes cache and retry
+        global _scopes_cache
+        _scopes_cache = None
+        scopes = _get_scopes()
 
-    if not _scopes or secret_scope not in _scopes:  # we get the scopes only once, unless you search for something new
-        _scopes = [s.name for s in dbutils.secrets.listScopes()]
-
-    assert secret_scope in _scopes, f"scope {secret_scope} not found"
+    assert secret_scope in scopes, f"scope {secret_scope} not found"
 
     return dbutils.secrets.get(scope=secret_scope, key=name)
 
 
 def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
-    secret = _get_secret_from_secret_scope(secret_scope=secret_scope, name=name)
+    secret = _get_secret_from_secret_scope_cached(secret_scope=secret_scope, name=name)
 
     if name.endswith("application-registration"):
         s = json.loads(secret)

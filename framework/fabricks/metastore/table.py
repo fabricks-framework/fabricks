@@ -1,4 +1,5 @@
 import re
+from functools import cached_property, lru_cache
 from typing import Sequence, overload
 
 from delta import DeltaTable
@@ -6,14 +7,20 @@ from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import max
 from pyspark.sql.types import StructType
+from typing_extensions import deprecated
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore._types import AddedColumn, ChangedColumn, DroppedColumn, SchemaDiff
 from fabricks.metastore.dbobject import DbObject
 from fabricks.models import ForeignKey, PrimaryKey
+from fabricks.utils.helpers import backticks
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.sqlglot import fix
+
+# Compile regex patterns at module level for performance
+_NAME_PATTERN = re.compile(r"(?<='name': ')[^']+(?=',)")
+_SPECIAL_CHAR_PATTERN = re.compile(r"[^a-zA-Z0-9_]")
 
 
 class Table(DbObject):
@@ -21,21 +28,23 @@ class Table(DbObject):
     def from_step_topic_item(cls, step: str, topic: str, item: str, spark: SparkSession | None = SPARK):
         return cls(step, topic, item, spark=spark)
 
-    @property
-    def deltapath(self) -> FileSharePath:
-        return self.database.delta_path.joinpath("/".join(self.levels))
-
-    @property
+    @cached_property
     def delta_path(self) -> FileSharePath:
         return self.database.delta_path.joinpath("/".join(self.levels))
 
-    @property
-    def deltatable(self) -> DeltaTable:
+    @cached_property
+    def delta_table(self) -> DeltaTable:
         return DeltaTable.forPath(self.spark, self.delta_path.string)
 
     @property
-    def delta_table(self) -> DeltaTable:
-        return DeltaTable.forPath(self.spark, self.delta_path.string)
+    @deprecated("Use delta_path instead.")
+    def deltapath(self) -> FileSharePath:
+        return self.delta_path
+
+    @property
+    @deprecated("Use delta_table instead.")
+    def deltatable(self) -> DeltaTable:
+        return self.delta_table
 
     @property
     def dataframe(self) -> DataFrame:
@@ -64,32 +73,39 @@ class Table(DbObject):
         version = df.select(max("version")).collect()[0][0]
         return version
 
-    @property
+    @cached_property
     def identity_enabled(self) -> bool:
-        return self.get_property("delta.feature.identityColumns") == "supported"
+        """Immutable, safe to cache."""
+        return self.get_property_cached("delta.feature.identityColumns") == "supported"
 
-    @property
+    @cached_property
     def generated_columns_enabled(self) -> bool:
-        return self.get_property("delta.feature.generatedColumns") == "supported"
+        """Immutable, safe to cache."""
+        return self.get_property_cached("delta.feature.generatedColumns") == "supported"
+
+    @cached_property
+    def liquid_clustering_enabled(self) -> bool:
+        """Immutable, safe to cache."""
+        return self.get_property_cached("delta.feature.clustering") == "supported"
 
     @property
     def type_widening_enabled(self) -> bool:
+        """Mutable, must query fresh."""
         return self.get_property("delta.enableTypeWidening") == "true"
 
     @property
-    def liquid_clustering_enabled(self) -> bool:
-        return self.get_property("delta.feature.clustering") == "supported"
-
-    @property
     def auto_liquid_clustering_enabled(self) -> bool:
+        """Mutable, must query fresh."""
         return self.get_property("delta.clusterByAuto") == "true"
 
     @property
     def vorder_enabled(self) -> bool:
+        """Mutable, must query fresh."""
         return self.get_property("delta.parquet.vorder.enabled") == "true"
 
     @property
     def change_data_feed_enabled(self) -> bool:
+        """Mutable, must query fresh."""
         return self.get_property("delta.enableChangeDataFeed") == "true"
 
     def drop(self):
@@ -174,13 +190,16 @@ class Table(DbObject):
         comments: dict[str, str] | None,
     ) -> list[str]:
         def _backtick(name: str, dtype: str) -> str:
-            j = df.schema[name].jsonValue()
-            r = re.compile(r"(?<='name': ')[^']+(?=',)")
+            json_value = df.schema[name].jsonValue()
 
-            names = re.findall(r, str(j))
+            names = _NAME_PATTERN.findall(str(json_value))
             for n in names:
                 escaped = re.escape(n)
-                dtype = re.sub(f"(?<=,){escaped}(?=:)|(?<=<){escaped}(?=:)", f"`{n}`", dtype)
+                dtype = re.sub(
+                    f"(?<=,){escaped}(?=:)|(?<=<){escaped}(?=:)",
+                    f"`{n}`",
+                    dtype,
+                )
 
             return dtype
 
@@ -237,7 +256,7 @@ class Table(DbObject):
             if cluster_by:
                 if isinstance(cluster_by, str):
                     cluster_by = [cluster_by]
-                cluster_by = [f"`{c}`" for c in cluster_by]
+                cluster_by = backticks(cluster_by)
                 ddl_cluster_by = "cluster by (" + ", ".join(cluster_by) + ")"
 
             else:
@@ -247,7 +266,7 @@ class Table(DbObject):
             assert partition_by
             if isinstance(partition_by, str):
                 partition_by = [partition_by]
-            partition_by = [f"`{p}`" for p in partition_by]
+            partition_by = backticks(partition_by)
             ddl_partition_by = "partitioned by (" + ", ".join(partition_by) + ")"
 
         if identity:
@@ -258,10 +277,9 @@ class Table(DbObject):
 
             for key, value in primary_key.items():
                 keys = value.keys
-                if isinstance(keys, str):
-                    keys = [keys]
+                keys = ", ".join(backticks(keys))
 
-                ddl_primary_key = f", constraint {key} primary key (" + ", ".join(keys) + ")"
+                ddl_primary_key = f", constraint {key} primary key ({keys})"
 
         if foreign_keys:
             fks = []
@@ -269,10 +287,8 @@ class Table(DbObject):
             for key, value in foreign_keys.items():
                 reference = value.reference
                 keys = value.keys
-                if isinstance(keys, str):
-                    keys = [keys]
 
-                keys = ", ".join([f"`{k}`" for k in keys])
+                keys = ", ".join(backticks(keys))
                 fk = f"constraint {key} foreign key ({keys}) references {reference}"
                 fks.append(fk)
 
@@ -283,13 +299,8 @@ class Table(DbObject):
             ddl_generated_columns = "," + ",\n\t".join(cols)
 
         if not properties:
-            special_char = False
-
-            for c in df.columns:
-                match = re.search(r"[^a-zA-Z0-9_]", c)
-                if match:
-                    special_char = True
-                    break
+            # Use pre-compiled pattern and any() for performance
+            special_char = any(_SPECIAL_CHAR_PATTERN.search(c) for c in df.columns)
 
             if special_char:
                 properties = {
@@ -390,6 +401,7 @@ class Table(DbObject):
         if self.identity_enabled:
             if "__identity" in df1.columns:
                 df1 = df1.drop("__identity")
+
         if self.generated_columns_enabled:
             generated_cols = [c for c in df1.columns if c.startswith("__generated_")]
             df1 = df1.drop(*generated_cols)
@@ -436,7 +448,13 @@ class Table(DbObject):
 
         return diffs
 
-    def update_schema(self, df: DataFrame | None = None, schema: StructType | None = None, widen_types: bool = False):
+    def update_schema(
+        self,
+        df: DataFrame | None = None,
+        schema: StructType | None = None,
+        widen_types: bool = False,
+        diffs: Sequence[SchemaDiff] | None = None,
+    ):
         if df is None and schema is None:
             raise ValueError("Either df or schema must be provided")
 
@@ -449,7 +467,9 @@ class Table(DbObject):
         if not self.column_mapping_enabled:
             self.enable_column_mapping()
 
-        diffs = self.get_schema_differences(df)
+        if not diffs:
+            diffs = self.get_schema_differences(df)
+
         if widen_types:
             diffs = [d for d in diffs if d.type_widening_compatible]
             msg = "update schema (type widening only)"
@@ -484,7 +504,7 @@ class Table(DbObject):
                     else:
                         update_df = df.select(row.column).limit(0)
                         (
-                            self.deltatable.alias("dt")
+                            self.delta_table.alias("dt")
                             .merge(update_df.alias("df"), "1 == 2")
                             .withSchemaEvolution()
                             .whenMatchedUpdateAll()
@@ -505,33 +525,32 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
 
         if not self.column_mapping_enabled:
-            self.enable_column_mapping()
-
-        diffs = self.get_schema_differences(df)
-
-        if diffs:
-            self.update_schema(df)
+            self.enable_column_mapping()  # Ensure column mapping is enabled before making schema changes (required for drop_column and change_column)
 
         diffs = self.get_schema_differences(df)
         if diffs:
-            DEFAULT_LOGGER.warning("overwrite schema", extra={"label": self, "df": diffs})
+            self.update_schema(df, diffs=diffs)
 
-            for row in diffs:
-                if row.status == "added":
-                    assert row.new_data_type is not None, "new_data_type must be defined for added columns"
-                    self.add_column(row.column, row.new_data_type)
+            diffs = self.get_schema_differences(df)
+            if diffs:
+                DEFAULT_LOGGER.warning("overwrite schema", extra={"label": self, "df": diffs})
 
-                elif row.status == "dropped":
-                    self.drop_column(row.column)
-
-                elif row.status == "changed":
-                    assert row.new_data_type is not None, "new_data_type must be defined for changed columns"
-
-                    try:
-                        self.change_column(row.column, row.new_data_type)
-                    except AnalysisException:
-                        self.drop_column(row.column)
+                for row in diffs:
+                    if row.status == "added":
+                        assert row.new_data_type is not None, "new_data_type must be defined for added columns"
                         self.add_column(row.column, row.new_data_type)
+
+                    elif row.status == "dropped":
+                        self.drop_column(row.column)
+
+                    elif row.status == "changed":
+                        assert row.new_data_type is not None, "new_data_type must be defined for changed columns"
+
+                        try:
+                            self.change_column(row.column, row.new_data_type)
+                        except AnalysisException:
+                            self.drop_column(row.column)
+                            self.add_column(row.column, row.new_data_type)
 
     def vacuum(self, retention_days: int = 7):
         assert self.registered, f"{self} not registered"
@@ -542,7 +561,7 @@ class Table(DbObject):
         try:
             self.create_restore_point()
             retention_hours = retention_days * 24
-            self.deltatable.vacuum(retention_hours)
+            self.delta_table.vacuum(retention_hours)
         finally:
             # finally
             pass
@@ -554,32 +573,35 @@ class Table(DbObject):
 
         DEFAULT_LOGGER.info("optimize", extra={"label": self})
 
+        # Cache property access for performance (accessed up to 6 times)
+        qualified_name = self.qualified_name
+
         if self.liquid_clustering_enabled:
-            self.spark.sql(f"optimize {self.qualified_name}")
+            self.spark.sql(f"optimize {qualified_name}")
 
         elif self.auto_liquid_clustering_enabled:
-            self.spark.sql(f"optimize {self.qualified_name}")
+            self.spark.sql(f"optimize {qualified_name}")
 
         elif columns is None:
             if self.vorder_enabled:
                 DEFAULT_LOGGER.debug("vorder", extra={"label": self})
-                self.spark.sql(f"optimize {self.qualified_name} vorder")
+                self.spark.sql(f"optimize {qualified_name} vorder")
             else:
-                self.spark.sql(f"optimize {self.qualified_name}")
+                self.spark.sql(f"optimize {qualified_name}")
 
         else:
             if isinstance(columns, str):
                 columns = [columns]
-            columns = [f"`{c}`" for c in columns]
+            columns = backticks(columns)
             cols = ", ".join(columns)
 
             if self.vorder_enabled:
                 DEFAULT_LOGGER.debug(f"zorder by {cols} vorder", extra={"label": self})
-                self.spark.sql(f"optimize {self.qualified_name} zorder by ({cols}) vorder")
+                self.spark.sql(f"optimize {qualified_name} zorder by ({cols}) vorder")
 
             else:
                 DEFAULT_LOGGER.debug(f"zorder by {cols}", extra={"label": self})
-                self.spark.sql(f"optimize {self.qualified_name} zorder by ({cols})")
+                self.spark.sql(f"optimize {qualified_name} zorder by ({cols})")
 
     def analyze(self):
         assert self.registered, f"{self} not registered"
@@ -696,6 +718,11 @@ class Table(DbObject):
             return None
 
         return df.select(max("version")).collect()[0][0]
+
+    @lru_cache(maxsize=128)
+    def get_property_cached(self, key: str) -> str | None:
+        """Get a table property value from the cache. Returns None if the property is not set."""
+        return self.get_property(key)
 
     def get_property(self, key: str) -> str | None:
         assert self.registered, f"{self} not registered"
@@ -840,7 +867,7 @@ class Table(DbObject):
 
         if isinstance(columns, str):
             columns = [columns]
-        columns = [f"`{c}`" for c in columns]
+        columns = backticks(columns)
         cols = ", ".join(columns)
 
         DEFAULT_LOGGER.info(f"bloomfilter by {cols}", extra={"label": self})
@@ -887,7 +914,7 @@ class Table(DbObject):
 
             if isinstance(columns, str):
                 columns = [columns]
-            columns = [f"`{c}`" for c in columns]
+            columns = backticks(columns)
             cols = ", ".join(columns)
 
             DEFAULT_LOGGER.info(f"cluster by {cols}", extra={"label": self})

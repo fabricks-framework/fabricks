@@ -1,6 +1,25 @@
+from functools import lru_cache
+
 from fabricks.context import SPARK, Steps
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.sqlglot import fix as fix_sql
+
+
+@lru_cache(maxsize=1)
+def _get_fabricks_tables() -> set[str]:
+    """Get all table names in the fabricks database. Cached to avoid repeated queries."""
+    rows = SPARK.sql("SHOW TABLES IN fabricks").collect()
+    return {row["tableName"] for row in rows}
+
+
+def _has_column(table: str, column: str, existing: set[str]) -> bool:
+    if table not in existing:
+        return False
+    try:
+        SPARK.sql(f"select {column} from fabricks.{table} limit 0")
+        return True
+    except Exception:
+        return False
 
 
 def deploy_views():
@@ -22,58 +41,57 @@ def deploy_views():
 
 
 def create_or_replace_jobs_view():
+    existing = _get_fabricks_tables()
     ctes = []
     selects = []
 
     for step in Steps:
         table = f"{step}_jobs"
-        try:
-            try:
-                SPARK.sql(f"select options.change_data_capture from fabricks.{table}")
-                change_data_capture = "coalesce(options.change_data_capture, 'nocdc') as change_data_capture"
-            except Exception:
-                change_data_capture = "'nocdc' as change_data_capture"
-
-            SPARK.sql(f"select 1 from fabricks.{table} limit 1")
-
-            cte = f"""
-              {step} as (
-                select 
-                  j.step, 
-                  s.expand,
-                  j.job_id, 
-                  j.topic, 
-                  j.item, 
-                  concat(j.step, '.', j.topic, '_', j.item) as job,
-                  j.options.mode,
-                  {change_data_capture},
-                  coalesce(j.options.type, 'default') as type,
-                  tags,
-                  case
-                    when s.expand == "bronze" then if(j.options.mode in ("append", "register"), "table", null)
-                    when
-                      s.expand == "silver"
-                    then
-                      if(
-                        j.options.mode in ("update", "append", "latest"),
-                        "table",
-                        if(j.options.mode in ("combine", "memory"), "view", null)
-                      )
-                    when
-                      s.expand == "gold"
-                    then
-                      if(j.options.mode in ("update", "append", "complete"), "table", if(j.options.mode in ("memory"), "view", null))
-                  end as object_type
-                from
-                  fabricks.{table} j
-                  left join fabricks.steps s on s.step = j.step
-              )
-            """
-            ctes.append(cte)
-            selects.append(f"select * from {step}")
-
-        except Exception:
+        if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{table}", extra={"label": "fabricks"})
+            continue
+
+        change_data_capture = (
+            "coalesce(options.change_data_capture, 'nocdc') as change_data_capture"
+            if _has_column(table, "options.change_data_capture", existing)
+            else "'nocdc' as change_data_capture"
+        )
+
+        cte = f"""
+          {step} as (
+            select
+              j.step,
+              s.expand,
+              j.job_id,
+              j.topic,
+              j.item,
+              concat(j.step, '.', j.topic, '_', j.item) as job,
+              j.options.mode,
+              {change_data_capture},
+              coalesce(j.options.type, 'default') as type,
+              tags,
+              case
+                when s.expand == "bronze" then if(j.options.mode in ("append", "register"), "table", null)
+                when
+                  s.expand == "silver"
+                then
+                  if(
+                    j.options.mode in ("update", "append", "latest"),
+                    "table",
+                    if(j.options.mode in ("combine", "memory"), "view", null)
+                  )
+                when
+                  s.expand == "gold"
+                then
+                  if(j.options.mode in ("update", "append", "complete"), "table", if(j.options.mode in ("memory"), "view", null))
+              end as object_type
+            from
+              fabricks.{table} j
+              left join fabricks.steps s on s.step = j.step
+          )
+        """
+        ctes.append(cte)
+        selects.append(f"select * from {step}")
 
     sql = f"""
     create or replace view fabricks.jobs with schema evolution as
@@ -88,29 +106,28 @@ def create_or_replace_jobs_view():
 
 
 def create_or_replace_tables_view():
+    existing = _get_fabricks_tables()
     ctes = []
     selects = []
 
     for step in Steps:
         table = f"{step}_tables"
-        try:
-            SPARK.sql(f"select 1 from fabricks.{table} limit 1")
-
-            cte = f"""
-                {step} as (
-                select 
-                  '{step}' as step, 
-                  job_id, 
-                  table 
-                from
-                  fabricks.{table}
-                )
-                """
-            ctes.append(cte)
-            selects.append(f"select * from {step}")
-
-        except Exception:
+        if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_tables", extra={"label": "fabricks"})
+            continue
+
+        cte = f"""
+            {step} as (
+            select
+              '{step}' as step,
+              job_id,
+              table
+            from
+              fabricks.{table}
+            )
+            """
+        ctes.append(cte)
+        selects.append(f"select * from {step}")
 
     sql = f"""
     create or replace view fabricks.tables with schema evolution as
@@ -125,29 +142,28 @@ def create_or_replace_tables_view():
 
 
 def create_or_replace_views_view():
+    existing = _get_fabricks_tables()
     ctes = []
     selects = []
 
     for step in Steps:
         table = f"{step}_views"
-        try:
-            SPARK.sql(f"select 1 from fabricks.{table} limit 1")
-
-            cte = f"""
-                {step} as (
-                select 
-                  '{step}' as step, 
-                  job_id, 
-                  view
-                from 
-                  fabricks.{table}
-                )
-                """
-            ctes.append(cte)
-            selects.append(f"select * from {step}")
-
-        except Exception:
+        if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_views", extra={"label": "fabricks"})
+            continue
+
+        cte = f"""
+            {step} as (
+            select
+              '{step}' as step,
+              job_id,
+              view
+            from
+              fabricks.{table}
+            )
+            """
+        ctes.append(cte)
+        selects.append(f"select * from {step}")
 
     sql = f"""
     create or replace view fabricks.views with schema evolution as
@@ -162,32 +178,31 @@ def create_or_replace_views_view():
 
 
 def create_or_replace_dependencies_view():
+    existing = _get_fabricks_tables()
     ctes = []
     selects = []
 
     for step in Steps:
         table = f"{step}_dependencies"
-        try:
-            SPARK.sql(f"select 1 from fabricks.{table} limit 1")
-
-            cte = f"""
-              {step} as (
-              select
-                '{step}' as step,
-                dependency_id,
-                job_id,
-                parent_id,
-                parent,
-                origin
-              from
-                fabricks.{table} d
-              )
-              """
-            ctes.append(cte)
-            selects.append(f"select * from {step}")
-
-        except Exception:
+        if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_dependencies", extra={"label": "fabricks"})
+            continue
+
+        cte = f"""
+          {step} as (
+          select
+            '{step}' as step,
+            dependency_id,
+            job_id,
+            parent_id,
+            parent,
+            origin
+          from
+            fabricks.{table} d
+          )
+          """
+        ctes.append(cte)
+        selects.append(f"select * from {step}")
 
     sql = f"""
     create or replace view fabricks.dependencies with schema evolution as
