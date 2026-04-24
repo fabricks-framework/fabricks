@@ -34,6 +34,9 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     spark.sql("set spark.databricks.delta.schema.autoMerge.enabled = True;")
     spark.sql("set spark.databricks.delta.resolveMergeUpdateStructsByName.enabled = True;")
 
+    # timezone configuration
+    spark.conf.set("spark.sql.session.timeZone", CONF_RUNTIME.options.timezone)
+
     # runtime options
     spark_options = CONF_RUNTIME.spark_options
     if spark_options:
@@ -65,6 +68,7 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
     add_catalog_to_spark(spark=_spark)
     if not IS_UNITY_CATALOG:
         add_credentials_to_spark(spark=_spark)
+        
     add_spark_options_to_spark(spark=_spark)
 
     return _spark
