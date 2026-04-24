@@ -8,7 +8,6 @@ from queue import Queue
 from typing import Any, Callable, Iterable, List, Literal, Optional, Union
 
 import pyspark.sql.functions as F
-import xxhash
 from pyspark.sql import DataFrame
 from typing_extensions import deprecated
 
@@ -227,10 +226,6 @@ def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
         timeout = 3600
 
     dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs})  # type: ignore
-
-
-def xxhash64(s: Any) -> int:
-    return xxhash.xxh64(str(s)).intdigest()
 
 
 def load_module_from_path(name: str, path: GitPath):
