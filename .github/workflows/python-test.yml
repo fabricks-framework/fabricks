@@ -36,5 +36,5 @@ jobs:
         working-directory: framework
 
       - name: Run Unit Tests
-        run: uv run pytest -m unit --maxfail 3
+        run:   uv run pytest tests/unit --maxfail 3
         working-directory: framework
