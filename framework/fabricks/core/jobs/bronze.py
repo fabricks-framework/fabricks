@@ -1,3 +1,5 @@
+import os
+from functools import cached_property
 from typing import Optional, Sequence, Union
 
 from pyspark.sql import DataFrame
@@ -12,7 +14,7 @@ from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobBronzeOptions, JobDependency, ParserOptions, StepBronzeConf, StepBronzeOptions
-from fabricks.utils.helpers import add_hash
+from fabricks.utils.helpers import add_hash, backticks
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
 
@@ -34,8 +36,6 @@ class Bronze(BaseJob):
             job_id=job_id,
             conf=conf,
         )
-
-    _parser: Optional[str] = None
 
     @property
     def stream(self) -> bool:
@@ -149,17 +149,12 @@ class Bronze(BaseJob):
         if compute_statistics:
             self.compute_statistics_external_table()
 
-    @property
+    @cached_property
     def parser(self) -> str:
-        if not self._parser:
-            assert self.mode not in ["register"], f"{self.mode} not allowed"
-
-            parser = self.options.parser
-            assert parser is not None, "parser not found"
-
-            self._parser = parser
-
-        return self._parser
+        assert self.mode not in ["register"], f"{self.mode} not allowed"
+        parser = self.options.parser
+        assert parser is not None, "parser not found"
+        return parser
 
     def parse(self, stream: bool = False) -> DataFrame:
         """
@@ -235,8 +230,6 @@ class Bronze(BaseJob):
                     )
 
             else:
-                import os
-
                 key = os.environ.get("FABRICKS_ENCRYPTION_KEY")
 
             assert key, "encryption key not found in secrets nor in environment"
@@ -262,7 +255,7 @@ class Bronze(BaseJob):
             df = self.base_transform(df)
 
         if schema_only:
-            df = df.where("1 == 2")
+            df = df.limit(0)
 
         return df
 
@@ -285,14 +278,14 @@ class Bronze(BaseJob):
                 if "__source" in df.columns:
                     fields = fields + ["__source"]
 
-                fields = [f"`{f}`" for f in fields]
+                fields = backticks(fields)
                 df = add_hash("__key", df, fields=fields)
 
         return df
 
     def add_hash(self, df: DataFrame) -> DataFrame:
         if "__hash" not in df.columns:
-            fields = [f"`{c}`" for c in df.columns if not c.startswith("__")]
+            fields = backticks([c for c in df.columns if not c.startswith("__")])
             DEFAULT_LOGGER.debug("add hash", extra={"label": self})
 
             if "__operation" in df.columns:

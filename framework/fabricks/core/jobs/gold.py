@@ -1,4 +1,7 @@
+import re
+import sys
 from collections.abc import Sequence
+from functools import cached_property
 from typing import Any, List, Literal, Optional, Union
 
 from pyspark.sql import DataFrame
@@ -12,7 +15,6 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobGoldOptions, RegisterOptions, StepGoldConf, StepGoldOptions
-from fabricks.utils.path import GitPath
 from fabricks.utils.sqlglot import fix, get_tables, parse_script
 
 
@@ -33,10 +35,6 @@ class Gold(BaseJob):
             job_id=job_id,
             conf=conf,
         )
-
-    _sql: Optional[str] = None
-    _sql_path: Optional[GitPath] = None
-    _schema_drift: Optional[bool] = None
 
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
@@ -70,13 +68,11 @@ class Gold(BaseJob):
     def stream(self) -> bool:
         return False
 
-    @property
+    @cached_property
     def schema_drift(self) -> bool:
-        if not self._schema_drift:
-            _schema_drift = self.step_conf.options.schema_drift or False
-            assert _schema_drift is not None
-            self._schema_drift = _schema_drift
-        return self._schema_drift
+        _schema_drift = self.step_conf.options.schema_drift or False
+        assert _schema_drift is not None
+        return _schema_drift
 
     @property
     def persist(self) -> bool:
@@ -141,8 +137,6 @@ class Gold(BaseJob):
         **kwargs,
     ) -> DataFrame:
         if self.options.requirements:
-            import sys
-
             sys.path.append("/dbfs/mnt/fabricks/site-packages")
 
         if self.mode == "invoke":
@@ -191,7 +185,7 @@ class Gold(BaseJob):
             df = self.base_transform(df)
 
         if schema_only:
-            df = df.where("1 == 2")
+            df = df.limit(0)
 
         return df
 
@@ -244,8 +238,6 @@ class Gold(BaseJob):
         return get_tables(self.sql, allowed_databases=steps)
 
     def _get_notebook_dependencies(self) -> List[str]:
-        import re
-
         from fabricks.context import CATALOG
 
         dependencies = []

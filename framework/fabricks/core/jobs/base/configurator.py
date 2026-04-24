@@ -1,5 +1,6 @@
 import re
 from abc import ABC, abstractmethod
+from functools import cached_property
 from typing import List, Optional, Union
 
 from pyspark.sql import DataFrame, SparkSession
@@ -37,6 +38,8 @@ from fabricks.models import (
     get_job_id,
 )
 
+_UDF_PATTERN = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
+
 
 class Configurator(ABC):
     def __init__(
@@ -65,21 +68,8 @@ class Configurator(ABC):
             self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item, row=conf)
             self.job_id = get_job_id(step=self.step, topic=self.topic, item=self.item)
 
-    _step_conf: Optional[Union[StepBronzeConf, StepSilverConf, StepGoldConf]] = None
-    _step_options: Optional[Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]] = None
-    _step_table_options: Optional[StepTableOptions] = None
-    _runtime_options: Optional[RuntimeOptions] = None
-    _runtime_conf: Optional[RuntimeConf] = None
-    _spark: Optional[SparkSession] = None
-    _timeout: Optional[int] = None
-    _paths: Optional[Paths] = None
-    _table: Optional[Table] = None
-
-    _cdc: Optional[Union[NoCDC, SCD0, SCD1, SCD2]] = None
-    _change_data_capture: Optional[AllowedChangeDataCaptures] = None
-    _mode: Optional[AllowedModes] = None
-
-    _udf_registered: Optional[bool] = None
+    _spark: Optional[SparkSession] = None  # Keep mutable - has side effects
+    _udf_registered: Optional[bool] = None  # Keep mutable - state flag
 
     @property
     @abstractmethod
@@ -137,13 +127,9 @@ class Configurator(ABC):
             self._spark = spark
         return self._spark
 
-    @property
+    @cached_property
     def base_step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
-        if not self._step_conf:
-            _conf = [s for s in STEPS if s.name == self.step][0]
-            assert _conf is not None
-            self._step_conf = _conf
-        return self._step_conf
+        return STEPS[self.step]
 
     @property
     def qualified_name(self) -> str:
@@ -156,18 +142,13 @@ class Configurator(ABC):
         assert t is not None
         return t
 
-    @property
+    @cached_property
     def timeout(self) -> int:
-        if not self._timeout:
-            t = self.options.timeout
-
-            if t is None:
-                t = self._get_timeout("job")
-
-            assert t is not None
-            self._timeout = int(t)
-
-        return self._timeout
+        t = self.options.timeout
+        if t is None:
+            t = self._get_timeout("job")
+        assert t is not None
+        return int(t)
 
     def pip(self):
         pass
@@ -176,26 +157,22 @@ class Configurator(ABC):
     def table(self) -> Table:
         return self.cdc.table
 
-    @property
+    @cached_property
     def paths(self) -> Paths:
-        if not self._paths:
-            storage = PATHS_STORAGE.get(self.step)
-            assert storage
+        storage = PATHS_STORAGE.get(self.step)
+        assert storage
 
-            runtime_root = PATHS_RUNTIME.get(self.step)
-            assert runtime_root
+        runtime_root = PATHS_RUNTIME.get(self.step)
+        assert runtime_root
 
-            self._paths = Paths(
-                to_storage=storage,
-                to_tmp=storage.joinpath("tmp", self.topic, self.item),
-                to_checkpoints=storage.joinpath("checkpoints", self.topic, self.item),
-                to_commits=storage.joinpath("checkpoints", self.topic, self.item, "commits"),
-                to_schema=storage.joinpath("schema", self.topic, self.item),
-                to_runtime=runtime_root.joinpath(self.topic, self.item),
-            )
-
-        assert self._paths is not None
-        return self._paths
+        return Paths(
+            to_storage=storage,
+            to_tmp=storage.joinpath("tmp", self.topic, self.item),
+            to_checkpoints=storage.joinpath("checkpoints", self.topic, self.item),
+            to_commits=storage.joinpath("checkpoints", self.topic, self.item, "commits"),
+            to_schema=storage.joinpath("schema", self.topic, self.item),
+            to_runtime=runtime_root.joinpath(self.topic, self.item),
+        )
 
     @property
     @abstractmethod
@@ -209,14 +186,12 @@ class Configurator(ABC):
         """
         raise NotImplementedError()
 
-    @property
+    @cached_property
     def runtime_conf(self) -> RuntimeConf:
         """Direct access to typed runtime conf."""
-        if not self._runtime_conf:
-            from fabricks.context.runtime import CONF_RUNTIME
+        from fabricks.context.runtime import CONF_RUNTIME
 
-            self._runtime_conf = CONF_RUNTIME
-        return self._runtime_conf
+        return CONF_RUNTIME
 
     @property
     @abstractmethod
@@ -229,14 +204,10 @@ class Configurator(ABC):
         """Direct access to typed step-level options from context configuration."""
         raise NotImplementedError()
 
-    @property
+    @cached_property
     def step_table_options(self) -> Optional[StepTableOptions]:
         """Direct access to typed step-level table options from context configuration."""
-        if self._step_table_options is None:
-            _step = [s for s in STEPS if s.name == self.step][0]
-            assert _step is not None
-            self._step_table_options = _step.table_options
-        return self._step_table_options
+        return STEPS[self.step].table_options
 
     @property
     def runtime_options(self) -> RuntimeOptions:
@@ -279,30 +250,22 @@ class Configurator(ABC):
         """Direct access to typed extender options."""
         return self.conf.extender_options
 
-    @property
+    @cached_property
     def change_data_capture(self) -> AllowedChangeDataCaptures:
-        if not self._change_data_capture:
-            cdc: AllowedChangeDataCaptures = self.options.change_data_capture or "nocdc"
-            self._change_data_capture = cdc
-        return self._change_data_capture
+        return self.options.change_data_capture or "nocdc"
 
-    @property
+    @cached_property
     def cdc(self) -> Union[NoCDC, SCD0, SCD1, SCD2]:
-        if not self._cdc:
-            if self.change_data_capture == "nocdc":
-                cdc = NoCDC(self.step, self.topic, self.item, spark=self.spark)
-            elif self.change_data_capture == "scd0":
-                cdc = SCD0(self.step, self.topic, self.item, spark=self.spark)
-            elif self.change_data_capture == "scd1":
-                cdc = SCD1(self.step, self.topic, self.item, spark=self.spark)
-            elif self.change_data_capture == "scd2":
-                cdc = SCD2(self.step, self.topic, self.item, spark=self.spark)
-            else:
-                raise ValueError(f"{self.change_data_capture} not allowed")
-
-            self._cdc = cdc
-
-        return self._cdc
+        if self.change_data_capture == "nocdc":
+            return NoCDC(self.step, self.topic, self.item, spark=self.spark)
+        elif self.change_data_capture == "scd0":
+            return SCD0(self.step, self.topic, self.item, spark=self.spark)
+        elif self.change_data_capture == "scd1":
+            return SCD1(self.step, self.topic, self.item, spark=self.spark)
+        elif self.change_data_capture == "scd2":
+            return SCD2(self.step, self.topic, self.item, spark=self.spark)
+        else:
+            raise ValueError(f"{self.change_data_capture} not allowed")
 
     @property
     def slowly_changing_dimension(self) -> bool:
@@ -318,13 +281,11 @@ class Configurator(ABC):
             cdc_df = self.cdc.get_data(src=df, **cdc_context)
             return cdc_df
 
-    @property
+    @cached_property
     def mode(self) -> AllowedModes:
-        if not self._mode:
-            _mode = self.options.mode
-            assert _mode is not None
-            self._mode = _mode
-        return self._mode
+        _mode = self.options.mode
+        assert _mode is not None
+        return _mode
 
     def get_udfs(self) -> Optional[list[str]]:
         updated_columns = self.updater_options.columns if self.updater_options else {}
@@ -350,12 +311,9 @@ class Configurator(ABC):
             self._udf_registered = True
 
     def _match_udfs(self, string: str) -> Optional[list[str]]:
-        if f"{UDF_PREFIX}" in string:
-            r = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
-            matches = re.findall(r, string)
-            matches = set(matches)
-            matches = list(matches)
-            return matches
+        if UDF_PREFIX in string:
+            matches = _UDF_PATTERN.findall(string)
+            return list(set(matches)) if matches else None
 
     @abstractmethod
     def get_data(self, stream: bool = False, transform: Optional[bool] = None, **kwargs) -> Optional[DataFrame]: ...

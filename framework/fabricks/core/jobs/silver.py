@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import Any, Optional, Sequence, Union
 
 from pyspark.sql import DataFrame
@@ -33,9 +34,6 @@ class Silver(BaseJob):
             conf=conf,
         )
 
-    _parent_step: Optional[str] = None
-    _stream: Optional[bool] = None
-
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
         return cls(step=step, job_id=job_id, conf=conf)
@@ -59,14 +57,12 @@ class Silver(BaseJob):
         """Direct access to typed silver step options."""
         return self.base_step_conf.options  # type: ignore
 
-    @property
+    @cached_property
     def stream(self) -> bool:
-        if not self._stream:
-            _stream = self.options.stream
-            if _stream is None:
-                _stream = self.step_conf.options.stream
-            self._stream = _stream if _stream is not None else True
-        return self._stream
+        _stream = self.options.stream
+        if _stream is None:
+            _stream = self.step_conf.options.stream
+        return _stream if _stream is not None else True
 
     @property
     def schema_drift(self) -> bool:
@@ -80,13 +76,11 @@ class Silver(BaseJob):
     def virtual(self) -> bool:
         return self.mode in ["combine", "memory"]
 
-    @property
+    @cached_property
     def parent_step(self) -> str:
-        if not self._parent_step:
-            _parent_step = self.step_conf.options.parent
-            assert _parent_step is not None
-            self._parent_step = str(_parent_step)
-        return self._parent_step
+        _parent_step = self.step_conf.options.parent
+        assert _parent_step is not None
+        return str(_parent_step)
 
     def update_metadata(self, df: DataFrame) -> DataFrame:
         if "__metadata" in df.columns:
@@ -154,7 +148,7 @@ class Silver(BaseJob):
                     else:
                         df = read(
                             stream=stream,
-                            path=bronze.table.deltapath,
+                            path=bronze.table.delta_path,
                             file_format="delta",
                             metadata=False,
                             spark=self.spark,
@@ -179,7 +173,7 @@ class Silver(BaseJob):
             df = self.base_transform(df)
 
         if schema_only:
-            df = df.where("1 == 2")
+            df = df.limit(0)
 
         return df
 

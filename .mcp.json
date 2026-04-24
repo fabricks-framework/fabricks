@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@context7/mcp"],
+      "description": "Live documentation lookup for PySpark, Databricks, Azure SDKs, and other libraries used in Fabricks"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub integration for issues, PRs, and workflow status (requires GitHub CLI or personal access token)"
+    }
+  }
+}

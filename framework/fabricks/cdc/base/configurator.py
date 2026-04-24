@@ -12,6 +12,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 from fabricks.utils._types import DataFrameLike
+from fabricks.utils.helpers import backticks
 
 
 class Configurator(ABC):
@@ -191,10 +192,7 @@ class Configurator(ABC):
         if sort:
             columns = self.sort_columns(columns)
 
-        if backtick:
-            return [f"`{c}`" for c in columns]
-        else:
-            return columns
+        return backticks(columns) if backtick else columns
 
     def sort_columns(self, columns: List[str]) -> List[str]:
         fields = [c for c in columns if not c.startswith("__")]
@@ -219,7 +217,7 @@ class Configurator(ABC):
             extra__columns = [c for c in extra__columns if c in df.columns]
             columns += extra__columns
 
-        columns = [f"`{c}`" for c in columns]
+        columns = backticks(columns)
         return df.select(columns)
 
     @abstractmethod

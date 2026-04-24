@@ -18,6 +18,13 @@ logger, _ = get_logger(
 logging.getLogger("SQLQueryContextLogger").setLevel(logging.CRITICAL)
 
 DEFAULT_LOGGER: Final[logging.Logger] = logger
+COLORS = {
+    "DEBUG": "#00BCD4",
+    "INFO": "#2196F3",
+    "WARNING": "#FF9800",
+    "ERROR": "#F44336",
+    "CRITICAL": "#C62828",
+}
 
 if IS_FUNMODE:
     # 🎄 Christmas Easter Egg 🎅
@@ -147,13 +154,6 @@ def send_message_to_channel(
     if color:
         teams_message["themeColor"] = color
     else:
-        COLORS = {
-            "DEBUG": "#00BCD4",
-            "INFO": "#2196F3",
-            "WARNING": "#FF9800",
-            "ERROR": "#F44336",
-            "CRITICAL": "#C62828",
-        }
         color = COLORS[loglevel]
         teams_message["themeColor"] = color
 

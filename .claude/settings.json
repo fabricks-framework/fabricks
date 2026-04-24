@@ -1,7 +1,42 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./framework/format.sh ty:*)"
+      "Bash(./framework/format.sh:*)",
+      "Bash(pytest:*)",
+      "Bash(git status:)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(uv run:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Read",
+      "Grep",
+      "Glob"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd framework && ./format.sh ty {{toolUse.file_path}}"
+          },
+          {
+            "type": "command",
+            "command": "cd framework && ./format.sh python {{toolUse.file_path}}"
+          },
+          {
+            "type": "command",
+            "command": "cd framework && ./format.sh sql {{toolUse.file_path}}"
+          },
+          {
+            "type": "command",
+            "command": "cd framework && ./format.sh yaml {{toolUse.file_path}}"
+          }
+        ]
+      }
     ]
   }
 }

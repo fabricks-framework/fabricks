@@ -1,10 +1,13 @@
 import logging
 import sys
+import threading
 from functools import reduce
+from hashlib import md5 as hashlib_md5
 from pathlib import Path
 from queue import Queue
 from typing import Any, Callable, Iterable, List, Literal, Optional, Union
 
+import pyspark.sql.functions as F
 from pyspark.sql import DataFrame
 from typing_extensions import deprecated
 
@@ -25,14 +28,11 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
 
 
 def md5(s: Any) -> str:
-    from hashlib import md5
-
-    hash_obj = md5(str(s).encode())
+    hash_obj = hashlib_md5(str(s).encode())
     return hash_obj.hexdigest()
 
 
 def add_hash(column: str, df: DataFrame, fields: Union[str, List[str]]):
-    import pyspark.sql.functions as F
 
     return df.withColumn(f"{column}", F.md5(F.expr(concat_ws(fields))))
 
@@ -134,8 +134,6 @@ def run_in_parallel(
         results = []
 
         if run_as == "Queue":
-            import threading
-
             task_queue = Queue()
             result_queue = Queue()
             stop_signal = object()
@@ -230,12 +228,6 @@ def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
     dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs})  # type: ignore
 
 
-def xxhash64(s: Any) -> int:
-    import xxhash
-
-    return xxhash.xxh64(str(s)).intdigest()
-
-
 def load_module_from_path(name: str, path: GitPath):
     from importlib.util import module_from_spec, spec_from_file_location
 
@@ -291,3 +283,14 @@ def find_upward(
             return None
 
         current = parent
+
+
+def backticks(columns: Union[str, List[str]]) -> List[str]:
+    if isinstance(columns, str):
+        columns = [columns]
+
+    return [f"`{c}`" for c in columns]
+
+
+def backtick(column: str) -> str:
+    return f"`{column}`"

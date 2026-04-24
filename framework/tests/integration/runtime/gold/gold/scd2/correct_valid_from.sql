@@ -16,4 +16,4 @@ select
     d.__operation,
     if(d.__operation == 'delete', d.__timestamp + interval 1 second, d.__timestamp) as __timestamp
 from dates d
-left join silver.monarch_scd2 s on d.`id` = s.`id` and d.__timestamp between s.__valid_from and s.__valid_to
+left join silver.monarch_scd2 s on d.`id` = s.`id` and d.__timestamp >= s.__valid_from and d.__timestamp < s.__valid_to

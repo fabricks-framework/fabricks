@@ -1,10 +1,16 @@
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Union
 
 from fabricks.utils.helpers import find_upward
 from fabricks.utils.path import FileSharePath, GitPath
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib  # type: ignore
 
 
 def pip_package(
@@ -54,8 +60,6 @@ def pip_requirements(
 
 
 def pip_wheel(requirement_path: FileSharePath, whl_path: FileSharePath):
-    import subprocess
-
     r = requirement_path.string
     w = whl_path.get_dbfs_mnt_path()
 
@@ -88,13 +92,6 @@ def pip_list(
         ValueError: If pip command fails or invalid format specified
         FileNotFoundError: If pyproject.toml not found when pyproject=True
     """
-    import sys
-
-    if sys.version_info >= (3, 11):
-        import tomllib
-    else:
-        import tomli as tomllib
-
     # Get all installed packages
     out = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
     if out.returncode != 0:

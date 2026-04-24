@@ -11,6 +11,7 @@ from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.utils._types import DataFrameLike
+from fabricks.utils.helpers import backticks
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
@@ -19,11 +20,13 @@ class Merger(Processor):
         if isinstance(src, DataFrameLike):
             format = "dataframe"
             columns = self.get_columns(src, backtick=False, sort=False, check=False)  # already done in processor
+
         elif isinstance(src, str):
             format = "view"
             columns = self.get_columns(
                 f"select * from {src}", backtick=False, sort=False, check=False
             )  # already done in processor
+
         else:
             raise ValueError(f"{src} not allowed")
 
@@ -48,11 +51,11 @@ class Merger(Processor):
 
         # 'NoneType' object is not iterable
         if keys:
-            keys = [f"`{k}`" for k in keys]
+            keys = backticks(keys)
         if columns:
-            columns = [f"`{c}`" for c in columns]
+            columns = backticks(columns)
         if fields:
-            fields = [f"`{c}`" for c in fields]
+            fields = backticks(fields)
 
         assert "__key" or keys, f"{self} - __key or keys not found"
 

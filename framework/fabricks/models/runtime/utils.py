@@ -5,6 +5,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, resolve_git_path
 
 
@@ -88,8 +90,6 @@ def _substitute_value(value: Any, lookup: dict[str, Any]) -> Any:
 @lru_cache(maxsize=128)
 def _load_variables_from_file_cached(variables_path_str: str) -> dict[str, Any]:
     """Cached YAML file loader (internal)."""
-    import yaml
-
     variables_path = Path(variables_path_str)
     with open(variables_path, encoding="utf-8") as f:
         return _as_variables(yaml.safe_load(f), source=variables_path_str)
