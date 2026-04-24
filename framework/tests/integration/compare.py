@@ -2,49 +2,11 @@ from typing import Optional
 
 from pandas.testing import assert_frame_equal
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import expr, length, lower, when
-from pyspark.sql.types import DoubleType, StringType
+from pyspark.sql.functions import expr
 
 from fabricks.context import SPARK
 from fabricks.core.jobs.base import BaseJob
-
-
-def value_to_none(df: DataFrame) -> DataFrame:
-    cols = [name for name, dtype in df.dtypes if not name.startswith("__")]
-    for c in cols:
-        df = df.withColumn(
-            c,
-            when(length(df[f"`{c}`"].cast("string")) == 0, None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "none", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "null", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "blank", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "(none)", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "(null)", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "(blank)", None)
-            .otherwise(df[f"`{c}`"]),
-        )
-    return df
-
-
-def decimal_to_double(df: DataFrame) -> DataFrame:
-    cols = [name for name, dtype in df.dtypes if dtype.startswith("decimal") and not name.startswith("__")]
-    for c in cols:
-        df = df.withColumn(c, df[f"`{c}`"].cast(DoubleType()))
-    return df
-
-
-def timestamp_as_string(df: DataFrame) -> DataFrame:
-    cols = [name for name, dtype in df.dtypes if dtype.startswith("timestamp")]
-    for c in cols:
-        df = df.withColumn(c, df[f"`{c}`"].cast(StringType()))
-    return df
-
-
-def boolean_as_string(df: DataFrame) -> DataFrame:
-    cols = [name for name, dtype in df.dtypes if dtype.startswith("boolean")]
-    for c in cols:
-        df = df.withColumn(c, df[f"`{c}`"].cast(StringType()))
-    return df
+from fabricks.core.parsers.utils import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
 
 
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):

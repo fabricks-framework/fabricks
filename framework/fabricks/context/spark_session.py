@@ -68,7 +68,7 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
     add_catalog_to_spark(spark=_spark)
     if not IS_UNITY_CATALOG:
         add_credentials_to_spark(spark=_spark)
-        
+
     add_spark_options_to_spark(spark=_spark)
 
     return _spark

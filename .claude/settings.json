@@ -17,49 +17,25 @@
   "hooks": {
     "PostToolUse": [
       {
-        "name": "auto-type-check",
-        "filter": {
-          "toolName": [
-            "Edit",
-            "Write"
-          ],
-          "pathGlob": "framework/fabricks/**/*.py"
-        },
-        "command": "cd framework && ./format.sh ty fabricks",
-        "continueOnError": true
-      },
-      {
-        "name": "auto-format-python",
-        "filter": {
-          "toolName": [
-            "Edit",
-            "Write"
-          ],
-          "pathGlob": "framework/**/*.py"
-        },
-        "command": "cd framework && ./format.sh python {{toolUse.file_path}}"
-      },
-      {
-        "name": "auto-format-sql",
-        "filter": {
-          "toolName": [
-            "Edit",
-            "Write"
-          ],
-          "pathGlob": "**/*.sql"
-        },
-        "command": "cd framework && ./format.sh sql {{toolUse.file_path}}"
-      },
-      {
-        "name": "auto-format-yaml",
-        "filter": {
-          "toolName": [
-            "Edit",
-            "Write"
-          ],
-          "pathGlob": "**/*.yml"
-        },
-        "command": "cd framework && ./format.sh yaml {{toolUse.file_path}}"
+        "matcher": "edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd framework && ./format.sh ty {{toolUse.file_path}}"
+          },
+          {
+            "type": "command",
+            "command": "cd framework && ./format.sh python {{toolUse.file_path}}"
+          },
+          {
+            "type": "command",
+            "command": "cd framework && ./format.sh sql {{toolUse.file_path}}"
+          },
+          {
+            "type": "command",
+            "command": "cd framework && ./format.sh yaml {{toolUse.file_path}}"
+          }
+        ]
       }
     ]
   }

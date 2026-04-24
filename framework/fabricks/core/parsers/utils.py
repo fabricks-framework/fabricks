@@ -1,94 +1,23 @@
-from pyspark.sql import Column, DataFrame
-from pyspark.sql.functions import length, lower
-from pyspark.sql.functions import trim as _trim
-from pyspark.sql.functions import when
-from pyspark.sql.types import DoubleType, FloatType, IntegerType
+# Backwards compatibility for utils functions
 
+from fabricks.utils.dataframe import (
+    boolean_as_string,
+    clean,
+    decimal_to_double,
+    decimal_to_float,
+    timestamp_as_string,
+    tinyint_to_int,
+    trim,
+    value_to_none,
+)
 
-def _convert_null_like_values(col: Column) -> Column:
-    col_str = col.cast("string")
-
-    return (
-        when(length(col_str) == 0, None)
-        .when(lower(col_str) == "none", None)
-        .when(lower(col_str) == "null", None)
-        .when(lower(col_str) == "blank", None)
-        .when(lower(col_str) == "(none)", None)
-        .when(lower(col_str) == "(null)", None)
-        .when(lower(col_str) == "(blank)", None)
-        .otherwise(col)
-    )
-
-
-def value_to_none(df: DataFrame) -> DataFrame:
-    cols_to_transform = {name for name, dtype in df.dtypes if not name.startswith("__")}
-
-    return df.select([
-        _convert_null_like_values(df[f"`{c}`"]).alias(c)
-        if c in cols_to_transform
-        else df[f"`{c}`"]
-        for c in df.columns
-    ])
-
-
-def decimal_to_float(df: DataFrame) -> DataFrame:
-    decimal_cols = {name for name, dtype in df.dtypes if dtype.startswith("decimal") and not name.startswith("__")}
-
-    return df.select([
-        df[f"`{c}`"].cast(FloatType()).alias(c)
-        if c in decimal_cols
-        else df[f"`{c}`"]
-        for c in df.columns
-    ])
-
-
-def decimal_to_double(df: DataFrame) -> DataFrame:
-    decimal_cols = {name for name, dtype in df.dtypes if dtype.startswith("decimal") and not name.startswith("__")}
-
-    return df.select([
-        df[f"`{c}`"].cast(DoubleType()).alias(c)
-        if c in decimal_cols
-        else df[f"`{c}`"]
-        for c in df.columns
-    ])
-
-
-def tinyint_to_int(df: DataFrame) -> DataFrame:
-    tinyint_cols = {name for name, dtype in df.dtypes if dtype.startswith("tinyint") and not name.startswith("__")}
-
-    return df.select([
-        df[f"`{c}`"].cast(IntegerType()).alias(c)
-        if c in tinyint_cols
-        else df[f"`{c}`"]
-        for c in df.columns
-    ])
-
-
-def trim(df: DataFrame) -> DataFrame:
-    string_cols = {name for name, dtype in df.dtypes if dtype.startswith("string") and not name.startswith("__")}
-
-    return df.select([
-        _trim(df[f"`{c}`"]).alias(c)
-        if c in string_cols
-        else df[f"`{c}`"]
-        for c in df.columns
-    ])
-
-
-def clean(df: DataFrame) -> DataFrame:
-    """
-    Cleans the given DataFrame by performing the following operations:
-    1. Trims whitespace from all string columns.
-    2. Converts empty strings to None.
-    3. Converts decimal values to double.
-
-    Args:
-        df (pandas.DataFrame): The DataFrame to be cleaned.
-
-    Returns:
-        pandas.DataFrame: The cleaned DataFrame.
-    """
-    df = trim(df)
-    df = value_to_none(df)
-    df = decimal_to_double(df)
-    return df
+__all__ = [
+    "value_to_none",
+    "decimal_to_float",
+    "decimal_to_double",
+    "tinyint_to_int",
+    "trim",
+    "timestamp_as_string",
+    "boolean_as_string",
+    "clean",
+]
