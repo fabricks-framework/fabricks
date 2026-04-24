@@ -163,3 +163,4 @@ cython_debug/
 !.claude/skills/doc-coauthoring
 !.claude/skills/skill-creator
 !.claude/skills/fabricks
+!.claude/skills/python-performance-optimization

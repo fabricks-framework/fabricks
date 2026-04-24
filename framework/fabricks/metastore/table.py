@@ -482,7 +482,7 @@ class Table(DbObject):
                         self.change_column(row.column, row.new_data_type)
 
                     else:
-                        update_df = df.select(row.column).where("1 == 2")
+                        update_df = df.select(row.column).limit(0)
                         (
                             self.deltatable.alias("dt")
                             .merge(update_df.alias("df"), "1 == 2")

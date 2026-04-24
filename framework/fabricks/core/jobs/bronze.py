@@ -262,7 +262,7 @@ class Bronze(BaseJob):
             df = self.base_transform(df)
 
         if schema_only:
-            df = df.where("1 == 2")
+            df = df.limit(0)
 
         return df
 

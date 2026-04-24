@@ -1,53 +1,78 @@
-from pyspark.sql import DataFrame
+from pyspark.sql import Column, DataFrame
 from pyspark.sql.functions import length, lower
 from pyspark.sql.functions import trim as _trim
 from pyspark.sql.functions import when
 from pyspark.sql.types import DoubleType, FloatType, IntegerType
 
 
+def _convert_null_like_values(col: Column) -> Column:
+    col_str = col.cast("string")
+
+    return (
+        when(length(col_str) == 0, None)
+        .when(lower(col_str) == "none", None)
+        .when(lower(col_str) == "null", None)
+        .when(lower(col_str) == "blank", None)
+        .when(lower(col_str) == "(none)", None)
+        .when(lower(col_str) == "(null)", None)
+        .when(lower(col_str) == "(blank)", None)
+        .otherwise(col)
+    )
+
+
 def value_to_none(df: DataFrame) -> DataFrame:
-    cols = [name for name, dtype in df.dtypes if not name.startswith("__")]
-    for c in cols:
-        df = df.withColumn(
-            c,
-            when(length(df[f"`{c}`"].cast("string")) == 0, None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "none", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "null", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "blank", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "(none)", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "(null)", None)
-            .when(lower(df[f"`{c}`"].cast("string")) == "(blank)", None)
-            .otherwise(df[f"`{c}`"]),
-        )
-    return df
+    cols_to_transform = {name for name, dtype in df.dtypes if not name.startswith("__")}
+
+    return df.select([
+        _convert_null_like_values(df[f"`{c}`"]).alias(c)
+        if c in cols_to_transform
+        else df[f"`{c}`"]
+        for c in df.columns
+    ])
 
 
 def decimal_to_float(df: DataFrame) -> DataFrame:
-    cols = [name for name, dtype in df.dtypes if dtype.startswith("decimal") and not name.startswith("__")]
-    for c in cols:
-        df = df.withColumn(c, df[f"`{c}`"].cast(FloatType()))
-    return df
+    decimal_cols = {name for name, dtype in df.dtypes if dtype.startswith("decimal") and not name.startswith("__")}
+
+    return df.select([
+        df[f"`{c}`"].cast(FloatType()).alias(c)
+        if c in decimal_cols
+        else df[f"`{c}`"]
+        for c in df.columns
+    ])
 
 
 def decimal_to_double(df: DataFrame) -> DataFrame:
-    cols = [name for name, dtype in df.dtypes if dtype.startswith("decimal") and not name.startswith("__")]
-    for c in cols:
-        df = df.withColumn(c, df[f"`{c}`"].cast(DoubleType()))
-    return df
+    decimal_cols = {name for name, dtype in df.dtypes if dtype.startswith("decimal") and not name.startswith("__")}
+
+    return df.select([
+        df[f"`{c}`"].cast(DoubleType()).alias(c)
+        if c in decimal_cols
+        else df[f"`{c}`"]
+        for c in df.columns
+    ])
 
 
 def tinyint_to_int(df: DataFrame) -> DataFrame:
-    cols = [name for name, dtype in df.dtypes if dtype.startswith("tinyint") and not name.startswith("__")]
-    for c in cols:
-        df = df.withColumn(c, df[f"`{c}`"].cast(IntegerType()))
-    return df
+    tinyint_cols = {name for name, dtype in df.dtypes if dtype.startswith("tinyint") and not name.startswith("__")}
+
+    return df.select([
+        df[f"`{c}`"].cast(IntegerType()).alias(c)
+        if c in tinyint_cols
+        else df[f"`{c}`"]
+        for c in df.columns
+    ])
 
 
 def trim(df: DataFrame) -> DataFrame:
-    cols = [name for name, dtype in df.dtypes if dtype.startswith("string") and not name.startswith("__")]
-    for c in cols:
-        df = df.withColumn(c, _trim(df[f"`{c}`"]))
-    return df
+    string_cols = {name for name, dtype in df.dtypes if dtype.startswith("string") and not name.startswith("__")}
+
+    return df.select([
+        _trim(df[f"`{c}`"]).alias(c)
+        if c in string_cols
+        else df[f"`{c}`"]
+        for c in df.columns
+    ])
 
 
 def clean(df: DataFrame) -> DataFrame:

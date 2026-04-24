@@ -72,7 +72,7 @@ class DeleteLogBaseParser(BaseParser):
         except (AnalysisException, Py4JError, SparkConnectGrpcException):
             if stream:
                 df = spark.readStream.table("fabricks.dummy")
-                df = df.selectExpr("'delete' as __operation").where("1 == 2")
+                df = df.selectExpr("'delete' as __operation").limit(0)
                 return df.withColumn("__operation", lit("delete"))
 
     def nullify(self, df: DataFrame) -> DataFrame:

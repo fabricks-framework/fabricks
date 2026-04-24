@@ -29,7 +29,7 @@ class View(DbObject):
         df = spark.createDataFrame(df) if isinstance(df, pd.DataFrame) else df
         if dependencies:
             for d in dependencies:
-                df = df.join(d.where("1 == 2"), how="leftanti")
+                df = df.join(d.limit(0), how="leftanti")
 
         df.createOrReplaceGlobalTempView(uuid)
         return uuid
