@@ -111,21 +111,23 @@ def load_variables(
     variables_path: str | None = None,
 ) -> dict[str, Any]:
     """
-    Load variables from path_options.variables or inline dict.
+    Load variables from external file or inline dict.
+
+    Priority order (first non-empty wins):
+    1. variables_path (from FABRICKS_VARIABLE or path_options.variables)
+    2. inline variables dict
 
     Args:
         data: Raw config dictionary
         config_path: Path to the config file
-        variables_path: Path to variables file from path_options.variables
+        variables_path: Path to variables file (already resolved from env var or config)
 
     Returns:
         Resolved variables dictionary
     """
     inline_variables = data.get("variables")
 
-    # Priority: path_options.variables > inline variables dict
     if variables_path:
-        # Load from path_options.variables
         file_path = Path(variables_path)
         if not file_path.is_absolute():
             file_path = config_path.parent / file_path
@@ -133,7 +135,6 @@ def load_variables(
         return load_variables_from_file(file_path, config_path)
 
     if inline_variables:
-        # Use inline variables dict
         return _as_variables(inline_variables, source="runtime config")
 
     return {}

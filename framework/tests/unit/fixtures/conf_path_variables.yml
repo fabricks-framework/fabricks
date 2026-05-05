@@ -18,4 +18,4 @@ path_options:
   views: fabricks/views
   requirements: fabricks/requirements
   # Variables loaded from external file
-  variables: test_variables.yml
+  variables: tests/unit/fixtures/variables.dev.yml

@@ -1,0 +1,19 @@
+---
+name: test_no_variables
+options:
+  secret_scope: test_scope
+  workers: 8
+  catalog: stg_dev_dwh
+  retention_days: 7
+  timeouts:
+    step: 3600
+    job: 3600
+    pre_run: 3600
+    post_run: 3600
+path_options:
+  storage: abfss://test
+  udfs: fabricks/udfs
+  parsers: fabricks/parsers
+  schedules: fabricks/schedules
+  views: fabricks/views
+  requirements: fabricks/requirements

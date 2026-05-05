@@ -126,10 +126,13 @@ class RuntimeConf(BaseModel):
         # Get config path from ConfigOptions
         config_path = Path(cls.config.path_to_config)
 
-        # Extract variables path from path_options if present
-        variables_path = None
-        if isinstance(data.get("path_options"), dict):
-            variables_path = data["path_options"].get("variables")
+        # Override with FABRICKS_VARIABLE env var if set
+        if cls.config.variable is not None:
+            variables_path = cls.config.variable
+        else:
+            # Extract variables path from path_options if present
+            path_options = data.get("path_options")
+            variables_path = path_options.get("variables") if isinstance(path_options, dict) else None
 
         # Step 1: Load variables
         variables = load_variables(

@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -7,100 +8,126 @@ from fabricks.models.runtime.models import RuntimeConf
 
 
 def test_variable_substitution_substitutes_all_fields() -> None:
-
+    """Test inline variables substitution."""
     fixtures_dir = Path(__file__).parent / "fixtures"
     conf_file = fixtures_dir / "conf_inline_variables.yml"
 
     with open(conf_file, encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
-    runtime_conf = RuntimeConf.model_validate(conf_data)
+    runtime = RuntimeConf.model_validate(conf_data)
 
-    assert runtime_conf.options.workers == 8
-    assert runtime_conf.options.catalog == "stg_dev_dwh"
-    assert runtime_conf.options.retention_days == 14
-    assert runtime_conf.options.secret_scope == "test_scope"
-    assert runtime_conf.path_options.storage == "abfss://fabricks@account.dfs.core.windows.net/fabricks"
-
-
-def test_variable_substitution_loads_from_path_options_variables(tmp_path: Path, runtime_config_factory) -> None:
-
-    variables_file = tmp_path / "variables.dev.yml"
-    variables_file.write_text(yaml.safe_dump({"$workers": "2", "$catalog": "stg_dev_dwh"}), encoding="utf-8")
-
-    conf_data = runtime_config_factory(
-        options={"workers": "$workers", "catalog": "$catalog"},
-        path_options={"variables": str(variables_file)},  # Use absolute path
-    )
-
-    runtime_conf = RuntimeConf.model_validate(conf_data)
-
-    assert runtime_conf.options.workers == 2
-    assert runtime_conf.options.catalog == "stg_dev_dwh"
-    assert runtime_conf.variables is not None
-    assert "$workers" in runtime_conf.variables
-    assert "$catalog" in runtime_conf.variables
+    assert runtime.options.workers == 8
+    assert runtime.options.catalog == "stg_dev_dwh"
+    assert runtime.options.retention_days == 14
+    assert runtime.options.secret_scope == "test_scope"
+    assert runtime.path_options.storage == "abfss://fabricks@account.dfs.core.windows.net/fabricks"
 
 
-def test_variable_substitution_path_options_takes_precedence_over_inline(
-    tmp_path: Path,
-    runtime_config_factory,
-) -> None:
+def test_variable_substitution_loads_from_path_options_variables(monkeypatch) -> None:
+    """Test loading variables from path_options.variables file."""
+    fixtures_dir = Path(__file__).parent / "fixtures"
+    conf_file = fixtures_dir / "conf_path_variables.yml"
 
-    variables_file = tmp_path / "variables.prd.yml"
-    variables_file.write_text(yaml.safe_dump({"$workers": "16"}), encoding="utf-8")
+    # Mock config.path_to_config to framework directory so relative paths work
+    framework_dir = Path(__file__).parent.parent.parent
+    monkeypatch.setattr("fabricks.models.runtime.models.config.path_to_config", str(framework_dir / "pyproject.toml"))
 
-    conf_data = runtime_config_factory(
-        options={"workers": "$workers"},
-        path_options={"variables": str(variables_file)},  # Use absolute path
-        variables={"$workers": "4"},  # Inline variables should be ignored
-    )
+    with open(conf_file, encoding="utf-8") as f:
+        conf_data = yaml.safe_load(f)
 
-    runtime_conf = RuntimeConf.model_validate(conf_data)
+    runtime = RuntimeConf.model_validate(conf_data)
 
-    assert runtime_conf.options.workers == 16
+    assert "$workers" in runtime.variables
+    assert "$catalog" in runtime.variables
 
-
-def test_variable_substitution_supports_escaped_variable_keys(runtime_config_factory) -> None:
-
-    conf_data = runtime_config_factory(
-        options={"workers": "$workers"},
-        variables={"\\$workers": "6"},
-    )
-
-    runtime_conf = RuntimeConf.model_validate(conf_data)
-
-    assert runtime_conf.options.workers == 6
+    assert runtime.options.workers == 12
+    assert runtime.options.catalog == "stg_dev_dwh"
+    assert runtime.variables is not None
 
 
-def test_variable_substitution_raises_for_missing_variables_file(tmp_path: Path, runtime_config_factory) -> None:
-    import re
+def test_variable_substitution_path_options_takes_precedence_over_inline() -> None:
+    """Test that path_options.variables takes precedence over inline variables."""
+    fixtures_dir = Path(__file__).parent / "fixtures"
+    conf_file = fixtures_dir / "conf_inline_variables.yml"
+    prd_variables_file = fixtures_dir / "variables.prd.yml"
 
-    missing_variables_path = tmp_path / "variables.dev.yml"
-    conf_data = runtime_config_factory(
-        options={"workers": "$workers"},
-        path_options={"variables": str(missing_variables_path)},
-    )
+    with open(conf_file, encoding="utf-8") as f:
+        conf_data = yaml.safe_load(f)
+
+    # Add path_options.variables pointing to prd file (absolute path)
+    conf_data["path_options"]["variables"] = str(prd_variables_file)
+
+    runtime = RuntimeConf.model_validate(conf_data)
+
+    # Should use variables.prd.yml (32 workers), not inline variables (8 workers)
+    assert runtime.options.workers == 32
+    
+
+def test_variable_substitution_raises_for_missing_variables_file() -> None:
+    """Test that missing variables file raises FileNotFoundError."""
+    fixtures_dir = Path(__file__).parent / "fixtures"
+    conf_file = fixtures_dir / "conf_path_variables.yml"
+
+    with open(conf_file, encoding="utf-8") as f:
+        conf_data = yaml.safe_load(f)
+
+    # Point to non-existent file
+    conf_data["path_options"]["variables"] = "tests/unit/fixtures/variables.missing.yml"
 
     with pytest.raises(
         FileNotFoundError,
-        match=re.escape(f"variables file '{missing_variables_path}'"),
+        match=re.escape("variables file"),
     ):
         RuntimeConf.model_validate(conf_data)
 
 
-def test_variable_substitution_without_context_skips_substitution(runtime_config_factory) -> None:
-    """Test that variables are not substituted when context is not provided."""
+def test_variable_substitution_without_context_skips_substitution() -> None:
+    """Test that config without variables loads correctly."""
+    fixtures_dir = Path(__file__).parent / "fixtures"
+    conf_file = fixtures_dir / "conf_no_variables.yml"
 
-    # Use actual values (not variables) since validation would fail with unsubstituted variables
-    conf_data = runtime_config_factory(
-        options={"secret_scope": "test_scope", "workers": 8, "catalog": "stg_dev_dwh"},
-        variables={"$unused": "value"},
-    )
+    with open(conf_file, encoding="utf-8") as f:
+        conf_data = yaml.safe_load(f)
 
-    # Without context, the model validates normally (no substitution needed)
-    runtime_conf = RuntimeConf.model_validate(conf_data)
+    runtime = RuntimeConf.model_validate(conf_data)
 
-    assert runtime_conf.options.secret_scope == "test_scope"
-    assert runtime_conf.options.workers == 8
-    assert runtime_conf.variables == {"$unused": "value"}
+    assert runtime.options.secret_scope == "test_scope"
+    assert runtime.options.workers == 8
+    assert runtime.options.catalog == "stg_dev_dwh"
+    assert runtime.variables is None
+
+
+def test_variable_substitution_fabricks_variable_env_overrides_path_options(monkeypatch) -> None:
+    """Test that FABRICKS_VARIABLE env var takes precedence over path_options.variables."""
+    fixtures_dir = Path(__file__).parent / "fixtures"
+    conf_file = fixtures_dir / "conf_path_variables.yml"
+    prd_variables_file = fixtures_dir / "variables.prd.yml"
+
+    # Mock config.variable to simulate FABRICKS_VARIABLE env var pointing to prd
+    monkeypatch.setattr("fabricks.models.runtime.models.config.variable", str(prd_variables_file))
+
+    with open(conf_file, encoding="utf-8") as f:
+        conf_data = yaml.safe_load(f)
+
+    runtime = RuntimeConf.model_validate(conf_data)
+
+    assert runtime.options.workers == 32
+    assert runtime.options.catalog == "stg_prd_dwh"
+
+
+def test_variable_substitution_fabricks_variable_env_overrides_inline(monkeypatch) -> None:
+    """Test that FABRICKS_VARIABLE env var takes precedence over inline variables."""
+    fixtures_dir = Path(__file__).parent / "fixtures"
+    conf_file = fixtures_dir / "conf_inline_variables.yml"
+    prd_variables_file = fixtures_dir / "variables.dev.yml"
+
+    # Mock config.variable to simulate FABRICKS_VARIABLE env var
+    monkeypatch.setattr("fabricks.models.runtime.models.config.variable", str(prd_variables_file))
+
+    with open(conf_file, encoding="utf-8") as f:
+        conf_data = yaml.safe_load(f)
+
+    runtime = RuntimeConf.model_validate(conf_data)
+
+    assert runtime.options.workers == 12

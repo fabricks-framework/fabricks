@@ -1,0 +1,6 @@
+$workers: "32"
+$catalog: stg_prd_dwh
+$storage_account: stgstaccprdeuwdwh01.dfs.core.windows.net
+$storage: account.dfs.core.windows.net
+$retention_days: "30"
+$secret_scope: test_scope

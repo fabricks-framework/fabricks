@@ -46,38 +46,6 @@ def minimal_runtime_config() -> dict[str, Any]:
     }
 
 
-@pytest.fixture
-def runtime_config_factory(minimal_runtime_config):
-    """Factory to build RuntimeConf configs with overrides.
-
-    Example:
-        config = runtime_config_factory(
-            options={"workers": "$workers"},
-            variables={"$workers": "8"}  # Note: variables must be strings
-        )
-    """
-
-    def _factory(**overrides: Any) -> dict[str, Any]:
-        import copy
-
-        config = copy.deepcopy(minimal_runtime_config)
-
-        # Deep merge overrides
-        for key, value in overrides.items():
-            if key in config and isinstance(config[key], dict) and isinstance(value, dict):
-                config[key].update(value)
-            else:
-                config[key] = value
-
-        # Ensure variables are strings (RuntimeConf requirement)
-        if "variables" in config and config["variables"]:
-            config["variables"] = {k: str(v) for k, v in config["variables"].items()}
-
-        return config
-
-    return _factory
-
-
 def pytest_collection_modifyitems(items):
     """Automatically add 'unit' marker to all tests in this directory."""
     root = Path(__file__).parent
