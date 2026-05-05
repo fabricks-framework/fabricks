@@ -83,7 +83,7 @@ def create_or_replace_jobs_view():
                 when
                   s.expand == "gold"
                 then
-                  if(j.options.mode in ("update", "append", "complete"), "table", if(j.options.mode in ("memory"), "view", null))
+                  if(j.options.mode in ("update", "append", "complete", "register"), "table", if(j.options.mode in ("memory"), "view", null))
               end as object_type
             from
               fabricks.{table} j
