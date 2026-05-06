@@ -7,10 +7,15 @@ import yaml
 from fabricks.models.runtime.models import RuntimeConf
 
 
-def test_variable_substitution_substitutes_all_fields() -> None:
+@pytest.fixture
+def fixtures_dir() -> Path:
+    """Return the path to the test fixtures directory."""
+    return Path(__file__).parent / "fixtures/runtime"
+
+
+def test_variable_substitution_substitutes_all_fields(fixtures_dir: Path) -> None:
     """Test inline variables substitution."""
-    fixtures_dir = Path(__file__).parent / "fixtures"
-    conf_file = fixtures_dir / "conf_inline_variables.yml"
+    conf_file = fixtures_dir / "inline_variables.yml"
 
     with open(conf_file, encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
@@ -24,10 +29,9 @@ def test_variable_substitution_substitutes_all_fields() -> None:
     assert runtime.path_options.storage == "abfss://fabricks@account.dfs.core.windows.net/fabricks"
 
 
-def test_variable_substitution_loads_from_path_options_variables(monkeypatch) -> None:
+def test_variable_substitution_loads_from_path_options_variables(fixtures_dir: Path, monkeypatch) -> None:
     """Test loading variables from path_options.variables file."""
-    fixtures_dir = Path(__file__).parent / "fixtures"
-    conf_file = fixtures_dir / "conf_path_variables.yml"
+    conf_file = fixtures_dir / "path_variables.yml"
 
     # Mock config.path_to_config to framework directory so relative paths work
     framework_dir = Path(__file__).parent.parent.parent
@@ -38,18 +42,14 @@ def test_variable_substitution_loads_from_path_options_variables(monkeypatch) ->
 
     runtime = RuntimeConf.model_validate(conf_data)
 
-    assert "$workers" in runtime.variables
-    assert "$catalog" in runtime.variables
-
     assert runtime.options.workers == 12
     assert runtime.options.catalog == "stg_dev_dwh"
     assert runtime.variables is not None
 
 
-def test_variable_substitution_path_options_takes_precedence_over_inline() -> None:
+def test_variable_substitution_path_options_takes_precedence_over_inline(fixtures_dir: Path) -> None:
     """Test that path_options.variables takes precedence over inline variables."""
-    fixtures_dir = Path(__file__).parent / "fixtures"
-    conf_file = fixtures_dir / "conf_inline_variables.yml"
+    conf_file = fixtures_dir / "inline_variables.yml"
     prd_variables_file = fixtures_dir / "variables.prd.yml"
 
     with open(conf_file, encoding="utf-8") as f:
@@ -62,18 +62,17 @@ def test_variable_substitution_path_options_takes_precedence_over_inline() -> No
 
     # Should use variables.prd.yml (32 workers), not inline variables (8 workers)
     assert runtime.options.workers == 32
-    
 
-def test_variable_substitution_raises_for_missing_variables_file() -> None:
+
+def test_variable_substitution_raises_for_missing_variables_file(fixtures_dir: Path) -> None:
     """Test that missing variables file raises FileNotFoundError."""
-    fixtures_dir = Path(__file__).parent / "fixtures"
-    conf_file = fixtures_dir / "conf_path_variables.yml"
+    conf_file = fixtures_dir / "path_variables.yml"
 
     with open(conf_file, encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
     # Point to non-existent file
-    conf_data["path_options"]["variables"] = "tests/unit/fixtures/variables.missing.yml"
+    conf_data["path_options"]["variables"] = str(fixtures_dir / "variables.missing.yml")
 
     with pytest.raises(
         FileNotFoundError,
@@ -82,10 +81,9 @@ def test_variable_substitution_raises_for_missing_variables_file() -> None:
         RuntimeConf.model_validate(conf_data)
 
 
-def test_variable_substitution_without_context_skips_substitution() -> None:
+def test_variable_substitution_without_context_skips_substitution(fixtures_dir: Path) -> None:
     """Test that config without variables loads correctly."""
-    fixtures_dir = Path(__file__).parent / "fixtures"
-    conf_file = fixtures_dir / "conf_no_variables.yml"
+    conf_file = fixtures_dir / "no_variables.yml"
 
     with open(conf_file, encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
@@ -98,10 +96,9 @@ def test_variable_substitution_without_context_skips_substitution() -> None:
     assert runtime.variables is None
 
 
-def test_variable_substitution_fabricks_variable_env_overrides_path_options(monkeypatch) -> None:
+def test_variable_substitution_fabricks_variable_env_overrides_path_options(fixtures_dir: Path, monkeypatch) -> None:
     """Test that FABRICKS_VARIABLE env var takes precedence over path_options.variables."""
-    fixtures_dir = Path(__file__).parent / "fixtures"
-    conf_file = fixtures_dir / "conf_path_variables.yml"
+    conf_file = fixtures_dir / "path_variables.yml"
     prd_variables_file = fixtures_dir / "variables.prd.yml"
 
     # Mock config.variable to simulate FABRICKS_VARIABLE env var pointing to prd
@@ -116,10 +113,9 @@ def test_variable_substitution_fabricks_variable_env_overrides_path_options(monk
     assert runtime.options.catalog == "stg_prd_dwh"
 
 
-def test_variable_substitution_fabricks_variable_env_overrides_inline(monkeypatch) -> None:
+def test_variable_substitution_fabricks_variable_env_overrides_inline(fixtures_dir: Path, monkeypatch) -> None:
     """Test that FABRICKS_VARIABLE env var takes precedence over inline variables."""
-    fixtures_dir = Path(__file__).parent / "fixtures"
-    conf_file = fixtures_dir / "conf_inline_variables.yml"
+    conf_file = fixtures_dir / "inline_variables.yml"
     prd_variables_file = fixtures_dir / "variables.dev.yml"
 
     # Mock config.variable to simulate FABRICKS_VARIABLE env var

@@ -26,6 +26,7 @@ class ResolvedPathOptions(BaseModel):
     config: GitPath
     runtime: GitPath
     notebooks: GitPath
+    variable: GitPath
 
 
 class ConfigOptions(BaseSettings):
@@ -174,6 +175,7 @@ class ConfigOptions(BaseSettings):
             config=resolve_git_path(path=self.config, base=root),
             runtime=resolve_git_path(path=self.runtime, base=root),
             notebooks=resolve_git_path(path=self.notebooks, base=root),
+            variable=resolve_git_path(path=self.variable, base=root),
         )
 
     @computed_field

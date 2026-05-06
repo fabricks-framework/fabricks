@@ -22,13 +22,13 @@ from fabricks.context import (
 )
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.get_job import get_job, get_job_internal
+from fabricks.core.read import read_yaml
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 from fabricks.models import SchemaDependencies
 from fabricks.utils.helpers import run_in_parallel
-from fabricks.utils.read.read_yaml import read_yaml
 
 
 class BaseStep:
@@ -199,6 +199,7 @@ class BaseStep:
         return df, errors
 
     def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:
+        """Yield job configurations from YAML files with variable substitution."""
         return read_yaml(self.runtime, root="job", preferred_file_name=topic)
 
     def get_jobs(self, topic: Optional[str] = None) -> DataFrame:

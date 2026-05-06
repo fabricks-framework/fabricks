@@ -17,7 +17,7 @@ path_options:
   schedules: fabricks/schedules
   views: fabricks/views
   requirements: fabricks/requirements
-# Inline variables defined directly in config
+# Inline variables
 variables:
   $workers: '8'
   $catalog: stg_dev_dwh

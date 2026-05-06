@@ -10,16 +10,24 @@ import pytest
 
 def mock_spark():
     """Mock Spark and related dependencies for unit tests."""
-    mock_spark = MagicMock()
-    mock_dbutils = MagicMock()
+    mock_spark_session = MagicMock()
+    mock_dbutils_obj = MagicMock()
 
+    # Mock fabricks.utils.spark
     sys.modules["fabricks.utils.spark"] = MagicMock(
-        spark=mock_spark,
-        dbutils=mock_dbutils,
-        get_spark=MagicMock(return_value=mock_spark),
-        get_dbutils=MagicMock(return_value=mock_dbutils),
+        spark=mock_spark_session,
+        dbutils=mock_dbutils_obj,
+        get_spark=MagicMock(return_value=mock_spark_session),
+        get_dbutils=MagicMock(return_value=mock_dbutils_obj),
         DATABRICKS_LOCALMODE=False,
     )
+
+    # Mock fabricks.context and related modules
+    mock_context = MagicMock()
+    mock_context.SPARK = mock_spark_session
+    mock_context.DBUTILS = mock_dbutils_obj
+    sys.modules["fabricks.context"] = mock_context
+    sys.modules["fabricks.context.spark_session"] = MagicMock()
 
 
 # Mock must run at module level before any imports occur
