@@ -34,5 +34,5 @@ def read_yaml(
         root=root,
         preferred_file_name=preferred_file_name,
         variables=VARIABLES,
-        strict=True, # Always strict in core
+        strict=True,  # Always strict in core
     )
