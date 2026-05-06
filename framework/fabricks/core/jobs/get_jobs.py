@@ -9,10 +9,10 @@ from sparkdantic import create_spark_schema
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, PATHS_RUNTIME, SPARK
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.get_job import get_job, get_job_internal
+from fabricks.core.read import read_yaml
 from fabricks.models import AllowedModes
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import GitPath
-from fabricks.utils.read import read_yaml
 
 
 class GenericOptions(BaseModel):
@@ -32,16 +32,21 @@ def _get_job(row: Row):
 
 
 def get_jobs_internal():
+    """Yield job configurations from YAML files with variable substitution."""
     for p in PATHS_RUNTIME.values():
         yield from read_yaml(p, root="job")
 
 
 def get_jobs_internal_df() -> DataFrame:
+    """Get jobs as a DataFrame with variable substitution."""
     if IS_JOB_CONFIG_FROM_YAML:
         schema = create_spark_schema(JobConfGeneric)
 
         def _read_yaml(path: GitPath):
-            df = SPARK.createDataFrame(read_yaml(path, root="job"), schema=schema)
+            df = SPARK.createDataFrame(
+                read_yaml(path, root="job"),
+                schema=schema,
+            )
             if df:
                 df = df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))
                 return df
@@ -86,7 +91,13 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
     else:
         if df is None:
             return list(
-                get_job_internal(j["step"], j["topic"], j["item"], j.get("job_id"), conf=j)
+                get_job_internal(
+                    j["step"],
+                    j["topic"],
+                    j["item"],
+                    j.get("job_id"),
+                    conf=j,
+                )
                 for j in get_jobs_internal()
             )
 

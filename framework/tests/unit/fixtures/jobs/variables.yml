@@ -1,0 +1,25 @@
+---
+- job:
+    step: bronze
+    topic: customers
+    item: raw
+    tags: [test]
+    options:
+      mode: append
+      uri: abfss://fabricks@$storage_account/$container/raw/customers
+      parser: json
+      keys: [id]
+      source: customers
+      catalog: $catalog
+- job:
+    step: bronze
+    topic: orders
+    item: raw
+    tags: [test]
+    options:
+      mode: append
+      uri: abfss://fabricks@$storage_account/$container/raw/orders
+      parser: json
+      keys: [order_id]
+      source: orders
+      workers: $workers

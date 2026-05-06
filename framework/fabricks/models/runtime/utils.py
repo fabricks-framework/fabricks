@@ -1,6 +1,5 @@
 """Utility functions for runtime configuration parsing and transformation."""
 
-import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -8,6 +7,7 @@ from typing import Any
 import yaml
 
 from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, resolve_git_path
+from fabricks.utils.variables import build_variable_lookup, substitute_value
 
 
 def _as_variables(data: Any, source: str) -> dict[str, Any]:
@@ -49,44 +49,6 @@ def _resolve_variables_path(
     return config_path.parent / path
 
 
-def _build_variable_lookup(variables: dict[str, Any]) -> dict[str, Any]:
-    """Build a lookup dictionary for variable substitution."""
-    lookup: dict[str, Any] = {}
-    for key, value in variables.items():
-        key_string = str(key)
-        lookup[key_string] = value
-
-        normalized = key_string.lstrip("\\")
-        if normalized != key_string:
-            lookup[normalized] = value
-
-    return lookup
-
-
-def _substitute_value(value: Any, lookup: dict[str, Any]) -> Any:
-    """Recursively substitute variables in values."""
-    if isinstance(value, dict):
-        return {k: _substitute_value(v, lookup) for k, v in value.items()}
-
-    if isinstance(value, list):
-        return [_substitute_value(item, lookup) for item in value]
-
-    if not isinstance(value, str):
-        return value
-
-    if value in lookup:
-        return lookup[value]
-
-    if "$" not in value:
-        return value
-
-    return re.sub(
-        r"\$[A-Za-z0-9_-]+",
-        lambda match: str(lookup.get(match.group(0), match.group(0))),
-        value,
-    )
-
-
 @lru_cache(maxsize=128)
 def _load_variables_from_file_cached(variables_path_str: str) -> dict[str, Any]:
     """Cached YAML file loader (internal)."""
@@ -111,21 +73,23 @@ def load_variables(
     variables_path: str | None = None,
 ) -> dict[str, Any]:
     """
-    Load variables from path_options.variables or inline dict.
+    Load variables from external file or inline dict.
+
+    Priority order (first non-empty wins):
+    1. variables_path (from FABRICKS_VARIABLE or path_options.variables)
+    2. inline variables dict
 
     Args:
         data: Raw config dictionary
         config_path: Path to the config file
-        variables_path: Path to variables file from path_options.variables
+        variables_path: Path to variables file (already resolved from env var or config)
 
     Returns:
         Resolved variables dictionary
     """
     inline_variables = data.get("variables")
 
-    # Priority: path_options.variables > inline variables dict
     if variables_path:
-        # Load from path_options.variables
         file_path = Path(variables_path)
         if not file_path.is_absolute():
             file_path = config_path.parent / file_path
@@ -133,7 +97,6 @@ def load_variables(
         return load_variables_from_file(file_path, config_path)
 
     if inline_variables:
-        # Use inline variables dict
         return _as_variables(inline_variables, source="runtime config")
 
     return {}
@@ -158,7 +121,7 @@ def perform_variable_substitution(
 
     prepared = dict(data)
     prepared["variables"] = variables
-    return _substitute_value(prepared, _build_variable_lookup(variables))
+    return substitute_value(prepared, build_variable_lookup(variables))
 
 
 def resolve_runtime_paths(
@@ -173,9 +136,12 @@ def resolve_runtime_paths(
     """
     Resolve all runtime paths to Path objects.
 
+    Note: Variable substitution has already been performed on path_options
+    before this function is called, so paths are already resolved.
+
     Args:
-        path_options: Runtime path configuration
-        variables: Runtime variables for substitution
+        path_options: Runtime path configuration (already variable-substituted)
+        variables: Runtime variables (kept for backward compatibility, not used)
         bronze: Bronze step configurations
         silver: Silver step configurations
         gold: Gold step configurations
@@ -185,26 +151,16 @@ def resolve_runtime_paths(
     Returns:
         Dictionary with resolved storage and runtime paths
     """
-    variables_as_strings = None
-    if variables:
-        variables_as_strings = {key: str(value) for key, value in variables.items()}
-
-    # Collect storage paths
+    # Collect storage paths (variables already substituted in path_options)
     storage_paths: dict[str, FileSharePath] = {
-        "fabricks": resolve_fileshare_path(
-            path_options["storage"],
-            variables=variables_as_strings,
-        ),
+        "fabricks": resolve_fileshare_path(path_options["storage"]),
     }
 
     # Add storage paths for bronze/silver/gold/databases
     for objects in [bronze, silver, gold, databases]:
         if objects:
             for obj in objects:
-                storage_paths[obj.name] = resolve_fileshare_path(
-                    obj.path_options.storage,
-                    variables=variables_as_strings,
-                )
+                storage_paths[obj.name] = resolve_fileshare_path(obj.path_options.storage)
 
     # Collect runtime paths
     runtime_paths: dict[str, GitPath] = {}

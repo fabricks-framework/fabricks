@@ -10,16 +10,24 @@ import pytest
 
 def mock_spark():
     """Mock Spark and related dependencies for unit tests."""
-    mock_spark = MagicMock()
-    mock_dbutils = MagicMock()
+    mock_spark_session = MagicMock()
+    mock_dbutils_obj = MagicMock()
 
+    # Mock fabricks.utils.spark
     sys.modules["fabricks.utils.spark"] = MagicMock(
-        spark=mock_spark,
-        dbutils=mock_dbutils,
-        get_spark=MagicMock(return_value=mock_spark),
-        get_dbutils=MagicMock(return_value=mock_dbutils),
+        spark=mock_spark_session,
+        dbutils=mock_dbutils_obj,
+        get_spark=MagicMock(return_value=mock_spark_session),
+        get_dbutils=MagicMock(return_value=mock_dbutils_obj),
         DATABRICKS_LOCALMODE=False,
     )
+
+    # Mock fabricks.context and related modules
+    mock_context = MagicMock()
+    mock_context.SPARK = mock_spark_session
+    mock_context.DBUTILS = mock_dbutils_obj
+    sys.modules["fabricks.context"] = mock_context
+    sys.modules["fabricks.context.spark_session"] = MagicMock()
 
 
 # Mock must run at module level before any imports occur
@@ -44,38 +52,6 @@ def minimal_runtime_config() -> dict[str, Any]:
             "requirements": "fabricks/requirements",
         },
     }
-
-
-@pytest.fixture
-def runtime_config_factory(minimal_runtime_config):
-    """Factory to build RuntimeConf configs with overrides.
-
-    Example:
-        config = runtime_config_factory(
-            options={"workers": "$workers"},
-            variables={"$workers": "8"}  # Note: variables must be strings
-        )
-    """
-
-    def _factory(**overrides: Any) -> dict[str, Any]:
-        import copy
-
-        config = copy.deepcopy(minimal_runtime_config)
-
-        # Deep merge overrides
-        for key, value in overrides.items():
-            if key in config and isinstance(config[key], dict) and isinstance(value, dict):
-                config[key].update(value)
-            else:
-                config[key] = value
-
-        # Ensure variables are strings (RuntimeConf requirement)
-        if "variables" in config and config["variables"]:
-            config["variables"] = {k: str(v) for k, v in config["variables"].items()}
-
-        return config
-
-    return _factory
 
 
 def pytest_collection_modifyitems(items):
