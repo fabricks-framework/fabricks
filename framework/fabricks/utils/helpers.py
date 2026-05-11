@@ -51,7 +51,7 @@ def run_in_parallel(
     func: Callable,
     iterable: Union[List, DataFrame, range, set],
     workers: int = 8,
-    progress_bar: bool = False,
+    progress_bar: Optional[bool] = False,
     position: Optional[int] = None,
     loglevel: int = logging.CRITICAL,
     logger: Optional[logging.Logger] = None,

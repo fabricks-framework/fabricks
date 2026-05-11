@@ -163,9 +163,9 @@ show_help() {
 		echo -e "       - ${GREEN}help${RESET}                      : Show help"
 		echo ""
 		echo -e "   ${CYAN}Examples:${RESET}"
-		echo -e "       $0 python                    # Format all Python files in current directory"
-		echo -e "       $0 python invokers/powerbi   # Format Python files in specific folder"
-		echo -e "       $0 all src                   # Run all formatters on src folder"
+		echo -e "       $0 -python                    # Format all Python files in current directory"
+		echo -e "       $0 -python invokers/powerbi   # Format Python files in specific folder"
+		echo -e "       $0 -all src                   # Run all formatters on src folder"
 }
 
 main() {
