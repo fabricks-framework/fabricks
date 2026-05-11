@@ -11,4 +11,4 @@ with
     )
 select *
 from merger
-qualify row_number() over (partition by `value`) = 1
+qualify row_number() over (partition by `value` order by 1) = 1
