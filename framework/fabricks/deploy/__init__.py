@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 from fabricks.context import FABRICKS_STORAGE, Steps
 from fabricks.context.log import DEFAULT_LOGGER
@@ -65,7 +65,14 @@ class Deploy:
 
     @staticmethod
     def armageddon(steps: Optional[Union[str, list[str]]] = None, nowait: bool = False):
-        DEFAULT_LOGGER.warning("!💥 armageddon 💥!", extra={"label": "fabricks"})
+        def _call(func: Callable, operation: str):
+            try:
+                func()
+            except Exception as e:
+                DEFAULT_LOGGER.exception(f"fail to deploy {operation}", extra={"label": "armageddon"})
+                errors.append({"operation": operation, "error": e})
+
+        DEFAULT_LOGGER.critical("(╯°□°）╯︵ ┻━┻", extra={"label": "armageddon"})
         print_atomic_bomb(nowait=nowait)
 
         DEFAULT_LOGGER.setLevel(logging.INFO)
@@ -101,16 +108,20 @@ class Deploy:
 
         fabricks.create()
 
-        Deploy.tables(drop=True)
-        Deploy.udfs(overwrite=True)
-        Deploy.masks(overwrite=True)
-        Deploy.notebooks(overwrite=True)
+        errors = []
+
+        _call(lambda: Deploy.tables(drop=True), "deploy-tables")
+        _call(lambda: Deploy.udfs(overwrite=True), "deploy-udfs")
+        _call(lambda: Deploy.masks(overwrite=True), "deploy-masks")
+        _call(lambda: Deploy.notebooks(overwrite=True), "deploy-notebooks")
 
         for s in steps:
-            step = get_step(s)
-            step.create()
+            _call(lambda s=s: get_step(s).create(), f"create-{s}")
 
-        Deploy.views()
-        Deploy.schedules()
-        Deploy.variables()
-        Deploy.runtime()
+        _call(Deploy.views, "deploy-views")
+        _call(Deploy.schedules, "deploy-schedules")
+        _call(Deploy.variables, "deploy-variables")
+        _call(Deploy.runtime, "deploy-runtime")
+
+        if errors:
+            raise ValueError(f"armageddon completed with {len(errors)} error(s). Check logs for details")

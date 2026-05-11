@@ -14,7 +14,7 @@ DEFAULT_LOGGER.setLevel(ERROR)
 def test_update_dependencies():
     step = get_step("gold")
 
-    deps, error = step.get_dependencies_internal(loglevel=ERROR)
+    deps, error = step._get_dependencies_internal(loglevel=ERROR)
     assert deps.count() == GOLD_DEPENDENCIES, f"{deps.count()} dependencies <> {GOLD_DEPENDENCIES}"
     assert len(error) == 0, f"{error} error(s)"
 
@@ -22,7 +22,7 @@ def test_update_dependencies():
     df = SPARK.sql("select * from fabricks.gold_dependencies")
     assert df.count() == GOLD_DEPENDENCIES, f"{df.count()} dependencies <> {GOLD_DEPENDENCIES}"
 
-    deps, error = step.get_dependencies_internal(topic="scd1", loglevel=ERROR)
+    deps, error = step._get_dependencies_internal(topic="scd1", loglevel=ERROR)
     assert deps.count() == GOLD_SCD1_DEPENDENCIES, f"{deps.count()} dependencies <> {GOLD_SCD1_DEPENDENCIES}"
     assert len(error) == 0, f"{error} error(s)"
 

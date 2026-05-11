@@ -174,7 +174,7 @@ main() {
         exit 1
     fi
 
-    local command="$1"
+    local command="${1#-}"
     shift
 
     case "$command" in
