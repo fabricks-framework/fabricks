@@ -2,7 +2,7 @@
 [
   {
     "label": "Format: Python",
-    "command": "./format.sh python",
+    "command": "./format.sh -python",
     "cwd": "$ZED_WORKTREE_ROOT/framework",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -13,7 +13,7 @@
   },
   {
     "label": "Format: SQL",
-    "command": "./format.sh sql",
+    "command": "./format.sh -sql",
     "cwd": "$ZED_WORKTREE_ROOT/framework",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -24,7 +24,7 @@
   },
   {
     "label": "Format: YAML",
-    "command": "./format.sh yaml",
+    "command": "./format.sh -yaml",
     "cwd": "$ZED_WORKTREE_ROOT/framework",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -35,7 +35,7 @@
   },
   {
     "label": "Format: Prettier",
-    "command": "./format.sh prettier",
+    "command": "./format.sh -prettier",
     "cwd": "$ZED_WORKTREE_ROOT/framework",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -46,7 +46,7 @@
   },
   {
     "label": "Format: All",
-    "command": "./format.sh all",
+    "command": "./format.sh -all",
     "cwd": "$ZED_WORKTREE_ROOT/framework",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
@@ -57,7 +57,7 @@
   },
   {
     "label": "Type Check (ty)",
-    "command": "./format.sh ty",
+    "command": "./format.sh -ty",
     "cwd": "$ZED_WORKTREE_ROOT/framework",
     "use_new_terminal": false,
     "allow_concurrent_runs": false,

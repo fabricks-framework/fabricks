@@ -72,7 +72,7 @@ class Deploy:
                 DEFAULT_LOGGER.exception(f"fail to deploy {operation}", extra={"label": "armageddon"})
                 errors.append({"operation": operation, "error": e})
 
-        DEFAULT_LOGGER.critical("(╯°□°）╯︵ ┻━┻", extra={"label": "armageddon"})
+        DEFAULT_LOGGER.warning("(╯°□°）╯︵ ┻━┻", extra={"label": "armageddon"})
         print_atomic_bomb(nowait=nowait)
 
         DEFAULT_LOGGER.setLevel(logging.INFO)
