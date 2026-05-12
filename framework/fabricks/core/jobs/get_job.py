@@ -54,13 +54,16 @@ def get_job(
     if row:
         if "step" in row and "topic" in row and "item" in row:
             j = get_job_internal(step=row.step, topic=row.topic, item=row.item)
+
         elif "step" in row and "job_id" in row:
             j = get_job(step=row.step, job_id=row.job_id)
+
         elif "job" in row:
             parts = row.job.split(".")
             s = parts[0]
             job_id = get_job_id(job=row.job)
             j = get_job_internal(step=s, job_id=job_id)
+
         else:
             raise ValueError("step, topic, item or step, job_id or job mandatory")
 

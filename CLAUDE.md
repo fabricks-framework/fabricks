@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is Fabricks?
 
-Fabricks (Framework for Databricks) is a Python framework for building Lakehouse pipelines on Databricks. It uses YAML-driven job configuration, SQL-first transformations, and built-in CDC patterns. The tiered processing model follows: **Bronze** (raw ingestion) → **Silver** (cleaning/validation/CDC) → **Gold** (aggregation/reporting).
+Fabricks (Framework for Databricks) is a Python framework for building Lakehouse pipelines on Databricks. 
+It uses YAML-driven job configuration, SQL-first transformations, and built-in CDC patterns. 
+The tiered processing model follows: **Bronze** (raw ingestion) → **Silver** (cleaning/validation/CDC) → **Gold** (aggregation/reporting).
 
 All framework source code lives under `framework/`. The `LLM.md` file at the repo root is a comprehensive user-facing guide to Fabricks concepts and is the best reference for understanding runtime configuration patterns.
 
@@ -19,33 +21,20 @@ All commands run from `framework/`:
 uv sync --all-groups
 
 # Format code
-./format.sh python [target_dir]   # autoflake + isort + pycln + ruff
-./format.sh sql [target_dir]      # sqlfmt
-./format.sh yaml [target_dir]     # yamlfix
-./format.sh all [target_dir]      # all formatters
+./format.sh -python [target_dir]   # autoflake + isort + pycln + ruff
+./format.sh -sql [target_dir]      # sqlfmt
+./format.sh -yaml [target_dir]     # yamlfix
+./format.sh -all [target_dir]      # all formatters
 
 # Type checking
-./format.sh ty [target_dir]       # uv run ty check <target>
-# or directly:
-uv run ty check fabricks
-
-# Dependency audit
-uv run deptry .
+./format.sh -ty [target_dir]       # uv run ty check <target>
 
 # Tests
 pytest                            # all tests
 pytest -m unit                    # unit only (no Spark, fast)
 pytest -m integration             # integration only (requires Databricks cluster)
 pytest tests/unit/path/test_file.py  # single file
-
-# Build wheel
-uv build -o ../dist
-
-# Deploy to Databricks
-databricks bundle deploy --target test
 ```
-
-**Formatter line length**: 119 characters for Python, SQL, and YAML.
 
 ---
 
@@ -87,7 +76,7 @@ fabricks/
 
 - **Declarative first**: Jobs are defined in `_config.*.yml` files (and `.sql` for Gold). Python is for edge cases only.
 - **CDC is first-class**: Silver and Gold layers accept `cdc: scd1 | scd2 | nocdc` in job config; the framework generates the merge SQL automatically.
-- **Job identity via xxhash**: Jobs get a stable hash ID from `step.topic.item` for consistent metadata tracking.
+- **Job identity via xxhash**: Jobs get a stable hash ID from `step.topic_item` for consistent metadata tracking.
 - **Config resolution walks up the tree**: Fabricks searches parent directories for `fabricksconfig.json` or `pyproject.toml`, so the config file doesn't need to be at the exact working directory.
 - **Global context via module-level constants**: `from fabricks.context import SPARK, CONFIG` — these are initialized once at import time and shared everywhere.
 
@@ -111,19 +100,11 @@ runtime/
     *.sql                   # Required SQL transformation files
 ```
 
-### Bootstrapping a new environment
-
-```python
-from fabricks.core.scripts.armageddon import armageddon
-armageddon()  # creates system tables, views, UDFs, deploys notebooks
-```
-
 ### Test structure
 
 - `tests/unit/` — marked `unit`; a mock Spark session is set up in `tests/unit/conftest.py` so tests run without a real cluster.
 - `tests/integration/` — marked `integration`; use a real Spark session and a complete sample runtime in `tests/integration/runtime/`.
 - Integration test ordering is controlled with `@pytest.mark.order(N)`.
-- CI runs integration tests on a Databricks job via `databricks bundle deploy --target test`; the bundle config is `framework/databricks.yml`.
 
 ---
 

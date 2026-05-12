@@ -1,0 +1,21 @@
+---
+name: test_path
+options:
+  secret_scope: $secret_scope
+  workers: $workers
+  catalog: $catalog
+  retention_days: $retention_days
+  timeouts:
+    step: 3600
+    job: 3600
+    pre_run: 3600
+    post_run: 3600
+path_options:
+  storage: abfss://fabricks@$storage/fabricks
+  udfs: fabricks/udfs
+  parsers: fabricks/parsers
+  schedules: fabricks/schedules
+  views: fabricks/views
+  requirements: fabricks/requirements
+  # Variables loaded from external file
+  variables: tests/unit/fixtures/runtime/variables.dev.yml

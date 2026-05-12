@@ -1,0 +1,26 @@
+{
+  "languages": {
+    "Python": {
+      "language_servers": ["ty", "!basedpyright", "..."],
+    },
+    "SQL": {
+      "formatter": {
+        "external": {
+          "command": "uv",
+          "arguments": ["run", "sqlfmt", "-"],
+        },
+      },
+    },
+    "YAML": {
+      "formatter": {
+        "external": {
+          "command": "uv",
+          "arguments": ["run", "yamlfix", "-"],
+        },
+      },
+    },
+  },
+  "file_types": {
+    "SQL": ["*.sql", "*.sql.jinja"],
+  },
+}
