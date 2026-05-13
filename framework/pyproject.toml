@@ -1,6 +1,6 @@
 [project]
 name = "fabricks"
-version = "4.0.21"
+version = "4.0.22"
 description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },
@@ -28,7 +28,7 @@ dependencies = [
     "pydantic>=1.10.21",
     "pydantic-settings>=2.11.0",
     "pyspark>=3.5.7",
-    "python-dotenv >=1.0.1",
+    "python-dotenv>=1.2.2",
     "pyyaml >=6.0.0",
     "sparkdantic>=1.5.0",
     "sqlglot>=29.0.1",

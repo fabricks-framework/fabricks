@@ -19,7 +19,7 @@ def read_yaml(
     root: Optional[str] = None,
     preferred_file_name: Optional[str] = None,
     variables: Optional[dict[str, Any]] = None,
-    strict: bool = True,
+    strict: bool = False,
 ) -> Iterable[dict]:
     """
     Read YAML files from a path with optional variable substitution.
@@ -29,7 +29,7 @@ def read_yaml(
         root: Optional root key to extract from each document
         preferred_file_name: Optional preferred file name pattern
         variables: Optional dictionary of variables for substitution
-        strict: If True, raise ValueError when variables are not found (default: True)
+        strict: If True, raise ValueError when variables are not found (default: False)
 
     Yields:
         Dictionary data from YAML files, with variables substituted if provided

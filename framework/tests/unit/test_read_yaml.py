@@ -113,7 +113,7 @@ def test_read_yaml_strict_mode_raises_on_missing_variable(fixtures_dir: Path) ->
 
     # Should raise ValueError for missing variables
     with pytest.raises(ValueError, match="Variable\\(s\\) not found in lookup"):
-        list(read_yaml(path, root="job", variables=partial_vars))
+        list(read_yaml(path, root="job", variables=partial_vars, strict=True))
 
 
 def test_read_yaml_strict_mode_succeeds_with_all_variables(fixtures_dir: Path, test_variables: dict[str, str]) -> None:

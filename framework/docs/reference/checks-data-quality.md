@@ -13,12 +13,12 @@ Enable checks per job using `check_options`:
     item: max_rows
     options: { mode: complete }
     check_options:
-      pre_run: true         # run checks before writing
-      post_run: true        # run checks after writing
-      min_rows: 10          # minimum expected row count
-      max_rows: 10000       # maximum expected row count
-      count_must_equal: fabricks.dummy  # enforce row count equality with another table
-      skip: false           # skip all checks if true
+      pre_run: true # run checks before writing
+      post_run: true # run checks after writing
+      min_rows: 10 # minimum expected row count
+      max_rows: 10000 # maximum expected row count
+      count_must_equal: fabricks.dummy # enforce row count equality with another table
+      skip: false # skip all checks if true
 ```
 
 ## Catalog of checks
@@ -26,7 +26,7 @@ Enable checks per job using `check_options`:
 These are the built-in switches you can use in `check_options`. Built-in checks evaluate simple properties of the dataset and will fail the job on violation. Use SQL contracts when you need richer logic or to emit warnings instead of hard failures.
 
 | Name               | Type                | Default | Required | Description                                                               | Failure behavior                       |
-|--------------------|---------------------|---------|----------|---------------------------------------------------------------------------|----------------------------------------|
+| ------------------ | ------------------- | ------- | -------- | ------------------------------------------------------------------------- | -------------------------------------- |
 | `pre_run`          | boolean             | false   | no       | Run SQL contracts and built-in checks before the write.                   | Contract: `__action` controls outcome. |
 | `post_run`         | boolean             | false   | no       | Run SQL contracts and built-in checks after the write.                    | Contract: `__action` controls outcome. |
 | `min_rows`         | integer             | unset   | no       | Minimum expected row count of the dataset being written.                  | Fail if `count < min_rows`.            |
@@ -62,10 +62,12 @@ Use `pre_run`/`post_run` to enable contract execution and add your contract SQL 
 ## SQL contracts
 
 When `pre_run` or `post_run` checks are enabled, provide SQL files named after the table or job:
+
 - `table_name.pre_run.sql`
 - `table_name.post_run.sql`
 
 Each SQL must return:
+
 - `__action`: either `'fail'` or `'warning'`
 - `__message`: human-readable message
 
@@ -89,11 +91,13 @@ select 'warning' as __action, 'I want you to warn me !' as __message;
 Checks produce two observable signals useful in CI and orchestration systems:
 
 **Exit code**
+
 - Any hard failure (built-in bound violations or a contract returning `__action = 'fail'`) causes the job to exit with a non-zero status.
 - For physical tables (`append`/`complete`/`update` modes), failures also trigger an automatic rollback to the previous successful version.
 - Most CI systems will mark the pipeline as failed automatically on non-zero exit codes.
 
 **Log messages**
+
 - Contracts should emit a single row with `__action` and `__message`. These are logged so you can surface them in CI logs and artifacts.
 - When `__action = 'warning'`, the job continues and exits with code 0. Ensure your CI surfaces logs so warnings are visible in pull requests.
 
@@ -108,6 +112,7 @@ select 'warning' as __action, 'Null rate above target'    as __message;
 ```
 
 **Tips:**
+
 - Prefer `post_run` for checks that must consider the final persisted state.
 - Use built-in bounds for simple invariants; reserve contracts for multi-table logic and nuanced policies.
 - If you need to gate on warnings, implement a small CI step that scans logs for known warning markers and decides policy for your repository.

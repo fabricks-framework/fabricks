@@ -1,12 +1,10 @@
 """Utility functions for runtime configuration parsing and transformation."""
 
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, resolve_git_path
+from fabricks.utils.read.read_yaml import _read_yaml_cached
 from fabricks.utils.variables import build_variable_lookup, substitute_value
 
 
@@ -49,24 +47,6 @@ def _resolve_variables_path(
     return config_path.parent / path
 
 
-@lru_cache(maxsize=128)
-def _load_variables_from_file_cached(variables_path_str: str) -> dict[str, Any]:
-    """Cached YAML file loader (internal)."""
-    variables_path = Path(variables_path_str)
-    with open(variables_path, encoding="utf-8") as f:
-        return _as_variables(yaml.safe_load(f), source=variables_path_str)
-
-
-def load_variables_from_file(variables_path: Path, config_path: Path) -> dict[str, Any]:
-    """Load variables from a YAML file with proper error context (cached)."""
-    try:
-        return _load_variables_from_file_cached(str(variables_path))
-    except FileNotFoundError as exc:
-        raise FileNotFoundError(
-            f"variables file '{variables_path}' referenced by config '{config_path}' was not found",
-        ) from exc
-
-
 def load_variables(
     data: dict[str, Any],
     config_path: Path,
@@ -94,7 +74,13 @@ def load_variables(
         if not file_path.is_absolute():
             file_path = config_path.parent / file_path
 
-        return load_variables_from_file(file_path, config_path)
+        try:
+            content = _read_yaml_cached(str(file_path))
+            return _as_variables(content, source=str(file_path))
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(
+                f"variables file '{file_path}' referenced by config '{config_path}' was not found",
+            ) from exc
 
     if inline_variables:
         return _as_variables(inline_variables, source="runtime config")
@@ -121,7 +107,7 @@ def perform_variable_substitution(
 
     prepared = dict(data)
     prepared["variables"] = variables
-    return substitute_value(prepared, build_variable_lookup(variables))
+    return substitute_value(prepared, build_variable_lookup(variables), strict=True)
 
 
 def resolve_runtime_paths(

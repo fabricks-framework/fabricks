@@ -25,28 +25,29 @@ Table options control how Fabricks creates and manages physical Delta tables acr
 
 ## Option matrix
 
-| Option                | Type                        | Default | Applies to modes               | Notes                                                            |
-| --------------------- | --------------------------- | ------- | ------------------------------ | ---------------------------------------------------------------- |
-| `identity`            | boolean                     | false   | `append`, `complete`, `update` | Creates a Delta identity column on table create.                 |
-| `liquid_clustering`   | boolean                     | false   | `append`, `complete`, `update` | Requires Databricks runtime support.                             |
-| `partition_by`        | array[string]               | —       | `append`, `complete`, `update` | Low-cardinality columns recommended.                             |
-| `zorder_by`           | array[string]               | —       | `append`, `complete`, `update` | Improves data skipping on frequently filtered columns.           |
-| `cluster_by`          | array[string]               | —       | `append`, `complete`, `update` | Logical clustering; materialization depends on runtime features. |
-| `bloomfilter_by`      | array[string]               | —       | `append`, `complete`, `update` | Use selectively for point-lookups.                               |
-| `constraints`         | map[string,string]          | —       | `append`, `complete`, `update` | Arbitrary DDL constraint expressions.                            |
-| `primary_key`         | map[string, PrimaryKey]     | —       | `append`, `complete`, `update` | Structured PK: `keys: [col]`, optional `options`.               |
-| `foreign_keys`        | map[string, ForeignKey]     | —       | `append`, `complete`, `update` | Structured FK: `keys`, `reference`, optional `options`.         |
-| `properties`          | map[string,string]          | —       | `append`, `complete`, `update` | Arbitrary Delta table properties.                                |
-| `comment`             | string                      | —       | `append`, `complete`, `update` | Table-level description.                                         |
-| `comments`            | map[string,string]          | —       | `append`, `complete`, `update` | Column-level comments (column name → description).               |
-| `calculated_columns`  | map[string,string]          | —       | `append`, `complete`, `update` | Columns computed at write time via SQL expressions.              |
-| `generated_columns`   | map[string,string]          | —       | `append`, `complete`, `update` | Delta generated columns (evaluated by Delta at write time).      |
-| `masks`               | map[string,string]          | —       | `append`, `complete`, `update` | Column masking policies (column name → mask function name).      |
-| `maximum_compatibility` | boolean                   | false   | `append`, `complete`, `update` | Apply settings for maximum Delta reader/writer compatibility.    |
-| `retention_days`      | integer                     | —       | `append`, `complete`, `update` | VACUUM retention (days).                                         |
-| `powerbi`             | boolean                     | false   | `append`, `complete`, `update` | Applies Power BI-specific metadata where supported.              |
+| Option                  | Type                    | Default | Applies to modes               | Notes                                                            |
+| ----------------------- | ----------------------- | ------- | ------------------------------ | ---------------------------------------------------------------- |
+| `identity`              | boolean                 | false   | `append`, `complete`, `update` | Creates a Delta identity column on table create.                 |
+| `liquid_clustering`     | boolean                 | false   | `append`, `complete`, `update` | Requires Databricks runtime support.                             |
+| `partition_by`          | array[string]           | —       | `append`, `complete`, `update` | Low-cardinality columns recommended.                             |
+| `zorder_by`             | array[string]           | —       | `append`, `complete`, `update` | Improves data skipping on frequently filtered columns.           |
+| `cluster_by`            | array[string]           | —       | `append`, `complete`, `update` | Logical clustering; materialization depends on runtime features. |
+| `bloomfilter_by`        | array[string]           | —       | `append`, `complete`, `update` | Use selectively for point-lookups.                               |
+| `constraints`           | map[string,string]      | —       | `append`, `complete`, `update` | Arbitrary DDL constraint expressions.                            |
+| `primary_key`           | map[string, PrimaryKey] | —       | `append`, `complete`, `update` | Structured PK: `keys: [col]`, optional `options`.                |
+| `foreign_keys`          | map[string, ForeignKey] | —       | `append`, `complete`, `update` | Structured FK: `keys`, `reference`, optional `options`.          |
+| `properties`            | map[string,string]      | —       | `append`, `complete`, `update` | Arbitrary Delta table properties.                                |
+| `comment`               | string                  | —       | `append`, `complete`, `update` | Table-level description.                                         |
+| `comments`              | map[string,string]      | —       | `append`, `complete`, `update` | Column-level comments (column name → description).               |
+| `calculated_columns`    | map[string,string]      | —       | `append`, `complete`, `update` | Columns computed at write time via SQL expressions.              |
+| `generated_columns`     | map[string,string]      | —       | `append`, `complete`, `update` | Delta generated columns (evaluated by Delta at write time).      |
+| `masks`                 | map[string,string]      | —       | `append`, `complete`, `update` | Column masking policies (column name → mask function name).      |
+| `maximum_compatibility` | boolean                 | false   | `append`, `complete`, `update` | Apply settings for maximum Delta reader/writer compatibility.    |
+| `retention_days`        | integer                 | —       | `append`, `complete`, `update` | VACUUM retention (days).                                         |
+| `powerbi`               | boolean                 | false   | `append`, `complete`, `update` | Applies Power BI-specific metadata where supported.              |
 
 **Notes:**
+
 - `table_options` are ignored in `memory` mode (view-only).
 - Defaults may also be set at step level in your runtime and overridden per job.
 

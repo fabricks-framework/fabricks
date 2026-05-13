@@ -76,7 +76,7 @@ def test_variable_substitution_raises_for_missing_variables_file(fixtures_dir: P
 
     with pytest.raises(
         FileNotFoundError,
-        match=re.escape("variables file"),
+        match=re.escape("variables file")
     ):
         RuntimeConf.model_validate(conf_data)
 

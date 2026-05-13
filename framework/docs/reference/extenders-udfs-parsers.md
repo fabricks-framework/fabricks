@@ -44,6 +44,7 @@ def add_country(df: DataFrame, **kwargs) -> DataFrame:
 ```
 
 **Notes:**
+
 - Extenders should be idempotent and fast.
 - Avoid heavy I/O; handle source reading in Bronze or via a Parser.
 - Prefer small, composable transformations.
@@ -80,6 +81,7 @@ from silver.monarch_scd1__current s
 ```
 
 **Notes:**
+
 - UDFs should validate inputs and avoid side-effects.
 - Prefer Spark SQL built-ins and DataFrame functions where possible for performance.
 
@@ -90,12 +92,14 @@ from silver.monarch_scd1__current s
 Parsers read and lightly clean raw data. They return a DataFrame and should not write output or mutate state.
 
 **What a parser should do:**
+
 - Read raw data from `data_path` (batch or stream based on `stream` flag)
 - Optionally apply/validate a schema from `schema_path`
 - Perform light, source-specific cleanup (drops/renames/type fixes)
 - Return a Spark DataFrame (no writes, no side effects)
 
 **Inputs:**
+
 - `data_path`: source location (directory or file)
 - `schema_path`: optional schema location (e.g., JSON/DDL)
 - `spark`: active `SparkSession`

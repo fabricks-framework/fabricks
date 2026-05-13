@@ -23,23 +23,26 @@ The Silver step standardizes, cleans, and enriches landed Bronze data. It is the
 ## Behavior notes
 
 **Deduplication & ordering**
+
 - Use `deduplicate` to drop duplicate keys in the incoming batch.
 - `order_duplicate_by` accepts a sort spec to select the preferred row when duplicates exist.
 - `latest` applies only to the incoming batch; it does not inspect historical rows. Use `update` to merge winners into history.
 
 **Streaming**
+
 - `stream: true` is supported when your connectors and environment support streaming execution.
 - For stable results in streaming, provide deterministic keys and stable ordering columns. Prefer `post_run` checks for accuracy.
 
 **Combine**
+
 - `combine` unions parent outputs. Parents must be schema-compatible; enable `deduplicate` if you need to collapse duplicates across parents.
 
 ## CDC strategies
 
-| Strategy | Effect                                                              | Output convention                   |
-| -------- | ------------------------------------------------------------------- | ----------------------------------- |
-| `nocdc`  | No CDC metadata; write the result as-is.                            | —                                   |
-| `scd1`   | Current-state model with `__is_current`, `__is_deleted` flags.      | `{table}__current` view available.  |
+| Strategy | Effect                                                                 | Output convention                  |
+| -------- | ---------------------------------------------------------------------- | ---------------------------------- |
+| `nocdc`  | No CDC metadata; write the result as-is.                               | —                                  |
+| `scd1`   | Current-state model with `__is_current`, `__is_deleted` flags.         | `{table}__current` view available. |
 | `scd2`   | Full-history model with validity windows `__valid_from`, `__valid_to`. | `{table}__current` view available. |
 
 ## Common options (summary)

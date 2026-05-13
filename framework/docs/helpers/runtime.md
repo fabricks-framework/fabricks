@@ -71,18 +71,18 @@ name: MyFabricksProject
 options:
   secret_scope: my_secret_scope
   # Unity Catalog (optional)
-  unity_catalog: true           # enable Unity Catalog mode
-  catalog: my_catalog           # catalog name when unity_catalog is true
+  unity_catalog: true # enable Unity Catalog mode
+  catalog: my_catalog # catalog name when unity_catalog is true
   # Optional security
-  encryption_key: my_key        # column encryption key
-  type_widening: true           # allow automatic type widening on schema evolution
+  encryption_key: my_key # column encryption key
+  type_widening: true # allow automatic type widening on schema evolution
   # Execution
   timeouts:
     step: 3600
     job: 3600
     pre_run: 3600
     post_run: 3600
-  workers: 16                   # default parallel workers per step
+  workers: 16 # default parallel workers per step
   retention_days: 7
   timezone: Europe/Paris
 path_options:
@@ -115,6 +115,7 @@ gold:
 ```
 
 **Key concepts:**
+
 - `options`: global project config (secrets, timeouts, worker count)
 - `path_options`: shared storage/config paths
 - `spark_options`: default Spark SQL options applied for jobs
@@ -131,6 +132,7 @@ Multiple layers of configuration can influence a run. When the same setting appe
 5. Internal defaults (shipped with Fabricks)
 
 **Notes:**
+
 - `spark_options` are merged; job-level `spark_options` override keys from step/global levels.
 - `path_options` (e.g., `storage`, `runtime`) can be set globally, then refined per step instance.
 - Runtime `variables` are substituted before validation across string and numeric fields (not only paths). You can also load environment-specific overrides via `variables_file` in `conf.fabricks.yml` or `FABRICKS_VARIABLES`.
@@ -184,6 +186,7 @@ semantic/
 This section describes the minimal, copyable Fabricks runtime you can use to get started quickly. It mirrors the structure used in the integration tests and includes example configs and a working Gold job (`hello_world.sql`).
 
 **What this is:**
+
 - A self-contained runtime layout showing how to organize steps (bronze, silver, gold, semantic)
 - Example YAML configuration files per step
 - A minimal schedule and config to run a simple job end-to-end
@@ -209,6 +212,7 @@ examples/runtime/
 ```
 
 **Key files and purpose:**
+
 - `fabricks/conf.fabricks.yml`: project-level configuration (secret scope, timeouts, workers, storage paths, schedules path)
 - `fabricks/schedules/schedule.yml`: minimal schedule to run the gold step
 - `gold/gold/_config.example.yml`: defines a simple Gold job
@@ -216,6 +220,7 @@ examples/runtime/
 - `bronze/_config.example.yml`, `silver/_config.example.yml`, `semantic/_config.example.yml`: example step configurations
 
 **How to use this sample:**
+
 1. Point `tool.fabricks.runtime` to this folder and set `config` to `fabricks/conf.fabricks.yml` in your `pyproject.toml`.
 2. Run the Databricks bundle job with `schedule: example` (see the main documentation for bundle details).
 3. Inspect the materialized outputs, logs, and table/view artifacts.

@@ -67,19 +67,22 @@ Supported values: `nocdc`, `scd1`, `scd2`.
 Some helper columns govern CDC behavior. Fabricks generates additional internal helpers during processing.
 
 **Gold jobs (consumer side):**
+
 - `scd2` (required): `__key`, `__timestamp`, `__operation` with values `'upsert' | 'delete' | 'reload'`.
 - `scd1` (required): `__key`; optional `__timestamp` / `__operation` (`'upsert' | 'delete' | 'reload'`) for delete/rectify handling.
 - Note: If `__operation` is absent in Gold SCD `update` jobs, Fabricks auto-injects `__operation = 'reload'` and enables rectification.
 - Optional helpers used by merges:
-    - `__order_duplicate_by_asc` / `__order_duplicate_by_desc`
-    - `__identity` (only when `table_options.identity` is not true; if `identity: true`, the identity column is auto-created and you should not supply `__identity`)
-    - `__source` (to scope merges by logical source)
+  - `__order_duplicate_by_asc` / `__order_duplicate_by_desc`
+  - `__identity` (only when `table_options.identity` is not true; if `identity: true`, the identity column is auto-created and you should not supply `__identity`)
+  - `__source` (to scope merges by logical source)
 
 **Silver jobs (producer side):**
+
 - Provide business keys through job-level `keys` (or compute a `__key`) to support downstream CDC.
 - Silver can apply CDC directly and yields convenience views (e.g., `{table}__current`).
 
 **Note:**
+
 - Memory outputs ignore columns that start with `__`.
 - Special characters in column names are preserved.
 
@@ -93,34 +96,41 @@ Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The co
 
 - `Merger.get_merge_query` renders `templates/merge.sql.jinja` for the selected `change_data_capture` strategy.
 - The framework computes internal columns such as:
-    - `__merge_condition` — one of `'upsert' | 'delete' | 'update' | 'insert'` depending on strategy and inputs.
-    - `__merge_key` — a synthetic key used to join against the target.
+  - `__merge_condition` — one of `'upsert' | 'delete' | 'update' | 'insert'` depending on strategy and inputs.
+  - `__merge_key` — a synthetic key used to join against the target.
 - You usually do not set these internal fields manually; they are derived from your inputs (`__key`, `__operation`, `__timestamp`) and job options.
 
 **Join keys**
+
 - If a `__key` column exists in the target, merges use `t.__key = s.__merge_key`.
 - Otherwise, the configured `keys` option is used to build an equality join on business keys.
 
 **Source scoping**
+
 - If `__source` exists in both sides, merges add `t.__source = s.__source` to support multi-source data in the same table.
 
 **Soft delete vs hard delete (SCD1)**
+
 - If the incoming data contains `__is_deleted`, the SCD1 template performs soft deletes: sets `__is_current = false`, `__is_deleted = true` on delete.
 - If `__is_deleted` is absent, deletes are physical for SCD1.
 
 **Timestamps and metadata**
+
 - If the incoming data provides `__timestamp`, it is propagated to the target.
 - If the target has `__metadata`, the `updated` timestamp is set to the current time during updates/deletes.
 
 **Identity and hash**
+
 - If `table_options.identity: true`, the identity column is created automatically when the table is created.
 - If `table_options.identity` is not true and `__identity` is present in the input, it will be written as a regular column.
 - If `__hash` is present, it is updated during upsert operations.
 
 **Update filtering**
+
 - `options.update_where` can constrain rows affected during merges (useful for limiting the scope of updates).
 
 **Internals reference**
+
 - `framework/fabricks/cdc/base/merger.py`
 - Templates under `framework/fabricks/cdc/templates/merge/*.sql.jinja`
 
@@ -132,10 +142,11 @@ Fabricks compiles CDC operations into SQL via Jinja templates at runtime. The co
 
 - Upsert (`__merge_condition = 'upsert'`): updates matching rows and inserts non-matching rows.
 - Delete (`__merge_condition = 'delete'`):
-    - Soft delete if `__is_deleted` is part of the schema: sets `__is_current = false`, `__is_deleted = true`.
-    - Otherwise, performs a physical delete.
+  - Soft delete if `__is_deleted` is part of the schema: sets `__is_current = false`, `__is_deleted = true`.
+  - Otherwise, performs a physical delete.
 
 **Convenience view (in Silver)**
+
 - `{table}__current`: filters current (non-deleted) rows for simplified consumption.
 
 **Minimal Silver example**
@@ -187,11 +198,13 @@ from silver.monarch_scd1__current
 **Required Gold inputs**: `__key`, `__timestamp`, `__operation` with values `'upsert' | 'delete' | 'reload'`.
 
 **Reload notes:**
+
 - `'reload'` marks a reconciliation boundary; Fabricks derives concrete actions (closing current rows, inserting new ones, deleting missing keys) across that boundary.
 - If you omit `__operation` in Gold SCD `update` jobs, Fabricks injects `'reload'` and enables rectification automatically.
 - In Silver: presence of `'reload'` (beyond target's max timestamp) enables rectification. `'reload'` is forbidden in `mode: latest`.
 
 **Optional features:**
+
 - `options.correct_valid_from`: adjusts start timestamps for validity windows.
 - `options.persist_last_timestamp`: persists last processed timestamp for incremental loads.
 

@@ -13,7 +13,7 @@ from pydantic_settings import PydanticBaseSettingsSource
 if sys.version_info >= (3, 11):
     import tomllib
 else:
-    import tomli as tomllib  # type: ignore
+    import tomli as tomllib
 
 
 class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):

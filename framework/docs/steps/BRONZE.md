@@ -49,7 +49,7 @@ The Bronze step ingests raw data from files, streams, or existing tables into th
       mode: memory
       uri: /mnt/demo/raw/demo
       parser: parquet
-      keys: [id]   # optional, useful for downstream CDC
+      keys: [id] # optional, useful for downstream CDC
 ```
 
 **Register an existing table/view**
@@ -61,29 +61,29 @@ The Bronze step ingests raw data from files, streams, or existing tables into th
     item: register_source
     options:
       mode: register
-      uri: analytics.raw_demo   # existing Delta table or view name
+      uri: analytics.raw_demo # existing Delta table or view name
 ```
 
 ## Common options (summary)
 
 This section lists the most common options for a Bronze job. Options can be defined at the job level (recommended) or inherited from step-level defaults.
 
-| Option               | Type                               | Default   | Required | Purpose / notes                                                                   |
-| -------------------- | ---------------------------------- | --------- | -------- | --------------------------------------------------------------------------------- |
-| `type`               | enum: `default`, `manual`          | `default` | no       | `manual` disables auto DDL/DML; you manage persistence yourself.                  |
-| `mode`               | enum: `memory`, `append`, `register` | —       | yes      | Controls ingestion behavior.                                                      |
-| `uri`                | string (path or table)             | —         | cond.    | Source location or existing table/view (required for `append`/`register`).        |
-| `parser`             | string                             | —         | cond.    | Input parser (`parquet`, `csv`, `json`) or custom parser. Not used in `register`. |
-| `source`             | string                             | —         | no       | Logical source label for lineage/logging.                                         |
-| `keys`               | array[string]                      | —         | no       | Business keys used for dedup and downstream CDC; recommended.                     |
-| `parents`            | array[string]                      | —         | no       | Upstream job dependencies to enforce ordering.                                    |
-| `filter_where`       | string (SQL predicate)             | —         | no       | Row-level filter applied during ingestion.                                        |
-| `calculated_columns` | map[string,string]                 | —         | no       | New columns defined as SQL expressions evaluated at load time.                    |
-| `encrypted_columns`  | array[string]                      | —         | no       | Columns to encrypt during write.                                                  |
-| `extender`           | string                             | —         | no       | Python extender to transform the DataFrame (see Extenders).                       |
-| `extender_options`   | map[string,any]                    | `{}`      | no       | Arguments passed to the extender.                                                 |
-| `operation`          | enum: `upsert`, `reload`, `delete` | —         | no       | Changelog semantics for certain feeds.                                            |
-| `timeout`            | integer (seconds)                  | —         | no       | Per-job timeout; overrides step default.                                          |
+| Option               | Type                                 | Default   | Required | Purpose / notes                                                                   |
+| -------------------- | ------------------------------------ | --------- | -------- | --------------------------------------------------------------------------------- |
+| `type`               | enum: `default`, `manual`            | `default` | no       | `manual` disables auto DDL/DML; you manage persistence yourself.                  |
+| `mode`               | enum: `memory`, `append`, `register` | —         | yes      | Controls ingestion behavior.                                                      |
+| `uri`                | string (path or table)               | —         | cond.    | Source location or existing table/view (required for `append`/`register`).        |
+| `parser`             | string                               | —         | cond.    | Input parser (`parquet`, `csv`, `json`) or custom parser. Not used in `register`. |
+| `source`             | string                               | —         | no       | Logical source label for lineage/logging.                                         |
+| `keys`               | array[string]                        | —         | no       | Business keys used for dedup and downstream CDC; recommended.                     |
+| `parents`            | array[string]                        | —         | no       | Upstream job dependencies to enforce ordering.                                    |
+| `filter_where`       | string (SQL predicate)               | —         | no       | Row-level filter applied during ingestion.                                        |
+| `calculated_columns` | map[string,string]                   | —         | no       | New columns defined as SQL expressions evaluated at load time.                    |
+| `encrypted_columns`  | array[string]                        | —         | no       | Columns to encrypt during write.                                                  |
+| `extender`           | string                               | —         | no       | Python extender to transform the DataFrame (see Extenders).                       |
+| `extender_options`   | map[string,any]                      | `{}`      | no       | Arguments passed to the extender.                                                 |
+| `operation`          | enum: `upsert`, `reload`, `delete`   | —         | no       | Changelog semantics for certain feeds.                                            |
+| `timeout`            | integer (seconds)                    | —         | no       | Per-job timeout; overrides step default.                                          |
 
 ## Notes
 
