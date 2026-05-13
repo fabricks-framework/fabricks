@@ -3,8 +3,17 @@ from typing import List, Optional, Union, overload
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructType
 
-from fabricks.context import SPARK
 from fabricks.utils.path import FileSharePath
+
+
+def _ensure_spark(spark: Optional[SparkSession]) -> SparkSession:
+    if spark is None:
+        from fabricks.utils.spark import get_spark
+
+        spark = get_spark()
+
+    assert spark is not None
+    return spark
 
 
 @overload
@@ -68,24 +77,27 @@ def _read_stream(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
-    if spark is None:
-        spark = SPARK
-    assert spark is not None
+    spark = _ensure_spark(spark)
 
     if file_format == "table":
         assert isinstance(src, str)
         return spark.readStream.table(src)
     else:
         file_format = "binaryFile" if file_format == "pdf" else file_format
+
         if isinstance(src, str):
             src = FileSharePath(src)
+
         if file_format == "delta":
             reader = spark.readStream.format("delta")
+
         else:
             reader = spark.readStream.format("cloudFiles")
             reader.option("cloudFiles.format", file_format)
+
             if schema:
                 reader.schema(schema)
+
             else:
                 assert schema_path
                 if isinstance(schema_path, str):
@@ -95,6 +107,7 @@ def _read_stream(
                 reader.option("cloudFiles.useIncrementalListing", "true")
                 reader.option("cloudFiles.schemaEvolutionMode", "addNewColumns")
                 reader.option("cloudFiles.schemaLocation", schema_path.string)
+
                 if hints:
                     if isinstance(hints, str):
                         hints = [hints]
@@ -104,6 +117,7 @@ def _read_stream(
         reader.option("recursiveFileLookup", "true")
         reader.option("skipChangeCommits", "true")
         reader.option("ignoreDeletes", "true")
+
         if file_format == "csv":
             reader.option("header", "true")
 
@@ -161,22 +175,25 @@ def _read_batch(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
-    if spark is None:
-        spark = SPARK
-    assert spark is not None
+    spark = _ensure_spark(spark)
 
     if file_format == "table":
         assert isinstance(src, str)
         return spark.read.table(src)
+
     else:
         path_glob_filter = file_format
         file_format = "binaryFile" if file_format == "pdf" else file_format
+
         if isinstance(src, str):
             src = FileSharePath(src)
+
         reader = spark.read.format(file_format)
         reader = reader.option("pathGlobFilter", f"*.{path_glob_filter}")
+
         if schema:
             reader = reader.schema(schema)
+
         # default options
         reader = reader.option("recursiveFileLookup", "True")
         if file_format == "parquet":
@@ -251,9 +268,7 @@ def read(
     metadata: Optional[bool] = True,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
-    if spark is None:
-        spark = SPARK
-    assert spark is not None
+    spark = _ensure_spark(spark)
 
     if table is not None:
         file_format = "table"

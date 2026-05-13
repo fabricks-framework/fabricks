@@ -74,10 +74,7 @@ def test_variable_substitution_raises_for_missing_variables_file(fixtures_dir: P
     # Point to non-existent file
     conf_data["path_options"]["variables"] = str(fixtures_dir / "variables.missing.yml")
 
-    with pytest.raises(
-        FileNotFoundError,
-        match=re.escape("variables file")
-    ):
+    with pytest.raises(FileNotFoundError, match=re.escape("variables file")):
         RuntimeConf.model_validate(conf_data)
 
 
