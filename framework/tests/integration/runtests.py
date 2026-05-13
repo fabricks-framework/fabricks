@@ -113,5 +113,3 @@ assert res.value == 0, "failed"  # type: ignore
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
 
 # COMMAND ----------
-
-

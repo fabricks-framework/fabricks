@@ -11,6 +11,7 @@ def read_yaml(
     path: BasePath,
     root: Optional[str] = None,
     preferred_file_name: Optional[str] = None,
+    strict: bool = False,
 ) -> Iterable[dict[str, Any]]:
     """
     Read YAML files with automatic variable substitution from runtime context.
@@ -34,5 +35,5 @@ def read_yaml(
         root=root,
         preferred_file_name=preferred_file_name,
         variables=VARIABLES,
-        strict=True,  # Always strict in core
+        strict=strict,
     )

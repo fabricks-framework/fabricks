@@ -11,10 +11,12 @@ This helper explains how to initialize Fabricks on a Databricks cluster or local
 You need the Fabricks package available on your cluster or local environment.
 
 **Databricks cluster (recommended):**
+
 - Libraries → Install new → Python PyPI → `fabricks` (or install a wheel/artifact you build)
 - Alternatively, attach a workspace library artifact built from this repository
 
 **Local development (optional):**
+
 - `pip install fabricks`
 - or from source (for development): `pip install -e .[dev,test]`
 
@@ -91,16 +93,20 @@ Attach the Fabricks library to the cluster before running the notebook.
 ## Troubleshooting
 
 **Missing env/config:**
+
 - `ValueError`: Must have at least a `pyproject.toml` or set `FABRICKS_RUNTIME`
 - Fix by setting `FABRICKS_RUNTIME` or adding `[tool.fabricks]` to `pyproject.toml`
 
 **Unity Catalog:**
+
 - Ensure `options.unity_catalog` is true and `options.catalog` is set in `conf.fabricks.yml`
 
 **Paths and storage:**
+
 - `conf.fabricks.yml` must define `path_options.storage` and per-step runtime/storage paths; Fabricks uses these to resolve `PATHS_RUNTIME` and `PATHS_STORAGE`
 
 **Logging:**
+
 - Set `FABRICKS_LOGLEVEL` or `tool.fabricks.loglevel` to control verbosity
 
 ## Related topics

@@ -3,6 +3,7 @@
 Views provide a simple, declarative way to define a set of jobs to run in a schedule. Instead of listing jobs manually, you create a SQL view that filters the canonical `fabricks.jobs` table, and then reference that view by name from a schedule.
 
 **Typical use cases:**
+
 - Run all jobs for a given domain/topic (e.g., monarch)
 - Run only certain steps (e.g., all Gold jobs)
 - Run a curated subset of jobs for ad-hoc backfills or smoke tests
@@ -12,11 +13,13 @@ Views provide a simple, declarative way to define a set of jobs to run in a sche
 ## Types of views in Fabricks
 
 **Data views (user-authored):**
+
 - You place `.sql` files under your runtime `views` path (see below).
 - Each file defines one SQL view created under the `fabricks` schema.
 - These are typically simple filters over `fabricks.jobs`.
 
 **Schedule views (framework-generated):**
+
 - For each `schedule` defined in your runtime YAML, Fabricks can generate a companion view named `fabricks.<schedule_name>_schedule`.
 - A schedule view selects `j.*` from `fabricks.jobs` and applies optional filters from the schedule's options (`view`, `steps`, `tag`), excluding manual jobs.
 
@@ -73,13 +76,14 @@ This will create a view called `fabricks.monarch`. You can then reference this v
 - schedule:
     name: run-monarch
     options:
-      view: monarch            # join to fabricks.monarch on job_id
-      steps: [silver, gold]    # optional: restrict to these steps
-      tag: nightly             # optional: only jobs having this tag
+      view: monarch # join to fabricks.monarch on job_id
+      steps: [silver, gold] # optional: restrict to these steps
+      tag: nightly # optional: only jobs having this tag
       # variables, timeouts, etc. can still be provided as needed
 ```
 
 **Behavior:**
+
 - Fabricks loads all jobs returned by `fabricks.monarch` and further filters by `steps` and `tag` if provided.
 - Schedule-level options like `variables`, `timeouts`, etc., still apply to execution.
 - In most cases the view alone defines the job set; `steps`/`tag` refine it.
@@ -105,6 +109,7 @@ where true
 ```
 
 **Notes:**
+
 - The inner join requires the data view to expose `job_id`. Returning `j.*` from `fabricks.jobs` guarantees this.
 - Manual jobs are excluded from schedule views by design.
 

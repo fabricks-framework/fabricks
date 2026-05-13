@@ -11,16 +11,19 @@ Fabricks organizes pipelines into layered steps to keep responsibilities clear a
 ## When to use each layer
 
 **Bronze**
+
 - Ingest from external sources with minimal logic
 - Keep provenance and raw fidelity
 - Typical modes: `memory`, `append`, `register`
 
 **Silver**
+
 - Standardize schemas, apply business keys, deduplicate
 - Apply CDC: `scd1`/`scd2` with convenience views (e.g., `table__current`)
 - Typical modes: `memory`, `append`, `latest`, `update`, `combine`
 
 **Gold**
+
 - Aggregate, reshape, and model data for analytics/reporting
 - Implement SCD patterns at the desired consumption grain
 - Typical modes: `memory`, `append`, `complete`, `update`, `invoke` (notebook)

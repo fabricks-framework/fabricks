@@ -2,7 +2,6 @@ from typing import Any, Optional, Union
 from uuid import uuid4
 
 import pandas as pd
-from pyspark.sql import DataFrame
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
@@ -13,7 +12,7 @@ from fabricks.utils._types import DataFrameLike, SparkSessionLike
 class View(DbObject):
     @staticmethod
     def create_or_replace(
-        df: Union[DataFrame, pd.DataFrame],
+        df: Union[DataFrameLike, pd.DataFrame],
         *dependencies,
         spark: Optional[SparkSessionLike] = None,
     ) -> str:
@@ -37,7 +36,7 @@ class View(DbObject):
 
 def create_or_replace_global_temp_view(
     name: str,
-    df: DataFrame,
+    df: DataFrameLike,
     uuid: Optional[bool] = False,
     job: Optional[Any] = None,
 ) -> str:

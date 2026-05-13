@@ -26,11 +26,11 @@ def fix(sql: str, keep_comments: bool = True):
     return sql
 
 
-def parse_one_fabricks(sql: str) -> exp.Expression:
+def parse_one_fabricks(sql: str) -> exp.Expr:
     return parse_one(sql, dialect="fabricks")
 
 
-def parse_fabricks(sql: str) -> list[exp.Expression | None]:
+def parse_fabricks(sql: str) -> list[exp.Expr | None]:
     return parse(sql, dialect="fabricks")
 
 
@@ -56,6 +56,6 @@ def parse_script(sql: str) -> list[str]:
     return [p.sql(dialect="fabricks") for p in parts]
 
 
-def parse_script_expressions(sql: str) -> list[exp.Expression]:
+def parse_script_expressions(sql: str) -> list[exp.Expr]:
     parts = [p for p in parse_fabricks(sql) if p is not None]
     return parts
