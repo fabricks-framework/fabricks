@@ -475,12 +475,17 @@ class BaseStep:
 
 
 def _log_and_raise_errors(errors: List[Dict], action: str, object_type: str = "operations") -> None:
-    """Log errors and raise ValueError with summary."""
     if errors:
+        logs = []
         for e in errors:
             DEFAULT_LOGGER.exception(f"fail to {action}", extra={"label": e["job"]}, exc_info=e["error"])
+            logs.append(
+                f"  {e['job']}: {type(e['error']).__name__}: {str(e['error']).splitlines()[0]}"
+            )
 
-        raise ValueError(f"could not {action} - {len(errors)} {object_type} failed, check logs for details")
+        raise ValueError(
+            f"could not {action} - {len(errors)} {object_type} failed:\n" + "\n".join(logs)
+        )
 
 
 # to avoid AttributeError: can't pickle local object
