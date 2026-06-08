@@ -1,10 +1,31 @@
-"""Shared variable substitution utilities."""
+"""Shared variable substitution utilities.
+
+Variable Substitution:
+    Variables are defined with a $ prefix in their keys and referenced with $name.
+    Example:
+        variables = {"$catalog": "my_catalog"}
+        substitute_value("catalog: $catalog", lookup) -> "catalog: my_catalog"
+
+Dollar Escape ($$):
+    Use $$ to escape literal $ characters in data (e.g., BC table names).
+    Example:
+        # BC table name with literal $: "INDUSCABEL$Change Log Entry"
+        # In config, escape it as: "INDUSCABEL$$Change Log Entry"
+        substitute_value("table: INDUSCABEL$$Change", lookup) -> "table: INDUSCABEL$Change"
+
+    This prevents collisions when:
+    - Data contains $ characters (e.g., "Company$G_L Entry")
+    - A variable with that name exists (e.g., $G_L is defined)
+    - Without $$: "Company$G_L Entry" would incorrectly substitute to "Company<value> Entry"
+    - With $$: "Company$$G_L Entry" correctly becomes "Company$G_L Entry"
+"""
 
 import re
 from functools import lru_cache
 from typing import Any
 
 _DOLLAR_VAR_PATTERN = re.compile(r"\$[A-Za-z0-9_-]+")
+_DOLLAR_PLACEHOLDER = "\x00ESCAPED_DOLLAR\x00"
 
 
 @lru_cache(maxsize=8)
@@ -33,6 +54,11 @@ def substitute_value(value: Any, lookup: dict[str, Any], strict: bool = False) -
     """
     Recursively substitute variables in values.
 
+    Supports $$ escape sequence for literal $ characters:
+    - $$ -> $ (literal dollar sign)
+    - $var -> replaced with variable value (if found)
+    - $Foo -> $Foo (unchanged if variable not found and strict=False)
+
     Args:
         value: The value to substitute variables in
         lookup: Dictionary mapping variable names to their values
@@ -58,6 +84,9 @@ def substitute_value(value: Any, lookup: dict[str, Any], strict: bool = False) -
     if value in lookup:
         return lookup[value]
 
+    # First, handle $$ escapes by temporarily replacing with a placeholder
+    working_value = value.replace("$$", _DOLLAR_PLACEHOLDER)
+
     # Perform regex substitution with single-pass validation
     if strict:
         missing_vars = []
@@ -69,15 +98,15 @@ def substitute_value(value: Any, lookup: dict[str, Any], strict: bool = False) -
                 return var_name
             return str(lookup[var_name])
 
-        result = _DOLLAR_VAR_PATTERN.sub(_substitute, value)
+        result = _DOLLAR_VAR_PATTERN.sub(_substitute, working_value)
 
         if missing_vars:
             raise ValueError(f"Variable(s) not found in lookup: {', '.join(missing_vars)}")
-
-        return result
-
     else:
-        return _DOLLAR_VAR_PATTERN.sub(
+        result = _DOLLAR_VAR_PATTERN.sub(
             lambda match: str(lookup.get(match.group(0), match.group(0))),
-            value,
+            working_value,
         )
+
+    # Restore escaped dollars
+    return result.replace(_DOLLAR_PLACEHOLDER, "$")
