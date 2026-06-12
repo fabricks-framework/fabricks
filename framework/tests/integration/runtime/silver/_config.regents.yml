@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../job-schema.json
+# yaml-language-server: $schema=../../../../../job-schema-silver.json
 - job:
     step: silver
     topic: regent
@@ -15,5 +15,14 @@
     tags: [test]
     options:
       mode: update
+      change_data_capture: scd2
+      stream: false
+- job:
+    step: silver
+    topic: regent
+    item: latest
+    tags: [test]
+    options:
+      mode: latest
       change_data_capture: scd2
       stream: false
