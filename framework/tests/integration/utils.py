@@ -4,7 +4,7 @@ from typing import Any, List, Union, cast
 
 import pandas as pd
 from databricks.sdk.runtime import dbutils, spark
-from pyspark.sql.functions import expr
+from pyspark.sql.functions import expr, lit
 
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
@@ -52,6 +52,9 @@ def convert_parquet_to_delta(topic: str, deletelog: bool = True):
 
         df = concat_dfs(dfs)
         assert df is not None
+
+        if topic == "duke":
+            df = df.withColumn("__operation", lit("complete"))
 
         df = df.withColumn(
             "__split",
@@ -143,7 +146,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
     convert_parquet_to_delta("regent")
     convert_parquet_to_delta("monarch")
     convert_parquet_to_delta("prince", deletelog=False)
-
+    convert_parquet_to_delta("duke", deletelog=False)
 
 def create_expected_views():
     DEFAULT_LOGGER.info("expected - create views")

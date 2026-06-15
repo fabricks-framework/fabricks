@@ -22,14 +22,3 @@
       keys: [id]
     extender_options:
       - extender:  monarch
-- job:
-    step: bronze
-    topic: regent
-    item: latest
-    tags: [test]
-    options:
-      mode: register
-      uri: abfss://test@$datahub/raw/3/delta/regent
-      keys: [id]
-    extender_options:
-      - extender: force_reload

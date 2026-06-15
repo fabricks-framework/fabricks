@@ -1,0 +1,9 @@
+- job:
+    step: bronze
+    topic: duke
+    item: latest
+    tags: [test]
+    options:
+      mode: register
+      uri: abfss://fabricks@$datahub/raw/delta/duke
+      keys: [id]
