@@ -282,9 +282,10 @@ class BaseStep:
             extra={"label": self},
         )
 
-        while errors and max_retries and attempt <= max_retries:
+        while errors and max_retries and attempt < max_retries:
+            attempt += 1
             DEFAULT_LOGGER.warning(
-                f"retrying failed db objects, {max_retries - attempt} retries left",
+                f"retrying failed db objects, {max_retries - attempt + 1} retries left",
                 extra={"label": self},
             )
 

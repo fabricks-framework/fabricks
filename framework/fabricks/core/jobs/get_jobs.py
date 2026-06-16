@@ -162,7 +162,7 @@ def get_jobs_sorted(
         return jobs_df.limit(0)
 
     # If no dependencies, return jobs as-is
-    if dependencies_df is None or not dependencies_df:
+    if dependencies_df is None or dependencies_df.isEmpty():
         return jobs_df
 
     # Collect dependency edges
