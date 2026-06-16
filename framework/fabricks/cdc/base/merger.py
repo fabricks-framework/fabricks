@@ -60,6 +60,8 @@ class Merger(Processor):
         assert "__key" or keys, f"{self} - __key or keys not found"
 
         return {
+            "template": "merge",
+            # global
             "debugmode": IS_DEBUGMODE,
             "src": src,
             "format": format,

@@ -13,6 +13,7 @@ from fabricks.core.read import read_yaml
 from fabricks.models import AllowedModes
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import GitPath
+from fabricks.utils.sort import topological_with_data as topological_sort_with_data
 
 
 class GenericOptions(BaseModel):
@@ -115,3 +116,68 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
 
         jobs = run_in_parallel(_get_job, df)
         return jobs
+
+
+def get_jobs_sorted(
+    jobs_df: DataFrame,
+    dependencies_df: Optional[DataFrame] = None,
+) -> DataFrame:
+    """
+    Sort a job DataFrame by explicit dependency edges and return as a new DataFrame.
+
+    This function uses the pure Python topological_sort algorithm from fabricks.utils
+    and wraps it for Spark DataFrame usage.
+
+    Args:
+        jobs_df: DataFrame with 'job_id' column and any other job metadata
+        dependencies_df: Optional DataFrame with 'job_id' and 'parent_id' columns.
+                        If None or empty, jobs are returned in original order.
+
+    Returns:
+        DataFrame with same schema as jobs_df, rows sorted in topological order
+        (dependencies first)
+
+    Raises:
+        CyclicDependencyError: If circular dependencies are detected
+
+    Example:
+        >>> jobs = spark.createDataFrame([
+        ...     ("job_a", "topic1"),
+        ...     ("job_b", "topic1"),
+        ...     ("job_c", "topic2")
+        ... ], ["job_id", "topic"])
+        >>> deps = spark.createDataFrame([
+        ...     ("dep1", "sql", "job_b", "job_a", "job_a"),
+        ...     ("dep2", "sql", "job_c", "job_b", "job_b")
+        ... ], ["dependency_id", "origin", "job_id", "parent", "parent_id"])
+        >>> sorted_jobs = get_sorted_job_dataframe_from_dependencies(jobs, deps)
+        >>> [row.job_id for row in sorted_jobs.collect()]
+        ['job_a', 'job_b', 'job_c']
+    """
+    # Collect all job rows
+    job_rows: List[Row] = jobs_df.collect()
+
+    # If no jobs, return empty DataFrame
+    if not job_rows:
+        return jobs_df.limit(0)
+
+    # If no dependencies, return jobs as-is
+    if dependencies_df is None or not dependencies_df:
+        return jobs_df
+
+    # Collect dependency edges
+    dep_edges = dependencies_df.select("job_id", "parent_id").collect()
+
+    # Build items list (job_id, row) and dependencies list (child_id, parent_id)
+    items = [(row.job_id, row) for row in job_rows]
+    dependencies = [(edge.job_id, edge.parent_id) for edge in dep_edges]
+
+    # Sort using pure Python topological sort
+    sorted_items = topological_sort_with_data(items, dependencies)
+
+    # Extract sorted rows
+    sorted_rows = [row for _, row in sorted_items]
+
+    # Create new DataFrame from sorted rows, preserving schema
+    spark = jobs_df.sparkSession
+    return spark.createDataFrame(sorted_rows, schema=jobs_df.schema)

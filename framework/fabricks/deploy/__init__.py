@@ -1,9 +1,14 @@
 import logging
-from typing import Callable, Optional, Union
+from typing import Callable, Literal, Optional, Union
 
 from fabricks.context import FABRICKS_STORAGE, Steps
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.jobs import get_job
+from fabricks.core.jobs.bronze import Bronze
+from fabricks.core.jobs.gold import Gold
+from fabricks.core.jobs.silver import Silver
 from fabricks.core.steps import get_step
+from fabricks.core.steps.base import BaseStep
 from fabricks.deploy.masks import deploy_masks
 from fabricks.deploy.notebooks import deploy_notebooks
 from fabricks.deploy.runtime import deploy_runtime
@@ -52,19 +57,23 @@ class Deploy:
     @staticmethod
     def step(step: str):
         Deploy.tables()
-        s = get_step(step)
+        s: BaseStep = get_step(step)
         s.create()
 
         Deploy.views()
         Deploy.schedules()
 
     @staticmethod
-    def job(step: str):
-        s = get_step(step)
-        s.create()
+    def job(job: str):
+        j: Bronze | Gold | Silver = get_job(job)
+        j.create()
 
     @staticmethod
-    def armageddon(steps: Optional[Union[str, list[str]]] = None, nowait: bool = False):
+    def armageddon(
+        steps: Optional[Union[str, list[str]]] = None,
+        nowait: bool = False,
+        mode: Optional[Literal["parallel", "sequential"]] = "parallel",
+    ):
         def _call(func: Callable, operation: str):
             try:
                 func()
@@ -116,7 +125,7 @@ class Deploy:
         _call(lambda: Deploy.notebooks(overwrite=True), "deploy-notebooks")
 
         for s in steps:
-            _call(lambda s=s: get_step(s).create(), f"create-{s}")
+            _call(lambda s=s: get_step(s).create(mode=mode), f"create-{s}")
 
         _call(Deploy.views, "deploy-views")
         _call(Deploy.schedules, "deploy-schedules")

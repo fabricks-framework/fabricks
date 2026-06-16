@@ -148,6 +148,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
     convert_parquet_to_delta("prince", deletelog=False)
     convert_parquet_to_delta("duke", deletelog=False)
 
+
 def create_expected_views():
     DEFAULT_LOGGER.info("expected - create views")
 

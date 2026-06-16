@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
@@ -26,7 +26,7 @@ class Processor(Generator):
         DEFAULT_LOGGER.debug("exec query", extra={"label": self, "sql": sql})
         return self.spark.sql(sql)
 
-    def get_query_context(self, src: AllowedSources, **kwargs) -> dict:
+    def get_query_context(self, template: Literal["filter", "merger", "query"], src: AllowedSources, **kwargs) -> dict:
         DEFAULT_LOGGER.debug("deduce query context", extra={"label": self})
 
         if isinstance(src, DataFrameLike):
@@ -325,6 +325,8 @@ class Processor(Generator):
         parent_final = "__final"
 
         return {
+            "template": template,
+            # global
             "debugmode": IS_DEBUGMODE,
             "src": src,
             "format": format,
@@ -410,6 +412,7 @@ class Processor(Generator):
         template = environment.get_template("filter.sql.jinja")
 
         try:
+            context["template"] = "filter"
             sql = template.render(**context)
             if fix:
                 sql = self.fix_sql(sql)
@@ -431,7 +434,7 @@ class Processor(Generator):
         return context
 
     def get_query(self, src: AllowedSources, fix: Optional[bool] = True, **kwargs) -> str:
-        context = self.get_query_context(src=src, **kwargs)
+        context = self.get_query_context(template="query", src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
         try:

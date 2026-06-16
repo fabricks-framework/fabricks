@@ -22,6 +22,7 @@ from fabricks.context import (
 )
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.get_job import get_job, get_job_internal
+from fabricks.core.jobs.get_jobs import get_jobs_sorted
 from fabricks.core.read import read_yaml
 from fabricks.core.steps._types import Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
@@ -118,19 +119,21 @@ class BaseStep:
 
         self.database.drop()
 
-    def create(self):
+    def create(self, mode: Optional[Literal["parallel", "sequential"]] = "parallel", max_retries: Optional[int] = 2):
         DEFAULT_LOGGER.info("create", extra={"label": self})
 
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
         else:
-            self.update()
+            self.update(mode=mode, max_retries=max_retries)
 
     def update(
         self,
+        mode: Optional[Literal["parallel", "sequential"]] = "parallel",
         update_dependencies: Optional[bool] = True,
         progress_bar: Optional[bool] = False,
         incremental: Optional[bool] = False,
+        max_retries: Optional[int] = 2,
     ):
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
@@ -144,7 +147,12 @@ class BaseStep:
         all_errors = []
 
         # Collect errors from create_db_objects
-        _, create_errors = self._create_db_objects_internal(incremental=incremental, update_lists=False)
+        _, create_errors = self._create_db_objects_internal(
+            mode=mode,
+            incremental=incremental,
+            update_lists=False,
+            max_retries=max_retries,
+        )
         all_errors.extend(create_errors)
 
         # Collect errors from update_dependencies
@@ -209,30 +217,48 @@ class BaseStep:
         df = SPARK.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)
         return df, errors
 
-    def _create_db_objects_internal(
-        self,
-        retry: Optional[bool] = True,
-        update_lists: Optional[bool] = True,
-        incremental: Optional[bool] = False,
-    ) -> Tuple[Optional[DataFrame], List[Dict]]:
-        """Private version that returns (df, errors) instead of raising."""
+    def _create_db_objects_in_parallel(self, df: DataFrame) -> List[Dict]:
+        return run_in_parallel(
+            _create_db_object,
+            df,
+            workers=16,
+            progress_bar=True,
+            logger=DEFAULT_LOGGER,
+            loglevel=logging.CRITICAL,
+        )
 
-        def _create_db_objects(df: DataFrame) -> List[Dict]:
-            DEFAULT_LOGGER.info("create db objects", extra={"label": self})
-            results = run_in_parallel(
-                _create_db_object,
-                df,
-                workers=16,
-                progress_bar=True,
-                logger=DEFAULT_LOGGER,
-                loglevel=logging.CRITICAL,
-            )
-            errors = [res for res in results if res.get("error")]
-            DEFAULT_LOGGER.debug(
-                f"{len(results) - len(errors)} db objects created, {len(errors)} errors",
+    def _create_db_objects_sequentially(self, df: DataFrame) -> List[Dict]:
+        try:
+            deps_df, dep_errors = self._get_dependencies_internal(loglevel=logging.CRITICAL)
+            if dep_errors:
+                DEFAULT_LOGGER.warning(
+                    f"could not get some dependencies for sorting ({len(dep_errors)} error(s))",
+                    extra={"label": self},
+                )
+            sorted_df = get_jobs_sorted(df, deps_df)
+
+        except Exception as e:
+            DEFAULT_LOGGER.warning(
+                f"could not sort jobs by dependencies due to error: {e}",
                 extra={"label": self},
             )
-            return errors
+            sorted_df = df
+
+        result = []
+        for row in sorted_df.collect():
+            res = _create_db_object(row)
+            result.append(res)
+
+        return result
+
+    def _create_db_objects_internal(
+        self,
+        mode: Optional[Literal["parallel", "sequential"]] = "parallel",
+        update_lists: Optional[bool] = True,
+        incremental: Optional[bool] = False,
+        max_retries: Optional[int] = 2,
+    ) -> Tuple[Optional[DataFrame], List[Dict]]:
+        """Private version that returns (df, errors) instead of raising."""
 
         df = self.get_jobs()
 
@@ -243,21 +269,49 @@ class BaseStep:
             df = df.join(table_df, "job_id", how="left_anti")
             df = df.join(view_df, "job_id", how="left_anti")
 
-        errors = []
-        if df:
-            errors = _create_db_objects(df)
+        if mode == "parallel":
+            results = self._create_db_objects_in_parallel(df)
+        elif mode == "sequential":
+            results = self._create_db_objects_sequentially(df)
+
+        errors = [res for res in results if res.get("error")]
+        error_count: int = len(errors) if errors else 0
+        attempt = 0
+        DEFAULT_LOGGER.debug(
+            f"{len(results) - error_count} db objects created, {error_count} error(s) remaining",
+            extra={"label": self},
+        )
+
+        while errors and max_retries and attempt <= max_retries:
+            DEFAULT_LOGGER.warning(
+                f"retrying failed db objects, {max_retries - attempt} retries left",
+                extra={"label": self},
+            )
+
+            failed_job_ids = [e["job_id"] for e in errors]
+            errors_df = df.where(df["job_id"].isin(failed_job_ids))
+
+            results = self._create_db_objects_sequentially(errors_df)
+            errors = [res for res in results if res.get("error")]
+
+            if len(errors) == error_count:
+                # No improvement, switch to sequential mode
+                DEFAULT_LOGGER.warning(
+                    "no improvement in parallel creation, switching to sequential mode",
+                    extra={"label": self},
+                )
+                break
+
+            else:
+                error_count = len(errors)
+                DEFAULT_LOGGER.debug(
+                    f"{error_count} db objects still failing after retry",
+                    extra={"label": self},
+                )
 
         if update_lists:
             self.update_tables_list()
             self.update_views_list()
-
-        if errors and retry:
-            DEFAULT_LOGGER.warning("retry enabled", extra={"label": self})
-            errors_ids = [e["job_id"] for e in errors if e.get("job_id")]
-
-            errors_df = df.where(df["job_id"].isin(errors_ids))
-            if errors_df:
-                errors = _create_db_objects(errors_df)
 
         return df, errors
 
@@ -370,12 +424,14 @@ class BaseStep:
 
     def create_db_objects(
         self,
-        retry: Optional[bool] = True,
+        mode: Optional[Literal["parallel", "sequential"]] = "parallel",
+        max_retries: Optional[int] = 2,
         update_lists: Optional[bool] = True,
         incremental: Optional[bool] = False,
     ) -> None:
         _, errors = self._create_db_objects_internal(
-            retry=retry,
+            mode=mode,
+            max_retries=max_retries,
             update_lists=update_lists,
             incremental=incremental,
         )
@@ -455,8 +511,8 @@ class BaseStep:
     # ========== Deprecated Methods ==========
 
     @deprecated("use create_db_objects instead")
-    def create_jobs(self, retry: Optional[bool] = True) -> None:
-        return self.create_db_objects(retry=retry)
+    def create_jobs(self, max_retries: Optional[int] = 2) -> None:
+        return self.create_db_objects(max_retries=max_retries)
 
     @deprecated("use update_configurations instead")
     def update_jobs(self, drop: Optional[bool] = False):
