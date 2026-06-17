@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../../../../job-schema-silver.json
+- job:
+    step: silver
+    topic: duke
+    item: latest
+    tags: [test]
+    options:
+      mode: latest
+      stream: false

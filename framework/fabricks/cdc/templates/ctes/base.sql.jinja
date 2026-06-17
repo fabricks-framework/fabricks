@@ -14,8 +14,10 @@ with
             {% endif %},
             {% if add_timestamp %} cast(current_date() as timestamp) as __timestamp, {% endif %}
             {% if add_source %} cast('{{ add_source }}' as string) as __source, {% endif %}
-            {% if template != "filter"}
-                {% for key, value in cast.items() %} cast({{ key }} as {{ value }}) as {{ key }}, {% endfor %}
+            {% for key, value in cast.items() %} cast({{ key }} as {{ value }}) as {{ key }}, {% endfor %}
+            {% if template == "filter" %}
+                -- Limit expensive field(s) computation
+            {% else %}
                 {% if add_operation %} cast('{{ add_operation }}' as string) as __operation, {% endif %}
                 {% if add_calculated_columns %} {% for c in add_calculated_columns %} {{ c }}, {% endfor %} {% endif %}
                 {% if add_last_updated %} cast(current_timestamp() as timestamp) as __last_updated, {% endif %}
@@ -28,8 +30,6 @@ with
                         {% endif %}
                     ) as __metadata,
                 {% endif %}
-            {% else %}
-                -- Limit expensive field(s) computation
             {% endif %}
         {% if format == "query" %} from __query
         {% else %}

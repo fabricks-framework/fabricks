@@ -54,7 +54,7 @@ def convert_parquet_to_delta(topic: str, deletelog: bool = True):
         assert df is not None
 
         if topic == "duke":
-            df = df.withColumn("__operation", lit("complete"))
+            df = df.withColumn("__operation", lit("reload"))
 
         df = df.withColumn(
             "__split",
@@ -93,7 +93,7 @@ def convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
 
         # monarch and regent load
         # custom load for 2022/04/01/0001 as there is a reload for queen and no reload for king
-        for t in ["monarch", "regent"]:
+        for t in ["monarch", "regent", "duke"]:
             if "king" in to_folder or "queen" in to_folder:
                 if "2022/04/01/0001" not in str(f):
                     to_folder_ = to_folder
