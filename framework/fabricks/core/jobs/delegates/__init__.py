@@ -1,3 +1,5 @@
-from fabricks.core.jobs.base import BaseJob
+from fabricks.core.jobs.delegates.checker import JobChecker
+from fabricks.core.jobs.delegates.dba import JobDBA
+from fabricks.core.jobs.delegates.invoker import JobInvoker
 
-__all__ = ["BaseJob"]
+__all__ = ["JobChecker", "JobDBA", "JobInvoker"]

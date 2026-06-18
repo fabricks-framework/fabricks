@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Optional, cast
+from typing import Optional, cast
 
 from azure.core.exceptions import AzureError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from fabricks.context import DBUTILS, FABRICKS_STORAGE, FABRICKS_STORAGE_CREDENTIAL, IS_UNITY_CATALOG, SECRET_SCOPE
+from fabricks.core.dags.protocols import BaseDagsProtocol
 from fabricks.utils.azure_table import AzureTable
-
-if TYPE_CHECKING:
-    from fabricks.core.dags.base import BaseDags
 
 
 def _get_access_key_from_secret_scope(storage_account: str) -> str:
@@ -60,7 +58,7 @@ def get_log_table() -> AzureTable:
 
 
 class DagDba:
-    def __init__(self, dags: BaseDags):
+    def __init__(self, dags: BaseDagsProtocol):
         self._dags = dags
 
     @property

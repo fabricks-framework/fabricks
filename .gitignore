@@ -170,3 +170,7 @@ cython_debug/
 
 # Issues
 .issues/
+
+# Graphify
+.graphify/
+graphify-out/

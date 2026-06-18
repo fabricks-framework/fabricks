@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
 
 from fabricks.context import SPARK
-
-if TYPE_CHECKING:
-    from fabricks.core.dags.dags import Dags
+from fabricks.core.dags.protocols import DagsProtocol
 
 
 class DagQuerier:
-    def __init__(self, dags: Dags):
+    def __init__(self, dags: DagsProtocol):
         self._dags = dags
 
     def get_jobs(self) -> DataFrame:

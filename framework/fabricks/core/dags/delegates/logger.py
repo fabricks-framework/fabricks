@@ -1,21 +1,19 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 
 from fabricks.context import SPARK
 from fabricks.core.dags.log import TABLE_LOG_HANDLER
+from fabricks.core.dags.protocols import BaseDagsProtocol
 from fabricks.metastore.table import Table
-
-if TYPE_CHECKING:
-    from fabricks.core.dags.base import BaseDags
 
 
 class DagLogger:
-    def __init__(self, dags: BaseDags):
+    def __init__(self, dags: BaseDagsProtocol):
         self._dags = dags
 
     def get_logs(self, step: Optional[str] = None) -> DataFrame:

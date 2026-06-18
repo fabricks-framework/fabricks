@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 from pyspark.sql import DataFrame
 
 from fabricks.context import TIMEZONE
 from fabricks.context.log import DEFAULT_LOGGER
-
-if TYPE_CHECKING:
-    from fabricks.core.jobs.base import BaseJob
+from fabricks.core.jobs.protocols import JobProtocol
 
 
 class CheckException(Exception):
@@ -52,7 +50,7 @@ class SkipRunTimeWarning(SkipWarning):
 
 
 class JobChecker:
-    def __init__(self, job: BaseJob):
+    def __init__(self, job: JobProtocol):
         self._job = job
 
     def check_pre_run(self):

@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from fabricks.core.dags.log import LOGGER
+from fabricks.core.dags.protocols import DagsProtocol
 from fabricks.utils.azure_table import AzureTable
-
-if TYPE_CHECKING:
-    from fabricks.core.dags.dags import Dags
 
 
 class DagSender:
-    def __init__(self, dags: Dags):
+    def __init__(self, dags: DagsProtocol):
         self._dags = dags
 
     def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict]:

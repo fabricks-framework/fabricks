@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from pyspark.sql import DataFrame
 
@@ -9,6 +9,7 @@ from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.extenders import get_extender
 from fabricks.core.jobs.get_schedule import get_schedule
+from fabricks.core.jobs.protocols import JobProtocol
 from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
 from fabricks.models.exceptions import CustomException
 
@@ -21,12 +22,8 @@ class PostRunInvokeException(CustomException):
     pass
 
 
-if TYPE_CHECKING:
-    from fabricks.core.jobs.base import BaseJob
-
-
 class JobInvoker:
-    def __init__(self, job: BaseJob):
+    def __init__(self, job: JobProtocol):
         self._job = job
 
     def invoke(self, schedule: Optional[str] = None, **kwargs):

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import Optional, Union
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
 
 from fabricks.cdc.config import AllowedSources
+from fabricks.cdc.protocols import CDCProtocol
 from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -13,16 +14,13 @@ from fabricks.models.cdc import CDCMergeContext
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.helpers import backticks
 
-if TYPE_CHECKING:
-    from fabricks.cdc.base import BaseCDC
-
 _ENV = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
 
 class CDCMerger:
     """Owns merge context building, merge SQL rendering, and the merge write path."""
 
-    def __init__(self, cdc: BaseCDC):
+    def __init__(self, cdc: CDCProtocol):
         self._cdc = cdc
 
     def get_merge_context(self, src: Union[DataFrame, str], **kwargs) -> CDCMergeContext:

@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Union, cast
+from typing import Any, List, Optional, Sequence, Union, cast
 
 from py4j.protocol import Py4JJavaError
 from pyspark.sql.types import StringType, StructField, StructType
 
 from fabricks.cdc.config import AllowedSources
+from fabricks.cdc.protocols import CDCProtocol
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import SchemaDiff
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.helpers import backticks
-
-if TYPE_CHECKING:
-    from fabricks.cdc.base import BaseCDC
 
 
 class CDCDba:
@@ -23,7 +21,7 @@ class CDCDba:
     Mirrors the role of JobDBA in the job layer.
     """
 
-    def __init__(self, cdc: BaseCDC):
+    def __init__(self, cdc: CDCProtocol):
         self._cdc = cdc
 
     def drop(self):

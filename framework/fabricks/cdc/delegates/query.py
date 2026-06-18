@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import Literal, Optional
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
 
 from fabricks.cdc.config import AllowedSources
+from fabricks.cdc.protocols import CDCProtocol
 from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
@@ -14,9 +15,6 @@ from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models.cdc import CDCQueryContext
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.sqlglot import fix as fix_sql
-
-if TYPE_CHECKING:
-    from fabricks.cdc.base import BaseCDC
 
 _ENV = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
@@ -28,7 +26,7 @@ class CDCQuery:
     Never mutates table schema — that belongs to CDCDba.
     """
 
-    def __init__(self, cdc: BaseCDC):
+    def __init__(self, cdc: CDCProtocol):
         self._cdc = cdc
 
     def get_data(self, src: AllowedSources, **kwargs) -> DataFrame:

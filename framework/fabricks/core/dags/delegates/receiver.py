@@ -1,20 +1,17 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
 
 from databricks.sdk.runtime import dbutils
 
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
+from fabricks.core.dags.protocols import DagsProtocol
 from fabricks.core.dags.run import run
-
-if TYPE_CHECKING:
-    from fabricks.core.dags.dags import Dags
 
 
 class DagReceiver:
-    def __init__(self, dags: Dags):
+    def __init__(self, dags: DagsProtocol):
         self._dags = dags
 
     def receive(self):

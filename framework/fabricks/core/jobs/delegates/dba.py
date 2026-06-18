@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Literal, Optional, Sequence
+from typing import List, Literal, Optional, Sequence
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
@@ -8,11 +8,9 @@ from typing_extensions import deprecated
 
 from fabricks.cdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.jobs.protocols import JobProtocol
 from fabricks.metastore.table import SchemaDiff
 from fabricks.metastore.view import create_or_replace_global_temp_view
-
-if TYPE_CHECKING:
-    from fabricks.core.jobs.base import BaseJob
 
 
 class SchemaDriftException(Exception):
@@ -63,7 +61,7 @@ class JobDBA:
     never fetches data on its own: the job passes DataFrames in when required.
     """
 
-    def __init__(self, job: BaseJob):
+    def __init__(self, job: JobProtocol):
         self._job = job
 
     # --- table DDL build (absorbed from JobTable) ---
