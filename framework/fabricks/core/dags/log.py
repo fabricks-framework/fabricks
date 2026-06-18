@@ -1,7 +1,7 @@
 import logging
 from typing import Final
 
-from fabricks.core.dags.utils import get_table
+from fabricks.core.dags.delegates.dba import get_log_table as get_table
 from fabricks.utils.log import AzureTableLogHandler, get_logger
 
 table = get_table()

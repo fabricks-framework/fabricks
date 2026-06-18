@@ -2,9 +2,9 @@ from pyspark.sql import DataFrame
 
 
 def get_dependencies(name: str) -> DataFrame:
-    from fabricks.core.dags import DagGenerator
+    from fabricks.core.dags import Dags
 
-    g = DagGenerator(schedule=name)
+    g = Dags(schedule=name)
     return g.get_dependencies()
 
 

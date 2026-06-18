@@ -7,7 +7,7 @@ from pyspark.sql import DataFrame
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_step
-from fabricks.core.dags import DagGenerator, DagProcessor, DagTerminator, run
+from fabricks.core.dags import Dags, run
 from fabricks.utils.helpers import run_in_parallel, run_notebook
 
 
@@ -58,8 +58,8 @@ def terminate(schedule_id: str | None = None):
     assert schedule_id is not None, "Schedule ID must be provided either as an argument, task value, or widget."
     DEFAULT_LOGGER.info(f"terminating schedule ({schedule_id})", extra={"label": "scheduler"})
 
-    with DagTerminator(schedule_id=schedule_id) as t:
-        t.terminate()
+    with Dags(schedule_id=schedule_id) as d:
+        d.terminate()
 
 
 def process(step: str | None = None, schedule_id: str | None = None, schedule: str | None = None):
@@ -97,8 +97,8 @@ def process(step: str | None = None, schedule_id: str | None = None, schedule: s
 
     DEFAULT_LOGGER.info(f"processing {step} in {schedule} ({schedule_id})", extra={"label": "scheduler"})
 
-    with DagProcessor(schedule_id=schedule_id, schedule=schedule, step=step) as p:
-        p.process()
+    with Dags(schedule=schedule, schedule_id=schedule_id) as d:
+        d.process(step)
 
 
 def generate(schedule: str | None = None) -> Tuple[str, DataFrame, DataFrame]:
@@ -116,8 +116,8 @@ def generate(schedule: str | None = None) -> Tuple[str, DataFrame, DataFrame]:
 
         DEFAULT_LOGGER.info(f"generating {schedule}", extra={"label": "scheduler"})
 
-    with DagGenerator(schedule) as g:
-        schedule_id, job_df, dep_df = g.generate()
+    with Dags(schedule=schedule) as d:
+        schedule_id, job_df, dep_df = d.generate()
 
         DEFAULT_LOGGER.debug(f"generated {schedule} ({schedule_id})", extra={"label": "scheduler"})
 

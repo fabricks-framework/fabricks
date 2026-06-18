@@ -1,108 +1,50 @@
-import re
+from __future__ import annotations
+
 from typing import Optional
 
-from azure.core.exceptions import AzureError
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import expr
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-from fabricks.context import FABRICKS_STORAGE, SPARK
-from fabricks.core.dags.log import TABLE_LOG_HANDLER
-from fabricks.core.dags.utils import get_connection_info
-from fabricks.metastore.table import Table
+from fabricks.core.dags.config import DagConfig
+from fabricks.core.dags.delegates.dba import DagDba
+from fabricks.core.dags.delegates.logger import DagLogger
 from fabricks.utils.azure_table import AzureTable
 
 
 class BaseDags:
     def __init__(self, schedule_id: str):
-        self.schedule_id = schedule_id
-        self._connection_info = None
-        self._table = None
+        self._config = DagConfig(schedule_id)
+        self._dba = DagDba(self)
+        self._logger = DagLogger(self)
+
+    @property
+    def schedule_id(self) -> str:
+        return self._config.schedule_id
+
+    # DagStore shims
 
     @property
     def storage_account(self) -> str:
-        return FABRICKS_STORAGE.get_storage_account()
+        return self._dba.storage_account
 
     def get_connection_info(self) -> dict:
-        if not self._connection_info:
-            self._connection_info = get_connection_info(self.storage_account)
-        return self._connection_info
+        return self._dba.get_connection_info()
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type((Exception, AzureError)),
-        reraise=True,
-    )
     def get_table(self) -> AzureTable:
-        if not self._table:
-            cs = self.get_connection_info()
-            self._table = AzureTable(f"t{self.schedule_id}", **dict(cs))
-
-        if self._table is None:
-            raise ValueError("Azure table for logs not found")
-
-        return self._table
+        return self._dba.get_table()
 
     def __enter__(self):
-        return self
+        return self._dba.__enter__()
 
     def __exit__(self, *args, **kwargs):
-        if self._table is not None:
-            self._table.__exit__()
+        return self._dba.__exit__(*args, **kwargs)
+
+    # DagLogger shims
 
     def get_logs(self, step: Optional[str] = None) -> DataFrame:
-        q = f"PartitionKey eq '{self.schedule_id}'"
-        if step:
-            q += f" and Step eq '{step}'"
-
-        d = TABLE_LOG_HANDLER.table.query(q)
-        df = SPARK.createDataFrame(d)
-
-        for column in ["Exception", "NotebookId", "Json"]:
-            if column not in df.columns:
-                df = df.withColumn(column, expr("null"))
-
-        df = SPARK.sql(
-            """
-            select
-              ScheduleId as schedule_id,
-              Schedule as schedule,
-              Step as step,
-              JobId as job_id,
-              Job as job,
-              NotebookId as notebook_id,
-              `Level` as `level`,
-              `Message` as `status`,
-              to_timestamp(`Created`, 'dd/MM/yy HH:mm:ss') as `timestamp`,
-              from_json(Exception, 'type STRING, message STRING, traceback STRING') as exception,
-              Json as json
-            from
-              {df}
-            """,
-            df=df,
-        )
-
-        return df
+        return self._logger.get_logs(step)
 
     def write_logs(self, df: DataFrame):
-        try:
-            (
-                df.write.format("delta")
-                .mode("overwrite")
-                .option("mergeSchema", "true")
-                .option("partitionOverwriteMode", "dynamic")
-                .save(Table("fabricks", "logs").delta_path.string)
-            )
-        except Exception:
-            (
-                df.write.format("delta")
-                .mode("overwrite")
-                .option("overwriteSchema", "true")
-                .option("partitionOverwriteMode", "dynamic")
-                .save(Table("fabricks", "logs").delta_path.string)
-            )
+        return self._logger.write_logs(df)
 
     def remove_invalid_characters(self, s: str) -> str:
-        out = re.sub("[^a-zA-Z0-9]", "", s)
-        return out
+        return self._logger.remove_invalid_characters(s)
