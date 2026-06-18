@@ -1,13 +1,14 @@
 from functools import cached_property
-from typing import Any, Optional, Sequence, Union
+from typing import Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
 
+from fabricks.cdc import CDCIntentContext
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.base import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobSilverOptions, StepSilverConf, StepSilverOptions
@@ -45,17 +46,17 @@ class Silver(BaseJob):
     @property
     def options(self) -> JobSilverOptions:
         """Direct access to typed silver job options."""
-        return self.conf.options  # type: ignore
+        return cast(JobSilverOptions, self.conf.options)
 
     @property
     def step_conf(self) -> StepSilverConf:
         """Direct access to typed silver step conf."""
-        return self.base_step_conf  # type: ignore
+        return cast(StepSilverConf, self.base_step_conf)
 
     @property
     def step_options(self) -> StepSilverOptions:
         """Direct access to typed silver step options."""
-        return self.base_step_conf.options  # type: ignore
+        return cast(StepSilverOptions, self.base_step_conf.options)
 
     @cached_property
     def stream(self) -> bool:
@@ -93,7 +94,7 @@ class Silver(BaseJob):
                     struct(
                         __metadata.file_path as file_path,
                         __metadata.file_name as file_name,
-                        __metadata.file_size as file_size,            
+                        __metadata.file_size as file_size,
                         __metadata.file_modification_time as file_modification_time,
                         __metadata.inserted as inserted,
                         cast(current_timestamp() as timestamp) as updated
@@ -122,8 +123,12 @@ class Silver(BaseJob):
         if self.mode == "memory":
             assert len(lineage) == 1, f"more than 1 dependency not allowed ({lineage})"
 
-            parent = lineage[0].parent
-            df = self.spark.sql(f"select * from {parent}")
+            row = lineage[0]
+
+            bronze = Bronze.from_job_id(step=self.parent_step, job_id=row.parent_id)
+            assert bronze.extender_options is None, "extender not allowed if mode is memory"
+
+            df = self.spark.sql(f"select * from {row.parent}")
 
         elif self.mode == "combine":
             dfs = []
@@ -270,7 +275,7 @@ class Silver(BaseJob):
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> CDCIntentContext:
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
@@ -288,7 +293,7 @@ class Silver(BaseJob):
                 extra_check = "-- no extra check"
 
             sql = f"""
-                select 
+                select
                   __operation
                 from
                   {global_temp_view}
@@ -296,7 +301,7 @@ class Silver(BaseJob):
                   true
                   and __operation == 'reload'
                   {extra_check}
-                limit 
+                limit
                   1
                 """
             sql = fix_sql(sql)
@@ -307,7 +312,7 @@ class Silver(BaseJob):
                 rectify = True
                 DEFAULT_LOGGER.debug("rectify enabled", extra={"label": self})
 
-        context: dict[str, Any] = {
+        context: CDCIntentContext = {
             "soft_delete": self.slowly_changing_dimension,
             "deduplicate": self.options.deduplicate if self.options.deduplicate is not None else not_append,
             "rectify": rectify,
@@ -369,7 +374,7 @@ class Silver(BaseJob):
             assert isinstance(self.cdc, NoCDC)
             check_df = self.spark.sql(
                 f"""
-                select 
+                select
                   __operation
                 from
                   {global_temp_view}

@@ -1,25 +1,36 @@
+from __future__ import annotations
+
 import json
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pyspark.sql import DataFrame
 
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.extenders import get_extender
-from fabricks.core.jobs.base.checker import Checker
-from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.get_schedule import get_schedule
 from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
-from fabricks.utils.path import GitPath
+from fabricks.models.exceptions import CustomException
 
 
-class Invoker(Checker):
+class PreRunInvokeException(CustomException):
+    pass
+
+
+class PostRunInvokeException(CustomException):
+    pass
+
+
+if TYPE_CHECKING:
+    from fabricks.core.jobs.base import BaseJob
+
+
+class JobInvoker:
+    def __init__(self, job: BaseJob):
+        self._job = job
+
     def invoke(self, schedule: Optional[str] = None, **kwargs):
-        return self._invoke_job(
-            position="run",
-            schedule=schedule,
-            **kwargs,
-        )  # kwargs and return needed for get_data in gold
+        return self._invoke_job(position="run", schedule=schedule, **kwargs)
 
     def invoke_pre_run(self, schedule: Optional[str] = None):
         self._invoke_job(position="pre_run", schedule=schedule)
@@ -59,15 +70,15 @@ class Invoker(Checker):
         )
 
     def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
-        invokers = getattr(self.invoker_options, position, None) or [] if self.invoker_options else []
+        invokers = getattr(self._job.invoker_options, position, None) or [] if self._job.invoker_options else []
         if position == "run":
-            invokers = invokers if len(invokers) > 0 else [{}]  # run must work even without run invoker options
+            invokers = invokers if len(invokers) > 0 else [{}]
 
         errors = []
 
         if invokers:
             for i, invoker in enumerate(invokers):
-                DEFAULT_LOGGER.debug(f"invoke ({i}, {position})", extra={"label": self})
+                DEFAULT_LOGGER.debug(f"invoke ({i}, {position})", extra={"label": self._job})
                 try:
                     if len(invokers) == 1 and position == "run":
                         return self._invoke_notebook(invoker, schedule=schedule, **kwargs)
@@ -75,7 +86,7 @@ class Invoker(Checker):
                         self._invoke_notebook(invoker=invoker, schedule=schedule, **kwargs)
 
                 except Exception as e:
-                    DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self})
+                    DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self._job})
 
                     if position == "pre_run":
                         errors.append(PreRunInvokeException(e))
@@ -88,18 +99,21 @@ class Invoker(Checker):
             raise Exception(errors)
 
     def _invoke_step(self, position: str, schedule: Optional[str] = None):
-        invokers = getattr(self.step_conf.invoker_options, position, []) if self.step_conf.invoker_options else []
+        step_invoker_options = self._job.step_conf.invoker_options if self._job.step_conf else None
+        invokers = getattr(step_invoker_options, position, []) if step_invoker_options else []
 
         errors = []
 
         if invokers:
             for i, invoker in enumerate(invokers):
-                DEFAULT_LOGGER.debug(f"invoke by step ({i}, {position})", extra={"label": self})
+                DEFAULT_LOGGER.debug(f"invoke by step ({i}, {position})", extra={"label": self._job})
                 try:
                     self._invoke_notebook(invoker=invoker, schedule=schedule)
 
                 except Exception as e:
-                    DEFAULT_LOGGER.warning(f"fail to run invoker by step ({i}, {position})", extra={"label": self})
+                    DEFAULT_LOGGER.warning(
+                        f"fail to run invoker by step ({i}, {position})", extra={"label": self._job}
+                    )
 
                     if position == "pre_run":
                         errors.append(PreRunInvokeException(e))
@@ -113,23 +127,11 @@ class Invoker(Checker):
 
     def _run_notebook(
         self,
-        path: GitPath,
+        path,
         arguments: Optional[dict] = None,
         timeout: Optional[int] = None,
         schedule: Optional[str] = None,
     ):
-        """
-        Invokes a notebook job.
-
-        Args:
-            path (Optional[GitPath]): The path to the notebook file. If not provided, it will be retrieved from the invoker options.
-            arguments (Optional[dict]): Additional arguments to pass to the notebook job. If not provided, it will be retrieved from the invoker options.
-            schedule (Optional[str]): The schedule for the job. If provided, schedule variables will be retrieved.
-
-        Raises:
-            AssertionError: If the specified path does not exist.
-
-        """
         from databricks.sdk.runtime import dbutils
 
         for file_format in [None, ".py", ".ipynb"]:
@@ -139,7 +141,7 @@ class Invoker(Checker):
                 break
 
         if timeout is None:
-            timeout = self.timeout
+            timeout = self._job.timeout
 
         assert timeout is not None
 
@@ -157,35 +159,37 @@ class Invoker(Checker):
             path=path.get_notebook_path(),  # type: ignore
             timeout_seconds=timeout,  # type: ignore
             arguments={  # type: ignore
-                "step": self.step,
-                "topic": self.topic,
-                "item": self.item,
+                "step": self._job.step,
+                "topic": self._job.topic,
+                "item": self._job.item,
                 **arguments,
-                "job_options": json.dumps(self.options.model_dump()),
+                "job_options": json.dumps(self._job.options.model_dump()),
                 "schedule_variables": json.dumps(variables),
             },
         )
 
     def extend_job(self, df: DataFrame) -> DataFrame:
-        extenders = self.extender_options or []
+        extenders = self._job.extender_options or []
         return self._extend(df, extenders, extended="job")
 
     def extend_step(self, df: DataFrame) -> DataFrame:
-        extenders = self.step_conf.extender_options or []
+        extenders = self._job.step_conf.extender_options or [] if self._job.step_conf else []
         return self._extend(df, extenders, extended="step")
 
     def _extend(self, df: DataFrame, extenders: list[ExtenderOptions], extended: str) -> DataFrame:
         for e in extenders:
             name = e.extender
-            DEFAULT_LOGGER.debug(f"extend {extended} ({name})", extra={"label": self})
+            DEFAULT_LOGGER.debug(f"extend {extended} ({name})", extra={"label": self._job})
             arguments = e.arguments or {}
-
             extender = get_extender(name)
             df = extender(df, **arguments)
-
         return df
 
     def extend(self, df: DataFrame) -> DataFrame:
         df = self.extend_job(df)
         df = self.extend_step(df)
         return df
+
+
+# Backward-compatible name
+Invoker = JobInvoker

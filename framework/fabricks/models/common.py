@@ -1,16 +1,41 @@
 """Common types and type aliases used across all models."""
 
-from typing import Literal
+from enum import Enum
+from typing import Literal, Union
 
 from pydantic import BaseModel, ConfigDict
 
 from fabricks.models.config import config
 
-# Mode type definitions
-AllowedModesBronze = Literal["memory", "append", "register"]
-AllowedModesSilver = Literal["memory", "append", "latest", "update", "combine"]
-AllowedModesGold = Literal["memory", "append", "complete", "update", "invoke", "register"]
-AllowedModes = Literal[AllowedModesBronze, AllowedModesSilver, AllowedModesGold]
+
+class BronzeMode(str, Enum):
+    MEMORY = "memory"
+    APPEND = "append"
+    REGISTER = "register"
+
+
+class SilverMode(str, Enum):
+    MEMORY = "memory"
+    APPEND = "append"
+    LATEST = "latest"
+    UPDATE = "update"
+    COMBINE = "combine"
+
+
+class GoldMode(str, Enum):
+    MEMORY = "memory"
+    APPEND = "append"
+    COMPLETE = "complete"
+    UPDATE = "update"
+    INVOKE = "invoke"
+    REGISTER = "register"
+
+
+# Backward-compatible aliases and union type
+AllowedModesBronze = BronzeMode
+AllowedModesSilver = SilverMode
+AllowedModesGold = GoldMode
+AllowedModes = Union[BronzeMode, SilverMode, GoldMode]
 
 # File and operation types
 AllowedFileFormats = Literal["json_array", "json", "jsonl", "csv", "parquet", "delta"]

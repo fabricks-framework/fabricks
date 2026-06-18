@@ -227,16 +227,9 @@ class BaseStep:
             loglevel=logging.CRITICAL,
         )
 
-    def _create_db_objects_sequentially(self, df: DataFrame) -> List[Dict]:
+    def _create_db_objects_sequentially(self, df: DataFrame, deps_df: Optional[DataFrame] = None) -> List[Dict]:
         try:
-            deps_df, dep_errors = self._get_dependencies_internal(loglevel=logging.CRITICAL)
-            if dep_errors:
-                DEFAULT_LOGGER.warning(
-                    f"could not get some dependencies for sorting ({len(dep_errors)} error(s))",
-                    extra={"label": self},
-                )
             sorted_df = get_jobs_sorted(df, deps_df)
-
         except Exception as e:
             DEFAULT_LOGGER.warning(
                 f"could not sort jobs by dependencies due to error: {e}",
@@ -244,12 +237,7 @@ class BaseStep:
             )
             sorted_df = df
 
-        result = []
-        for row in sorted_df.collect():
-            res = _create_db_object(row)
-            result.append(res)
-
-        return result
+        return [_create_db_object(row) for row in sorted_df.collect()]
 
     def _create_db_objects_internal(
         self,
@@ -269,13 +257,24 @@ class BaseStep:
             df = df.join(table_df, "job_id", how="left_anti")
             df = df.join(view_df, "job_id", how="left_anti")
 
+        deps_df = None
+        try:
+            deps_df, dep_errors = self._get_dependencies_internal(loglevel=logging.CRITICAL)
+            if dep_errors:
+                DEFAULT_LOGGER.warning(
+                    f"could not get some dependencies for sorting ({len(dep_errors)} error(s))",
+                    extra={"label": self},
+                )
+        except Exception as e:
+            DEFAULT_LOGGER.warning(f"could not get dependencies for sorting: {e}", extra={"label": self})
+
         if mode == "parallel":
             results = self._create_db_objects_in_parallel(df)
         elif mode == "sequential":
-            results = self._create_db_objects_sequentially(df)
+            results = self._create_db_objects_sequentially(df, deps_df)
 
         errors = [res for res in results if res.get("error")]
-        error_count: int = len(errors) if errors else 0
+        error_count = len(errors)
         attempt = 0
         DEFAULT_LOGGER.debug(
             f"{len(results) - error_count} db objects created, {error_count} error(s) remaining",
@@ -292,15 +291,11 @@ class BaseStep:
             failed_job_ids = [e["job_id"] for e in errors]
             errors_df = df.where(df["job_id"].isin(failed_job_ids))
 
-            results = self._create_db_objects_sequentially(errors_df)
+            results = self._create_db_objects_sequentially(errors_df, deps_df)
             errors = [res for res in results if res.get("error")]
 
             if len(errors) == error_count:
-                # No improvement, switch to sequential mode
-                DEFAULT_LOGGER.warning(
-                    "no improvement in parallel creation, switching to sequential mode",
-                    extra={"label": self},
-                )
+                DEFAULT_LOGGER.warning("no improvement after retry, stopping", extra={"label": self})
                 break
 
             else:

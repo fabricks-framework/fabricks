@@ -1,5 +1,5 @@
-from collections import defaultdict, deque
-from typing import Any, Dict, List, Set, Tuple
+from graphlib import CycleError, TopologicalSorter
+from typing import Any, Dict, List, Tuple
 
 
 class CircularDependency(Exception):
@@ -8,9 +8,7 @@ class CircularDependency(Exception):
 
 def topological(nodes: List[str], dependencies: List[Tuple[str, str]]) -> List[str]:
     """
-    Sort nodes by their dependencies using Kahn's Algorithm.
-
-    Pure Python implementation with no external dependencies.
+    Sort nodes by their dependencies.
 
     Args:
         nodes: List of node identifiers
@@ -28,50 +26,19 @@ def topological(nodes: List[str], dependencies: List[Tuple[str, str]]) -> List[s
         >>> topological(nodes, deps)
         ['job_a', 'job_b', 'job_c']
     """
-    # Build adjacency list and in-degree counts
-    graph: Dict[str, List[str]] = defaultdict(list)  # parent_id -> [child_ids]
-    in_degree: Dict[str, int] = defaultdict(int)
-
-    # Initialize all nodes with in-degree 0
+    ts = TopologicalSorter()
     for node in nodes:
-        if node not in in_degree:
-            in_degree[node] = 0
-
-    # Build graph from dependency edges
+        ts.add(node)
     for child_id, parent_id in dependencies:
-        graph[parent_id].append(child_id)
-        in_degree[child_id] += 1
+        ts.add(child_id, parent_id)
+    try:
+        return list(ts.static_order())
 
-    # Kahn's Algorithm
-    # Start with all nodes that have no dependencies
-    queue: deque[str] = deque()
-    for node in nodes:
-        if in_degree[node] == 0:
-            queue.append(node)
-
-    sorted_nodes: List[str] = []
-    processed: Set[str] = set()
-
-    while queue:
-        current_id = queue.popleft()
-        sorted_nodes.append(current_id)
-        processed.add(current_id)
-
-        # Reduce in-degree for all children
-        for child_id in graph[current_id]:
-            in_degree[child_id] -= 1
-
-            # If in-degree becomes 0, add to queue
-            if in_degree[child_id] == 0 and child_id not in processed:
-                queue.append(child_id)
-
-    # Check for cycles
-    if len(sorted_nodes) != len(nodes):
-        # Find the nodes that are part of the cycle
-        unprocessed = [node for node in nodes if node not in processed]
-        raise CircularDependency(f"Circular dependency detected. Nodes involved: {', '.join(unprocessed)}")
-
-    return sorted_nodes
+    except CycleError as e:
+        cycle = e.args[1]
+        raise CircularDependency(
+            f"Circular dependency detected. Nodes involved: {', '.join(str(n) for n in cycle)}"
+        ) from e
 
 
 def topological_with_data(
@@ -97,12 +64,6 @@ def topological_with_data(
         >>> topological_with_data(items, deps)
         [('a', {'name': 'Job A'}), ('b', {'name': 'Job B'})]
     """
-    # Extract nodes and build item map
-    item_map: Dict[str, Any] = {item_id: data for item_id, data in items}
-    nodes = list(item_map.keys())
-
-    # Get sorted order
-    sorted_ids = topological(nodes, dependencies)
-
-    # Return items in sorted order
+    item_map: Dict[str, Any] = dict(items)
+    sorted_ids = topological(list(item_map.keys()), dependencies)
     return [(item_id, item_map[item_id]) for item_id in sorted_ids]

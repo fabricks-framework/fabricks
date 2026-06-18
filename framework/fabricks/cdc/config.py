@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Union
+from typing import List, Optional, Union
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructType
 
-from fabricks.cdc.base._types import AllowedSources
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
@@ -14,8 +12,21 @@ from fabricks.metastore.table import Table
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.helpers import backticks
 
+AllowedSources = Union[DataFrame, Table, str, StructType]
 
-class Configurator(ABC):
+
+class CDCConfig:
+    """Resolved configuration substrate for a CDC instance.
+
+    Holds identity (database, levels, change_data_capture), the Table
+    reference, the Spark session, column-ordering rules, and the
+    utility helpers (get_src, has_data, get_columns, sort_columns,
+    reorder_dataframe) that every delegate needs.
+
+    No behaviour — no DDL, no queries, no merges. Constructable in a
+    test directly from primitive args.
+    """
+
     def __init__(
         self,
         database: str,
@@ -34,136 +45,82 @@ class Configurator(ABC):
         self.table = Table(self.database.name, *self.levels, spark=self.spark)
 
     @property
-    def is_view(self):
+    def is_view(self) -> bool:
         return self.table.is_view
 
     @property
-    def registered(self):
+    def registered(self) -> bool:
         return self.table.registered
 
     @property
-    def qualified_name(self):
+    def qualified_name(self) -> str:
         return f"{self.database}_{'_'.join(self.levels)}"
-
-    @abstractmethod
-    def get_query(self, src: AllowedSources, **kwargs) -> str: ...
-
-    @abstractmethod
-    def get_data(self, src: AllowedSources, **kwargs) -> DataFrame: ...
-
-    @abstractmethod
-    def create_table(
-        self,
-        src: AllowedSources,
-        partitioning: Optional[bool] = False,
-        partition_by: Optional[Union[List[str], str]] = None,
-        identity: Optional[bool] = False,
-        liquid_clustering: Optional[bool] = False,
-        cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str | bool | int]] = None,
-        masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, Any]] = None,
-        foreign_keys: Optional[dict[str, Any]] = None,
-        generated_columns: Optional[dict[str, str]] = None,
-        comments: Optional[dict[str, Any]] = None,
-        **kwargs,
-    ): ...
-
-    @abstractmethod
-    def drop(self): ...
-
-    @abstractmethod
-    def create_or_replace_view(self, src: Union[Table, str], **kwargs): ...
-
-    @property
-    def allowed_input__columns(self) -> List[str]:
-        cols = self.__columns
-
-        if self.slowly_changing_dimension:
-            if "__valid_from" in cols:
-                cols.remove("__valid_from")
-            if "__valid_to" in cols:
-                cols.remove("__valid_to")
-            if "__is_current" in cols:
-                cols.remove("__is_current")
-            if "__is_deleted" in cols:
-                cols.remove("__is_deleted")
-
-        return cols
-
-    @property
-    def allowed_ouput_leading__columns(self) -> List[str]:
-        cols = [
-            "__identity",
-            "__source",
-            "__key",
-            "__hash",
-            "__timestamp",
-            "__valid_from",
-            "__valid_to",
-            "__is_current",
-            "__is_deleted",
-        ]
-
-        if self.change_data_capture == "scd1":
-            cols.remove("__valid_from")
-            cols.remove("__valid_to")
-        elif self.change_data_capture == "scd2":
-            cols.remove("__timestamp")
-
-        return cols
-
-    @property
-    def allowed_output_trailing__columns(self) -> List[str]:
-        cols = [
-            "__operation",
-            "__metadata",
-            "__last_updated",
-            "__rescued_data",
-        ]
-
-        if self.slowly_changing_dimension:
-            cols.remove("__operation")
-
-        return cols
-
-    @property
-    def __columns(self) -> List[str]:
-        return [
-            # Leading
-            "__identity",
-            "__source",
-            "__key",
-            "__hash",
-            "__timestamp",
-            "__valid_from",
-            "__valid_to",
-            "__is_current",
-            "__is_deleted",
-            # Trailing
-            "__operation",
-            "__metadata",
-            "__last_updated",
-            "__rescued_data",
-        ]
 
     @property
     def slowly_changing_dimension(self) -> bool:
         return self.change_data_capture in ["scd0", "scd1", "scd2"]
 
-    def get_src(self, src: AllowedSources) -> "DataFrameLike":
+    @property
+    def __columns(self) -> List[str]:
+        return [
+            "__identity",
+            "__source",
+            "__key",
+            "__hash",
+            "__timestamp",
+            "__valid_from",
+            "__valid_to",
+            "__is_current",
+            "__is_deleted",
+            "__operation",
+            "__metadata",
+            "__last_updated",
+            "__rescued_data",
+        ]
+
+    @property
+    def allowed_input__columns(self) -> List[str]:
+        scd_only = {"__valid_from", "__valid_to", "__is_current", "__is_deleted"}
+        excluded = scd_only if self.slowly_changing_dimension else set()
+        return [c for c in self.__columns if c not in excluded]
+
+    @property
+    def allowed_ouput_leading__columns(self) -> List[str]:
+        base = [
+            "__identity",
+            "__source",
+            "__key",
+            "__hash",
+            "__timestamp",
+            "__valid_from",
+            "__valid_to",
+            "__is_current",
+            "__is_deleted",
+        ]
+        if self.change_data_capture == "scd1":
+            return [c for c in base if c not in {"__valid_from", "__valid_to"}]
+        if self.change_data_capture == "scd2":
+            return [c for c in base if c != "__timestamp"]
+        return base
+
+    @property
+    def allowed_output_trailing__columns(self) -> List[str]:
+        base = ["__operation", "__metadata", "__last_updated", "__rescued_data"]
+        if self.slowly_changing_dimension:
+            return [c for c in base if c != "__operation"]
+        return base
+
+    def get_src(self, src: AllowedSources) -> DataFrameLike:
         if isinstance(src, DataFrameLike):
-            df = src
+            return src
         elif isinstance(src, Table):
-            df = self.table.dataframe
+            return self.table.dataframe
         elif isinstance(src, str):
-            df = self.spark.sql(src)
+            return self.spark.sql(src)
         elif isinstance(src, StructType):
-            df = self.spark.createDataFrame([], schema=src)
+            return self.spark.createDataFrame([], schema=src)
         else:
             raise ValueError(f"{src} not allowed")
-
-        return df
 
     def has_data(self, src: AllowedSources, **kwargs) -> bool:
         DEFAULT_LOGGER.debug("check if has data", extra={"label": self})
@@ -177,15 +134,11 @@ class Configurator(ABC):
         sort: Optional[bool] = True,
         check: Optional[bool] = True,
     ) -> List[str]:
-        if backtick:
-            backtick = True
-
         df = self.get_src(src=src)
         columns = df.columns
 
         if check:
             for c in columns:
-                # avoid duplicate column issue in merge
                 if c.startswith("__") and c in self.__columns:
                     assert c in self.allowed_input__columns, f"{c} is not allowed"
 
@@ -202,9 +155,9 @@ class Configurator(ABC):
 
         for c in columns:
             if c.startswith("__cluster"):
-                leading.append(c)  # need to be at the front to have statistics for clustering
+                leading.append(c)
             elif c.startswith("__partition"):
-                trailing.append(c)  # need to be at the end to avoid issues with generated columns
+                trailing.append(c)
 
         __leading = [c for c in leading if c in columns]
         __trailing = [c for c in trailing if c in columns]
@@ -220,17 +173,5 @@ class Configurator(ABC):
         columns = backticks(columns)
         return df.select(columns)
 
-    @abstractmethod
-    def optimize_table(self): ...
-
-    @abstractmethod
-    def update_schema(self, src: AllowedSources, **kwargs): ...
-
-    @abstractmethod
-    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs): ...
-
-    @abstractmethod
-    def overwrite_schema(self, src: AllowedSources): ...
-
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.table.qualified_name}"

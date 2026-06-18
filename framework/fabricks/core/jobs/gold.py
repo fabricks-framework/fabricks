@@ -2,19 +2,20 @@ import re
 import sys
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Any, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
+from fabricks.cdc import CDCIntentContext
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.cdc.scd0 import SCD0
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.base import BaseJob
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobDependency, JobGoldOptions, RegisterOptions, StepGoldConf, StepGoldOptions
+from fabricks.models import JobConfGold, JobDependency, JobGoldOptions, RegisterOptions, StepGoldConf, StepGoldOptions
 from fabricks.utils.sqlglot import fix, get_tables, parse_script
 
 
@@ -47,22 +48,22 @@ class Gold(BaseJob):
     @property
     def options(self) -> JobGoldOptions:
         """Direct access to typed gold job options."""
-        return self.conf.options  # type: ignore
+        return cast(JobGoldOptions, self.conf.options)
 
     @property
     def step_conf(self) -> StepGoldConf:
         """Direct access to typed gold step conf."""
-        return self.base_step_conf  # type: ignore
+        return cast(StepGoldConf, self.base_step_conf)
 
     @property
     def step_options(self) -> StepGoldOptions:
         """Direct access to typed gold step options."""
-        return self.base_step_conf.options  # type: ignore
+        return cast(StepGoldOptions, self.base_step_conf.options)
 
     @property
     def register_options(self) -> Optional[RegisterOptions]:
         """Direct access to typed register options."""
-        return self.conf.register_options  # type: ignore
+        return cast(JobConfGold, self.conf).register_options
 
     @property
     def stream(self) -> bool:
@@ -256,7 +257,7 @@ class Gold(BaseJob):
 
         return dependencies
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> CDCIntentContext:
         # assume no duplicate in gold (to improve performance)
         deduplicate = self.options.deduplicate
         # assume no reload in gold (to improve performance)
@@ -271,14 +272,17 @@ class Gold(BaseJob):
         if add_metadata is None:
             add_metadata = self.step_conf.options.metadata or False
 
-        context: dict[str, Any] = {
-            "add_metadata": add_metadata,
-            "soft_delete": soft_delete,
-            "deduplicate_key": None,
-            "deduplicate_hash": True if self.slowly_changing_dimension else None,
-            "deduplicate": False,
-            "rectify": False,
-        }
+        context = cast(
+            CDCIntentContext,
+            {
+                "add_metadata": add_metadata,
+                "soft_delete": soft_delete,
+                "deduplicate_key": None,
+                "deduplicate_hash": True if self.slowly_changing_dimension else None,
+                "deduplicate": False,
+                "rectify": False,
+            },
+        )
 
         # force deduplicate
         if deduplicate is not None:

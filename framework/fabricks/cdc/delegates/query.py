@@ -1,33 +1,52 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+import dataclasses
+from typing import TYPE_CHECKING, Literal, Optional
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
 
-from fabricks.cdc.base._types import AllowedSources
-from fabricks.cdc.base.generator import Generator
+from fabricks.cdc.config import AllowedSources
 from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.models.cdc import CDCQueryContext
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.sqlglot import fix as fix_sql
 
+if TYPE_CHECKING:
+    from fabricks.cdc.base import BaseCDC
 
-class Processor(Generator):
+_ENV = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
+
+
+class CDCQuery:
+    """Owns the query pipeline: context building, SQL rendering, data fetch,
+    and non-merge writes (append / overwrite).
+
+    Never mutates table schema — that belongs to CDCDba.
+    """
+
+    def __init__(self, cdc: BaseCDC):
+        self._cdc = cdc
+
     def get_data(self, src: AllowedSources, **kwargs) -> DataFrame:
+        cdc = self._cdc
         if isinstance(src, DataFrameLike):
-            name = f"{self.qualified_name}__data"
-            global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False), job=self)
+            name = f"{cdc.qualified_name}__data"
+            global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False), job=cdc)
             src = f"select * from {global_temp_view}"
 
         sql = self.get_query(src, fix=True, **kwargs)
-        DEFAULT_LOGGER.debug("exec query", extra={"label": self, "sql": sql})
-        return self.spark.sql(sql)
+        DEFAULT_LOGGER.debug("exec query", extra={"label": cdc, "sql": sql})
+        return cdc.spark.sql(sql)
 
-    def get_query_context(self, template: Literal["filter", "merger", "query"], src: AllowedSources, **kwargs) -> dict:
-        DEFAULT_LOGGER.debug("deduce query context", extra={"label": self})
+    def get_query_context(
+        self, template: Literal["filter", "merger", "query"], src: AllowedSources, **kwargs
+    ) -> CDCQueryContext:
+        cdc = self._cdc
+        DEFAULT_LOGGER.debug("deduce query context", extra={"label": cdc})
 
         if isinstance(src, DataFrameLike):
             format = "dataframe"
@@ -38,21 +57,21 @@ class Processor(Generator):
         else:
             raise ValueError(f"{src} not allowed")
 
-        inputs = self.get_columns(src, backtick=False, sort=False)
+        inputs = cdc.get_columns(src, backtick=False, sort=False)
         fields = [c for c in inputs if not c.startswith("__")]
         keys = kwargs.get("keys", None)
 
         mode = kwargs.get("mode", "complete")
         if mode == "update":
-            tgt = str(self.table)
+            tgt = str(cdc.table)
         elif mode == "append" and "__timestamp" in inputs:
-            tgt = str(self.table)
+            tgt = str(cdc.table)
         else:
             tgt = None
 
         overwrite = []
-        exclude = kwargs.get("exclude", [])  # used by silver to exclude __operation from output if not update
-        cast = kwargs.get("cast", {})  # used by silver to cast columns to target types
+        exclude = kwargs.get("exclude", [])
+        cast = kwargs.get("cast", {})
 
         order_duplicate_by = kwargs.get("order_duplicate_by", None)
         if order_duplicate_by:
@@ -71,7 +90,6 @@ class Processor(Generator):
 
         has_order_by = None if not order_duplicate_by else True
 
-        # determine which special columns are present or need to be added to the output
         has_operation = add_operation or "__operation" in inputs
         has_metadata = add_metadata or "__metadata" in inputs
         has_source = add_source or "__source" in inputs
@@ -92,25 +110,21 @@ class Processor(Generator):
         correct_valid_from = kwargs.get("correct_valid_from", None)
 
         try:
-            rows = self.table.rows
+            rows = cdc.table.rows
             has_rows = rows > 0
         except Exception:
             rows = None
             has_rows = None
 
-        # only needed when comparing to current
-        # delete all records in current if there is no new data
-        if mode == "update" and delete_missing and self.change_data_capture in ["scd1", "scd2"]:
-            has_no_data = not self.has_data(src)
+        if mode == "update" and delete_missing and cdc.change_data_capture in ["scd1", "scd2"]:
+            has_no_data = not cdc.has_data(src)
         else:
             has_no_data = None
 
-        # always deduplicate if not set for slowly changing dimensions
-        if self.slowly_changing_dimension:
+        if cdc.slowly_changing_dimension:
             if deduplicate is None:
                 deduplicate = True
 
-        # order duplicates by implies key deduplication
         if order_duplicate_by:
             deduplicate_key = True
 
@@ -118,58 +132,45 @@ class Processor(Generator):
             deduplicate_key = True
             deduplicate_hash = True
 
-        # if any deduplication is requested, deduplicate all
         deduplicate = deduplicate or deduplicate_key or deduplicate_hash
 
-        # always rectify if not set
-        if self.slowly_changing_dimension:
+        if cdc.slowly_changing_dimension:
             if rectify is None:
                 rectify = True
 
-        # only correct valid_from on first load
-        if self.slowly_changing_dimension and mode == "update":
+        if cdc.slowly_changing_dimension and mode == "update":
             correct_valid_from = correct_valid_from and not has_rows
 
-        # override slice for incremental load if timestamp and rows are present
         if slice is None:
             if mode == "update" and has_timestamp and has_rows:
                 slice = "update"
 
-        # override slice for full load if update and table is empty
         if slice == "update" and not has_rows:
             slice = None
 
-        # override operation if added and found in df
         if add_operation and "__operation" in inputs:
             overwrite.append("__operation")
 
-        # override timestamp if added and found in df
         if add_timestamp and "__timestamp" in inputs:
             overwrite.append("__timestamp")
         elif "__timestamp" in inputs:
             cast["__timestamp"] = "timestamp"
 
-        # override key if added and found in df (key needed for merge)
         if add_key and "__key" in inputs:
             overwrite.append("__key")
 
-        # override hash if added and found in df (hash needed to identify fake updates)
         if add_hash and "__hash" in inputs:
             overwrite.append("__hash")
 
-        # override __last_updated if added and found in df
         if add_last_updated and "__last_updated" in inputs:
             overwrite.append("__last_updated")
 
-        # override metadata if added and found in df
         if add_metadata and "__metadata" in inputs:
             overwrite.append("__metadata")
 
-        advanced_ctes = ((rectify or deduplicate) and self.slowly_changing_dimension) or self.slowly_changing_dimension
+        advanced_ctes = ((rectify or deduplicate) and cdc.slowly_changing_dimension) or cdc.slowly_changing_dimension
         advanced_deduplication = advanced_ctes and deduplicate
 
-        # add key and hash if not added nor found in df but exclude from output
-        # needed for merge
         if mode == "update" or advanced_ctes or deduplicate:
             if not add_key and "__key" not in inputs:
                 add_key = True
@@ -179,8 +180,6 @@ class Processor(Generator):
                 add_hash = True
                 exclude.append("__hash")
 
-        # add operation and timestamp if not added nor found in df but exclude from output
-        # needed for deduplication and/or rectification
         if advanced_ctes:
             if not add_operation and "__operation" not in inputs:
                 add_operation = "upsert"
@@ -191,7 +190,7 @@ class Processor(Generator):
                 exclude.append("__timestamp")
 
         if add_key:
-            keys = keys if keys is not None else [f for f in fields]
+            keys = keys if keys is not None else list(fields)
             if isinstance(keys, str):
                 keys = [keys]
             if has_source:
@@ -199,16 +198,16 @@ class Processor(Generator):
 
         hashes = None
         if add_hash:
-            hashes = [f for f in fields]
+            hashes = list(fields)
             if "__operation" in inputs or add_operation:
                 hashes.append("__operation")
 
-        if self.change_data_capture == "nocdc":
-            intermediates = [i for i in inputs]
-            outputs = [i for i in inputs]
+        if cdc.change_data_capture == "nocdc":
+            intermediates = list(inputs)
+            outputs = list(inputs)
         else:
-            intermediates = [f for f in fields]
-            outputs = [f for f in fields]
+            intermediates = list(fields)
+            outputs = list(fields)
 
         if has_operation:
             if "__operation" not in outputs:
@@ -255,7 +254,7 @@ class Processor(Generator):
             if "__is_current" not in outputs:
                 outputs.append("__is_current")
 
-        if self.change_data_capture == "scd2":
+        if cdc.change_data_capture == "scd2":
             if "__valid_from" not in outputs:
                 outputs.append("__valid_from")
             if "__valid_to" not in outputs:
@@ -269,15 +268,13 @@ class Processor(Generator):
             if "__timestamp" not in intermediates:
                 intermediates.append("__timestamp")
 
-        # needed for deduplication and/or rectification
-        # might need __operation or __source
         if "__key" not in intermediates:
             intermediates.append("__key")
         if "__hash" not in intermediates:
             intermediates.append("__hash")
 
         outputs = [o for o in outputs if o not in exclude]
-        outputs = self.sort_columns(outputs)
+        outputs = cdc.sort_columns(outputs)
 
         parent_slice = None
         if slice:
@@ -324,174 +321,156 @@ class Processor(Generator):
 
         parent_final = "__final"
 
-        return {
-            "template": template,
-            # global
-            "debugmode": IS_DEBUGMODE,
-            "src": src,
-            "format": format,
-            "tgt": tgt,
-            "cdc": self.change_data_capture,
-            "mode": mode,
-            # fields
-            "inputs": inputs,
-            "intermediates": intermediates,
-            "outputs": outputs,
-            "fields": fields,
-            "keys": keys,
-            "hashes": hashes,
-            # options
-            "delete_missing": delete_missing,
-            "advanced_deduplication": advanced_deduplication,
-            # cte's
-            "slice": slice,
-            "rectify": rectify,
-            "deduplicate": deduplicate,
-            "deduplicate_key": deduplicate_key,
-            "deduplicate_hash": deduplicate_hash,
-            # has
-            "has_no_data": has_no_data,
-            "has_rows": has_rows,
-            "has_source": has_source,
-            "has_metadata": has_metadata,
-            "has_last_updated": has_last_updated,
-            "has_timestamp": has_timestamp,
-            "has_operation": has_operation,
-            "has_identity": has_identity,
-            "has_key": has_key,
-            "has_hash": has_hash,
-            "has_order_by": has_order_by,
-            "has_rescued_data": has_rescued_data,
-            # default add
-            "add_metadata": add_metadata,
-            "add_timestamp": add_timestamp,
-            "add_last_updated": add_last_updated,
-            "add_key": add_key,
-            "add_hash": add_hash,
-            # value add
-            "add_operation": add_operation,
-            "add_source": add_source,
-            "add_calculated_columns": add_calculated_columns,
-            # extra
-            "order_duplicate_by": order_duplicate_by,
-            "soft_delete": soft_delete,
-            "correct_valid_from": correct_valid_from,
-            # overwrite
-            "overwrite": overwrite,
-            # cast
-            "cast": cast,
-            # filter
-            "slices": None,
-            "sources": None,
-            "filter_where": kwargs.get("filter_where"),
-            "update_where": kwargs.get("update_where"),
-            # parents
-            "parent_slice": parent_slice,
-            "parent_rectify": parent_rectify,
-            "parent_deduplicate_key": parent_deduplicate_key,
-            "parent_deduplicate_hash": parent_deduplicate_hash,
-            "parent_cdc": parent_cdc,
-            "parent_final": parent_final,
-        }
+        return CDCQueryContext(
+            template=template,
+            debugmode=IS_DEBUGMODE,
+            src=src,
+            format=format,
+            tgt=tgt,
+            cdc=cdc.change_data_capture,
+            mode=mode,
+            inputs=inputs,
+            intermediates=intermediates,
+            outputs=outputs,
+            fields=fields,
+            keys=keys,
+            hashes=hashes,
+            delete_missing=delete_missing,
+            advanced_deduplication=advanced_deduplication,
+            slice=slice,
+            rectify=rectify,
+            deduplicate=deduplicate,
+            deduplicate_key=deduplicate_key,
+            deduplicate_hash=deduplicate_hash,
+            has_no_data=has_no_data,
+            has_rows=has_rows,
+            has_source=has_source,
+            has_metadata=has_metadata,
+            has_last_updated=has_last_updated,
+            has_timestamp=has_timestamp,
+            has_operation=has_operation,
+            has_identity=has_identity,
+            has_key=has_key,
+            has_hash=has_hash,
+            has_order_by=has_order_by,
+            has_rescued_data=has_rescued_data,
+            add_metadata=add_metadata,
+            add_timestamp=add_timestamp,
+            add_last_updated=add_last_updated,
+            add_key=add_key,
+            add_hash=add_hash,
+            add_operation=add_operation,
+            add_source=add_source,
+            add_calculated_columns=add_calculated_columns,
+            order_duplicate_by=order_duplicate_by,
+            soft_delete=soft_delete,
+            correct_valid_from=correct_valid_from,
+            overwrite=overwrite,
+            cast=cast,
+            parent_slice=parent_slice,
+            parent_rectify=parent_rectify,
+            parent_deduplicate_key=parent_deduplicate_key,
+            parent_deduplicate_hash=parent_deduplicate_hash,
+            parent_cdc=parent_cdc,
+            parent_final=parent_final,
+            filter_where=kwargs.get("filter_where"),
+            update_where=kwargs.get("update_where"),
+        )
 
     def fix_sql(self, sql: str) -> str:
+        cdc = self._cdc
         try:
             sql = sql.replace("{src}", "src")
             sql = fix_sql(sql)
             sql = sql.replace("`src`", "{src}")
 
-            DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql, "target": "buffer"})
+            DEFAULT_LOGGER.debug("print query", extra={"label": cdc, "sql": sql, "target": "buffer"})
             return sql
 
         except Exception as e:
-            DEFAULT_LOGGER.exception("fail to fix sql query", extra={"label": self, "sql": sql})
+            DEFAULT_LOGGER.exception("fail to fix sql query", extra={"label": cdc, "sql": sql})
             raise e
 
-    def fix_context(self, context: dict, fix: Optional[bool] = True, **kwargs) -> dict:
-        environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
-        template = environment.get_template("filter.sql.jinja")
+    def fix_context(self, context: CDCQueryContext, fix: Optional[bool] = True, **kwargs) -> CDCQueryContext:
+        cdc = self._cdc
 
         try:
-            context["template"] = "filter"
-            sql = template.render(**context)
+            sql = _ENV.get_template("filter.sql.jinja").render(**vars(dataclasses.replace(context, template="filter")))
             if fix:
                 sql = self.fix_sql(sql)
             else:
-                DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql})
+                DEFAULT_LOGGER.debug("print query", extra={"label": cdc, "sql": sql})
 
         except (Exception, TypeError) as e:
-            DEFAULT_LOGGER.exception("fail to render sql query", extra={"label": self, "context": context})
+            DEFAULT_LOGGER.exception("fail to render sql query", extra={"label": cdc, "context": context})
             raise e
 
-        row = self.spark.sql(sql).collect()[0]
+        row = cdc.spark.sql(sql).collect()[0]
         assert row.slices, "no slices found"
 
-        context["slices"] = row.slices
-        if context.get("has_source"):
+        sources = None
+        if context.has_source:
             assert row.sources, "no sources found"
-            context["sources"] = row.sources
+            sources = row.sources
 
-        return context
+        return dataclasses.replace(context, slices=row.slices, sources=sources)
 
     def get_query(self, src: AllowedSources, fix: Optional[bool] = True, **kwargs) -> str:
+        cdc = self._cdc
         context = self.get_query_context(template="query", src=src, **kwargs)
-        environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
         try:
-            if context.get("slice"):
+            if context.slice:
                 context = self.fix_context(context, fix=fix, **kwargs)
 
-            template = environment.get_template("query.sql.jinja")
+            template = _ENV.get_template("query.sql.jinja")
 
-            sql = template.render(**context)
+            sql = template.render(**vars(context))
             if fix:
                 sql = self.fix_sql(sql)
             else:
-                DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql})
+                DEFAULT_LOGGER.debug("print query", extra={"label": cdc, "sql": sql})
 
         except (Exception, TypeError) as e:
-            DEFAULT_LOGGER.debug("context", extra={"label": self, "context": context})
-            DEFAULT_LOGGER.exception("fail to render sql query", extra={"label": self, "context": context})
+            DEFAULT_LOGGER.debug("context", extra={"label": cdc, "context": context})
+            DEFAULT_LOGGER.exception("fail to render sql query", extra={"label": cdc, "context": context})
             raise e
 
         return sql
 
     def append(self, src: AllowedSources, **kwargs):
-        if not self.table.registered:
-            self.create_table(src, **kwargs)
+        cdc = self._cdc
+        if not cdc.table.registered:
+            cdc.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
-        df = self.reorder_dataframe(df)
+        df = cdc.reorder_dataframe(df)
 
-        name = f"{self.qualified_name}__append"
-        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
-        append = f"insert into table {self.table} by name select * from global_temp.{name}"
+        name = f"{cdc.qualified_name}__append"
+        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=cdc)
+        append = f"insert into table {cdc.table} by name select * from global_temp.{name}"
 
-        DEFAULT_LOGGER.debug("exec append", extra={"label": self, "sql": append})
-        self.spark.sql(append)
+        DEFAULT_LOGGER.debug("exec append", extra={"label": cdc, "sql": append})
+        cdc.spark.sql(append)
 
-    def overwrite(
-        self,
-        src: AllowedSources,
-        dynamic: Optional[bool] = False,
-        **kwargs,
-    ):
-        if not self.table.registered:
-            self.create_table(src, **kwargs)
+    def overwrite(self, src: AllowedSources, dynamic: Optional[bool] = False, **kwargs):
+        cdc = self._cdc
+        if not cdc.table.registered:
+            cdc.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
-        df = self.reorder_dataframe(df)
+        df = cdc.reorder_dataframe(df)
 
         if not dynamic:
             if kwargs.get("update_where"):
                 dynamic = True
 
         if dynamic:
-            self.spark.sql("set spark.sql.sources.partitionOverwriteMode = dynamic")
+            cdc.spark.sql("set spark.sql.sources.partitionOverwriteMode = dynamic")
 
-        name = f"{self.qualified_name}__overwrite"
-        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=self)
-        overwrite = f"insert overwrite table {self.table} by name select * from global_temp.{name}"
+        name = f"{cdc.qualified_name}__overwrite"
+        create_or_replace_global_temp_view(name, df, uuid=kwargs.get("uuid", False), job=cdc)
+        overwrite = f"insert overwrite table {cdc.table} by name select * from global_temp.{name}"
 
-        DEFAULT_LOGGER.debug("excec overwrite", extra={"label": self, "sql": overwrite})
-        self.spark.sql(overwrite)
+        DEFAULT_LOGGER.debug("excec overwrite", extra={"label": cdc, "sql": overwrite})
+        cdc.spark.sql(overwrite)

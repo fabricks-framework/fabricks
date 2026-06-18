@@ -13,15 +13,21 @@ from fabricks.models.common import (
     AllowedOperations,
     AllowedOrigins,
     AllowedTypes,
+    BronzeMode,
     Database,
     DatabasePathOptions,
     ExtenderOptions,
+    GoldMode,
     InvokerOptions,
     RegisterOptions,
+    SilverMode,
     SparkOptions,
     UpdaterOptions,
 )
 from fabricks.models.dependency import JobDependency, SchemaDependencies
+
+# Exceptions
+from fabricks.models.exceptions import CustomException
 
 # Job models
 from fabricks.models.job import BronzeOptions as JobBronzeOptions
@@ -62,6 +68,8 @@ from fabricks.models.table import (
 from fabricks.models.utils import get_dependency_id, get_job_id
 
 __all__ = [
+    # Exceptions
+    "CustomException",
     # Common types
     "AllowedChangeDataCaptures",
     "AllowedConstraintOptions",
@@ -74,9 +82,12 @@ __all__ = [
     "AllowedOperations",
     "AllowedOrigins",
     "AllowedTypes",
+    "BronzeMode",
     "Database",
     "DatabasePathOptions",
     "ExtenderOptions",
+    "GoldMode",
+    "SilverMode",
     "SparkOptions",
     "UpdaterOptions",
     "RegisterOptions",

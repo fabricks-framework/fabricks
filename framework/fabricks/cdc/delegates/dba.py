@@ -1,23 +1,33 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Union, cast
 
 from py4j.protocol import Py4JJavaError
-from pyspark.sql import DataFrame
-from pyspark.sql.types import StructType
+from pyspark.sql.types import StringType, StructField, StructType
 
-from fabricks.cdc.base._types import AllowedSources
-from fabricks.cdc.base.configurator import Configurator
+from fabricks.cdc.config import AllowedSources
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.metastore.table import SchemaDiff, Table
+from fabricks.metastore.table import SchemaDiff
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.helpers import backticks
-from fabricks.utils.sqlglot import fix as fix_sql
+
+if TYPE_CHECKING:
+    from fabricks.cdc.base import BaseCDC
 
 
-class Generator(Configurator):
+class CDCDba:
+    """Owns all DDL and schema management for a CDC instance.
+
+    Covers the full table lifecycle (create / drop / view), schema
+    evolution (update / overwrite / drift detection), and optimization.
+    Mirrors the role of JobDBA in the job layer.
+    """
+
+    def __init__(self, cdc: BaseCDC):
+        self._cdc = cdc
+
     def drop(self):
-        self.table.drop()
+        self._cdc.table.drop()
 
     def create_table(
         self,
@@ -35,22 +45,23 @@ class Generator(Configurator):
         comments: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
+        cdc = self._cdc
         kwargs["mode"] = "complete"
         kwargs["slice"] = False
         kwargs["rectify"] = False
         kwargs["deduplicate"] = False
 
-        df = self.get_data(src, **kwargs)
+        df = cdc.get_data(src, **kwargs)
 
         if partitioning is True:
             assert partition_by, "partitioning column(s) not found"
 
-        df = self.reorder_dataframe(df)
+        df = cdc.reorder_dataframe(df)
 
         identity = False if identity is None else identity
         liquid_clustering = False if liquid_clustering is None else liquid_clustering
 
-        self.table.create(
+        cdc.table.create(
             df=df,
             partitioning=partitioning,
             partition_by=partition_by,
@@ -65,18 +76,19 @@ class Generator(Configurator):
             comments=comments,
         )
 
-    def create_or_replace_view(self, src: Union[Table, str], schema_evolution: bool = True, **kwargs):
+    def create_or_replace_view(self, src: Union[Any, str], schema_evolution: bool = True, **kwargs):
         assert not isinstance(src, DataFrameLike), "dataframe not allowed"
-
         assert kwargs["mode"] == "complete", f"{kwargs['mode']} not allowed"
-        sql = self.get_query(src, **kwargs)
 
-        df = self.spark.sql(sql)
-        df = self.reorder_dataframe(df)
+        cdc = self._cdc
+        sql = cdc.get_query(src, **kwargs)
+
+        df = cdc.spark.sql(sql)
+        df = cdc.reorder_dataframe(df)
         columns = backticks(df.columns)
 
         sql = f"""
-        create or replace view {self}
+        create or replace view {cdc}
         {"with schema evolution" if schema_evolution else "-- no schema evolution"}
         as
         with __view as (
@@ -86,27 +98,34 @@ class Generator(Configurator):
           {",".join(columns)}
         from __view
         """
-        sql = fix_sql(sql)
-        DEFAULT_LOGGER.debug("create or replace view", extra={"label": self, "sql": sql})
+        sql = cdc.fix_sql(sql)
+        DEFAULT_LOGGER.debug("create or replace view", extra={"label": cdc, "sql": sql})
 
         try:
-            self.spark.sql(sql)
+            cdc.spark.sql(sql)
         except Py4JJavaError as e:
-            DEFAULT_LOGGER.exception("fail to execute sql query", extra={"label": self, "sql": sql}, exc_info=e)
+            DEFAULT_LOGGER.exception("fail to execute sql query", extra={"label": cdc, "sql": sql}, exc_info=e)
 
     def optimize_table(self):
+        cdc = self._cdc
         columns = None
 
-        if self.change_data_capture == "scd1":
+        if cdc.change_data_capture == "scd1":
             columns = ["__key"]
-        elif self.change_data_capture == "scd2":
+        elif cdc.change_data_capture == "scd2":
             columns = ["__key", "__valid_from"]
 
-        self.table.optimize(columns=columns)
+        cdc.table.optimize(columns=columns)
 
-    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs) -> DataFrame:
-        from pyspark.sql.types import StringType, StructField, StructType
+    def _prepare_complete_df(self, src: AllowedSources, **kwargs):
+        kwargs["mode"] = "complete"
+        kwargs.pop("slice", None)
+        cdc = self._cdc
+        df = cdc.get_data(src, **kwargs)
+        return cdc.reorder_dataframe(df)
 
+    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs):
+        cdc = self._cdc
         schema = StructType(
             [
                 StructField("column", StringType(), False),
@@ -117,39 +136,25 @@ class Generator(Configurator):
             ]
         )
 
-        if self.is_view:
-            return self.spark.createDataFrame([], schema=schema)
+        if cdc.is_view:
+            return cdc.spark.createDataFrame([], schema=schema)
 
-        else:
-            kwargs["mode"] = "complete"
-            if "slice" in kwargs:
-                del kwargs["slice"]
-
-            df = self.get_data(src, **kwargs)
-            df = self.reorder_dataframe(df)
-
-            diffs = self.table.get_schema_differences(df)
-            return self.spark.createDataFrame([cast(Any, d.model_dump()) for d in diffs], schema=schema)
+        df = self._prepare_complete_df(src, **kwargs)
+        diffs = cdc.table.get_schema_differences(df)
+        return cdc.spark.createDataFrame([cast(Any, d.model_dump()) for d in diffs], schema=schema)
 
     def get_schema_differences(self, src: AllowedSources, **kwargs) -> Optional[Sequence[SchemaDiff]]:
-        if self.is_view:
+        cdc = self._cdc
+        if cdc.is_view:
             return None
 
-        else:
-            kwargs["mode"] = "complete"
-            if "slice" in kwargs:
-                del kwargs["slice"]
-
-            df = self.get_data(src, **kwargs)
-            df = self.reorder_dataframe(df)
-
-            return self.table.get_schema_differences(df)
+        df = self._prepare_complete_df(src, **kwargs)
+        return cdc.table.get_schema_differences(df)
 
     def schema_drifted(self, src: AllowedSources, **kwargs) -> Optional[bool]:
         d = self.get_schema_differences(src, **kwargs)
         if d is None:
             return None
-
         return len(d) > 0
 
     def _update_schema(
@@ -159,23 +164,18 @@ class Generator(Configurator):
         widen_types: bool = False,
         **kwargs,
     ):
-        if self.is_view:
+        cdc = self._cdc
+        if cdc.is_view:
             assert not isinstance(src, DataFrameLike) and not isinstance(src, StructType), (
                 "dataframe and structtype not allowed"
             )
-            self.create_or_replace_view(src=src)
-
+            cdc.create_or_replace_view(src=src)
         else:
-            kwargs["mode"] = "complete"
-            if "slice" in kwargs:
-                del kwargs["slice"]
-
-            df = self.get_data(src, **kwargs)
-            df = self.reorder_dataframe(df)
+            df = self._prepare_complete_df(src, **kwargs)
             if overwrite:
-                self.table.overwrite_schema(df)
+                cdc.table.overwrite_schema(df)
             else:
-                self.table.update_schema(df, widen_types=widen_types)
+                cdc.table.update_schema(df, widen_types=widen_types)
 
     def update_schema(self, src: AllowedSources, **kwargs):
         self._update_schema(src=src, **kwargs)

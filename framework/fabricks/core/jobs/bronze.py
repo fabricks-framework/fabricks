@@ -1,19 +1,27 @@
 import os
 from functools import cached_property
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
 from pyspark.sql.types import Row, TimestampType
 
+from fabricks.cdc import CDCIntentContext
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.base import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
-from fabricks.models import JobBronzeOptions, JobDependency, ParserOptions, StepBronzeConf, StepBronzeOptions
+from fabricks.models import (
+    JobBronzeOptions,
+    JobConfBronze,
+    JobDependency,
+    ParserOptions,
+    StepBronzeConf,
+    StepBronzeOptions,
+)
 from fabricks.utils.helpers import add_hash, backticks
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
@@ -56,17 +64,17 @@ class Bronze(BaseJob):
     @property
     def options(self) -> JobBronzeOptions:
         """Direct access to typed bronze job options."""
-        return self.conf.options  # type: ignore
+        return cast(JobBronzeOptions, self.conf.options)
 
     @property
     def step_conf(self) -> StepBronzeConf:
         """Direct access to typed bronze step conf."""
-        return self.base_step_conf  # type: ignore
+        return cast(StepBronzeConf, self.base_step_conf)
 
     @property
     def step_options(self) -> StepBronzeOptions:
         """Direct access to typed bronze step options."""
-        return self.base_step_conf.options  # type: ignore
+        return cast(StepBronzeOptions, self.base_step_conf.options)
 
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
@@ -99,7 +107,7 @@ class Bronze(BaseJob):
         return dependencies
 
     def register_external_table(self):
-        options = self.conf.parser_options  # type: ignore
+        options = cast(JobConfBronze, self.conf).parser_options
         if options and options.file_format:
             file_format = options.file_format
         else:
@@ -166,7 +174,7 @@ class Bronze(BaseJob):
         Returns:
             DataFrame: The parsed data as a DataFrame.
         """
-        options = self.conf.parser_options or None  # type: ignore
+        options = cast(JobConfBronze, self.conf).parser_options or None
 
         if self.mode == "register":
             if stream:
@@ -375,8 +383,8 @@ class Bronze(BaseJob):
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("schema overwrite not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
-        return {}
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> CDCIntentContext:
+        return CDCIntentContext()
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
