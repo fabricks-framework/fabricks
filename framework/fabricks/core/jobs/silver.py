@@ -237,9 +237,7 @@ class Silver(BaseJob):
             sql = fix_sql(sql)
             DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
 
-            df = self.spark.sql(sql)
-            cdc_options = self.get_cdc_context(df)
-            self.cdc.create_or_replace_view(sql, **cdc_options)
+            self._dba.create_or_replace_view(sql)
 
     def create_or_replace_current_view(self):
         from py4j.protocol import Py4JJavaError

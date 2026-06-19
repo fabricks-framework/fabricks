@@ -50,7 +50,7 @@ class SchemaDriftException(Exception):
 
 
 class JobDBA:
-    """Owns all physical DB-object maintenance for a job.
+    """Owns all physical DB-object maintenance for a self._job.
 
     Covers the full lifecycle (create / register / drop / truncate), schema
     management (update / overwrite / comments / drift detection), storage
@@ -67,8 +67,7 @@ class JobDBA:
     # --- table DDL build (absorbed from JobTable) ---
 
     def _partitioning_columns(self, df: DataFrame) -> Optional[List[str]]:
-        job = self._job
-        columns = job.table_options.partition_by if job.table_options and job.table_options.partition_by else []
+        columns = self._job.table_options.partition_by if self._job.table_options and self._job.table_options.partition_by else []
         if columns:
             return columns
 
@@ -84,8 +83,7 @@ class JobDBA:
         return None
 
     def _clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
-        job = self._job
-        columns = job.table_options.cluster_by if job.table_options and job.table_options.cluster_by else []
+        columns = self._job.table_options.cluster_by if self._job.table_options and self._job.table_options.cluster_by else []
         if columns:
             return columns
 
@@ -151,30 +149,28 @@ class JobDBA:
         return properties
 
     def _get_option_hierarchy(self, attribute: str, into: Literal["table", "spark"] = "table", default=None):
-        job = self._job
         if into == "table":
-            job_value = getattr(job.table_options, attribute, None) if job.table_options else None
+            job_value = getattr(self._job.table_options, attribute, None) if self._job.table_options else None
             if job_value is not None:
                 return job_value
-            step_value = getattr(job.step_conf.table_options, attribute, None) if job.step_conf.table_options else None
+            step_value = getattr(self._job.step_conf.table_options, attribute, None) if self._job.step_conf.table_options else None
             if step_value is not None:
                 return step_value
         elif into == "spark":
-            job_value = getattr(job.spark_options, attribute, None) if job.spark_options else None
+            job_value = getattr(self._job.spark_options, attribute, None) if self._job.spark_options else None
             if job_value is not None:
                 return job_value
-            step_value = getattr(job.step_conf.spark_options, attribute, None) if job.step_conf.spark_options else None
+            step_value = getattr(self._job.step_conf.spark_options, attribute, None) if self._job.step_conf.spark_options else None
             if step_value is not None:
                 return step_value
         return default
 
     def _build_table(self, df: DataFrame):
         """DDL build: resolves layout options and issues CREATE TABLE via the CDC layer."""
-        job = self._job
 
         def _create_table(batch_df: DataFrame, batch: Optional[int] = 0):
-            batch_df = job.base_transform(batch_df)
-            cdc_options = job.get_cdc_context(batch_df)
+            batch_df = self._job.base_transform(batch_df)
+            cdc_options = self._job.get_cdc_context(batch_df)
 
             liquid_clustering = False
             cluster_by = []
@@ -185,13 +181,13 @@ class JobDBA:
             masks = self._get_option_hierarchy("masks", into="table", default=None)
             identity = False
 
-            maximum_compatibility = job.table_options.maximum_compatibility if job.table_options else False
+            maximum_compatibility = self._job.table_options.maximum_compatibility if self._job.table_options else False
             default_properties = self._default_table_properties(bool(maximum_compatibility), bool(powerbi))
 
             if "__identity" in batch_df.columns:
                 identity = False
             else:
-                identity = job.table_options.identity if job.table_options else False
+                identity = self._job.table_options.identity if self._job.table_options else False
 
             partition_by = self._partitioning_columns(batch_df)
             if partition_by:
@@ -220,10 +216,10 @@ class JobDBA:
             if properties is None:
                 properties = default_properties
 
-            primary_key = job.table_options.primary_key or {} if job.table_options else {}
-            foreign_keys = job.table_options.foreign_keys or {} if job.table_options else {}
-            comments = job.table_options.comments or {} if job.table_options else {}
-            generated_columns = job.table_options.generated_columns or {} if job.table_options else {}
+            primary_key = self._job.table_options.primary_key or {} if self._job.table_options else {}
+            foreign_keys = self._job.table_options.foreign_keys or {} if self._job.table_options else {}
+            comments = self._job.table_options.comments or {} if self._job.table_options else {}
+            generated_columns = self._job.table_options.generated_columns or {} if self._job.table_options else {}
 
             if generated_columns:
                 for key in generated_columns.keys():
@@ -232,11 +228,11 @@ class JobDBA:
                     )
 
             # if dataframe, reference is passed (BUG)
-            name = f"{job.step}_{job.topic}_{job.item}__init"
+            name = f"{self._job.step}_{self._job.topic}_{self._job.item}__init"
             global_temp_view = create_or_replace_global_temp_view(name=name, df=batch_df.limit(0), job=job)
             sql = f"select * from {global_temp_view}"
 
-            job.cdc.create_table(
+            self._job.cdc.create_table(
                 sql,
                 identity=identity,
                 liquid_clustering=liquid_clustering,
@@ -252,7 +248,7 @@ class JobDBA:
                 **cdc_options,
             )
 
-        if job.stream:
+        if self._job.stream:
             spark = df.sparkSession
             dummy_df = spark.readStream.table("fabricks.dummy")
             # __metadata is always present
@@ -260,7 +256,7 @@ class JobDBA:
             dummy_df = dummy_df.select("__metadata")
 
             df = df.unionByName(dummy_df, allowMissingColumns=True)
-            path = job.paths.to_checkpoints.append("__init")
+            path = self._job.paths.to_checkpoints.append("__init")
             if path.exists():
                 path.rm()
 
@@ -275,55 +271,56 @@ class JobDBA:
         else:
             _create_table(df)
 
-        constraints = job.table_options.constraints or {} if job.table_options else {}
+        constraints = self._job.table_options.constraints or {} if self._job.table_options else {}
         if constraints:
             for key, value in constraints.items():
-                job.table.add_constraint(name=key, expr=str(value))
+                self._job.table.add_constraint(name=key, expr=str(value))
 
-        comment = job.table_options.comment if job.table_options else None
+        comment = self._job.table_options.comment if self._job.table_options else None
         if comment:
-            job.table.add_table_comment(comment=comment)
+            self._job.table.add_table_comment(comment=comment)
 
     # --- lifecycle ---
 
     def create_table(self):
-        job = self._job
-        if job.table.exists():
+        if self._job.table.exists():
             DEFAULT_LOGGER.debug("table already exists, skipped creation", extra={"label": job})
             return
 
         DEFAULT_LOGGER.debug("create table", extra={"label": job})
-        job.register_udfs()
 
-        df = job.get_data(stream=job.stream, schema_only=True)
+        df = self._job.get_data(stream=self._job.stream, schema_only=True)
         if df:
             self._build_table(df)
 
-    def create(self):
+    def create_or_replace_view(self, sql: str):
         job = self._job
-        if job.persist:
+        df = job.spark.sql(sql)
+        cdc_options = job.get_cdc_context(df)
+        job.cdc.create_or_replace_view(sql, **cdc_options)
+
+    def create(self):
+        if self._job.persist:
             self.create_table()
-        elif job.virtual:
-            job.create_or_replace_view()
+        elif self._job.virtual:
+            self._job.create_or_replace_view()
         else:
-            raise ValueError(f"{job.mode} not allowed")
+            raise ValueError(f"{self._job.mode} not allowed")
 
     def register(self):
-        job = self._job
-        if job.persist:
-            job.table.register()
-        elif job.virtual:
-            job.create_or_replace_view()
+        if self._job.persist:
+            self._job.table.register()
+        elif self._job.virtual:
+            self._job.create_or_replace_view()
         else:
-            raise ValueError(f"{job.mode} not allowed")
+            raise ValueError(f"{self._job.mode} not allowed")
 
     def drop(self):
-        job = self._job
-        if job.options.no_drop:
+        if self._job.options.no_drop:
             raise ValueError("no_drop is set, cannot drop the job")
 
         try:
-            row = job.spark.sql(
+            row = self._job.spark.sql(
                 f"""
                 select
                     count(*) as count,
@@ -342,34 +339,30 @@ class JobDBA:
         except Exception:
             pass
 
-        job.cdc.drop()
+        self._job.cdc.drop()
         self.rm()
 
     def truncate(self):
-        job = self._job
         DEFAULT_LOGGER.warning("truncate", extra={"label": job})
         self.rm()
-        if job.persist:
-            job.table.truncate()
+        if self._job.persist:
+            self._job.table.truncate()
 
     # --- storage artifacts ---
 
     def rm(self):
-        job = self._job
-        if job.paths.to_schema.exists():
+        if self._job.paths.to_schema.exists():
             DEFAULT_LOGGER.info("delete schema folder", extra={"label": job})
-            job.paths.to_schema.rm()
+            self._job.paths.to_schema.rm()
         self.rm_checkpoints()
 
     def rm_checkpoints(self):
-        job = self._job
-        if job.paths.to_checkpoints.exists():
+        if self._job.paths.to_checkpoints.exists():
             DEFAULT_LOGGER.info("delete checkpoints folder", extra={"label": job})
-            job.paths.to_checkpoints.rm()
+            self._job.paths.to_checkpoints.rm()
 
     def rm_commit(self, id):
-        job = self._job
-        path = job.paths.to_commits.joinpath(str(id))
+        path = self._job.paths.to_commits.joinpath(str(id))
         if path.exists():
             DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": job})
             path.rm()
@@ -382,25 +375,24 @@ class JobDBA:
         overwrite: Optional[bool] = False,
         widen_types: Optional[bool] = False,
     ):
-        job = self._job
 
         def _do_update(df: DataFrame, batch: Optional[int] = None):
-            context = job.get_cdc_context(df, reload=True)
+            context = self._job.get_cdc_context(df, reload=True)
             if overwrite:
-                job.cdc.overwrite_schema(df, **context)
+                self._job.cdc.overwrite_schema(df, **context)
             else:
-                job.cdc.update_schema(df, widen_types=widen_types, **context)
+                self._job.cdc.update_schema(df, widen_types=widen_types, **context)
 
-        if job.persist:
+        if self._job.persist:
             if df is not None:
                 _do_update(df)
             else:
-                df = job.get_data(stream=job.stream, schema_only=True)
+                df = self._job.get_data(stream=self._job.stream, schema_only=True)
                 assert df is not None
-                df = job.base_transform(df)
+                df = self._job.base_transform(df)
 
-                if job.stream:
-                    path = job.paths.to_checkpoints.append("__schema")
+                if self._job.stream:
+                    path = self._job.paths.to_checkpoints.append("__schema")
                     query = (
                         df.writeStream.foreachBatch(_do_update)
                         .option("checkpointLocation", path.string)
@@ -412,10 +404,10 @@ class JobDBA:
                 else:
                     _do_update(df)
 
-        elif job.virtual:
-            job.create_or_replace_view()
+        elif self._job.virtual:
+            self._job.create_or_replace_view()
         else:
-            raise ValueError(f"{job.mode} not allowed")
+            raise ValueError(f"{self._job.mode} not allowed")
 
     def update_schema(self, df: Optional[DataFrame] = None, widen_types: Optional[bool] = False):
         self._update_schema(df=df, overwrite=False, widen_types=widen_types)
@@ -424,33 +416,31 @@ class JobDBA:
         self._update_schema(df=df, overwrite=True)
 
     def update_comments(self, table: Optional[bool] = True, columns: Optional[bool] = True):
-        job = self._job
-        if job.virtual:
+        if self._job.virtual:
             return
 
-        if job.persist:
-            job.table.drop_comments()
+        if self._job.persist:
+            self._job.table.drop_comments()
 
             if table:
-                comment = job.table_options.comment if job.table_options else None
+                comment = self._job.table_options.comment if self._job.table_options else None
                 if comment:
-                    job.table.add_table_comment(comment=comment)
+                    self._job.table.add_table_comment(comment=comment)
 
             if columns:
-                comments = job.table_options.comments or {} if job.table_options else {}
+                comments = self._job.table_options.comments or {} if self._job.table_options else {}
                 if comments:
                     for col, comment in comments.items():
-                        job.table.add_column_comment(column=col, comment=str(comment))
+                        self._job.table.add_column_comment(column=col, comment=str(comment))
 
     def get_schema_differences(self, df: Optional[DataFrame] = None) -> Optional[Sequence[SchemaDiff]]:
-        job = self._job
         if df is None:
-            df = job.get_data(stream=job.stream)
+            df = self._job.get_data(stream=self._job.stream)
             assert df is not None
-            df = job.base_transform(df)
+            df = self._job.base_transform(df)
 
-        context = job.get_cdc_context(df, reload=True)
-        return job.cdc.get_schema_differences(df, **context)
+        context = self._job.get_cdc_context(df, reload=True)
+        return self._job.cdc.get_schema_differences(df, **context)
 
     def schema_drifted(self, df: Optional[DataFrame] = None) -> Optional[bool]:
         d = self.get_schema_differences(df)
@@ -459,14 +449,13 @@ class JobDBA:
         return len(d) > 0
 
     def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
-        job = self._job
         if df is None:
-            df = job.get_data(stream=job.stream)
+            df = self._job.get_data(stream=self._job.stream)
             assert df is not None
-            df = job.base_transform(df)
+            df = self._job.base_transform(df)
 
-        context = job.get_cdc_context(df, reload=True)
-        return job.cdc.get_differences_with_deltatable(df, **context)
+        context = self._job.get_cdc_context(df, reload=True)
+        return self._job.cdc.get_differences_with_deltatable(df, **context)
 
     # --- maintenance ---
 
@@ -485,25 +474,23 @@ class JobDBA:
         optimize: Optional[bool] = True,
         compute_statistics: Optional[bool] = True,
     ):
-        job = self._job
-        if job.mode == "memory":
+        if self._job.mode == "memory":
             DEFAULT_LOGGER.debug("could not maintain (memory)", extra={"label": job})
         else:
             if vacuum:
                 self.vacuum()
             if optimize:
-                job.cdc.optimize_table()
+                self._job.cdc.optimize_table()
             if compute_statistics:
-                job.table.compute_statistics()
+                self._job.table.compute_statistics()
 
     def vacuum(self):
-        job = self._job
-        if job.mode == "memory":
+        if self._job.mode == "memory":
             DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"label": job})
         else:
-            job_days = job.table_options.retention_days if job.table_options else None
-            step_days = job.step_table_options.retention_days if job.step_table_options else None
-            runtime_days = job.runtime_options.retention_days
+            job_days = self._job.table_options.retention_days if self._job.table_options else None
+            step_days = self._job.step_table_options.retention_days if self._job.step_table_options else None
+            runtime_days = self._job.runtime_options.retention_days
 
             if job_days is not None:
                 retention_days = job_days
@@ -513,48 +500,44 @@ class JobDBA:
                 assert runtime_days
                 retention_days = runtime_days
 
-            job.table.vacuum(retention_days=retention_days)
+            self._job.table.vacuum(retention_days=retention_days)
 
     # --- restore ---
 
     def restore(self, last_version: str | None = None, last_batch: str | None = None):
-        job = self._job
-        if job.persist:
+        if self._job.persist:
             if last_version is not None:
                 _last_version = int(last_version)
-                if job.table.get_last_version() > _last_version:
-                    job.table.restore_to_version(_last_version)
+                if self._job.table.get_last_version() > _last_version:
+                    self._job.table.restore_to_version(_last_version)
 
-            if job.stream:
+            if self._job.stream:
                 if last_batch is not None:
                     current_batch = int(last_batch) + 1
                     self.rm_commit(current_batch)
 
-                    assert last_batch == job.table.get_property("fabricks.last_batch")
-                    assert job.paths.to_commits.joinpath(last_batch).exists()
+                    assert last_batch == self._job.table.get_property("fabricks.last_batch")
+                    assert self._job.paths.to_commits.joinpath(last_batch).exists()
 
     # --- external tables ---
 
     def register_external_table(self, file_format: str, uri: str):
-        job = self._job
         try:
-            job.spark.sql(f"create table if not exists {job.qualified_name} using {file_format} location '{uri}'")
+            self._job.spark.sql(f"create table if not exists {self._job.qualified_name} using {file_format} location '{uri}'")
         except Exception as e:
             DEFAULT_LOGGER.exception("could not register external table", extra={"label": job})
             raise e
 
     def drop_external_table(self):
-        job = self._job
         DEFAULT_LOGGER.warning("remove external table from metastore", extra={"label": job})
-        job.spark.sql(f"drop table if exists {job.qualified_name}")
+        self._job.spark.sql(f"drop table if exists {self._job.qualified_name}")
 
     # --- dependencies ---
 
     def update_dependencies(self):
-        job = self._job
         DEFAULT_LOGGER.info("update dependencies", extra={"label": job})
-        deps = job.get_dependencies()
+        deps = self._job.get_dependencies()
         if deps:
-            df = job.spark.createDataFrame([d.model_dump() for d in deps])
-            cdc = NoCDC("fabricks", job.step, "dependencies")
-            cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{job.job_id}'", uuid=True)
+            df = self._job.spark.createDataFrame([d.model_dump() for d in deps])
+            cdc = NoCDC("fabricks", self._job.step, "dependencies")
+            cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self._job.job_id}'", uuid=True)

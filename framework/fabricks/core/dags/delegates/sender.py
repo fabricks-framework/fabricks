@@ -4,32 +4,27 @@ import time
 from typing import Optional
 
 from fabricks.core.dags.log import LOGGER
-from fabricks.core.dags.protocols import DagsProtocol
+from fabricks.core.dags.queue import DagQueue
 from fabricks.utils.azure_table import AzureTable
 
 
 class DagSender:
-    def __init__(self, dags: DagsProtocol):
-        self._dags = dags
-
-    def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict]:
-        dags = self._dags
-        query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{dags.step}'"
+    def get_scheduled(self, ctx: DagQueue, azure_table: Optional[AzureTable] = None) -> list[dict]:
+        query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{ctx.step}'"
         if azure_table is not None:
             return azure_table.query(query)
-        with dags.get_azure_table() as at:
+        with ctx.get_azure_table() as at:
             return at.query(query)
 
-    def send(self):
-        dags = self._dags
-        assert dags.step is not None
-        with dags.get_azure_queue() as queue, dags.get_azure_table() as azure_table:
+    def send(self, ctx: DagQueue):
+        assert ctx.step is not None
+        with ctx.get_azure_queue() as queue, ctx.get_azure_table() as azure_table:
             while True:
-                scheduled = self.get_scheduled(azure_table=azure_table)
+                scheduled = self.get_scheduled(ctx, azure_table=azure_table)
                 if len(scheduled) == 0:
-                    for _ in range(dags.step.workers):
+                    for _ in range(ctx.step.workers):
                         queue.send_sentinel()
-                    LOGGER.info("no more job to schedule", extra={"label": str(dags.step)})
+                    LOGGER.info("no more job to schedule", extra={"label": str(ctx.step)})
                     break
 
                 sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
@@ -37,7 +32,7 @@ class DagSender:
                     dependencies = azure_table.query(f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'")
                     if len(dependencies) == 0:
                         s["Status"] = "waiting"
-                        LOGGER.debug("waiting", extra=dags.extra(s))
+                        LOGGER.debug("waiting", extra=ctx.extra(s))
                         azure_table.upsert(s)
                         queue.send(s)
 

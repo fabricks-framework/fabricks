@@ -192,10 +192,7 @@ class Gold(BaseJob):
 
     def create_or_replace_view(self):
         assert self.mode == "memory", f"{self.mode} not allowed"
-
-        df = self.spark.sql(self.sql)
-        cdc_options = self.get_cdc_context(df)
-        self.cdc.create_or_replace_view(self.sql, **cdc_options)
+        self._dba.create_or_replace_view(self.sql)
 
     def get_dependencies(self) -> Sequence[JobDependency]:
         dependencies = []

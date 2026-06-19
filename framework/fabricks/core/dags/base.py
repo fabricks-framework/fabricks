@@ -4,7 +4,6 @@ from typing import Optional
 
 from pyspark.sql import DataFrame
 
-from fabricks.core.dags.config import DagConfig
 from fabricks.core.dags.delegates.dba import DagDba
 from fabricks.core.dags.delegates.logger import DagLogger
 from fabricks.utils.azure_table import AzureTable
@@ -12,13 +11,9 @@ from fabricks.utils.azure_table import AzureTable
 
 class BaseDags:
     def __init__(self, schedule_id: str):
-        self._config = DagConfig(schedule_id)
+        self.schedule_id = schedule_id
         self._dba = DagDba(self)
         self._logger = DagLogger(self)
-
-    @property
-    def schedule_id(self) -> str:
-        return self._config.schedule_id
 
     # DagStore shims
 

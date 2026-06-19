@@ -14,6 +14,7 @@ from fabricks.core.dags.delegates.querier import DagQuerier
 from fabricks.core.dags.delegates.receiver import DagReceiver
 from fabricks.core.dags.delegates.sender import DagSender
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
+from fabricks.core.dags.queue import DagQueue
 from fabricks.core.steps.get_step import get_step
 from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable
@@ -26,8 +27,8 @@ class Dags(BaseDags):
         self.notebook = True
         super().__init__(schedule_id=schedule_id or str(uuid4().hex))
         self._querier = DagQuerier(self)
-        self._sender = DagSender(self)
-        self._receiver = DagReceiver(self)
+        self._sender = DagSender()
+        self._receiver = DagReceiver()
 
     # --- DagQuerier shims ---
 
@@ -86,14 +87,16 @@ class Dags(BaseDags):
 
         return self.schedule_id, job_df, deps_df
 
-    # --- Azure queue/table factories (used by sender/receiver) ---
-
-    def get_azure_queue(self) -> AzureQueue:
-        step = self.remove_invalid_characters(str(self.step))
-        return AzureQueue(f"q{step}{self.schedule_id}", **self.get_connection_info())
-
-    def get_azure_table(self) -> AzureTable:
-        return AzureTable(f"t{self.schedule_id}", **self.get_connection_info())
+    def _make_queue_ctx(self) -> DagQueue:
+        assert self.step is not None
+        return DagQueue(
+            step=self.step,
+            step_str=self.remove_invalid_characters(str(self.step)),
+            schedule_id=self.schedule_id,
+            schedule=self.schedule,
+            notebook=self.notebook,
+            connection_info=self.get_connection_info(),
+        )
 
     @retry(
         stop=stop_after_attempt(3),
@@ -125,46 +128,36 @@ class Dags(BaseDags):
         with self.get_azure_table() as azure_table:
             azure_table.delete(data)
 
-    def extra(self, d: dict) -> dict:
-        return {
-            "partition_key": self.schedule_id,
-            "schedule": self.schedule,
-            "schedule_id": self.schedule_id,
-            "step": str(self.step),
-            "job": d.get("Job"),
-            "target": "table",
-        }
-
     # --- DagSender shims ---
 
     def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict]:
-        return self._sender.get_scheduled(azure_table)
+        return self._sender.get_scheduled(self._make_queue_ctx(), azure_table)
 
     def send(self):
-        return self._sender.send()
+        return self._sender.send(self._make_queue_ctx())
 
     # --- DagReceiver shim ---
 
     def receive(self):
-        return self._receiver.receive()
+        return self._receiver.receive(self._make_queue_ctx())
 
     def _process(self):
-        assert self.step is not None
-        scheduled = self.get_scheduled()
+        ctx = self._make_queue_ctx()
+        scheduled = self._sender.get_scheduled(ctx)
         if len(scheduled) > 0:
             sender = threading.Thread(
-                target=self.send,
-                name=f"{str(self.step).capitalize()}Sender",
-                args=(),
+                target=self._sender.send,
+                name=f"{str(ctx.step).capitalize()}Sender",
+                args=(ctx,),
             )
             sender.start()
 
             receivers = []
-            for i in range(self.step.workers):
+            for i in range(ctx.step.workers):
                 receiver = threading.Thread(
-                    target=self.receive,
-                    name=f"{str(self.step).capitalize()}Receiver{i}",
-                    args=(),
+                    target=self._receiver.receive,
+                    name=f"{str(ctx.step).capitalize()}Receiver{i}",
+                    args=(ctx,),
                 )
                 receiver.start()
                 receivers.append(receiver)
@@ -176,31 +169,32 @@ class Dags(BaseDags):
     def process(self, step: str, notebook: bool = True):
         self.step = get_step(step=step)
         self.notebook = notebook
+        ctx = self._make_queue_ctx()
 
-        scheduled = self.get_scheduled()
+        scheduled = self._sender.get_scheduled(ctx)
         if len(scheduled) > 0:
-            LOGGER.info("start", extra={"label": str(self.step)})
+            LOGGER.info("start", extra={"label": str(ctx.step)})
 
             p = Process(target=self._process)
             p.start()
-            p.join(timeout=self.step.timeouts.step)
+            p.join(timeout=ctx.step.timeouts.step)
             p.terminate()
 
             try:
-                with self.get_azure_queue() as queue:
+                with ctx.get_azure_queue() as queue:
                     queue.delete()
             except AzureError:
                 pass
 
             if p.exitcode is None:
-                LOGGER.critical("timeout", extra={"label": str(self.step)})
-                raise ValueError(f"{self.step} timed out")
+                LOGGER.critical("timeout", extra={"label": str(ctx.step)})
+                raise ValueError(f"{ctx.step} timed out")
             else:
-                df = self.get_logs(str(self.step))
+                df = self.get_logs(str(ctx.step))
                 self.write_logs(df)
-                LOGGER.info("end", extra={"label": str(self.step)})
+                LOGGER.info("end", extra={"label": str(ctx.step)})
         else:
-            LOGGER.info("no job to schedule", extra={"label": str(self.step)})
+            LOGGER.info("no job to schedule", extra={"label": str(ctx.step)})
 
     # --- terminate ---
 

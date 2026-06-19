@@ -60,16 +60,17 @@ def get_log_table() -> AzureTable:
 class DagDba:
     def __init__(self, dags: BaseDagsProtocol):
         self._dags = dags
+        self._connection_info: Optional[dict] = None
+        self._table: Optional[AzureTable] = None
 
     @property
     def storage_account(self) -> str:
         return FABRICKS_STORAGE.get_storage_account()
 
     def get_connection_info(self) -> dict:
-        config = self._dags._config
-        if not config._connection_info:
-            config._connection_info = get_connection_info(self.storage_account)
-        return config._connection_info
+        if not self._connection_info:
+            self._connection_info = get_connection_info(self.storage_account)
+        return self._connection_info
 
     @retry(
         stop=stop_after_attempt(3),
@@ -78,18 +79,16 @@ class DagDba:
         reraise=True,
     )
     def get_table(self) -> AzureTable:
-        config = self._dags._config
-        if not config._table:
+        if not self._table:
             cs = self.get_connection_info()
-            config._table = AzureTable(f"t{config.schedule_id}", **dict(cs))
-        if config._table is None:
+            self._table = AzureTable(f"t{self._dags.schedule_id}", **dict(cs))
+        if self._table is None:
             raise ValueError("Azure table for logs not found")
-        return config._table
+        return self._table
 
     def __enter__(self):
         return self._dags
 
     def __exit__(self, *args, **kwargs):
-        config = self._dags._config
-        if config._table is not None:
-            config._table.__exit__()
+        if self._table is not None:
+            self._table.__exit__()

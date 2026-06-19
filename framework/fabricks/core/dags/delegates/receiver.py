@@ -6,50 +6,46 @@ from databricks.sdk.runtime import dbutils
 
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
-from fabricks.core.dags.protocols import DagsProtocol
+from fabricks.core.dags.queue import DagQueue
 from fabricks.core.dags.run import run
 
 
 class DagReceiver:
-    def __init__(self, dags: DagsProtocol):
-        self._dags = dags
-
-    def receive(self):
-        dags = self._dags
-        assert dags.step is not None
-        with dags.get_azure_queue() as queue, dags.get_azure_table() as azure_table:
+    def receive(self, ctx: DagQueue):
+        assert ctx.step is not None
+        with ctx.get_azure_queue() as queue, ctx.get_azure_table() as azure_table:
             while True:
                 response = queue.receive()
                 if response == queue.sentinel:
-                    LOGGER.info("no more job to process", extra={"label": str(dags.step)})
+                    LOGGER.info("no more job to process", extra={"label": str(ctx.step)})
                     break
 
                 elif response:
                     j = json.loads(response)
                     j["Status"] = "starting"
                     azure_table.upsert(j)
-                    LOGGER.info("start", extra=dags.extra(j))
+                    LOGGER.info("start", extra=ctx.extra(j))
 
                     try:
-                        if dags.notebook:
+                        if ctx.notebook:
                             path: str = PATH_NOTEBOOKS.joinpath("run").get_notebook_path()
                             dbutils.notebook.run(
                                 path=path,  # ty:ignore[unknown-argument]
-                                timeout_seconds=dags.step.timeouts.job,  # ty:ignore[unknown-argument]
+                                timeout_seconds=ctx.step.timeouts.job,  # ty:ignore[unknown-argument]
                                 arguments={  # ty:ignore[unknown-argument]
-                                    "schedule_id": dags.schedule_id,
-                                    "schedule": dags.schedule,
-                                    "step": str(dags.step),
+                                    "schedule_id": ctx.schedule_id,
+                                    "schedule": ctx.schedule,
+                                    "step": str(ctx.step),
                                     "job_id": j.get("JobId"),
                                     "job": j.get("Job"),
                                 },
                             )
                         else:
                             run(
-                                step=str(dags.step),
+                                step=str(ctx.step),
                                 job_id=j.get("JobId"),
-                                schedule_id=dags.schedule_id,
-                                schedule=dags.schedule,
+                                schedule_id=ctx.schedule_id,
+                                schedule=ctx.schedule,
                             )
 
                     except Exception:
@@ -58,7 +54,7 @@ class DagReceiver:
                     finally:
                         j["Status"] = "ok"
                         azure_table.upsert(j)
-                        LOGGER.info("end", extra=dags.extra(j))
+                        LOGGER.info("end", extra=ctx.extra(j))
                         TABLE_LOG_HANDLER.flush()
 
                     dependencies = azure_table.query(

@@ -334,6 +334,7 @@ class BaseJob(ABC):
         self._dba.drop()
 
     def create(self):
+        self.register_udfs()
         self._dba.create()
 
     def register(self):
