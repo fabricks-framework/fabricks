@@ -7,7 +7,7 @@ from pyspark.sql import DataFrame
 
 from fabricks.context import TIMEZONE
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.protocols import JobProtocol
+from fabricks.core.jobs.protocols import CheckableJob
 
 
 class CheckException(Exception):
@@ -50,7 +50,7 @@ class SkipRunTimeWarning(SkipWarning):
 
 
 class JobChecker:
-    def __init__(self, job: JobProtocol):
+    def __init__(self, job: CheckableJob):
         self._job = job
 
     def check_pre_run(self):

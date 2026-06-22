@@ -1,15 +1,15 @@
 import threading
 import time
 from multiprocessing import Process
-from typing import Any, List, Optional, Tuple
+from typing import Optional, Tuple
 from uuid import uuid4
 
 from azure.core.exceptions import AzureError
 from pyspark.sql import DataFrame
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from fabricks.context import SPARK
-from fabricks.core.dags.base import BaseDags
+from fabricks.core.dags.delegates.dba import DagDba
+from fabricks.core.dags.delegates.logger import DagLogger
 from fabricks.core.dags.delegates.querier import DagQuerier
 from fabricks.core.dags.delegates.receiver import DagReceiver
 from fabricks.core.dags.delegates.sender import DagSender
@@ -20,17 +20,48 @@ from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable
 
 
-class Dags(BaseDags):
+class Dags:
     def __init__(self, schedule: Optional[str] = None, schedule_id: Optional[str] = None):
         self.schedule = schedule or ""
+        self.schedule_id = schedule_id or str(uuid4().hex)
         self.step = None
         self.notebook = True
-        super().__init__(schedule_id=schedule_id or str(uuid4().hex))
+        self._dba = DagDba(self)
+        self._logger = DagLogger(self)
         self._querier = DagQuerier(self)
         self._sender = DagSender()
         self._receiver = DagReceiver()
 
-    # --- DagQuerier shims ---
+    # --- DagDba ---
+
+    @property
+    def storage_account(self) -> str:
+        return self._dba.storage_account
+
+    def get_connection_info(self) -> dict:
+        return self._dba.get_connection_info()
+
+    def get_table(self) -> AzureTable:
+        return self._dba.get_table()
+
+    def __enter__(self):
+        return self._dba.__enter__()
+
+    def __exit__(self, *args, **kwargs):
+        return self._dba.__exit__(*args, **kwargs)
+
+    # --- DagLogger ---
+
+    def get_logs(self, step: Optional[str] = None) -> DataFrame:
+        return self._logger.get_logs(step)
+
+    def write_logs(self, df: DataFrame):
+        return self._logger.write_logs(df)
+
+    def remove_invalid_characters(self, s: str) -> str:
+        return self._logger.remove_invalid_characters(s)
+
+    # --- DagQuerier ---
 
     def get_jobs(self) -> DataFrame:
         return self._querier.get_jobs()
@@ -98,37 +129,7 @@ class Dags(BaseDags):
             connection_info=self.get_connection_info(),
         )
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type((Exception, AzureError)),
-        reraise=True,
-    )
-    def query(self, data: Any) -> List[dict]:
-        with self.get_azure_table() as azure_table:
-            return azure_table.query(data)
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type((Exception, AzureError)),
-        reraise=True,
-    )
-    def upsert(self, data: Any) -> None:
-        with self.get_azure_table() as azure_table:
-            azure_table.upsert(data)
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=10),
-        retry=retry_if_exception_type((Exception, AzureError)),
-        reraise=True,
-    )
-    def delete(self, data: Any) -> None:
-        with self.get_azure_table() as azure_table:
-            azure_table.delete(data)
-
-    # --- DagSender shims ---
+    # --- DagSender ---
 
     def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict]:
         return self._sender.get_scheduled(self._make_queue_ctx(), azure_table)
@@ -136,7 +137,7 @@ class Dags(BaseDags):
     def send(self):
         return self._sender.send(self._make_queue_ctx())
 
-    # --- DagReceiver shim ---
+    # --- DagReceiver ---
 
     def receive(self):
         return self._receiver.receive(self._make_queue_ctx())

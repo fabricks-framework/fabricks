@@ -9,7 +9,7 @@ from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
-from fabricks.cdc import CDCIntentContext
+from fabricks.cdc import CDCIntentContext, apply_memory_mode, apply_scd_key_flags
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.cdc.scd0 import SCD0
 from fabricks.context.log import DEFAULT_LOGGER
@@ -269,17 +269,14 @@ class Gold(BaseJob):
         if add_metadata is None:
             add_metadata = self.step_conf.options.metadata or False
 
-        context = cast(
-            CDCIntentContext,
-            {
-                "add_metadata": add_metadata,
-                "soft_delete": soft_delete,
-                "deduplicate_key": None,
-                "deduplicate_hash": True if self.slowly_changing_dimension else None,
-                "deduplicate": False,
-                "rectify": False,
-            },
-        )
+        context: CDCIntentContext = {
+            "add_metadata": add_metadata,
+            "soft_delete": soft_delete,
+            "deduplicate_key": None,
+            "deduplicate_hash": True if self.slowly_changing_dimension else None,
+            "deduplicate": False,
+            "rectify": False,
+        }
 
         # force deduplicate
         if deduplicate is not None:
@@ -291,19 +288,14 @@ class Gold(BaseJob):
         if rectify is not None:
             context["rectify"] = rectify
 
-        # add key and hash when needed
+        # add key and hash for nocdc update mode and SCD — shared helpers cover both cases
         if self.mode == "update" and self.change_data_capture == "nocdc":
             if "__key" not in df.columns:
                 context["add_key"] = True
             if "__hash" not in df.columns:
                 context["add_hash"] = True
 
-        # add key and hash when needed
-        if self.slowly_changing_dimension:
-            if "__key" not in df.columns:
-                context["add_key"] = True
-            if "__hash" not in df.columns:
-                context["add_hash"] = True
+        apply_scd_key_flags(context, self.slowly_changing_dimension, df)
 
         if self.slowly_changing_dimension:
             if "__operation" not in df.columns:
@@ -330,10 +322,9 @@ class Gold(BaseJob):
             if self.mode == "append" and "__timestamp" in df.columns:
                 context["slice"] = "update"
 
-        if self.mode == "memory":
-            context["mode"] = "complete"
+        apply_memory_mode(context, self.mode)
 
-        # correct __valid_from
+        # correct __valid_from — configurable per job, defaults to True for scd2
         if self.change_data_capture == "scd2":
             context["correct_valid_from"] = (
                 self.options.correct_valid_from if self.options.correct_valid_from is not None else True

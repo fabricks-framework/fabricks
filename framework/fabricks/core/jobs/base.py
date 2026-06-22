@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
-from functools import cached_property, partial
+from functools import cached_property
 from typing import List, Optional, Sequence, Union
 
 from pyspark.sql import DataFrame, SparkSession
@@ -11,20 +11,12 @@ from typing_extensions import deprecated
 
 from fabricks.cdc import SCD1, SCD2, CDCIntentContext, NoCDC
 from fabricks.cdc.scd0 import SCD0
-from fabricks.context import IS_TYPE_WIDENING
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.config import JobConfig
-from fabricks.core.jobs.delegates.checker import (
-    JobChecker,
-    PostRunCheckException,
-    PostRunCheckWarning,
-    PreRunCheckException,
-    PreRunCheckWarning,
-    SkipRunCheckWarning,
-    SkipRunTimeWarning,
-)
-from fabricks.core.jobs.delegates.dba import JobDBA, SchemaDriftException
-from fabricks.core.jobs.delegates.invoker import JobInvoker, PostRunInvokeException, PreRunInvokeException
+from fabricks.core.jobs.delegates.checker import JobChecker
+from fabricks.core.jobs.delegates.dba import JobDBA
+from fabricks.core.jobs.delegates.invoker import JobInvoker
+from fabricks.core.jobs.delegates.runner import JobRunner
 from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.table import SchemaDiff, Table
 from fabricks.models import (
@@ -52,7 +44,6 @@ from fabricks.models import (
     TOptions,
     UpdaterOptions,
 )
-from fabricks.utils.write import write_stream
 
 _UDF_PATTERN = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
 
@@ -79,6 +70,7 @@ class BaseJob(ABC):
         self._checker = JobChecker(self)
         self._invoker = JobInvoker(self)
         self._dba = JobDBA(self)
+        self._runner = JobRunner(self, self._checker, self._invoker)
 
     _udf_registered: Optional[bool] = None  # Keep mutable - state flag
 
@@ -312,11 +304,16 @@ class BaseJob(ABC):
     def vacuum(self):
         self._dba.vacuum()
 
-    def update_dependencies(self):
-        self._dba.update_dependencies()
-
     @abstractmethod
     def get_dependencies(self) -> Sequence[JobDependency]: ...
+
+    def update_dependencies(self):
+        DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
+        deps = self.get_dependencies()
+        if deps:
+            df = self.spark.createDataFrame([d.model_dump() for d in deps])
+            cdc = NoCDC("fabricks", self.step, "dependencies")
+            cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
 
     def rm(self):
         self._dba.rm()
@@ -381,63 +378,8 @@ class BaseJob(ABC):
     def restore(self, last_version: str | None = None, last_batch: str | None = None):
         self._dba.restore(last_version, last_batch)
 
-    def _for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs):
-        DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
-        if batch is not None:
-            DEFAULT_LOGGER.debug(f"batch {batch}", extra={"label": self})
-
-        df = self.base_transform(df)
-
-        diffs = self.get_schema_differences(df)
-        if diffs:
-            if self.schema_drift or kwargs.get("reload", False):
-                DEFAULT_LOGGER.warning("schema drifted", extra={"label": self, "diffs": diffs})
-                self.update_schema(df=df)
-
-            else:
-                only_type_widening_compatible = all(d.type_widening_compatible for d in diffs if d.status == "changed")
-                if only_type_widening_compatible and self.table.type_widening_enabled and IS_TYPE_WIDENING:
-                    self.update_schema(df=df, widen_types=True)
-                else:
-                    raise SchemaDriftException.from_diffs(str(self), diffs)
-
-        self.for_each_batch(df, batch, **kwargs)
-
-        if batch is not None:
-            self.table.set_property("fabricks.last_batch", batch)
-
-        self.table.create_restore_point()
-        DEFAULT_LOGGER.debug("end (for each batch)", extra={"label": self})
-
     def for_each_run(self, **kwargs):
-        DEFAULT_LOGGER.debug("start (for each run)", extra={"label": self})
-
-        if self.virtual:
-            self.create_or_replace_view()
-
-        elif self.persist:
-            assert self.table.registered, f"{self} is not registered"
-
-            df = self.get_data(stream=self.stream, **kwargs)
-            assert df is not None, "no data"
-
-            partial(self._for_each_batch, **kwargs)
-
-            if self.stream:
-                DEFAULT_LOGGER.debug("use streaming", extra={"label": self})
-                write_stream(
-                    df,
-                    checkpoints_path=self.paths.to_checkpoints,
-                    func=self._for_each_batch,
-                    timeout=self.timeout,
-                )
-            else:
-                self._for_each_batch(df, **kwargs)
-
-        else:
-            raise ValueError(f"{self.mode} - not allowed")
-
-        DEFAULT_LOGGER.debug("end (for each run)", extra={"label": self})
+        return self._runner.for_each_run(**kwargs)
 
     def run(
         self,
@@ -451,121 +393,17 @@ class BaseJob(ABC):
         compute_statistics: bool | None = None,
         **kwargs,
     ):
-        """
-        Run the job.
-
-        Args:
-            retry (bool, optional): Whether to retry the execution in case of failure. Defaults to True.
-            schedule (str, optional): The schedule to run the job on. Defaults to None.
-            schedule_id (str, optional): The ID of the schedule. Defaults to None.
-            invoke (bool, optional): Whether to invoke pre-run and post-run methods. Defaults to True.
-        """
-        last_version = None
-        last_batch = None
-        exception = None
-
-        if self.persist:
-            last_version = self.table.get_property("fabricks.last_version")
-            if last_version is not None:
-                DEFAULT_LOGGER.debug(f"last version {last_version}", extra={"label": self})
-            else:
-                last_version = str(self.table.last_version)
-
-            if self.stream:
-                last_batch = self.table.get_property("fabricks.last_batch")
-                if last_batch is not None:
-                    DEFAULT_LOGGER.debug(f"last batch {last_batch}", extra={"label": self})
-
-        try:
-            DEFAULT_LOGGER.info("start (run)", extra={"label": self})
-
-            if reload:
-                DEFAULT_LOGGER.debug("force reload", extra={"label": self})
-
-            if not reload:
-                self._checker.check_run_before()
-                self._checker.check_run_after()
-
-                self._checker.check_skip_run()
-
-            if invoke:
-                self._invoker.invoke_pre_run(schedule=schedule)
-
-            try:
-                self._checker.check_pre_run()
-            except PreRunCheckWarning as e:
-                exception = e
-
-            self.for_each_run(schedule=schedule, reload=reload)
-
-            try:
-                self._checker.check_post_run()
-            except PostRunCheckWarning as e:
-                exception = e
-
-            self._checker.check_post_run_extra()
-
-            if invoke:
-                self._invoker.invoke_post_run(schedule=schedule)
-
-            if exception:
-                raise exception
-
-            if vacuum is None:
-                vacuum = self.options.vacuum if self.options and self.options.vacuum is not None else False
-            if optimize is None:
-                optimize = self.options.optimize if self.options and self.options.optimize is not None else False
-            if compute_statistics is None:
-                compute_statistics = (
-                    self.options.compute_statistics
-                    if self.options and self.options.compute_statistics is not None
-                    else False
-                )
-
-            if vacuum or optimize or compute_statistics:
-                self.maintain(
-                    compute_statistics=compute_statistics,
-                    optimize=optimize,
-                    vacuum=vacuum,
-                )
-
-            DEFAULT_LOGGER.info("end (run)", extra={"label": self})
-
-        except SkipRunCheckWarning as e:
-            DEFAULT_LOGGER.warning("skip run", extra={"label": self})
-            raise e
-
-        except SkipRunTimeWarning as e:
-            DEFAULT_LOGGER.warning("fail to pass time check", extra={"label": self})
-            raise e
-
-        except (PreRunCheckWarning, PostRunCheckWarning) as e:
-            DEFAULT_LOGGER.warning("fail to pass warning check", extra={"label": self})
-            raise e
-
-        except (PreRunInvokeException, PostRunInvokeException) as e:
-            DEFAULT_LOGGER.exception("fail to run invoker", extra={"label": self})
-            raise e
-
-        except (PreRunCheckException, PostRunCheckException) as e:
-            DEFAULT_LOGGER.exception("fail to pass check", extra={"label": self})
-            self.restore(last_version, last_batch)
-            raise e
-
-        except AssertionError as e:
-            DEFAULT_LOGGER.exception("fail to run", extra={"label": self})
-            self.restore(last_version, last_batch)
-            raise e
-
-        except Exception as e:
-            if not self.stream or not retry:
-                DEFAULT_LOGGER.exception("fail to run", extra={"label": self})
-                self.restore(last_version, last_batch)
-                raise e
-
-            else:
-                DEFAULT_LOGGER.warning("retry to run", extra={"label": self})
-                self.run(retry=False, schedule_id=schedule_id, schedule=schedule)
+        return self._runner.run(
+            retry=retry,
+            schedule=schedule,
+            schedule_id=schedule_id,
+            invoke=invoke,
+            reload=reload,
+            vacuum=vacuum,
+            optimize=optimize,
+            compute_statistics=compute_statistics,
+            **kwargs,
+        )
 
     @abstractmethod
     def overwrite(self) -> None: ...

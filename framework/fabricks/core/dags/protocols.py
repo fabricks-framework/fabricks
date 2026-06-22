@@ -4,7 +4,7 @@ from typing import Protocol
 
 
 class BaseDagsProtocol(Protocol):
-    """Satisfied by BaseDags — used by DagDba and DagLogger."""
+    """Satisfied by Dags — used by DagDba and DagLogger."""
 
     schedule_id: str
 

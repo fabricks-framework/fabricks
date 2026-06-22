@@ -9,7 +9,7 @@ from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.extenders import get_extender
 from fabricks.core.jobs.get_schedule import get_schedule
-from fabricks.core.jobs.protocols import JobProtocol
+from fabricks.core.jobs.protocols import InvocableJob
 from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
 from fabricks.models.exceptions import CustomException
 
@@ -23,7 +23,7 @@ class PostRunInvokeException(CustomException):
 
 
 class JobInvoker:
-    def __init__(self, job: JobProtocol):
+    def __init__(self, job: InvocableJob):
         self._job = job
 
     def invoke(self, schedule: Optional[str] = None, **kwargs):

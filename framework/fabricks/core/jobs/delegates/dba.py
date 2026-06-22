@@ -6,9 +6,8 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
 from typing_extensions import deprecated
 
-from fabricks.cdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.protocols import JobProtocol
+from fabricks.core.jobs.protocols import StorableJob
 from fabricks.metastore.table import SchemaDiff
 from fabricks.metastore.view import create_or_replace_global_temp_view
 
@@ -61,13 +60,17 @@ class JobDBA:
     never fetches data on its own: the job passes DataFrames in when required.
     """
 
-    def __init__(self, job: JobProtocol):
+    def __init__(self, job: StorableJob):
         self._job = job
 
     # --- table DDL build (absorbed from JobTable) ---
 
     def _partitioning_columns(self, df: DataFrame) -> Optional[List[str]]:
-        columns = self._job.table_options.partition_by if self._job.table_options and self._job.table_options.partition_by else []
+        columns = (
+            self._job.table_options.partition_by
+            if self._job.table_options and self._job.table_options.partition_by
+            else []
+        )
         if columns:
             return columns
 
@@ -75,15 +78,19 @@ class JobDBA:
         if columns:
             DEFAULT_LOGGER.debug(
                 f"found {len(columns)} partitioning column(s) ({', '.join(columns)})",
-                extra={"label": job},
+                extra={"label": self._job},
             )
             return columns
 
-        DEFAULT_LOGGER.debug("could not determine any partitioning column", extra={"label": job})
+        DEFAULT_LOGGER.debug("could not determine any partitioning column", extra={"label": self._job})
         return None
 
     def _clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
-        columns = self._job.table_options.cluster_by if self._job.table_options and self._job.table_options.cluster_by else []
+        columns = (
+            self._job.table_options.cluster_by
+            if self._job.table_options and self._job.table_options.cluster_by
+            else []
+        )
         if columns:
             return columns
 
@@ -97,7 +104,7 @@ class JobDBA:
             else:
                 DEFAULT_LOGGER.warning(
                     f"{column} found but {c_type} not allowed for clustering column",
-                    extra={"label": job},
+                    extra={"label": self._job},
                 )
 
         if "__source" in df_types:
@@ -115,11 +122,11 @@ class JobDBA:
         if columns:
             DEFAULT_LOGGER.debug(
                 f"found {len(columns)} clustering column(s) ({', '.join(columns)})",
-                extra={"label": job},
+                extra={"label": self._job},
             )
             return columns
 
-        DEFAULT_LOGGER.debug("could not determine any clustering column", extra={"label": job})
+        DEFAULT_LOGGER.debug("could not determine any clustering column", extra={"label": self._job})
         return None
 
     @staticmethod
@@ -153,14 +160,22 @@ class JobDBA:
             job_value = getattr(self._job.table_options, attribute, None) if self._job.table_options else None
             if job_value is not None:
                 return job_value
-            step_value = getattr(self._job.step_conf.table_options, attribute, None) if self._job.step_conf.table_options else None
+            step_value = (
+                getattr(self._job.step_conf.table_options, attribute, None)
+                if self._job.step_conf.table_options
+                else None
+            )
             if step_value is not None:
                 return step_value
         elif into == "spark":
             job_value = getattr(self._job.spark_options, attribute, None) if self._job.spark_options else None
             if job_value is not None:
                 return job_value
-            step_value = getattr(self._job.step_conf.spark_options, attribute, None) if self._job.step_conf.spark_options else None
+            step_value = (
+                getattr(self._job.step_conf.spark_options, attribute, None)
+                if self._job.step_conf.spark_options
+                else None
+            )
             if step_value is not None:
                 return step_value
         return default
@@ -229,7 +244,7 @@ class JobDBA:
 
             # if dataframe, reference is passed (BUG)
             name = f"{self._job.step}_{self._job.topic}_{self._job.item}__init"
-            global_temp_view = create_or_replace_global_temp_view(name=name, df=batch_df.limit(0), job=job)
+            global_temp_view = create_or_replace_global_temp_view(name=name, df=batch_df.limit(0), job=self._job)
             sql = f"select * from {global_temp_view}"
 
             self._job.cdc.create_table(
@@ -284,10 +299,10 @@ class JobDBA:
 
     def create_table(self):
         if self._job.table.exists():
-            DEFAULT_LOGGER.debug("table already exists, skipped creation", extra={"label": job})
+            DEFAULT_LOGGER.debug("table already exists, skipped creation", extra={"label": self._job})
             return
 
-        DEFAULT_LOGGER.debug("create table", extra={"label": job})
+        DEFAULT_LOGGER.debug("create table", extra={"label": self._job})
 
         df = self._job.get_data(stream=self._job.stream, schema_only=True)
         if df:
@@ -329,13 +344,15 @@ class JobDBA:
                     fabricks.dependencies d
                     inner join fabricks.jobs j on d.job_id = j.job_id
                 where
-                    parent like '{job}'
+                    parent like '{self._job}'
                 """
             ).collect()[0]
             from typing import cast
 
             if cast(int, row.count) > 0:
-                DEFAULT_LOGGER.warning(f"{row.count} children found", extra={"label": job, "content": row.children})
+                DEFAULT_LOGGER.warning(
+                    f"{row.count} children found", extra={"label": self._job, "content": row.children}
+                )
         except Exception:
             pass
 
@@ -343,7 +360,7 @@ class JobDBA:
         self.rm()
 
     def truncate(self):
-        DEFAULT_LOGGER.warning("truncate", extra={"label": job})
+        DEFAULT_LOGGER.warning("truncate", extra={"label": self._job})
         self.rm()
         if self._job.persist:
             self._job.table.truncate()
@@ -352,19 +369,19 @@ class JobDBA:
 
     def rm(self):
         if self._job.paths.to_schema.exists():
-            DEFAULT_LOGGER.info("delete schema folder", extra={"label": job})
+            DEFAULT_LOGGER.info("delete schema folder", extra={"label": self._job})
             self._job.paths.to_schema.rm()
         self.rm_checkpoints()
 
     def rm_checkpoints(self):
         if self._job.paths.to_checkpoints.exists():
-            DEFAULT_LOGGER.info("delete checkpoints folder", extra={"label": job})
+            DEFAULT_LOGGER.info("delete checkpoints folder", extra={"label": self._job})
             self._job.paths.to_checkpoints.rm()
 
     def rm_commit(self, id):
         path = self._job.paths.to_commits.joinpath(str(id))
         if path.exists():
-            DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": job})
+            DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": self._job})
             path.rm()
 
     # --- schema management ---
@@ -475,7 +492,7 @@ class JobDBA:
         compute_statistics: Optional[bool] = True,
     ):
         if self._job.mode == "memory":
-            DEFAULT_LOGGER.debug("could not maintain (memory)", extra={"label": job})
+            DEFAULT_LOGGER.debug("could not maintain (memory)", extra={"label": self._job})
         else:
             if vacuum:
                 self.vacuum()
@@ -486,7 +503,7 @@ class JobDBA:
 
     def vacuum(self):
         if self._job.mode == "memory":
-            DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"label": job})
+            DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"label": self._job})
         else:
             job_days = self._job.table_options.retention_days if self._job.table_options else None
             step_days = self._job.step_table_options.retention_days if self._job.step_table_options else None
@@ -523,21 +540,13 @@ class JobDBA:
 
     def register_external_table(self, file_format: str, uri: str):
         try:
-            self._job.spark.sql(f"create table if not exists {self._job.qualified_name} using {file_format} location '{uri}'")
+            self._job.spark.sql(
+                f"create table if not exists {self._job.qualified_name} using {file_format} location '{uri}'"
+            )
         except Exception as e:
-            DEFAULT_LOGGER.exception("could not register external table", extra={"label": job})
+            DEFAULT_LOGGER.exception("could not register external table", extra={"label": self._job})
             raise e
 
     def drop_external_table(self):
-        DEFAULT_LOGGER.warning("remove external table from metastore", extra={"label": job})
+        DEFAULT_LOGGER.warning("remove external table from metastore", extra={"label": self._job})
         self._job.spark.sql(f"drop table if exists {self._job.qualified_name}")
-
-    # --- dependencies ---
-
-    def update_dependencies(self):
-        DEFAULT_LOGGER.info("update dependencies", extra={"label": job})
-        deps = self._job.get_dependencies()
-        if deps:
-            df = self._job.spark.createDataFrame([d.model_dump() for d in deps])
-            cdc = NoCDC("fabricks", self._job.step, "dependencies")
-            cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self._job.job_id}'", uuid=True)

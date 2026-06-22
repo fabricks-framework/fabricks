@@ -5,7 +5,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
 from pyspark.sql.types import Row
 
-from fabricks.cdc import CDCIntentContext
+from fabricks.cdc import CDCIntentContext, apply_correct_valid_from, apply_memory_mode, apply_scd_key_flags
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base import BaseJob
@@ -274,16 +274,15 @@ class Silver(BaseJob):
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
 
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> CDCIntentContext:
-        # if dataframe, reference is passed (BUG)
-        name = f"{self.step}_{self.topic}_{self.item}__check"
-        global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
-
         not_append = not self.mode == "append"
         nocdc = self.change_data_capture == "nocdc"
         order_duplicate_by = self.options.order_duplicate_by or {}
 
         rectify = False
         if not_append and not nocdc:
+            # if dataframe, reference is passed (BUG)
+            name = f"{self.step}_{self.topic}_{self.item}__check"
+            global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
             if not self.stream and self.mode == "update" and self.table.exists():
                 timestamp = "__valid_from" if self.change_data_capture == "scd2" else "__timestamp"
                 extra_check = f" and __timestamp > coalesce((select max({timestamp}) from {self}), cast('0001-01-01' as timestamp))"
@@ -317,12 +316,9 @@ class Silver(BaseJob):
             "order_duplicate_by": order_duplicate_by,
         }
 
-        if self.mode == "memory":
-            context["mode"] = "complete"
-
-        if self.slowly_changing_dimension:
-            if "__key" not in df.columns:
-                context["add_key"] = True
+        apply_memory_mode(context, self.mode)
+        apply_scd_key_flags(context, self.slowly_changing_dimension, df)
+        apply_correct_valid_from(context, self.change_data_capture)
 
         if nocdc and self.mode == "memory":
             if "__operation" not in df.columns:
@@ -332,9 +328,6 @@ class Silver(BaseJob):
             context["slice"] = "latest"
         if not self.stream and self.mode == "update":
             context["slice"] = "update"
-
-        if self.change_data_capture == "scd2":
-            context["correct_valid_from"] = True
 
         if "__operation" in df.columns:
             context["exclude"] = ["__operation"]
