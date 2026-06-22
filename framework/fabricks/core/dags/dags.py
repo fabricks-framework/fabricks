@@ -1,7 +1,7 @@
 import threading
 import time
 from multiprocessing import Process
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 from uuid import uuid4
 
 from azure.core.exceptions import AzureError
@@ -38,14 +38,15 @@ class Dags:
     def storage_account(self) -> str:
         return self._dba.storage_account
 
-    def get_connection_info(self) -> dict:
+    def get_connection_info(self) -> dict[str, Any]:
         return self._dba.get_connection_info()
 
     def get_table(self) -> AzureTable:
         return self._dba.get_table()
 
-    def __enter__(self):
-        return self._dba.__enter__()
+    def __enter__(self) -> "Dags":
+        self._dba.__enter__()
+        return self
 
     def __exit__(self, *args, **kwargs):
         return self._dba.__exit__(*args, **kwargs)
@@ -131,7 +132,7 @@ class Dags:
 
     # --- DagSender ---
 
-    def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict]:
+    def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict[str, Any]]:
         return self._sender.get_scheduled(self._make_queue_ctx(), azure_table)
 
     def send(self):

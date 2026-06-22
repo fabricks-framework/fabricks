@@ -1,5 +1,5 @@
 import json
-from typing import Callable, overload
+from typing import Any, Callable, overload
 
 from databricks.sdk.runtime import dbutils
 from pyspark.errors.exceptions.base import IllegalArgumentException
@@ -17,9 +17,9 @@ def run(
     schedule_id: str | None = None,
     schedule: str | None = None,
     notebook_id: str | None = None,
-    pre_run_callable: Callable | None = None,
-    post_run_callable: Callable | None = None,
-    data: dict | None = None,
+    pre_run_callable: Callable[..., Any] | None = None,
+    post_run_callable: Callable[..., Any] | None = None,
+    data: dict[str, Any] | None = None,
     **kwargs,
 ) -> None: ...
 
@@ -33,9 +33,9 @@ def run(
     schedule_id: str | None = None,
     schedule: str | None = None,
     notebook_id: str | None = None,
-    pre_run_callable: Callable | None = None,
-    post_run_callable: Callable | None = None,
-    data: dict | None = None,
+    pre_run_callable: Callable[..., Any] | None = None,
+    post_run_callable: Callable[..., Any] | None = None,
+    data: dict[str, Any] | None = None,
     **kwargs,
 ) -> None: ...
 
@@ -47,9 +47,9 @@ def run(
     schedule_id: str | None = None,
     schedule: str | None = None,
     notebook_id: str | None = None,
-    pre_run_callable: Callable | None = None,
-    post_run_callable: Callable | None = None,
-    data: dict | None = None,
+    pre_run_callable: Callable[..., Any] | None = None,
+    post_run_callable: Callable[..., Any] | None = None,
+    data: dict[str, Any] | None = None,
     **kwargs,
 ) -> None: ...
 
@@ -63,9 +63,9 @@ def run(
     schedule_id: str | None = None,
     schedule: str | None = None,
     notebook_id: str | None = None,
-    pre_run_callable: Callable | None = None,
-    post_run_callable: Callable | None = None,
-    data: dict | None = None,
+    pre_run_callable: Callable[..., Any] | None = None,
+    post_run_callable: Callable[..., Any] | None = None,
+    data: dict[str, Any] | None = None,
     **kwargs,
 ) -> None:
     if job is None:
@@ -90,7 +90,7 @@ def run(
 
     if notebook_id is None:
         try:
-            context = json.loads(dbutils.notebook.entry_point.getDbutils().notebook().getContext().toJson())  # type: ignore
+            context = json.loads(dbutils.notebook.entry_point.getDbutils().notebook().getContext().toJson())  # pyright: ignore[reportAttributeAccessIssue]
             notebook_id = context.get("tags").get("jobId")
         except:  # noqa: E722
             notebook_id = None
@@ -99,7 +99,7 @@ def run(
     assert schedule_id is not None
     assert schedule is not None
 
-    extra = {
+    extra: dict[str, Any] = {
         "partition_key": schedule_id,
         "schedule_id": schedule_id,
         "schedule": schedule,

@@ -68,7 +68,7 @@ class BronzeOptions(BaseOptions):
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
-    mode: AllowedModesBronze
+    mode: AllowedModesBronze  # pyright: ignore[reportIncompatibleVariableOverride]
     type: AllowedTypes | None = None
 
     uri: str
@@ -87,7 +87,7 @@ class SilverOptions(BaseOptions):
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
-    mode: AllowedModesSilver
+    mode: AllowedModesSilver  # pyright: ignore[reportIncompatibleVariableOverride]
     type: AllowedTypes | None = None
 
     filter_where: str | None = None
@@ -101,7 +101,7 @@ class GoldOptions(BaseOptions):
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
 
-    mode: AllowedModesGold
+    mode: AllowedModesGold  # pyright: ignore[reportIncompatibleVariableOverride]
     type: AllowedTypes | None = None
 
     update_where: str | None = None
@@ -151,20 +151,20 @@ class JobConfBase(BaseModel):
 class JobConfBronze(JobConfBase):
     """Bronze-specific job configuration."""
 
-    options: BronzeOptions
+    options: BronzeOptions  # pyright: ignore[reportIncompatibleVariableOverride]
     parser_options: ParserOptions | None = None
 
 
 class JobConfSilver(JobConfBase):
     """Silver-specific job configuration."""
 
-    options: SilverOptions
+    options: SilverOptions  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 class JobConfGold(JobConfBase):
     """Gold-specific job configuration."""
 
-    options: GoldOptions
+    options: GoldOptions  # pyright: ignore[reportIncompatibleVariableOverride]
     register_options: RegisterOptions | None = None
 
 

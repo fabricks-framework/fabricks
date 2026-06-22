@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union
 
 from fabricks.context import FABRICKS_STORAGE, Steps
 from fabricks.context.log import DEFAULT_LOGGER
@@ -74,7 +74,7 @@ class Deploy:
         nowait: bool = False,
         mode: Optional[Literal["parallel", "sequential"]] = "parallel",
     ):
-        def _call(func: Callable, operation: str):
+        def _call(func: Callable[..., Any], operation: str):
             try:
                 func()
             except Exception as e:

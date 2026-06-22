@@ -8,7 +8,7 @@ from fabricks.utils.variables import build_variable_lookup, substitute_value
 
 
 @lru_cache(maxsize=128)
-def _read_yaml_cached(file: str) -> list[dict]:
+def _read_yaml_cached(file: str) -> list[dict[str, Any]]:
     """Cache YAML file reads with LRU eviction. Max 128 unique file paths cached."""
     with open(file, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
@@ -20,7 +20,7 @@ def read_yaml(
     preferred_file_name: Optional[str] = None,
     variables: Optional[dict[str, Any]] = None,
     strict: bool = False,
-) -> Iterable[dict]:
+) -> Iterable[dict[str, Any]]:
     """
     Read YAML files from a path with optional variable substitution.
 
@@ -52,9 +52,9 @@ def read_yaml(
         data = _read_yaml_cached(file)
         for job_config in data:
             if root:
-                config = cast(dict, job_config[root])
+                config = cast(dict[str, Any], job_config[root])
             else:
-                config = cast(dict, job_config)
+                config = cast(dict[str, Any], job_config)
 
             if lookup:
                 config = substitute_value(config, lookup, strict=strict)

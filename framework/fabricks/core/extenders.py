@@ -1,13 +1,13 @@
-from typing import Callable
+from typing import Any, Callable
 
 from fabricks.context import IS_UNITY_CATALOG, PATH_EXTENDERS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import load_module_from_path
 
-EXTENDERS: dict[str, Callable] = {}
+EXTENDERS: dict[str, Callable[..., Any]] = {}
 
 
-def get_extender(name: str) -> Callable:
+def get_extender(name: str) -> Callable[..., Any]:
     path = PATH_EXTENDERS.joinpath(f"{name}.py")
     if not IS_UNITY_CATALOG:
         assert path.exists(), "no valid extender found in {path.string}"
@@ -21,7 +21,7 @@ def get_extender(name: str) -> Callable:
 
 
 def extender(name: str):
-    def decorator(fn: Callable):
+    def decorator(fn: Callable[..., Any]):
         EXTENDERS[name] = fn
         return fn
 

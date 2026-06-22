@@ -1,3 +1,5 @@
+from typing import Any
+
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.schedules.get_schedule import get_schedule
@@ -5,15 +7,16 @@ from fabricks.core.schedules.get_schedules import get_schedules_df
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-def create_or_replace_view_internal(name: str, options: dict):
+def create_or_replace_view_internal(name: str, options: dict[str, Any]):
     step = "-- no step provided"
     tag = "-- no tag provided"
     view = "-- no view provided"
 
     assert isinstance(options, dict), "options must be a dict"
 
-    if options.get("steps") is not None:
-        steps = [f"'{s}'" for s in options.get("steps")]  # type: ignore
+    steps_value = options.get("steps")
+    if steps_value is not None:
+        steps = [f"'{s}'" for s in steps_value]
         step = f"and j.step in ({', '.join(steps)})"
 
     if options.get("tag") is not None:

@@ -101,4 +101,4 @@ class GoldConf(Step):
 class PowerBI(Step):
     """PowerBI configuration."""
 
-    path_options: StepPathOptions | None = None
+    path_options: StepPathOptions | None = None  # pyright: ignore[reportIncompatibleVariableOverride]

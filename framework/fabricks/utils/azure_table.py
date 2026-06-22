@@ -79,7 +79,7 @@ class AzureTable:
         retry=retry_if_exception_type((Exception)),
         reraise=True,
     )
-    def query(self, query: str) -> List:
+    def query(self, query: str) -> List[Any]:
         return list(self.table.query_entities(query))
 
     @retry(
@@ -88,7 +88,7 @@ class AzureTable:
         retry=retry_if_exception_type((Exception)),
         reraise=True,
     )
-    def list_all(self) -> List:
+    def list_all(self) -> List[Any]:
         return self.query("")
 
     def __enter__(self):
@@ -107,7 +107,7 @@ class AzureTable:
     def _submit_with_retry(self, data: Any):
         self.table.submit_transaction(data)
 
-    def submit(self, operations: List):
+    def submit(self, operations: List[Any]):
         partitions = set()
         for d in operations:
             partitions.add(d[1]["PartitionKey"])
@@ -122,7 +122,7 @@ class AzureTable:
                 for transaction in transactions:
                     self._submit_with_retry(transaction)
 
-    def delete(self, data: Union[List, DataFrame, dict]):
+    def delete(self, data: Union[List[Any], DataFrame, dict[str, Any]]):
         if isinstance(data, DataFrameLike):
             data = data.toPandas().to_dict("records")
         elif not isinstance(data, List):
@@ -131,7 +131,7 @@ class AzureTable:
         operations = [("delete", d) for d in data]
         self.submit(operations)
 
-    def upsert(self, data: Union[List, DataFrame, dict]):
+    def upsert(self, data: Union[List[Any], DataFrame, dict[str, Any]]):
         if isinstance(data, DataFrameLike):
             data = data.toPandas().to_dict("records")
         elif not isinstance(data, List):
@@ -148,7 +148,7 @@ class AzureTable:
         for p in self.list_all_partitions():
             self.truncate_partition(p)
 
-    def list_all_partitions(self) -> List:
+    def list_all_partitions(self) -> List[Any]:
         partitions = set()
         for d in self.list_all():
             partitions.add(d["PartitionKey"])

@@ -43,13 +43,13 @@ def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
 
 
 @deprecated("use run_in_parallel instead")
-def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], workers: int = 8) -> List[Any]:
+def run_threads(func: Callable[..., Any], iter: Union[List[Any], DataFrame, range, set[Any]], workers: int = 8) -> List[Any]:
     return run_in_parallel(func, iter, workers)
 
 
 def run_in_parallel(
-    func: Callable,
-    iterable: Union[List, DataFrame, range, set],
+    func: Callable[..., Any],
+    iterable: Union[List[Any], DataFrame, range, set[Any]],
     workers: int = 8,
     progress_bar: Optional[bool] = False,
     position: Optional[int] = None,
@@ -106,7 +106,7 @@ def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
     if timeout is None:
         timeout = 3600
 
-    dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs})  # type: ignore
+    dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs})  # pyright: ignore[reportCallIssue]
 
 
 def load_module_from_path(name: str, path: GitPath):

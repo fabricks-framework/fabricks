@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Optional, Sequence, Union, cast
+from typing import Any, Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -24,7 +24,7 @@ class Silver(BaseJob):
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
+        conf: Optional[Union[dict[str, Any], Row]] = None,
     ):
         super().__init__(
             "silver",
@@ -36,11 +36,11 @@ class Silver(BaseJob):
         )
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
         return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
         return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property
@@ -58,7 +58,7 @@ class Silver(BaseJob):
         """Direct access to typed silver step options."""
         return cast(StepSilverOptions, self.base_step_conf.options)
 
-    @cached_property
+    @property
     def stream(self) -> bool:
         _stream = self.options.stream
         if _stream is None:

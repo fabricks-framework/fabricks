@@ -86,8 +86,12 @@ errors = []
 # COMMAND ----------
 
 
-def _run(job: dict):
-    j = get_job(step=job.get("step"), topic=job.get("topic"), item=job.get("item"))  # type: ignore
+def _run(job: dict[str, str]):
+    step = job.get("step")
+    topic = job.get("topic")
+    item = job.get("item")
+    assert step is not None and topic is not None and item is not None
+    j = get_job(step=step, topic=topic, item=item)
     try:
         j.run()
     except Exception as e:
@@ -114,4 +118,4 @@ DEFAULT_LOGGER.setLevel(LOGLEVEL)
 
 # COMMAND ----------
 
-dbutils.notebook.exit(value="exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # pyright: ignore[reportCallIssue]

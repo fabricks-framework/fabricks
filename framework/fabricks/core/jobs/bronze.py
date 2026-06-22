@@ -1,6 +1,6 @@
 import os
 from functools import cached_property
-from typing import Optional, Sequence, Union, cast
+from typing import Any, Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
@@ -34,7 +34,7 @@ class Bronze(BaseJob):
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
+        conf: Optional[Union[dict[str, Any], Row]] = None,
     ):
         super().__init__(
             "bronze",
@@ -77,11 +77,11 @@ class Bronze(BaseJob):
         return cast(StepBronzeOptions, self.base_step_conf.options)
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
         return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
         return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property

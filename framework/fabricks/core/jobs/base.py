@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import List, Optional, Sequence, Union
+from typing import Any, List, Optional, Sequence, Union
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
@@ -64,12 +64,15 @@ class BaseJob(ABC):
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
+        conf: Optional[Union[dict[str, Any], Row]] = None,
     ):
         self._config = JobConfig(expand, step, topic=topic, item=item, job_id=job_id, conf=conf)
         self._checker = JobChecker(self)
         self._invoker = JobInvoker(self)
-        self._dba = JobDBA(self)
+        # BaseJob structurally satisfies StorableJob, but pyright cannot prove a
+        # `Self`-typed value assignable to a protocol (the protocol becomes
+        # invariant w.r.t. the concrete type). Safe by construction.
+        self._dba = JobDBA(self)  # pyright: ignore[reportArgumentType]
         self._runner = JobRunner(self, self._checker, self._invoker)
 
     _udf_registered: Optional[bool] = None  # Keep mutable - state flag
@@ -214,10 +217,10 @@ class BaseJob(ABC):
         raise NotImplementedError()
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str): ...
+    def from_step_topic_item(cls, step: str, topic: str, item: str) -> "BaseJob": ...
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str): ...
+    def from_job_id(cls, step: str, job_id: str) -> "BaseJob": ...
 
     def pip(self):
         pass
@@ -298,7 +301,12 @@ class BaseJob(ABC):
     def optimize(self, vacuum=True, optimize=True, analyze=True):
         self._dba.optimize(vacuum=vacuum, optimize=optimize, analyze=analyze)
 
-    def maintain(self, vacuum=True, optimize=True, compute_statistics=True):
+    def maintain(
+        self,
+        vacuum: Optional[bool] = True,
+        optimize: Optional[bool] = True,
+        compute_statistics: Optional[bool] = True,
+    ):
         self._dba.maintain(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
 
     def vacuum(self):

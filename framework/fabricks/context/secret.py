@@ -87,7 +87,7 @@ def _add_secret_to_spark(key: str, value: str, spark: Optional[SparkSession] = N
     spark.conf.set(key, value)  # needed for check (invalid configuration value detected for fs.azure.account.key)
 
     if not IS_UNITY_CATALOG:
-        spark._jsc.hadoopConfiguration().set(key, value)  # type: ignore
+        spark._jsc.hadoopConfiguration().set(key, value)  # pyright: ignore[reportOptionalMemberAccess, reportOptionalCall, reportCallIssue]
 
 
 def add_secret_to_spark(secret: Secret, uri: str, spark: Optional[SparkSession] = None):

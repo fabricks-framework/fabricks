@@ -88,7 +88,7 @@ class BaseParser(ABC):
         if "__rescued_data" not in df.columns:
             df = df.withColumn("__rescued_data", lit(None).cast(StringType()))
 
-        df = df.withColumn("__rescued_data", from_json(col("__rescued_data"), MapType(StringType(), StringType())))  # type: ignore
+        df = df.withColumn("__rescued_data", from_json(col("__rescued_data"), MapType(StringType(), StringType())))  # pyright: ignore[reportArgumentType]
 
         assert "__timestamp" in df.columns, "__timestamp mandatory in dataframe"
         assert df.select("__metadata.file_path"), "file_path mandatory in struct __metadata in dataframe"

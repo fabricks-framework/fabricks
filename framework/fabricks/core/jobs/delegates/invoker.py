@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
+from typing import Any, Optional
 
 from pyspark.sql import DataFrame
 
@@ -39,7 +39,7 @@ class JobInvoker:
 
     def _invoke_notebook(
         self,
-        invoker: dict | BaseInvokerOptions,
+        invoker: dict[str, Any] | BaseInvokerOptions,
         schedule: Optional[str] = None,
         **kwargs,
     ):
@@ -125,7 +125,7 @@ class JobInvoker:
     def _run_notebook(
         self,
         path,
-        arguments: Optional[dict] = None,
+        arguments: Optional[dict[str, Any]] = None,
         timeout: Optional[int] = None,
         schedule: Optional[str] = None,
     ):
@@ -153,9 +153,9 @@ class JobInvoker:
             arguments = {}
 
         return dbutils.notebook.run(
-            path=path.get_notebook_path(),  # type: ignore
-            timeout_seconds=timeout,  # type: ignore
-            arguments={  # type: ignore
+            path=path.get_notebook_path(),  # pyright: ignore[reportCallIssue]
+            timeout_seconds=timeout,  # pyright: ignore[reportCallIssue]
+            arguments={  # pyright: ignore[reportCallIssue]
                 "step": self._job.step,
                 "topic": self._job.topic,
                 "item": self._job.item,

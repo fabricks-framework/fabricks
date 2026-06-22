@@ -1,5 +1,5 @@
 import json
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from azure.core.exceptions import ResourceExistsError
 from azure.storage.queue import QueueClient
@@ -64,7 +64,7 @@ class AzureQueue:
     def clear(self):
         self.queue_client.clear_messages()
 
-    def send(self, message: Union[str, dict]):
+    def send(self, message: Union[str, dict[str, Any]]):
         if isinstance(message, dict):
             message = json.dumps(message)
         # print("sending ->", message)

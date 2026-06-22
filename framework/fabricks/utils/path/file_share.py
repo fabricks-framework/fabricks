@@ -1,6 +1,7 @@
 import os
 import re
 from pathlib import Path as PathlibPath
+from typing import Any, Iterator
 
 from fabricks.utils.path.base import BasePath
 
@@ -57,7 +58,7 @@ class FileSharePath(BasePath):
         depth: int | None = None,
         convert: bool | None = False,
         file_format: str | None = None,
-    ) -> list:
+    ) -> list[Any]:
         out = []
         if self.exists():
             if self.pathlibpath.is_file():
@@ -93,7 +94,7 @@ class FileSharePath(BasePath):
             list(self._rm(self.string))
             dbutils.fs.rm(self.string, recurse=True)
 
-    def _list_fs(self, depth: int) -> list:
+    def _list_fs(self, depth: int) -> list[Any]:
         from databricks.sdk.runtime import dbutils
 
         paths = dbutils.fs.ls(self.string)
@@ -121,13 +122,13 @@ class FileSharePath(BasePath):
         from databricks.sdk.runtime import dbutils
 
         for child in dbutils.fs.ls(path):
-            if child.isDir():  # type: ignore
+            if child.isDir():  # pyright: ignore[reportAttributeAccessIssue]
                 yield from self._yield_file_info(child.path)
 
             else:
                 yield child
 
-    def _yield(self, path: str | PathlibPath):
+    def _yield(self, path: str | PathlibPath) -> Iterator[str]:
         """Recursively yield all file paths in the distributed file system."""
         from databricks.sdk.runtime import dbutils
 
@@ -135,7 +136,7 @@ class FileSharePath(BasePath):
             path = str(path)
 
         for child in dbutils.fs.ls(path):
-            if child.isDir():  # type: ignore
+            if child.isDir():  # pyright: ignore[reportAttributeAccessIssue]
                 yield from self._yield(child.path)
             else:
                 yield str(child.path)
@@ -145,7 +146,7 @@ class FileSharePath(BasePath):
 
         try:
             for child in dbutils.fs.ls(path):
-                if child.isDir():  # type: ignore
+                if child.isDir():  # pyright: ignore[reportAttributeAccessIssue]
                     yield from self._rm(child.path)
                 else:
                     yield dbutils.fs.rm(child.path, recurse=True)

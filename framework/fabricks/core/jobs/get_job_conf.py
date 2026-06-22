@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Iterable, Optional, Protocol, Union, overload
+from typing import Any, Iterable, Optional, Protocol, Union, overload
 
 from pyspark.sql import DataFrame
 from pyspark.sql.types import Row
@@ -12,7 +12,7 @@ from fabricks.models import JobConf, get_job_id
 from fabricks.models.job import JobConfBronze, JobConfGold, JobConfSilver
 
 
-def _validate_conf(step: str, row: dict | Row) -> JobConf:
+def _validate_conf(step: str, row: dict[str, Any] | Row) -> JobConf:
     if isinstance(row, Row):
         row = row.asDict(recursive=True)
     row["step"] = step
@@ -36,13 +36,13 @@ class JobConfigLoader(Protocol):
         item: Optional[str] = None,
     ) -> JobConf: ...
 
-    def list_config(self, step: str, topic: Optional[str] = None) -> Iterable[dict]: ...
+    def list_config(self, step: str, topic: Optional[str] = None) -> Iterable[dict[str, Any]]: ...
 
     def get_jobs_df(self) -> DataFrame: ...
 
 
 class YamlJobConfigLoader(JobConfigLoader):
-    def _iter(self, step: str, topic: Optional[str] = None) -> Iterable[dict]:
+    def _iter(self, step: str, topic: Optional[str] = None) -> Iterable[dict[str, Any]]:
         from fabricks.core.steps import get_step
 
         s = get_step(step=step)
@@ -82,7 +82,7 @@ class YamlJobConfigLoader(JobConfigLoader):
 
         return _validate_conf(step=step, row=conf)
 
-    def list_config(self, step: str, topic: Optional[str] = None) -> Iterable[dict]:
+    def list_config(self, step: str, topic: Optional[str] = None) -> Iterable[dict[str, Any]]:
         yield from self._iter(step, topic=topic)
 
     def get_jobs_df(self) -> DataFrame:
@@ -131,7 +131,7 @@ class DeltaJobConfigLoader(JobConfigLoader):
 
         return _validate_conf(step=step, row=row)
 
-    def list_config(self, step: str, topic: Optional[str] = None) -> Iterable[dict]:
+    def list_config(self, step: str, topic: Optional[str] = None) -> Iterable[dict[str, Any]]:
         df = SPARK.sql(f"select * from fabricks.{step}_jobs")
         if topic:
             df = df.where(f"topic == '{topic}'")
@@ -150,11 +150,11 @@ def get_config_loader() -> JobConfigLoader:
 
 
 @overload
-def get_job_conf(step: str, *, job_id: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
+def get_job_conf(step: str, *, job_id: str, row: Optional[Union[Row, dict[str, Any]]] = None) -> JobConf: ...
 
 
 @overload
-def get_job_conf(step: str, *, topic: str, item: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
+def get_job_conf(step: str, *, topic: str, item: str, row: Optional[Union[Row, dict[str, Any]]] = None) -> JobConf: ...
 
 
 def get_job_conf(
@@ -162,7 +162,7 @@ def get_job_conf(
     job_id: Optional[str] = None,
     topic: Optional[str] = None,
     item: Optional[str] = None,
-    row: Optional[Union[Row, dict]] = None,
+    row: Optional[Union[Row, dict[str, Any]]] = None,
 ) -> JobConf:
     if row:
         return _validate_conf(step=step, row=row)

@@ -1,14 +1,14 @@
 import importlib.util
 import os
 import re
-from typing import Callable
+from typing import Any, Callable
 
 from pyspark.sql import SparkSession
 
 from fabricks.context import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, PATH_UDFS, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 
-UDFS: dict[str, Callable] = {}
+UDFS: dict[str, Callable[..., Any]] = {}
 
 UDF_SCHEMA = CONF_RUNTIME.udf_options.schema_name or "default" if CONF_RUNTIME.udf_options else "default"
 UDF_PREFIX = CONF_RUNTIME.udf_options.prefix or "udf_" if CONF_RUNTIME.udf_options else "udf_"
@@ -108,7 +108,7 @@ def register_udf(
 
 
 def udf(name: str):
-    def decorator(fn: Callable):
+    def decorator(fn: Callable[..., Any]):
         UDFS[name] = fn
         return fn
 

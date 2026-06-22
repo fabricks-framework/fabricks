@@ -1,4 +1,4 @@
-from typing import Optional, Union, overload
+from typing import Any, Optional, Union, overload
 
 from pyspark.sql.types import Row
 
@@ -91,7 +91,7 @@ def get_job_internal(
     topic: Optional[str] = None,
     item: Optional[str] = None,
     job_id: Optional[str] = None,
-    conf: Optional[Union[dict, Row]] = None,
+    conf: Optional[Union[dict[str, Any], Row]] = None,
 ):
     if step in Bronzes:
         from fabricks.core.jobs.bronze import Bronze

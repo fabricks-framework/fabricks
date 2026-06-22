@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import cached_property
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import Row
@@ -50,7 +50,7 @@ class JobConfig:
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
+        conf: Optional[Union[dict[str, Any], Row]] = None,
     ):
         self.expand = expand
         self.step = step
@@ -98,7 +98,7 @@ class JobConfig:
 
     @cached_property
     def step_table_options(self) -> Optional[StepTableOptions]:
-        return STEPS[self.step].table_options
+        return self.base_step_conf.table_options
 
     @property
     def step_spark_options(self) -> Optional[SparkOptions]:

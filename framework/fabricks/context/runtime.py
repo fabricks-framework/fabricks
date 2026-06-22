@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Any, Final, Optional
 from zoneinfo import ZoneInfo
 
 import yaml
@@ -23,7 +23,7 @@ STEPS = {**BRONZE, **SILVER, **GOLD}
 databases: list[Database] = CONF_RUNTIME.databases or []
 credentials = CONF_RUNTIME.credentials or {}
 variables = CONF_RUNTIME.variables or {}
-VARIABLES: dict = variables
+VARIABLES: dict[str, Any] = variables
 
 
 IS_UNITY_CATALOG: Final[bool] = CONF_RUNTIME.options.unity_catalog or False

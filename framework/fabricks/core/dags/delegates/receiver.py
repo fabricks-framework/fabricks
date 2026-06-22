@@ -30,9 +30,9 @@ class DagReceiver:
                         if ctx.notebook:
                             path: str = PATH_NOTEBOOKS.joinpath("run").get_notebook_path()
                             dbutils.notebook.run(
-                                path=path,  # ty:ignore[unknown-argument]
-                                timeout_seconds=ctx.step.timeouts.job,  # ty:ignore[unknown-argument]
-                                arguments={  # ty:ignore[unknown-argument]
+                                path=path,  # pyright: ignore[reportCallIssue]
+                                timeout_seconds=ctx.step.timeouts.job,  # pyright: ignore[reportCallIssue]
+                                arguments={  # pyright: ignore[reportCallIssue]
                                     "schedule_id": ctx.schedule_id,
                                     "schedule": ctx.schedule,
                                     "step": str(ctx.step),

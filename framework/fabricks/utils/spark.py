@@ -66,7 +66,7 @@ def get_dbutils(spark: Optional[SparkSession] = None) -> Optional[RemoteDbUtils]
             dbutils = DBUtils(spark)
 
         assert dbutils is not None
-        return dbutils  # type: ignore
+        return dbutils  # pyright: ignore[reportReturnType]
 
     except Exception:
         return None

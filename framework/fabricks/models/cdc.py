@@ -48,7 +48,7 @@ class CDCQueryContext:
     # add-column directives
     add_operation: Any  # str ("upsert") | bool | None
     add_source: Any
-    add_calculated_columns: list
+    add_calculated_columns: list[str]
     add_key: Optional[bool]
     add_hash: Optional[bool]
     add_timestamp: Optional[bool]
@@ -57,7 +57,7 @@ class CDCQueryContext:
     # extra
     order_duplicate_by: Optional[list[str]]
     overwrite: list[str]
-    cast: dict
+    cast: dict[str, str]
     # CTE parents (derived from switches; all required — computed by get_query_context)
     parent_slice: Optional[str]
     parent_rectify: Optional[str]
@@ -85,7 +85,7 @@ class CDCIntentContext(TypedDict, total=False):
     deduplicate_key: Optional[bool]
     deduplicate_hash: Optional[bool]
     rectify: Optional[bool]
-    order_duplicate_by: Optional[dict]
+    order_duplicate_by: Optional[dict[str, str]]
     slice: Optional[str]
     correct_valid_from: Optional[bool]
     add_key: Optional[bool]
@@ -94,7 +94,7 @@ class CDCIntentContext(TypedDict, total=False):
     add_timestamp: Optional[bool]
     add_last_updated: Optional[bool]
     add_metadata: Optional[bool]
-    exclude: Optional[list]
+    exclude: Optional[list[str]]
     delete_missing: Optional[bool]
 
 

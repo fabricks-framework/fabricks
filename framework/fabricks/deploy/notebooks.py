@@ -26,7 +26,7 @@ def deploy_notebook(notebook: str, overwrite: bool = True):
     if not os.path.exists(target):
         DEFAULT_LOGGER.debug(f"deploying {notebook}.py", extra={"label": "fabricks"})
 
-        with io.open(src, "rb") as file:  # type: ignore
+        with io.open(src, "rb") as file:  # pyright: ignore[reportCallIssue, reportArgumentType]
             content = file.read()
 
         encoded = base64.b64encode(content).decode("utf-8")

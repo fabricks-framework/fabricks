@@ -61,8 +61,8 @@ res = pytest.main(
 
 # COMMAND ----------
 
-assert res.value == 0, "failed"  # type: ignore
+assert res.value == 0, "failed"  # pyright: ignore[reportAttributeAccessIssue]
 
 # COMMAND ----------
 
-dbutils.notebook.exit(value="exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # pyright: ignore[reportCallIssue]

@@ -62,4 +62,4 @@ run_in_parallel(_reset, df, workers=16)
 
 # COMMAND ----------
 
-dbutils.notebook.exit(value="exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # pyright: ignore[reportCallIssue]

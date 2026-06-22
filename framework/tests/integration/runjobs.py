@@ -89,6 +89,6 @@ for iter in range(1, i + 1):
 
 # COMMAND ----------
 
-dbutils.notebook.exit(value="exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # pyright: ignore[reportCallIssue]
 
 # COMMAND ----------

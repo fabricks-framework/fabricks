@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 from azure.core.exceptions import AzureError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
@@ -22,7 +22,7 @@ def _get_access_key_from_os() -> Optional[str]:
     return os.environ.get("FABRICKS_ACCESS_KEY")
 
 
-def get_connection_info(storage_account: str) -> dict:
+def get_connection_info(storage_account: str) -> dict[str, Any]:
     credential = None
 
     if not IS_UNITY_CATALOG:
@@ -35,7 +35,7 @@ def get_connection_info(storage_account: str) -> dict:
 
         if FABRICKS_STORAGE_CREDENTIAL:
             assert DBUTILS
-            credential = DBUTILS.credentials.getServiceCredentialsProvider(FABRICKS_STORAGE_CREDENTIAL)  # type: ignore
+            credential = DBUTILS.credentials.getServiceCredentialsProvider(FABRICKS_STORAGE_CREDENTIAL)  # pyright: ignore[reportCallIssue]
 
         assert credential or access_key
 
@@ -60,14 +60,14 @@ def get_log_table() -> AzureTable:
 class DagDba:
     def __init__(self, dags: BaseDagsProtocol):
         self._dags = dags
-        self._connection_info: Optional[dict] = None
+        self._connection_info: Optional[dict[str, Any]] = None
         self._table: Optional[AzureTable] = None
 
     @property
     def storage_account(self) -> str:
         return FABRICKS_STORAGE.get_storage_account()
 
-    def get_connection_info(self) -> dict:
+    def get_connection_info(self) -> dict[str, Any]:
         if not self._connection_info:
             self._connection_info = get_connection_info(self.storage_account)
         return self._connection_info

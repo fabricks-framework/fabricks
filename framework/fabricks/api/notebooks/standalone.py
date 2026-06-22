@@ -13,4 +13,4 @@ standalone()
 
 # COMMAND ----------
 
-dbutils.notebook.exit(value="exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # pyright: ignore[reportCallIssue]

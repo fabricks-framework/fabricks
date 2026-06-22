@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import Any, List
 
 from pydantic import BaseModel, TypeAdapter
 
@@ -13,15 +13,15 @@ class JobWrapper(BaseModel):
 
 
 class BronzeJobWrapper(JobWrapper):
-    job: JobConfBronze
+    job: JobConfBronze  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 class SilverJobWrapper(JobWrapper):
-    job: JobConfSilver
+    job: JobConfSilver  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 class GoldJobWrapper(JobWrapper):
-    job: JobConfGold
+    job: JobConfGold  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 def get_job_schema(step: str | None = None) -> str:
@@ -39,7 +39,7 @@ def get_job_schema(step: str | None = None) -> str:
     sc = adapter.json_schema()
 
     # Remove properties that are not defined in YAML
-    defs: dict[str, dict] = sc.get("$defs", {})
+    defs: dict[str, dict[str, Any]] = sc.get("$defs", {})
     removals = [("Job", "job_id"), ("Job", "table")]
 
     for key, defi in defs.items():
@@ -49,7 +49,7 @@ def get_job_schema(step: str | None = None) -> str:
                 if prop in req:
                     req.remove(prop)  # not defined in yaml
 
-                jobprops: dict = defi.get("properties", {})
+                jobprops: dict[str, Any] = defi.get("properties", {})
                 jobprops.pop(prop, None)
 
     return json.dumps(sc, indent=4)

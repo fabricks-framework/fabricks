@@ -14,7 +14,7 @@ class DagQueue:
         schedule_id: str,
         schedule: str,
         notebook: bool,
-        connection_info: dict,
+        connection_info: dict[str, Any],
     ):
         self.step = step
         self._step_str = step_str
@@ -29,7 +29,7 @@ class DagQueue:
     def get_azure_queue(self) -> AzureQueue:
         return AzureQueue(f"q{self._step_str}{self.schedule_id}", **self._connection_info)
 
-    def extra(self, d: dict) -> dict:
+    def extra(self, d: dict[str, Any]) -> dict[str, Any]:
         return {
             "partition_key": self.schedule_id,
             "schedule": self.schedule,

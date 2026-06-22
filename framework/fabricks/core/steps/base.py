@@ -1,6 +1,6 @@
 import logging
 from functools import cached_property
-from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import Any, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
@@ -79,7 +79,7 @@ class BaseStep:
         )
 
     @cached_property
-    def conf(self) -> dict:
+    def conf(self) -> dict[str, Any]:
         return STEPS[self.name].model_dump()
 
     @cached_property
@@ -176,7 +176,7 @@ class BaseStep:
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> Tuple[DataFrame, List[Dict]]:
+    ) -> Tuple[DataFrame, List[Dict[str, Any]]]:
         """Private version that returns (df, errors) instead of raising."""
         DEFAULT_LOGGER.debug("get dependencies", extra={"label": self})
 
@@ -217,7 +217,7 @@ class BaseStep:
         df = SPARK.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)
         return df, errors
 
-    def _create_db_objects_in_parallel(self, df: DataFrame) -> List[Dict]:
+    def _create_db_objects_in_parallel(self, df: DataFrame) -> List[Dict[str, Any]]:
         return run_in_parallel(
             _create_db_object,
             df,
@@ -227,7 +227,7 @@ class BaseStep:
             loglevel=logging.CRITICAL,
         )
 
-    def _create_db_objects_sequentially(self, df: DataFrame, deps_df: Optional[DataFrame] = None) -> List[Dict]:
+    def _create_db_objects_sequentially(self, df: DataFrame, deps_df: Optional[DataFrame] = None) -> List[Dict[str, Any]]:
         try:
             sorted_df = get_jobs_sorted(df, deps_df)
         except Exception as e:
@@ -245,7 +245,7 @@ class BaseStep:
         update_lists: Optional[bool] = True,
         incremental: Optional[bool] = False,
         max_retries: Optional[int] = 2,
-    ) -> Tuple[Optional[DataFrame], List[Dict]]:
+    ) -> Tuple[Optional[DataFrame], List[Dict[str, Any]]]:
         """Private version that returns (df, errors) instead of raising."""
 
         df = self.get_jobs()
@@ -257,21 +257,31 @@ class BaseStep:
             df = df.join(table_df, "job_id", how="left_anti")
             df = df.join(view_df, "job_id", how="left_anti")
 
-        deps_df = None
-        try:
-            deps_df, dep_errors = self._get_dependencies_internal(loglevel=logging.CRITICAL)
-            if dep_errors:
-                DEFAULT_LOGGER.warning(
-                    f"could not get some dependencies for sorting ({len(dep_errors)} error(s))",
-                    extra={"label": self},
-                )
-        except Exception as e:
-            DEFAULT_LOGGER.warning(f"could not get dependencies for sorting: {e}", extra={"label": self})
+        # Resolving the dependency graph is expensive (instantiates every job in
+        # parallel), so defer it until something actually sorts by it — the
+        # sequential branch or a sequential retry. The common parallel-success
+        # path never touches it.
+        _deps: Dict[str, Optional[DataFrame]] = {}
 
-        if mode == "parallel":
+        def deps_df() -> Optional[DataFrame]:
+            if "df" not in _deps:
+                _deps["df"] = None
+                try:
+                    df_, dep_errors = self._get_dependencies_internal(loglevel=logging.CRITICAL)
+                    _deps["df"] = df_
+                    if dep_errors:
+                        DEFAULT_LOGGER.warning(
+                            f"could not get some dependencies for sorting ({len(dep_errors)} error(s))",
+                            extra={"label": self},
+                        )
+                except Exception as e:
+                    DEFAULT_LOGGER.warning(f"could not get dependencies for sorting: {e}", extra={"label": self})
+            return _deps["df"]
+
+        if mode == "sequential":
+            results = self._create_db_objects_sequentially(df, deps_df())
+        else:
             results = self._create_db_objects_in_parallel(df)
-        elif mode == "sequential":
-            results = self._create_db_objects_sequentially(df, deps_df)
 
         errors = [res for res in results if res.get("error")]
         error_count = len(errors)
@@ -291,7 +301,7 @@ class BaseStep:
             failed_job_ids = [e["job_id"] for e in errors]
             errors_df = df.where(df["job_id"].isin(failed_job_ids))
 
-            results = self._create_db_objects_sequentially(errors_df, deps_df)
+            results = self._create_db_objects_sequentially(errors_df, deps_df())
             errors = [res for res in results if res.get("error")]
 
             if len(errors) == error_count:
@@ -317,7 +327,7 @@ class BaseStep:
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> Tuple[DataFrame, List[Dict]]:
+    ) -> Tuple[DataFrame, List[Dict[str, Any]]]:
         """Private version that returns (df, errors) instead of raising."""
         df, errors = self._get_dependencies_internal(
             progress_bar=progress_bar,
@@ -371,7 +381,7 @@ class BaseStep:
 
     # ========== Public API Methods ==========
 
-    def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:
+    def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict[str, Any]]:
         """Yield job configurations from YAML files with variable substitution."""
         return read_yaml(self.runtime, root="job", preferred_file_name=topic)
 
@@ -526,7 +536,7 @@ class BaseStep:
         return self.name
 
 
-def _log_and_raise_errors(errors: List[Dict], action: str, object_type: str = "operations") -> None:
+def _log_and_raise_errors(errors: List[Dict[str, Any]], action: str, object_type: str = "operations") -> None:
     """Log errors and raise ValueError with summary."""
     if errors:
         for e in errors:

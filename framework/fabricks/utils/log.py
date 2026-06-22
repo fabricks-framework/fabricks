@@ -4,7 +4,7 @@ import logging
 import sys
 from datetime import datetime
 from datetime import timezone as tz
-from typing import Tuple
+from typing import Any, Tuple
 from zoneinfo import ZoneInfo
 
 from fabricks.utils.azure_table import AzureTable
@@ -58,7 +58,8 @@ class LogFormatter(logging.Formatter):
         extra = ""
         if hasattr(record, "exc_info") and record.exc_info:
             exc_info = record.__dict__.get("exc_info", None)
-            extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
+            if exc_info is not None:
+                extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
 
         if hasattr(record, "json"):
             json_data = record.__dict__.get("json")
@@ -149,7 +150,7 @@ class AzureTableLogHandler(logging.Handler):
                     d = {
                         "type": str(e[0].__name__)[:1000],
                         "message": str(e[1])[:1000],
-                        "traceback": str(logging.Formatter.formatException(self, e))[:1000],  # type: ignore
+                        "traceback": str(logging.Formatter.formatException(self, e))[:1000],  # pyright: ignore[reportArgumentType]
                     }
                     r["Exception"] = json.dumps(d)
 
@@ -184,7 +185,7 @@ class AzureTableLogHandler(logging.Handler):
         self.buffer = []
 
 
-class CustomConsoleHandler(logging.StreamHandler):
+class CustomConsoleHandler(logging.StreamHandler[Any]):
     def __init__(self, stream=None, debugmode: bool | None = False):
         super().__init__(stream or sys.stderr)
 

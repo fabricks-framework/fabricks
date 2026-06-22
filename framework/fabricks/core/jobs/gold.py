@@ -2,7 +2,7 @@ import re
 import sys
 from collections.abc import Sequence
 from functools import cached_property
-from typing import List, Literal, Optional, Union, cast
+from typing import Any, List, Literal, Optional, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -26,7 +26,7 @@ class Gold(BaseJob):
         topic: Optional[str] = None,
         item: Optional[str] = None,
         job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
+        conf: Optional[Union[dict[str, Any], Row]] = None,
     ):
         super().__init__(
             "gold",
@@ -38,11 +38,11 @@ class Gold(BaseJob):
         )
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
         return cls(step=step, job_id=job_id)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
         return cls(step=step, topic=topic, item=item)
 
     @property
@@ -69,7 +69,7 @@ class Gold(BaseJob):
     def stream(self) -> bool:
         return False
 
-    @cached_property
+    @property
     def schema_drift(self) -> bool:
         _schema_drift = self.step_conf.options.schema_drift or False
         assert _schema_drift is not None
@@ -171,16 +171,18 @@ class Gold(BaseJob):
             assert self.sql, "sql not found"
             self.register_udfs()
 
+            df = None
             if self.options.script:
                 parts = parse_script(self.sql)
                 if parts:
+                    # multi-statement script: run each part, keep the last result
                     for p in parts:
                         df = self.spark.sql(p)
                 else:
                     df = self.spark.sql(self.sql)
-
             else:
                 df = self.spark.sql(self.sql)
+            assert df is not None, "no dataframe produced"
 
         if transform:
             df = self.base_transform(df)

@@ -44,4 +44,4 @@ assert str(schedule_variables.get("var1")) == "1", f"var1 {schedule_variables.ge
 
 # COMMAND ----------
 
-dbutils.notebook.exit(value="exit (0)")  # type: ignore
+dbutils.notebook.exit(value="exit (0)")  # pyright: ignore[reportCallIssue]

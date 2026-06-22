@@ -2,6 +2,7 @@ import posixpath
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path as PathlibPath
+from typing import Any, Iterator
 
 
 class BasePath(ABC):
@@ -95,11 +96,11 @@ class BasePath(ABC):
         depth: int | None = None,
         convert: bool | None = False,
         file_format: str | None = None,
-    ) -> list:
+    ) -> list[Any]:
         """Walk the path and return all files."""
 
     @abstractmethod
-    def _yield(self, path: str | PathlibPath):
+    def _yield(self, path: str | PathlibPath) -> Iterator[str]:
         """Recursively yield all file paths under the given path."""
 
     def __str__(self) -> str:

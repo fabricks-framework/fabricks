@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from fabricks.core.dags.log import LOGGER
 from fabricks.core.dags.queue import DagQueue
@@ -9,7 +9,7 @@ from fabricks.utils.azure_table import AzureTable
 
 
 class DagSender:
-    def get_scheduled(self, ctx: DagQueue, azure_table: Optional[AzureTable] = None) -> list[dict]:
+    def get_scheduled(self, ctx: DagQueue, azure_table: Optional[AzureTable] = None) -> list[dict[str, Any]]:
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{ctx.step}'"
         if azure_table is not None:
             return azure_table.query(query)
@@ -27,7 +27,7 @@ class DagSender:
                     LOGGER.info("no more job to schedule", extra={"label": str(ctx.step)})
                     break
 
-                sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
+                sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank") or 0)
                 for s in sorted_scheduled:
                     dependencies = azure_table.query(f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'")
                     if len(dependencies) == 0:

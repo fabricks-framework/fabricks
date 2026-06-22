@@ -92,6 +92,13 @@ keyring-provider = "subprocess"
 [tool.hatch.build.targets.wheel]
 packages = ["fabricks"]
 
+[tool.basedpyright]
+# Import-cycle detection is opinionated (off by default in vanilla pyright) and
+# the framework intentionally relies on lazy/factory imports across the
+# jobs <-> steps packages; breaking these chains would require an architectural
+# refactor of the module-level init order. Disable just this rule.
+reportImportCycles = false
+
 [tool.ty.rules]
 deprecated = "ignore"
 
