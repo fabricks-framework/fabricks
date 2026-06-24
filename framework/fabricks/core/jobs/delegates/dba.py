@@ -506,7 +506,7 @@ class JobDBA:
             DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"label": self._job})
         else:
             job_days = self._job.table_options.retention_days if self._job.table_options else None
-            step_days = self._job.step_table_options.retention_days if self._job.step_table_options else None
+            step_days = self._job.step_conf.table_options.retention_days if self._job.step_conf.table_options else None
             runtime_days = self._job.runtime_options.retention_days
 
             if job_days is not None:

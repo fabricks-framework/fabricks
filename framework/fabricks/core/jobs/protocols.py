@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional, Protocol, Sequence, Union
+from typing import Any, List, Optional, Protocol, Sequence
 
 from pyspark.sql import DataFrame, SparkSession
 
@@ -15,10 +15,7 @@ from fabricks.models import (
     Paths,
     RuntimeOptions,
     SparkOptions,
-    StepBronzeConf,
-    StepGoldConf,
-    StepSilverConf,
-    StepTableOptions,
+    Step,
     TableOptions,
     TOptions,
 )
@@ -55,7 +52,7 @@ class InvocableJob(Protocol):
     def invoker_options(self) -> Optional[InvokerOptions]: ...
 
     @property
-    def step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]: ...
+    def step_conf(self) -> Step: ...
 
     @property
     def step(self) -> str: ...
@@ -151,16 +148,13 @@ class StorableJob(Protocol):
     def options(self) -> TOptions: ...
 
     @property
-    def step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]: ...
+    def step_conf(self) -> Step: ...
 
     @property
     def runtime_options(self) -> RuntimeOptions: ...
 
     @property
     def table_options(self) -> Optional[TableOptions]: ...
-
-    @property
-    def step_table_options(self) -> Optional[StepTableOptions]: ...
 
     @property
     def spark_options(self) -> Optional[SparkOptions]: ...

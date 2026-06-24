@@ -74,6 +74,7 @@ class Step(BaseModel):
 
     name: str
     path_options: StepPathOptions
+    options: StepOptions
     table_options: StepTableOptions | None = None
     extender_options: list[ExtenderOptions] | None = None
     invoker_options: StepInvokerOptions | None = None

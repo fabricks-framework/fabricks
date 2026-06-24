@@ -20,13 +20,8 @@ from fabricks.models import (
     RuntimeConf,
     RuntimeOptions,
     SparkOptions,
-    StepBronzeConf,
-    StepBronzeOptions,
-    StepGoldConf,
-    StepGoldOptions,
-    StepSilverConf,
-    StepSilverOptions,
-    StepTableOptions,
+    Step,
+    StepOptions,
     TableOptions,
     TOptions,
     UpdaterOptions,
@@ -75,16 +70,16 @@ class JobConfig:
         return f"{self.step}.{self.topic}_{self.item}"
 
     @cached_property
-    def base_step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
-        return STEPS[self.step]
+    def step_conf(self) -> Step:
+        return STEPS[self.step]  # pyright: ignore[reportReturnType]
 
     @property
     def options(self) -> TOptions:
         return self.conf.options
 
     @property
-    def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]:
-        return self.base_step_conf.options
+    def step_options(self) -> StepOptions:
+        return self.step_conf.options
 
     @cached_property
     def runtime_conf(self) -> RuntimeConf:
@@ -95,14 +90,6 @@ class JobConfig:
     @property
     def runtime_options(self) -> RuntimeOptions:
         return self.runtime_conf.options
-
-    @cached_property
-    def step_table_options(self) -> Optional[StepTableOptions]:
-        return self.base_step_conf.table_options
-
-    @property
-    def step_spark_options(self) -> Optional[SparkOptions]:
-        return self.base_step_conf.spark_options
 
     @property
     def table_options(self) -> Optional[TableOptions]:
@@ -176,7 +163,7 @@ class JobConfig:
             spark = build_spark_session(app_name=str(self))
 
             # Apply step-level spark options if configured
-            step_spark = self.step_spark_options
+            step_spark = self.step_conf.spark_options
             if step_spark:
                 for key, value in (step_spark.sql or {}).items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})

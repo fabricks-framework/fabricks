@@ -33,13 +33,8 @@ from fabricks.models import (
     RuntimeConf,
     RuntimeOptions,
     SparkOptions,
-    StepBronzeConf,
-    StepBronzeOptions,
-    StepGoldConf,
-    StepGoldOptions,
-    StepSilverConf,
-    StepSilverOptions,
-    StepTableOptions,
+    Step,
+    StepOptions,
     TableOptions,
     TOptions,
     UpdaterOptions,
@@ -113,8 +108,8 @@ class BaseJob(ABC):
         return self._config.spark
 
     @property
-    def base_step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
-        return self._config.base_step_conf
+    def base_step_conf(self) -> Step:
+        return self._config.step_conf
 
     @property
     def qualified_name(self) -> str:
@@ -137,16 +132,8 @@ class BaseJob(ABC):
         return self._config.runtime_options
 
     @property
-    def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]:
+    def step_options(self) -> StepOptions:
         return self._config.step_options
-
-    @property
-    def step_table_options(self) -> Optional[StepTableOptions]:
-        return self._config.step_table_options
-
-    @property
-    def step_spark_options(self) -> Optional[SparkOptions]:
-        return self._config.step_spark_options
 
     @property
     def table_options(self) -> Optional[TableOptions]:
@@ -212,7 +199,7 @@ class BaseJob(ABC):
 
     @property
     @abstractmethod
-    def step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
+    def step_conf(self) -> Step:
         """Direct access to typed step conf from context configuration."""
         raise NotImplementedError()
 
@@ -233,16 +220,11 @@ class BaseJob(ABC):
 
     @cached_property
     def cdc(self) -> Union[NoCDC, SCD0, SCD1, SCD2]:
-        if self.change_data_capture == "nocdc":
-            return NoCDC(self.step, self.topic, self.item, spark=self.spark)
-        elif self.change_data_capture == "scd0":
-            return SCD0(self.step, self.topic, self.item, spark=self.spark)
-        elif self.change_data_capture == "scd1":
-            return SCD1(self.step, self.topic, self.item, spark=self.spark)
-        elif self.change_data_capture == "scd2":
-            return SCD2(self.step, self.topic, self.item, spark=self.spark)
-        else:
+        cdc_by_kind = {"nocdc": NoCDC, "scd0": SCD0, "scd1": SCD1, "scd2": SCD2}
+        cdc_class = cdc_by_kind.get(self.change_data_capture)
+        if cdc_class is None:
             raise ValueError(f"{self.change_data_capture} not allowed")
+        return cdc_class(self.step, self.topic, self.item, spark=self.spark)
 
     @property
     def slowly_changing_dimension(self) -> bool:

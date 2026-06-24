@@ -22,6 +22,36 @@ def _has_column(table: str, column: str, existing: set[str]) -> bool:
         return False
 
 
+def _union_across_steps(view: str, suffix: str, columns: str):
+    """Build a fabricks view that unions the per-step ``{step}_{suffix}`` tables, skipping missing ones."""
+    existing = _get_fabricks_tables()
+    ctes = []
+    selects = []
+
+    for step in Steps:
+        table = f"{step}_{suffix}"
+        if table not in existing:
+            DEFAULT_LOGGER.debug(f"could not find fabricks.{table}", extra={"label": "fabricks"})
+            continue
+        ctes.append(f"{step} as (select '{step}' as step, {columns} from fabricks.{table})")
+        selects.append(f"select * from {step}")
+
+    if not ctes:
+        DEFAULT_LOGGER.warning(f"no tables found for fabricks.{view} — skipping", extra={"label": "fabricks"})
+        return
+
+    sql = f"""
+    create or replace view fabricks.{view} with schema evolution as
+    with
+      {", ".join(ctes)}
+    {" union all ".join(selects)}
+    """
+    sql = fix_sql(sql)
+
+    DEFAULT_LOGGER.debug(f"create or replace fabricks.{view}", extra={"sql": sql})
+    SPARK.sql(sql)
+
+
 def deploy_views():
     DEFAULT_LOGGER.info("create or replace fabricks (default) views", extra={"label": "fabricks"})
 
@@ -106,114 +136,15 @@ def create_or_replace_jobs_view():
 
 
 def create_or_replace_tables_view():
-    existing = _get_fabricks_tables()
-    ctes = []
-    selects = []
-
-    for step in Steps:
-        table = f"{step}_tables"
-        if table not in existing:
-            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_tables", extra={"label": "fabricks"})
-            continue
-
-        cte = f"""
-            {step} as (
-            select
-              '{step}' as step,
-              job_id,
-              table
-            from
-              fabricks.{table}
-            )
-            """
-        ctes.append(cte)
-        selects.append(f"select * from {step}")
-
-    sql = f"""
-    create or replace view fabricks.tables with schema evolution as
-    with
-      {", ".join(ctes)}
-    {" union all ".join(selects)}
-    """
-    sql = fix_sql(sql)
-
-    DEFAULT_LOGGER.debug("create or replace fabricks.tables", extra={"sql": sql})
-    SPARK.sql(sql)
+    _union_across_steps("tables", "tables", "job_id, table")
 
 
 def create_or_replace_views_view():
-    existing = _get_fabricks_tables()
-    ctes = []
-    selects = []
-
-    for step in Steps:
-        table = f"{step}_views"
-        if table not in existing:
-            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_views", extra={"label": "fabricks"})
-            continue
-
-        cte = f"""
-            {step} as (
-            select
-              '{step}' as step,
-              job_id,
-              view
-            from
-              fabricks.{table}
-            )
-            """
-        ctes.append(cte)
-        selects.append(f"select * from {step}")
-
-    sql = f"""
-    create or replace view fabricks.views with schema evolution as
-    with
-      {", ".join(ctes)}
-    {" union all ".join(selects)}
-    """
-    sql = fix_sql(sql)
-
-    DEFAULT_LOGGER.debug("create or replace fabricks.views", extra={"sql": sql})
-    SPARK.sql(sql)
+    _union_across_steps("views", "views", "job_id, view")
 
 
 def create_or_replace_dependencies_view():
-    existing = _get_fabricks_tables()
-    ctes = []
-    selects = []
-
-    for step in Steps:
-        table = f"{step}_dependencies"
-        if table not in existing:
-            DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_dependencies", extra={"label": "fabricks"})
-            continue
-
-        cte = f"""
-          {step} as (
-          select
-            '{step}' as step,
-            dependency_id,
-            job_id,
-            parent_id,
-            parent,
-            origin
-          from
-            fabricks.{table} d
-          )
-          """
-        ctes.append(cte)
-        selects.append(f"select * from {step}")
-
-    sql = f"""
-    create or replace view fabricks.dependencies with schema evolution as
-    with
-      {", ".join(ctes)}
-    {" union all ".join(selects)}
-    """
-    sql = fix_sql(sql)
-
-    DEFAULT_LOGGER.debug("create or replace fabricks.dependencies", extra={"sql": sql})
-    SPARK.sql(sql)
+    _union_across_steps("dependencies", "dependencies", "dependency_id, job_id, parent_id, parent, origin")
 
 
 def create_or_replace_dependencies_flat_view():
