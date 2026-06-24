@@ -227,7 +227,9 @@ class BaseStep:
             loglevel=logging.CRITICAL,
         )
 
-    def _create_db_objects_sequentially(self, df: DataFrame, deps_df: Optional[DataFrame] = None) -> List[Dict[str, Any]]:
+    def _create_db_objects_sequentially(
+        self, df: DataFrame, deps_df: Optional[DataFrame] = None
+    ) -> List[Dict[str, Any]]:
         try:
             sorted_df = get_jobs_sorted(df, deps_df)
         except Exception as e:

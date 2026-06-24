@@ -43,7 +43,9 @@ def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
 
 
 @deprecated("use run_in_parallel instead")
-def run_threads(func: Callable[..., Any], iter: Union[List[Any], DataFrame, range, set[Any]], workers: int = 8) -> List[Any]:
+def run_threads(
+    func: Callable[..., Any], iter: Union[List[Any], DataFrame, range, set[Any]], workers: int = 8
+) -> List[Any]:
     return run_in_parallel(func, iter, workers)
 
 

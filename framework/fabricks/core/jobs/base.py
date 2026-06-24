@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Sequence, Union
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
-from typing_extensions import deprecated
+from typing_extensions import Self, deprecated
 
 from fabricks.cdc import SCD1, SCD2, CDCIntentContext, NoCDC
 from fabricks.cdc.scd0 import SCD0
@@ -62,7 +62,7 @@ class BaseJob(ABC):
         # `Self`-typed value assignable to a protocol (the protocol becomes
         # invariant w.r.t. the concrete type). Safe by construction.
         self._dba = JobDBA(self)  # pyright: ignore[reportArgumentType]
-        self._runner = JobRunner(self, self._checker, self._invoker)
+        self._runner = JobRunner(self, self._checker, self._invoker, self._dba)
 
     _udf_registered: Optional[bool] = None  # Keep mutable - state flag
 
@@ -177,10 +177,12 @@ class BaseJob(ABC):
         return self._config.step_conf
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str) -> "BaseJob": ...
+    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict[str, Any], Row]] = None) -> Self:
+        return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str) -> "BaseJob": ...
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None) -> Self:
+        return cls(step=step, topic=topic, item=item, conf=conf)
 
     def pip(self):
         pass

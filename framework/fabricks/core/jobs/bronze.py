@@ -76,16 +76,6 @@ class Bronze(BaseJob):
         """Direct access to typed bronze step options."""
         return cast(StepBronzeOptions, self.config.step_conf.options)
 
-    @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
-        return cls(step=step, job_id=job_id, conf=conf)
-
-    @classmethod
-    def from_step_topic_item(
-        cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None
-    ):
-        return cls(step=step, topic=topic, item=item, conf=conf)
-
     @property
     def data_path(self) -> FileSharePath:
         uri = self.options.uri

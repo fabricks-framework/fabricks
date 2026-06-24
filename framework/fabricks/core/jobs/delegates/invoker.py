@@ -8,7 +8,7 @@ from pyspark.sql import DataFrame
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.extenders import get_extender
-from fabricks.core.jobs.get_schedule import get_schedule
+from fabricks.core.jobs.get_schedules import get_schedule
 from fabricks.core.jobs.protocols import InvocableJob
 from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
 from fabricks.models.exceptions import CustomException

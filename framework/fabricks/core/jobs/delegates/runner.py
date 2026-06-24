@@ -15,7 +15,7 @@ from fabricks.core.jobs.delegates.checker import (
     SkipRunCheckWarning,
     SkipRunTimeWarning,
 )
-from fabricks.core.jobs.delegates.dba import SchemaDriftException
+from fabricks.core.jobs.delegates.dba import JobDBA, SchemaDriftException
 from fabricks.core.jobs.delegates.invoker import JobInvoker, PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.protocols import RunnableJob
 from fabricks.utils.write import write_stream
@@ -24,10 +24,11 @@ from fabricks.utils.write import write_stream
 class JobRunner:
     """Orchestrates the job run lifecycle: checks → invoke → for_each_run → checks → invoke → maintenance."""
 
-    def __init__(self, job: RunnableJob, checker: JobChecker, invoker: JobInvoker):
+    def __init__(self, job: RunnableJob, checker: JobChecker, invoker: JobInvoker, dba: JobDBA):
         self._job = job
         self._checker = checker
         self._invoker = invoker
+        self._dba = dba
 
     def run(
         self,
@@ -100,7 +101,7 @@ class JobRunner:
                 compute_statistics = opts.compute_statistics if opts and opts.compute_statistics is not None else False
 
             if vacuum or optimize or compute_statistics:
-                self._job.maintain(
+                self._dba.maintain(
                     compute_statistics=compute_statistics,
                     optimize=optimize,
                     vacuum=vacuum,
@@ -126,18 +127,18 @@ class JobRunner:
 
         except (PreRunCheckException, PostRunCheckException) as e:
             DEFAULT_LOGGER.exception("fail to pass check", extra={"label": self._job})
-            self._job.restore(last_version, last_batch)
+            self._dba.restore(last_version, last_batch)
             raise e
 
         except AssertionError as e:
             DEFAULT_LOGGER.exception("fail to run", extra={"label": self._job})
-            self._job.restore(last_version, last_batch)
+            self._dba.restore(last_version, last_batch)
             raise e
 
         except Exception as e:
             if not self._job.stream or not retry:
                 DEFAULT_LOGGER.exception("fail to run", extra={"label": self._job})
-                self._job.restore(last_version, last_batch)
+                self._dba.restore(last_version, last_batch)
                 raise e
             else:
                 DEFAULT_LOGGER.warning("retry to run", extra={"label": self._job})
@@ -150,15 +151,15 @@ class JobRunner:
 
         df = self._job.base_transform(df)
 
-        diffs = self._job.get_schema_differences(df)
+        diffs = self._dba.get_schema_differences(df)
         if diffs:
             if self._job.schema_drift or kwargs.get("reload", False):
                 DEFAULT_LOGGER.warning("schema drifted", extra={"label": self._job, "diffs": diffs})
-                self._job.update_schema(df=df)
+                self._dba.update_schema(df=df)
             else:
                 only_type_widening_compatible = all(d.type_widening_compatible for d in diffs if d.status == "changed")
                 if only_type_widening_compatible and self._job.table.type_widening_enabled and IS_TYPE_WIDENING:
-                    self._job.update_schema(df=df, widen_types=True)
+                    self._dba.update_schema(df=df, widen_types=True)
                 else:
                     raise SchemaDriftException.from_diffs(str(self._job), diffs)
 

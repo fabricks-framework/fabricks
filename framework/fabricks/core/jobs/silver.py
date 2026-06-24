@@ -35,21 +35,6 @@ class Silver(BaseJob):
             conf=conf,
         )
 
-    @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
-        return cls(step=step, job_id=job_id, conf=conf)
-
-    @classmethod
-    def from_step_topic_item(
-        cls,
-        step: str,
-        topic: str,
-        item: str,
-        *,
-        conf: Optional[Union[dict[str, Any], Row]] = None,
-    ):
-        return cls(step=step, topic=topic, item=item, conf=conf)
-
     @property
     def options(self) -> JobSilverOptions:
         """Direct access to typed silver job options."""
