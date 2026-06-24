@@ -67,8 +67,8 @@ class JobDBA:
 
     def _partitioning_columns(self, df: DataFrame) -> Optional[List[str]]:
         columns = (
-            self._job.table_options.partition_by
-            if self._job.table_options and self._job.table_options.partition_by
+            self._job.config.table_options.partition_by
+            if self._job.config.table_options and self._job.config.table_options.partition_by
             else []
         )
         if columns:
@@ -87,8 +87,8 @@ class JobDBA:
 
     def _clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
         columns = (
-            self._job.table_options.cluster_by
-            if self._job.table_options and self._job.table_options.cluster_by
+            self._job.config.table_options.cluster_by
+            if self._job.config.table_options and self._job.config.table_options.cluster_by
             else []
         )
         if columns:
@@ -157,23 +157,23 @@ class JobDBA:
 
     def _get_option_hierarchy(self, attribute: str, into: Literal["table", "spark"] = "table", default=None):
         if into == "table":
-            job_value = getattr(self._job.table_options, attribute, None) if self._job.table_options else None
+            job_value = getattr(self._job.config.table_options, attribute, None) if self._job.config.table_options else None
             if job_value is not None:
                 return job_value
             step_value = (
-                getattr(self._job.step_conf.table_options, attribute, None)
-                if self._job.step_conf.table_options
+                getattr(self._job.config.step_conf.table_options, attribute, None)
+                if self._job.config.step_conf.table_options
                 else None
             )
             if step_value is not None:
                 return step_value
         elif into == "spark":
-            job_value = getattr(self._job.spark_options, attribute, None) if self._job.spark_options else None
+            job_value = getattr(self._job.config.spark_options, attribute, None) if self._job.config.spark_options else None
             if job_value is not None:
                 return job_value
             step_value = (
-                getattr(self._job.step_conf.spark_options, attribute, None)
-                if self._job.step_conf.spark_options
+                getattr(self._job.config.step_conf.spark_options, attribute, None)
+                if self._job.config.step_conf.spark_options
                 else None
             )
             if step_value is not None:
@@ -196,13 +196,13 @@ class JobDBA:
             masks = self._get_option_hierarchy("masks", into="table", default=None)
             identity = False
 
-            maximum_compatibility = self._job.table_options.maximum_compatibility if self._job.table_options else False
+            maximum_compatibility = self._job.config.table_options.maximum_compatibility if self._job.config.table_options else False
             default_properties = self._default_table_properties(bool(maximum_compatibility), bool(powerbi))
 
             if "__identity" in batch_df.columns:
                 identity = False
             else:
-                identity = self._job.table_options.identity if self._job.table_options else False
+                identity = self._job.config.table_options.identity if self._job.config.table_options else False
 
             partition_by = self._partitioning_columns(batch_df)
             if partition_by:
@@ -231,10 +231,10 @@ class JobDBA:
             if properties is None:
                 properties = default_properties
 
-            primary_key = self._job.table_options.primary_key or {} if self._job.table_options else {}
-            foreign_keys = self._job.table_options.foreign_keys or {} if self._job.table_options else {}
-            comments = self._job.table_options.comments or {} if self._job.table_options else {}
-            generated_columns = self._job.table_options.generated_columns or {} if self._job.table_options else {}
+            primary_key = self._job.config.table_options.primary_key or {} if self._job.config.table_options else {}
+            foreign_keys = self._job.config.table_options.foreign_keys or {} if self._job.config.table_options else {}
+            comments = self._job.config.table_options.comments or {} if self._job.config.table_options else {}
+            generated_columns = self._job.config.table_options.generated_columns or {} if self._job.config.table_options else {}
 
             if generated_columns:
                 for key in generated_columns.keys():
@@ -243,7 +243,7 @@ class JobDBA:
                     )
 
             # if dataframe, reference is passed (BUG)
-            name = f"{self._job.step}_{self._job.topic}_{self._job.item}__init"
+            name = f"{self._job.config.step}_{self._job.config.topic}_{self._job.config.item}__init"
             global_temp_view = create_or_replace_global_temp_view(name=name, df=batch_df.limit(0), job=self._job)
             sql = f"select * from {global_temp_view}"
 
@@ -271,7 +271,7 @@ class JobDBA:
             dummy_df = dummy_df.select("__metadata")
 
             df = df.unionByName(dummy_df, allowMissingColumns=True)
-            path = self._job.paths.to_checkpoints.append("__init")
+            path = self._job.config.paths.to_checkpoints.append("__init")
             if path.exists():
                 path.rm()
 
@@ -286,12 +286,12 @@ class JobDBA:
         else:
             _create_table(df)
 
-        constraints = self._job.table_options.constraints or {} if self._job.table_options else {}
+        constraints = self._job.config.table_options.constraints or {} if self._job.config.table_options else {}
         if constraints:
             for key, value in constraints.items():
                 self._job.table.add_constraint(name=key, expr=str(value))
 
-        comment = self._job.table_options.comment if self._job.table_options else None
+        comment = self._job.config.table_options.comment if self._job.config.table_options else None
         if comment:
             self._job.table.add_table_comment(comment=comment)
 
@@ -310,7 +310,7 @@ class JobDBA:
 
     def create_or_replace_view(self, sql: str):
         job = self._job
-        df = job.spark.sql(sql)
+        df = job.config.spark.sql(sql)
         cdc_options = job.get_cdc_context(df)
         job.cdc.create_or_replace_view(sql, **cdc_options)
 
@@ -335,7 +335,7 @@ class JobDBA:
             raise ValueError("no_drop is set, cannot drop the job")
 
         try:
-            row = self._job.spark.sql(
+            row = self._job.config.spark.sql(
                 f"""
                 select
                     count(*) as count,
@@ -368,18 +368,18 @@ class JobDBA:
     # --- storage artifacts ---
 
     def rm(self):
-        if self._job.paths.to_schema.exists():
+        if self._job.config.paths.to_schema.exists():
             DEFAULT_LOGGER.info("delete schema folder", extra={"label": self._job})
-            self._job.paths.to_schema.rm()
+            self._job.config.paths.to_schema.rm()
         self.rm_checkpoints()
 
     def rm_checkpoints(self):
-        if self._job.paths.to_checkpoints.exists():
+        if self._job.config.paths.to_checkpoints.exists():
             DEFAULT_LOGGER.info("delete checkpoints folder", extra={"label": self._job})
-            self._job.paths.to_checkpoints.rm()
+            self._job.config.paths.to_checkpoints.rm()
 
     def rm_commit(self, id):
-        path = self._job.paths.to_commits.joinpath(str(id))
+        path = self._job.config.paths.to_commits.joinpath(str(id))
         if path.exists():
             DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": self._job})
             path.rm()
@@ -409,7 +409,7 @@ class JobDBA:
                 df = self._job.base_transform(df)
 
                 if self._job.stream:
-                    path = self._job.paths.to_checkpoints.append("__schema")
+                    path = self._job.config.paths.to_checkpoints.append("__schema")
                     query = (
                         df.writeStream.foreachBatch(_do_update)
                         .option("checkpointLocation", path.string)
@@ -440,12 +440,12 @@ class JobDBA:
             self._job.table.drop_comments()
 
             if table:
-                comment = self._job.table_options.comment if self._job.table_options else None
+                comment = self._job.config.table_options.comment if self._job.config.table_options else None
                 if comment:
                     self._job.table.add_table_comment(comment=comment)
 
             if columns:
-                comments = self._job.table_options.comments or {} if self._job.table_options else {}
+                comments = self._job.config.table_options.comments or {} if self._job.config.table_options else {}
                 if comments:
                     for col, comment in comments.items():
                         self._job.table.add_column_comment(column=col, comment=str(comment))
@@ -505,9 +505,9 @@ class JobDBA:
         if self._job.mode == "memory":
             DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"label": self._job})
         else:
-            job_days = self._job.table_options.retention_days if self._job.table_options else None
-            step_days = self._job.step_conf.table_options.retention_days if self._job.step_conf.table_options else None
-            runtime_days = self._job.runtime_options.retention_days
+            job_days = self._job.config.table_options.retention_days if self._job.config.table_options else None
+            step_days = self._job.config.step_conf.table_options.retention_days if self._job.config.step_conf.table_options else None
+            runtime_days = self._job.config.runtime_options.retention_days
 
             if job_days is not None:
                 retention_days = job_days
@@ -534,14 +534,14 @@ class JobDBA:
                     self.rm_commit(current_batch)
 
                     assert last_batch == self._job.table.get_property("fabricks.last_batch")
-                    assert self._job.paths.to_commits.joinpath(last_batch).exists()
+                    assert self._job.config.paths.to_commits.joinpath(last_batch).exists()
 
     # --- external tables ---
 
     def register_external_table(self, file_format: str, uri: str):
         try:
-            self._job.spark.sql(
-                f"create table if not exists {self._job.qualified_name} using {file_format} location '{uri}'"
+            self._job.config.spark.sql(
+                f"create table if not exists {self._job.config.qualified_name} using {file_format} location '{uri}'"
             )
         except Exception as e:
             DEFAULT_LOGGER.exception("could not register external table", extra={"label": self._job})
@@ -549,4 +549,4 @@ class JobDBA:
 
     def drop_external_table(self):
         DEFAULT_LOGGER.warning("remove external table from metastore", extra={"label": self._job})
-        self._job.spark.sql(f"drop table if exists {self._job.qualified_name}")
+        self._job.config.spark.sql(f"drop table if exists {self._job.config.qualified_name}")

@@ -5,18 +5,11 @@ from typing import Any, List, Optional, Protocol, Sequence
 from pyspark.sql import DataFrame, SparkSession
 
 from fabricks.cdc import CDCIntentContext
+from fabricks.core.jobs.config import JobConfig
 from fabricks.metastore.table import SchemaDiff, Table
 from fabricks.models import (
     AllowedChangeDataCaptures,
     AllowedModes,
-    CheckOptions,
-    ExtenderOptions,
-    InvokerOptions,
-    Paths,
-    RuntimeOptions,
-    SparkOptions,
-    Step,
-    TableOptions,
     TOptions,
 )
 
@@ -25,22 +18,13 @@ class CheckableJob(Protocol):
     """Narrow interface required by JobChecker."""
 
     @property
-    def check_options(self) -> Optional[CheckOptions]: ...
-
-    @property
-    def paths(self) -> Paths: ...
-
-    @property
-    def spark(self) -> SparkSession: ...
-
-    @property
-    def table(self) -> Table: ...
-
-    @property
-    def change_data_capture(self) -> AllowedChangeDataCaptures: ...
+    def config(self) -> JobConfig: ...
 
     @property
     def mode(self) -> AllowedModes: ...
+
+    @property
+    def table(self) -> Table: ...
 
     def __str__(self) -> str: ...
 
@@ -49,28 +33,10 @@ class InvocableJob(Protocol):
     """Narrow interface required by JobInvoker."""
 
     @property
-    def invoker_options(self) -> Optional[InvokerOptions]: ...
-
-    @property
-    def step_conf(self) -> Step: ...
-
-    @property
-    def step(self) -> str: ...
-
-    @property
-    def topic(self) -> str: ...
-
-    @property
-    def item(self) -> str: ...
-
-    @property
-    def timeout(self) -> int: ...
+    def config(self) -> JobConfig: ...
 
     @property
     def options(self) -> TOptions: ...
-
-    @property
-    def extender_options(self) -> Optional[List[ExtenderOptions]]: ...
 
     def __str__(self) -> str: ...
 
@@ -98,35 +64,8 @@ class StorableCDC(Protocol):
 class StorableJob(Protocol):
     """Narrow interface required by JobDBA."""
 
-    # identity
     @property
-    def step(self) -> str: ...
-
-    @property
-    def topic(self) -> str: ...
-
-    @property
-    def item(self) -> str: ...
-
-    @property
-    def job_id(self) -> str: ...
-
-    @property
-    def qualified_name(self) -> str: ...
-
-    # spark
-    @property
-    def spark(self) -> SparkSession: ...
-
-    # table & CDC
-    @property
-    def table(self) -> Table: ...
-
-    @property
-    def cdc(self) -> StorableCDC: ...
-
-    @property
-    def change_data_capture(self) -> AllowedChangeDataCaptures: ...
+    def config(self) -> JobConfig: ...
 
     @property
     def mode(self) -> AllowedModes: ...
@@ -140,29 +79,16 @@ class StorableJob(Protocol):
     @property
     def virtual(self) -> bool: ...
 
-    # paths & options
-    @property
-    def paths(self) -> Paths: ...
-
     @property
     def options(self) -> TOptions: ...
 
     @property
-    def step_conf(self) -> Step: ...
+    def table(self) -> Table: ...
 
     @property
-    def runtime_options(self) -> RuntimeOptions: ...
+    def cdc(self) -> StorableCDC: ...
 
-    @property
-    def table_options(self) -> Optional[TableOptions]: ...
-
-    @property
-    def spark_options(self) -> Optional[SparkOptions]: ...
-
-    # methods
     def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> CDCIntentContext: ...
-
-    def get_data(self, stream: bool = False, transform: Optional[bool] = None, **kwargs) -> Optional[DataFrame]: ...
 
     def base_transform(self, df: DataFrame) -> DataFrame: ...
 
@@ -174,7 +100,9 @@ class StorableJob(Protocol):
 class RunnableJob(Protocol):
     """Narrow interface required by JobRunner."""
 
-    # state
+    @property
+    def config(self) -> JobConfig: ...
+
     @property
     def schema_drift(self) -> bool: ...
 
@@ -191,18 +119,11 @@ class RunnableJob(Protocol):
     def mode(self) -> AllowedModes: ...
 
     @property
-    def paths(self) -> Paths: ...
-
-    @property
-    def timeout(self) -> int: ...
-
-    @property
     def table(self) -> Table: ...
 
     @property
     def options(self) -> TOptions: ...
 
-    # data & transform
     def get_data(self, stream: bool = False, transform: Optional[bool] = None, **kwargs) -> Optional[DataFrame]: ...
 
     def base_transform(self, df: DataFrame) -> DataFrame: ...
@@ -211,18 +132,12 @@ class RunnableJob(Protocol):
 
     def create_or_replace_view(self) -> None: ...
 
-    # schema
     def get_schema_differences(self, df: Optional[DataFrame] = None) -> Optional[Sequence[SchemaDiff]]: ...
 
     def update_schema(self, df: Optional[DataFrame] = None, widen_types: Optional[bool] = False) -> None: ...
 
-    # lifecycle
     def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None) -> None: ...
 
     def maintain(self, vacuum: bool = True, optimize: bool = True, compute_statistics: bool = True) -> None: ...
 
     def __str__(self) -> str: ...
-
-
-class JobProtocol(CheckableJob, InvocableJob, StorableJob, RunnableJob, Protocol):
-    """Full job interface — composition of the four delegate-specific protocols."""

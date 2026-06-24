@@ -67,7 +67,7 @@ class JobInvoker:
         )
 
     def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
-        invokers = getattr(self._job.invoker_options, position, None) or [] if self._job.invoker_options else []
+        invokers = getattr(self._job.config.invoker_options, position, None) or [] if self._job.config.invoker_options else []
         if position == "run":
             invokers = invokers if len(invokers) > 0 else [{}]
 
@@ -96,7 +96,7 @@ class JobInvoker:
             raise Exception(errors)
 
     def _invoke_step(self, position: str, schedule: Optional[str] = None):
-        step_invoker_options = self._job.step_conf.invoker_options if self._job.step_conf else None
+        step_invoker_options = self._job.config.step_conf.invoker_options if self._job.config.step_conf else None
         invokers = getattr(step_invoker_options, position, []) if step_invoker_options else []
 
         errors = []
@@ -138,7 +138,7 @@ class JobInvoker:
                 break
 
         if timeout is None:
-            timeout = self._job.timeout
+            timeout = self._job.config.timeout
 
         assert timeout is not None
 
@@ -156,9 +156,9 @@ class JobInvoker:
             path=path.get_notebook_path(),  # pyright: ignore[reportCallIssue]
             timeout_seconds=timeout,  # pyright: ignore[reportCallIssue]
             arguments={  # pyright: ignore[reportCallIssue]
-                "step": self._job.step,
-                "topic": self._job.topic,
-                "item": self._job.item,
+                "step": self._job.config.step,
+                "topic": self._job.config.topic,
+                "item": self._job.config.item,
                 **arguments,
                 "job_options": json.dumps(self._job.options.model_dump()),
                 "schedule_variables": json.dumps(variables),
@@ -166,11 +166,11 @@ class JobInvoker:
         )
 
     def extend_job(self, df: DataFrame) -> DataFrame:
-        extenders = self._job.extender_options or []
+        extenders = self._job.config.extender_options or []
         return self._extend(df, extenders, extended="job")
 
     def extend_step(self, df: DataFrame) -> DataFrame:
-        extenders = self._job.step_conf.extender_options or [] if self._job.step_conf else []
+        extenders = self._job.config.step_conf.extender_options or [] if self._job.config.step_conf else []
         return self._extend(df, extenders, extended="step")
 
     def _extend(self, df: DataFrame, extenders: list[ExtenderOptions], extended: str) -> DataFrame:

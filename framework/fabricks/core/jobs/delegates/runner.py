@@ -186,9 +186,9 @@ class JobRunner:
                 DEFAULT_LOGGER.debug("use streaming", extra={"label": self._job})
                 write_stream(
                     df,
-                    checkpoints_path=self._job.paths.to_checkpoints,
+                    checkpoints_path=self._job.config.paths.to_checkpoints,
                     func=self._for_each_batch,
-                    timeout=self._job.timeout,
+                    timeout=self._job.config.timeout,
                 )
             else:
                 self._for_each_batch(df, **kwargs)

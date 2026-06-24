@@ -1,7 +1,6 @@
 import re
 import sys
 from collections.abc import Sequence
-from functools import cached_property
 from typing import Any, List, Literal, Optional, Union, cast
 
 from pyspark.sql import DataFrame
@@ -42,7 +41,9 @@ class Gold(BaseJob):
         return cls(step=step, job_id=job_id)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
+    def from_step_topic_item(
+        cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None
+    ):
         return cls(step=step, topic=topic, item=item)
 
     @property
@@ -53,12 +54,12 @@ class Gold(BaseJob):
     @property
     def step_conf(self) -> StepGoldConf:
         """Direct access to typed gold step conf."""
-        return cast(StepGoldConf, self.base_step_conf)
+        return cast(StepGoldConf, self.config.step_conf)
 
     @property
     def step_options(self) -> StepGoldOptions:
         """Direct access to typed gold step options."""
-        return cast(StepGoldOptions, self.base_step_conf.options)
+        return cast(StepGoldOptions, self.config.step_conf.options)
 
     @property
     def register_options(self) -> Optional[RegisterOptions]:

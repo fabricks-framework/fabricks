@@ -40,7 +40,14 @@ class Silver(BaseJob):
         return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
+    def from_step_topic_item(
+        cls,
+        step: str,
+        topic: str,
+        item: str,
+        *,
+        conf: Optional[Union[dict[str, Any], Row]] = None,
+    ):
         return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property
@@ -51,12 +58,12 @@ class Silver(BaseJob):
     @property
     def step_conf(self) -> StepSilverConf:
         """Direct access to typed silver step conf."""
-        return cast(StepSilverConf, self.base_step_conf)
+        return cast(StepSilverConf, self.config.step_conf)
 
     @property
     def step_options(self) -> StepSilverOptions:
         """Direct access to typed silver step options."""
-        return cast(StepSilverOptions, self.base_step_conf.options)
+        return cast(StepSilverOptions, self.config.step_conf.options)
 
     @property
     def stream(self) -> bool:
@@ -109,6 +116,13 @@ class Silver(BaseJob):
         df = df.transform(self.extend)
         df = self.update_metadata(df)
 
+        return df
+
+    def filter_where(self, df: DataFrame) -> DataFrame:
+        f = self.options.filter_where
+        if f:
+            DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
+            df = df.where(f"{f}")
         return df
 
     def get_data(

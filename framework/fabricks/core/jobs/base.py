@@ -22,19 +22,13 @@ from fabricks.metastore.table import SchemaDiff, Table
 from fabricks.models import (
     AllowedChangeDataCaptures,
     AllowedModes,
-    CheckOptions,
     ExtenderOptions,
     InvokerOptions,
-    JobBronzeOptions,
     JobConf,
     JobDependency,
-    JobSilverOptions,
     Paths,
-    RuntimeConf,
     RuntimeOptions,
-    SparkOptions,
     Step,
-    StepOptions,
     TableOptions,
     TOptions,
     UpdaterOptions,
@@ -108,10 +102,6 @@ class BaseJob(ABC):
         return self._config.spark
 
     @property
-    def base_step_conf(self) -> Step:
-        return self._config.step_conf
-
-    @property
     def qualified_name(self) -> str:
         return self._config.qualified_name
 
@@ -124,28 +114,12 @@ class BaseJob(ABC):
         return self._config.paths
 
     @property
-    def runtime_conf(self) -> RuntimeConf:
-        return self._config.runtime_conf
-
-    @property
     def runtime_options(self) -> RuntimeOptions:
         return self._config.runtime_options
 
     @property
-    def step_options(self) -> StepOptions:
-        return self._config.step_options
-
-    @property
     def table_options(self) -> Optional[TableOptions]:
         return self._config.table_options
-
-    @property
-    def check_options(self) -> Optional[CheckOptions]:
-        return self._config.check_options
-
-    @property
-    def spark_options(self) -> Optional[SparkOptions]:
-        return self._config.spark_options
 
     @property
     def invoker_options(self) -> Optional[InvokerOptions]:
@@ -198,10 +172,9 @@ class BaseJob(ABC):
         raise NotImplementedError()
 
     @property
-    @abstractmethod
     def step_conf(self) -> Step:
-        """Direct access to typed step conf from context configuration."""
-        raise NotImplementedError()
+        """Direct access to typed step conf; subclasses override to narrow the type."""
+        return self._config.step_conf
 
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str) -> "BaseJob": ...
@@ -354,16 +327,6 @@ class BaseJob(ABC):
         self._dba.drop_external_table()
 
     # --- run loop ---
-
-    def filter_where(self, df: DataFrame) -> DataFrame:
-        assert isinstance(self.options, (JobBronzeOptions, JobSilverOptions))
-
-        f = self.options.filter_where
-        if f:
-            DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
-            df = df.where(f"{f}")
-
-        return df
 
     def restore(self, last_version: str | None = None, last_batch: str | None = None):
         self._dba.restore(last_version, last_batch)

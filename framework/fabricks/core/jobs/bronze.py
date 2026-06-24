@@ -69,19 +69,21 @@ class Bronze(BaseJob):
     @property
     def step_conf(self) -> StepBronzeConf:
         """Direct access to typed bronze step conf."""
-        return cast(StepBronzeConf, self.base_step_conf)
+        return cast(StepBronzeConf, self.config.step_conf)
 
     @property
     def step_options(self) -> StepBronzeOptions:
         """Direct access to typed bronze step options."""
-        return cast(StepBronzeOptions, self.base_step_conf.options)
+        return cast(StepBronzeOptions, self.config.step_conf.options)
 
     @classmethod
     def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
         return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None):
+    def from_step_topic_item(
+        cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict[str, Any], Row]] = None
+    ):
         return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property
@@ -246,6 +248,13 @@ class Bronze(BaseJob):
                 DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"label": self})
                 df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
 
+        return df
+
+    def filter_where(self, df: DataFrame) -> DataFrame:
+        f = self.options.filter_where
+        if f:
+            DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
+            df = df.where(f"{f}")
         return df
 
     def get_data(

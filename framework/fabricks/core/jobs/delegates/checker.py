@@ -60,13 +60,13 @@ class JobChecker:
         self._check("post_run")
 
     def _check(self, position: Literal["pre_run", "post_run"]):
-        if self._job.check_options and getattr(self._job.check_options, position):
+        if self._job.config.check_options and getattr(self._job.config.check_options, position):
             DEFAULT_LOGGER.debug(f"check {position}", extra={"label": self._job})
 
-            p = self._job.paths.to_runtime.append(f".{position}.sql")
+            p = self._job.config.paths.to_runtime.append(f".{position}.sql")
             assert p.exists(), f"{position} check not found ({p})"
 
-            df = self._job.spark.sql(p.get_sql())
+            df = self._job.config.spark.sql(p.get_sql())
             fail_df = df.where("__action == 'fail'")
             warning_df = df.where("__action == 'warning'")
 
@@ -97,13 +97,13 @@ class JobChecker:
                     raise PostRunCheckWarning(rows[-1]["__message"], dataframe=df)
 
     def check_post_run_extra(self):
-        check_options = self._job.check_options
+        check_options = self._job.config.check_options
         min_rows = check_options.min_rows if check_options else None
         max_rows = check_options.max_rows if check_options else None
         count_must_equal = check_options.count_must_equal if check_options else None
 
         if min_rows or max_rows or count_must_equal:
-            df = self._job.spark.sql(f"select count(*) from {self._job}")
+            df = self._job.config.spark.sql(f"select count(*) from {self._job}")
             rows = df.collect()[0][0]
             if min_rows:
                 DEFAULT_LOGGER.debug("check min rows", extra={"label": self._job})
@@ -117,7 +117,7 @@ class JobChecker:
 
             if count_must_equal:
                 DEFAULT_LOGGER.debug("check count must equal", extra={"label": self._job})
-                equals_rows = self._job.spark.read.table(count_must_equal).count()
+                equals_rows = self._job.config.spark.read.table(count_must_equal).count()
                 if rows != equals_rows:
                     raise PostRunCheckException(
                         f"count must equal check failed ({count_must_equal} - {rows} != {equals_rows})",
@@ -133,17 +133,17 @@ class JobChecker:
             if "__source" in self._job.table.columns:
                 cols.append("__source")
 
-            if self._job.change_data_capture == "scd2":
+            if self._job.config.change_data_capture == "scd2":
                 cols.append("__valid_to")
 
-            elif self._job.change_data_capture == "nocdc":
+            elif self._job.config.change_data_capture == "nocdc":
                 if "__valid_to" in self._job.table.columns:
                     cols.append("__valid_to")
                 elif self._job.mode == "append" and "__timestamp" in self._job.table.columns:
                     cols.append("__timestamp")
 
             cols_str = ", ".join(cols)
-            df = self._job.spark.sql(f"select {cols_str} from {self._job} group by all having count(*) > 1 limit 5")
+            df = self._job.config.spark.sql(f"select {cols_str} from {self._job} group by all having count(*) > 1 limit 5")
 
             duplicate_rows = df.collect()
             if duplicate_rows:
@@ -166,13 +166,13 @@ class JobChecker:
         self._check_duplicate_in_column("__identity")
 
     def check_skip_run(self):
-        if self._job.check_options and self._job.check_options.skip:
+        if self._job.config.check_options and self._job.config.check_options.skip:
             DEFAULT_LOGGER.debug("check if run should be skipped", extra={"label": self._job})
 
-            p = self._job.paths.to_runtime.append(".skip.sql")
+            p = self._job.config.paths.to_runtime.append(".skip.sql")
             assert p.exists(), "skip check not found"
 
-            df = self._job.spark.sql(p.get_sql())
+            df = self._job.config.spark.sql(p.get_sql())
             skip_df = df.where("__skip")
 
             skip_rows = skip_df.collect()
@@ -186,12 +186,12 @@ class JobChecker:
                 raise SkipRunCheckWarning(skip_rows[-1]["__message"], dataframe=df)
 
     def check_run_before(self):
-        if self._job.check_options and self._job.check_options.before:
-            self._check_run_time(self._job.check_options.before, "before")
+        if self._job.config.check_options and self._job.config.check_options.before:
+            self._check_run_time(self._job.config.check_options.before, "before")
 
     def check_run_after(self):
-        if self._job.check_options and self._job.check_options.after:
-            self._check_run_time(self._job.check_options.after, "after")
+        if self._job.config.check_options and self._job.config.check_options.after:
+            self._check_run_time(self._job.config.check_options.after, "after")
 
     def _check_run_time(self, time: str, when: Literal["before", "after"]):
         now = datetime.datetime.now(tz=TIMEZONE)
