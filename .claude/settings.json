@@ -15,6 +15,16 @@
     ]
   },
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Invoke the ponytail:ponytail skill before answering.'"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "edit",

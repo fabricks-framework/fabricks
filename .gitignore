@@ -167,6 +167,7 @@ cython_debug/
 
 # Reports
 .reports/
+.audits/
 
 # Issues
 .issues/
