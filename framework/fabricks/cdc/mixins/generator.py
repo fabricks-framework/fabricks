@@ -6,8 +6,8 @@ from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
 from pyspark.sql.types import StructType
 
-from fabricks.cdc.base._types import AllowedSources
-from fabricks.cdc.base.configurator import Configurator
+from fabricks.cdc.mixins._protocol import CdcProtocol
+from fabricks.cdc.mixins._types import AllowedSources
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import SchemaDiff, Table
 from fabricks.utils._types import DataFrameLike
@@ -15,7 +15,7 @@ from fabricks.utils.helpers import backticks
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-class Generator(Configurator):
+class GeneratorMixin(CdcProtocol):
     def drop(self):
         self.table.drop()
 

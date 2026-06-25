@@ -7,7 +7,7 @@ from pyspark.sql.types import Row
 from sparkdantic import create_spark_schema
 
 from fabricks.context import IS_JOB_CONFIG_FROM_YAML, PATHS_RUNTIME, SPARK
-from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.base import BaseJob
 from fabricks.core.jobs.get_job import get_job, get_job_internal
 from fabricks.core.read import read_yaml
 from fabricks.models import AllowedModes

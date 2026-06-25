@@ -5,8 +5,8 @@ from typing import Literal, Optional
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
 
-from fabricks.cdc.base._types import AllowedSources
-from fabricks.cdc.base.generator import Generator
+from fabricks.cdc.mixins._protocol import CdcProtocol
+from fabricks.cdc.mixins._types import AllowedSources
 from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
@@ -15,7 +15,7 @@ from fabricks.utils._types import DataFrameLike
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-class Processor(Generator):
+class ProcessorMixin(CdcProtocol):
     def get_data(self, src: AllowedSources, **kwargs) -> DataFrame:
         if isinstance(src, DataFrameLike):
             name = f"{self.qualified_name}__data"

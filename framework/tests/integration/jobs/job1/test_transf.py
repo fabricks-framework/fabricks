@@ -4,7 +4,7 @@ import pytest
 
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core import get_job
+from fabricks.core.jobs import get_job
 
 DEFAULT_LOGGER.setLevel(ERROR)
 

@@ -5,7 +5,7 @@ from pyspark.sql import DataFrame
 
 from fabricks.context import IS_TYPE_WIDENING
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.exception import (
+from fabricks.core.jobs.mixins._exception import (
     PostRunCheckException,
     PostRunCheckWarning,
     PostRunInvokeException,
@@ -16,12 +16,12 @@ from fabricks.core.jobs.base.exception import (
     SkipRunCheckWarning,
     SkipRunTimeWarning,
 )
-from fabricks.core.jobs.base.invoker import Invoker
+from fabricks.core.jobs.mixins._protocol import JobProtocol
 from fabricks.models import JobBronzeOptions, JobSilverOptions
 from fabricks.utils.write import write_stream
 
 
-class Processor(Invoker):
+class ProcessorMixin(JobProtocol):
     def filter_where(self, df: DataFrame) -> DataFrame:
         assert isinstance(self.options, (JobBronzeOptions, JobSilverOptions))
 
@@ -31,28 +31,6 @@ class Processor(Invoker):
             df = df.where(f"{f}")
 
         return df
-
-    def restore(self, last_version: str | None = None, last_batch: str | None = None):
-        """
-        Restores the processor to a specific version and batch.
-
-        Args:
-            last_version (Optional[str]): The last version to restore to. If None, no version restore will be performed.
-            last_batch (Optional[str]): The last batch to restore to. If None, no batch restore will be performed.
-        """
-        if self.persist:
-            if last_version is not None:
-                _last_version = int(last_version)
-                if self.table.get_last_version() > _last_version:
-                    self.table.restore_to_version(_last_version)
-
-            if self.stream:
-                if last_batch is not None:
-                    current_batch = int(last_batch) + 1
-                    self.rm_commit(current_batch)
-
-                    assert last_batch == self.table.get_property("fabricks.last_batch")
-                    assert self.paths.to_commits.joinpath(last_batch).exists()
 
     def _for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs):
         DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})

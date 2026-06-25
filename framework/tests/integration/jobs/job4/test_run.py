@@ -3,7 +3,7 @@ from logging import ERROR
 import pytest
 
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core import get_job
+from fabricks.core.jobs import get_job
 from fabricks.utils.helpers import run_in_parallel
 
 DEFAULT_LOGGER.setLevel(ERROR)

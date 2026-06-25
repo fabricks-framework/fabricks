@@ -16,13 +16,18 @@ with
             {% if add_source %} cast('{{ add_source }}' as string) as __source, {% endif %}
             {% for key, value in cast.items() %} cast({{ key }} as {{ value }}) as {{ key }}, {% endfor %}
             {% if template == "filter" %}
-                -- Limit expensive field(s) computation
+            -- Limit expensive field(s) computation
             {% else %}
-                {% if add_operation %} cast('{{ add_operation }}' as string) as __operation, {% endif %}
-                {% if add_calculated_columns %} {% for c in add_calculated_columns %} {{ c }}, {% endfor %} {% endif %}
-                {% if add_last_updated %} cast(current_timestamp() as timestamp) as __last_updated, {% endif %}
-                {% if add_hash %} {{ h.add_hash(fields=hashes) }} as __hash, {% endif %}
-                {% if add_key %} {{ h.add_hash(fields=keys) }} as __key, {% endif %}
+                {% if add_operation %} cast('{{ add_operation }}' as string) as __operation,
+                {% endif %}
+                {% if add_calculated_columns %} {% for c in add_calculated_columns %} {{ c }}, {% endfor %}
+                {% endif %}
+                {% if add_last_updated %} cast(current_timestamp() as timestamp) as __last_updated,
+                {% endif %}
+                {% if add_hash %} {{ h.add_hash(fields=hashes) }} as __hash,
+                {% endif %}
+                {% if add_key %} {{ h.add_hash(fields=keys) }} as __key,
+                {% endif %}
                 {% if add_metadata %}
                     struct(
                         {% if cdc == "nocdc" %}current_timestamp() as inserted,

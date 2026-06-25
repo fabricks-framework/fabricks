@@ -6,14 +6,14 @@ from pyspark.sql import DataFrame
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.extenders import get_extender
-from fabricks.core.jobs.base.checker import Checker
-from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.get_schedule import get_schedule
+from fabricks.core.jobs.mixins._exception import PostRunInvokeException, PreRunInvokeException
+from fabricks.core.jobs.mixins._protocol import JobProtocol
 from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
 from fabricks.utils.path import GitPath
 
 
-class Invoker(Checker):
+class InvokerMixin(JobProtocol):
     def invoke(self, schedule: Optional[str] = None, **kwargs):
         return self._invoke_job(
             position="run",

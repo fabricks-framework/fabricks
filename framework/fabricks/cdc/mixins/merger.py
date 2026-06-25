@@ -5,8 +5,8 @@ from typing import Optional, Union
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
 
-from fabricks.cdc.base._types import AllowedSources
-from fabricks.cdc.base.processor import Processor
+from fabricks.cdc.mixins._protocol import CdcProtocol
+from fabricks.cdc.mixins._types import AllowedSources
 from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -15,7 +15,7 @@ from fabricks.utils.helpers import backticks
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-class Merger(Processor):
+class MergerMixin(CdcProtocol):
     def get_merge_context(self, src: Union[DataFrame, str], **kwargs) -> dict:
         if isinstance(src, DataFrameLike):
             format = "dataframe"

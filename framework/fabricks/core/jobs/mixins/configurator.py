@@ -1,18 +1,15 @@
 import re
-from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import List, Optional, Union
 
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.types import Row
 from typing_extensions import deprecated
 
 from fabricks.cdc import SCD1, SCD2, NoCDC
 from fabricks.cdc.scd0 import SCD0
-from fabricks.context import PATHS_RUNTIME, PATHS_STORAGE, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.context.spark_session import build_spark_session
-from fabricks.core.jobs.get_job_conf import get_job_conf
+from fabricks.core.jobs.mixins._protocol import JobProtocol
 from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.table import Table
 from fabricks.models import (
@@ -26,67 +23,17 @@ from fabricks.models import (
     RuntimeOptions,
     SparkOptions,
     StepBronzeConf,
-    StepBronzeOptions,
     StepGoldConf,
-    StepGoldOptions,
     StepSilverConf,
-    StepSilverOptions,
     StepTableOptions,
     TableOptions,
-    TOptions,
     UpdaterOptions,
-    get_job_id,
 )
 
 _UDF_PATTERN = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
 
 
-class Configurator(ABC):
-    def __init__(
-        self,
-        expand: str,
-        step: str,
-        topic: Optional[str] = None,
-        item: Optional[str] = None,
-        job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
-    ):
-        self.expand = expand
-        self.step = step
-
-        if job_id is not None:
-            self.job_id = job_id
-            self.conf = get_job_conf(step=self.step, job_id=self.job_id, row=conf)
-            self.topic = self.conf.topic
-            self.item = self.conf.item
-
-        else:
-            assert topic
-            assert item
-            self.topic = topic
-            self.item = item
-            self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item, row=conf)
-            self.job_id = get_job_id(step=self.step, topic=self.topic, item=self.item)
-
-    _spark: Optional[SparkSession] = None  # Keep mutable - has side effects
-    _udf_registered: Optional[bool] = None  # Keep mutable - state flag
-
-    @property
-    @abstractmethod
-    def stream(self) -> bool: ...
-
-    @property
-    @abstractmethod
-    def schema_drift(self) -> bool: ...
-
-    @property
-    @abstractmethod
-    def persist(self) -> bool: ...
-
-    @property
-    @abstractmethod
-    def virtual(self) -> bool: ...
-
+class ConfiguratorMixin(JobProtocol):
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str): ...
 
@@ -127,13 +74,13 @@ class Configurator(ABC):
             self._spark = spark
         return self._spark
 
-    @cached_property
+    @property
     def base_step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
-        return STEPS[self.step]
+        return self.config.base_step_conf
 
     @property
     def qualified_name(self) -> str:
-        return f"{self.step}.{self.topic}_{self.item}"
+        return self.config.qualified_name
 
     def _get_timeout(self, what: str) -> int:
         t = getattr(self.step_options.timeouts, what, None)
@@ -157,62 +104,24 @@ class Configurator(ABC):
     def table(self) -> Table:
         return self.cdc.table
 
-    @cached_property
+    @property
     def paths(self) -> Paths:
-        storage = PATHS_STORAGE.get(self.step)
-        assert storage
-
-        runtime_root = PATHS_RUNTIME.get(self.step)
-        assert runtime_root
-
-        return Paths(
-            to_storage=storage,
-            to_tmp=storage.joinpath("tmp", self.topic, self.item),
-            to_checkpoints=storage.joinpath("checkpoints", self.topic, self.item),
-            to_commits=storage.joinpath("checkpoints", self.topic, self.item, "commits"),
-            to_schema=storage.joinpath("schema", self.topic, self.item),
-            to_runtime=runtime_root.joinpath(self.topic, self.item),
-        )
+        return self.config.paths
 
     @property
-    @abstractmethod
-    def options(self) -> TOptions:
-        """
-        Direct access to typed job options.
-
-        Subclasses must implement this property and return their specific typed
-        options instance (e.g. JobBronzeOptions, JobSilverOptions, or JobGoldOptions)
-        corresponding to the job type.
-        """
-        raise NotImplementedError()
-
-    @cached_property
     def runtime_conf(self) -> RuntimeConf:
         """Direct access to typed runtime conf."""
-        from fabricks.context.runtime import CONF_RUNTIME
-
-        return CONF_RUNTIME
+        return self.config.runtime_conf
 
     @property
-    @abstractmethod
-    def step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
-        """Direct access to typed step conf from context configuration."""
-        raise NotImplementedError()
-
-    @property
-    def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]:
-        """Direct access to typed step-level options from context configuration."""
-        raise NotImplementedError()
-
-    @cached_property
     def step_table_options(self) -> Optional[StepTableOptions]:
         """Direct access to typed step-level table options from context configuration."""
-        return STEPS[self.step].table_options
+        return self.config.step_table_options
 
     @property
     def runtime_options(self) -> RuntimeOptions:
         """Direct access to typed runtime options from context configuration."""
-        return self.runtime_conf.options
+        return self.config.runtime_options
 
     @property
     def step_spark_options(self) -> Optional[SparkOptions]:
@@ -222,33 +131,27 @@ class Configurator(ABC):
 
     @property
     def table_options(self) -> Optional[TableOptions]:
-        """Direct access to typed table options."""
-        return self.conf.table_options
+        return self.config.table_options
 
     @property
     def check_options(self) -> Optional[CheckOptions]:
-        """Direct access to typed check options."""
-        return self.conf.check_options
+        return self.config.check_options
 
     @property
     def spark_options(self) -> Optional[SparkOptions]:
-        """Direct access to typed spark options."""
-        return self.conf.spark_options
+        return self.config.spark_options
 
     @property
     def invoker_options(self) -> Optional[InvokerOptions]:
-        """Direct access to typed invoker options."""
-        return self.conf.invoker_options
+        return self.config.invoker_options
 
     @property
     def updater_options(self) -> Optional[UpdaterOptions]:
-        """Direct access to typed updater options."""
-        return self.conf.updater_options
+        return self.config.updater_options
 
     @property
     def extender_options(self) -> Optional[List[ExtenderOptions]]:
-        """Direct access to typed extender options."""
-        return self.conf.extender_options
+        return self.config.extender_options
 
     @cached_property
     def change_data_capture(self) -> AllowedChangeDataCaptures:
@@ -270,9 +173,6 @@ class Configurator(ABC):
     @property
     def slowly_changing_dimension(self) -> bool:
         return self.change_data_capture in ["scd0", "scd1", "scd2"]
-
-    @abstractmethod
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict: ...
 
     def get_cdc_data(self, stream: bool = False) -> Optional[DataFrame]:
         df = self.get_data(stream=stream)
@@ -314,27 +214,6 @@ class Configurator(ABC):
         if UDF_PREFIX in string:
             matches = _UDF_PATTERN.findall(string)
             return list(set(matches)) if matches else None
-
-    @abstractmethod
-    def get_data(self, stream: bool = False, transform: Optional[bool] = None, **kwargs) -> Optional[DataFrame]: ...
-
-    @abstractmethod
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs): ...
-
-    @abstractmethod
-    def for_each_run(self, **kwargs): ...
-
-    @abstractmethod
-    def base_transform(self, df: DataFrame) -> DataFrame: ...
-
-    @abstractmethod
-    def run(
-        self,
-        retry: Optional[bool] = True,
-        schedule: Optional[str] = None,
-        schedule_id: Optional[str] = None,
-        invoke: Optional[bool] = True,
-    ): ...
 
     @deprecated("use maintain instead")
     def optimize(
@@ -385,5 +264,5 @@ class Configurator(ABC):
 
             self.table.vacuum(retention_days=retention_days)
 
-    def __str__(self):
-        return f"{self.step}.{self.topic}_{self.item}"
+    def __str__(self) -> str:
+        return str(self.config)

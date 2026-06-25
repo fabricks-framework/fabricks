@@ -1,38 +1,19 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Union
+from typing import List, Optional
 
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import DataFrame
 from pyspark.sql.types import StructType
 
-from fabricks.cdc.base._types import AllowedSources
-from fabricks.context import SPARK
+from fabricks.cdc.mixins._protocol import CdcProtocol
+from fabricks.cdc.mixins._types import AllowedSources
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.helpers import backticks
 
 
-class Configurator(ABC):
-    def __init__(
-        self,
-        database: str,
-        *levels: str,
-        change_data_capture: str,
-        spark: Optional[SparkSession] = None,
-    ):
-        if spark is None:
-            spark = SPARK
-        assert spark is not None
-        self.spark: SparkSession = spark
-
-        self.database = Database(database)
-        self.levels = levels
-        self.change_data_capture = change_data_capture
-        self.table = Table(self.database.name, *self.levels, spark=self.spark)
-
+class ConfiguratorMixin(CdcProtocol):
     @property
     def is_view(self):
         return self.table.is_view
@@ -44,36 +25,6 @@ class Configurator(ABC):
     @property
     def qualified_name(self):
         return f"{self.database}_{'_'.join(self.levels)}"
-
-    @abstractmethod
-    def get_query(self, src: AllowedSources, **kwargs) -> str: ...
-
-    @abstractmethod
-    def get_data(self, src: AllowedSources, **kwargs) -> DataFrame: ...
-
-    @abstractmethod
-    def create_table(
-        self,
-        src: AllowedSources,
-        partitioning: Optional[bool] = False,
-        partition_by: Optional[Union[List[str], str]] = None,
-        identity: Optional[bool] = False,
-        liquid_clustering: Optional[bool] = False,
-        cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str | bool | int]] = None,
-        masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, Any]] = None,
-        foreign_keys: Optional[dict[str, Any]] = None,
-        generated_columns: Optional[dict[str, str]] = None,
-        comments: Optional[dict[str, Any]] = None,
-        **kwargs,
-    ): ...
-
-    @abstractmethod
-    def drop(self): ...
-
-    @abstractmethod
-    def create_or_replace_view(self, src: Union[Table, str], **kwargs): ...
 
     @property
     def allowed_input__columns(self) -> List[str]:
@@ -219,18 +170,6 @@ class Configurator(ABC):
 
         columns = backticks(columns)
         return df.select(columns)
-
-    @abstractmethod
-    def optimize_table(self): ...
-
-    @abstractmethod
-    def update_schema(self, src: AllowedSources, **kwargs): ...
-
-    @abstractmethod
-    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs): ...
-
-    @abstractmethod
-    def overwrite_schema(self, src: AllowedSources): ...
 
     def __str__(self):
         return f"{self.table.qualified_name}"

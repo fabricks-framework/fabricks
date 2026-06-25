@@ -3,7 +3,7 @@ from typing import Literal
 
 from fabricks.context import TIMEZONE
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.exception import (
+from fabricks.core.jobs.mixins._exception import (
     PostRunCheckException,
     PostRunCheckWarning,
     PreRunCheckException,
@@ -11,10 +11,10 @@ from fabricks.core.jobs.base.exception import (
     SkipRunCheckWarning,
     SkipRunTimeWarning,
 )
-from fabricks.core.jobs.base.generator import Generator
+from fabricks.core.jobs.mixins._protocol import JobProtocol
 
 
-class Checker(Generator):
+class CheckerMixin(JobProtocol):
     def check_pre_run(self):
         self._check("pre_run")
 

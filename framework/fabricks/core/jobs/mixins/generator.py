@@ -6,13 +6,13 @@ from pyspark.sql.functions import lit
 
 from fabricks.cdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.configurator import Configurator
+from fabricks.core.jobs.mixins._protocol import JobProtocol
 from fabricks.metastore.table import SchemaDiff
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency
 
 
-class Generator(Configurator):
+class GeneratorMixin(JobProtocol):
     def _get_option_hierarchy(self, attribute: str, into: Literal["table", "spark"] = "table", default=None):
         """
         Get a table option value with fallback priority: job options → step options → default.
@@ -96,6 +96,21 @@ class Generator(Configurator):
         if path.exists():
             DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": self})
             path.rm()
+
+    def restore(self, last_version: str | None = None, last_batch: str | None = None):
+        if self.persist:
+            if last_version is not None:
+                _last_version = int(last_version)
+                if self.table.get_last_version() > _last_version:
+                    self.table.restore_to_version(_last_version)
+
+            if self.stream:
+                if last_batch is not None:
+                    current_batch = int(last_batch) + 1
+                    self.rm_commit(current_batch)
+
+                    assert last_batch == self.table.get_property("fabricks.last_batch")
+                    assert self.paths.to_commits.joinpath(last_batch).exists()
 
     def truncate(self):
         """
