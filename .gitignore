@@ -165,9 +165,8 @@ cython_debug/
 !.claude/skills/fabricks
 !.claude/skills/python-performance-optimization
 
-# Reports
+# Agents
 .reports/
 .audits/
-
-# Issues
+.plans
 .issues/
