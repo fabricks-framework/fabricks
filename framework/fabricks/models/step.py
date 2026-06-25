@@ -103,3 +103,4 @@ class PowerBI(Step):
     """PowerBI configuration."""
 
     path_options: StepPathOptions | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
+    options: StepOptions | None = None  # pyright: ignore[reportIncompatibleVariableOverride]
