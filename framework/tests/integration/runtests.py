@@ -75,15 +75,15 @@ if initialize:
 
 # COMMAND ----------
 
+if fix_notebooks:
+    run_notebook(root.joinpath("fix_notebooks"))
+
+# COMMAND ----------
+
 if armageddon:
     run_notebook(root.joinpath("armageddon"))
 elif reset:
     run_notebook(root.joinpath("reset"))
-
-# COMMAND ----------
-
-if fix_notebooks:
-    run_notebook(root.joinpath("fix_notebooks"))
 
 # COMMAND ----------
 
