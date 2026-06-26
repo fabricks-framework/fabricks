@@ -5,7 +5,7 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class QueryOptions(BaseModel):
+class CdcContext(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     keys: Optional[list[str]] = None

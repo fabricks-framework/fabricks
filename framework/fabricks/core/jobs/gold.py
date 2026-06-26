@@ -505,7 +505,7 @@ class Gold(BaseJob):
         if create:
             self.cdc_last_timestamp.table.create(df)
         else:
-            self.cdc_last_timestamp.overwrite(df)
+            self.cdc_last_timestamp.overwrite(df, context=CdcContext())
 
     def overwrite(self, schedule: Optional[str] = None, invoke: Optional[bool] = False):
         if self.mode == "invoke":

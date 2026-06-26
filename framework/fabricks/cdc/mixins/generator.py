@@ -10,6 +10,7 @@ from fabricks.cdc.mixins._protocol import CdcProtocol
 from fabricks.cdc.mixins._types import AllowedSources
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import SchemaDiff, Table
+from fabricks.models.cdc import CdcContext
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.helpers import backticks
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -22,6 +23,7 @@ class GeneratorMixin(CdcProtocol):
     def create_table(
         self,
         src: AllowedSources,
+        context: CdcContext,
         partitioning: Optional[bool] = False,
         partition_by: Optional[Union[List[str], str]] = None,
         identity: Optional[bool] = False,
@@ -33,14 +35,11 @@ class GeneratorMixin(CdcProtocol):
         foreign_keys: Optional[dict[str, Any]] = None,
         generated_columns: Optional[dict[str, str]] = None,
         comments: Optional[dict[str, Any]] = None,
-        **kwargs,
     ):
-        kwargs["mode"] = "complete"
-        kwargs["slice"] = False
-        kwargs["rectify"] = False
-        kwargs["deduplicate"] = False
-
-        df = self.get_data(src, **kwargs)
+        context = context.model_copy(
+            update={"mode": "complete", "slice": None, "rectify": False, "deduplicate": False}
+        )
+        df = self.get_data(src, context=context)
 
         if partitioning is True:
             assert partition_by, "partitioning column(s) not found"
@@ -65,11 +64,16 @@ class GeneratorMixin(CdcProtocol):
             comments=comments,
         )
 
-    def create_or_replace_view(self, src: Union[Table, str], schema_evolution: bool = True, **kwargs):
+    def create_or_replace_view(
+        self,
+        src: Union[Table, str],
+        context: CdcContext,
+        schema_evolution: bool = True,
+    ):
         assert not isinstance(src, DataFrameLike), "dataframe not allowed"
 
-        assert kwargs["mode"] == "complete", f"{kwargs['mode']} not allowed"
-        sql = self.get_query(src, **kwargs)
+        assert context.mode == "complete", f"{context.mode} not allowed"
+        sql = self.get_query(src, context=context)
 
         df = self.spark.sql(sql)
         df = self.reorder_dataframe(df)
@@ -104,7 +108,7 @@ class GeneratorMixin(CdcProtocol):
 
         self.table.optimize(columns=columns)
 
-    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs) -> DataFrame:
+    def get_differences_with_deltatable(self, src: AllowedSources, context: CdcContext) -> DataFrame:
         from pyspark.sql.types import StringType, StructField, StructType
 
         schema = StructType(
@@ -121,32 +125,26 @@ class GeneratorMixin(CdcProtocol):
             return self.spark.createDataFrame([], schema=schema)
 
         else:
-            kwargs["mode"] = "complete"
-            if "slice" in kwargs:
-                del kwargs["slice"]
-
-            df = self.get_data(src, **kwargs)
+            context = context.model_copy(update={"mode": "complete", "slice": None})
+            df = self.get_data(src, context=context)
             df = self.reorder_dataframe(df)
 
             diffs = self.table.get_schema_differences(df)
             return self.spark.createDataFrame([cast(Any, d.model_dump()) for d in diffs], schema=schema)
 
-    def get_schema_differences(self, src: AllowedSources, **kwargs) -> Optional[Sequence[SchemaDiff]]:
+    def get_schema_differences(self, src: AllowedSources, context: CdcContext) -> Optional[Sequence[SchemaDiff]]:
         if self.is_view:
             return None
 
         else:
-            kwargs["mode"] = "complete"
-            if "slice" in kwargs:
-                del kwargs["slice"]
-
-            df = self.get_data(src, **kwargs)
+            context = context.model_copy(update={"mode": "complete", "slice": None})
+            df = self.get_data(src, context=context)
             df = self.reorder_dataframe(df)
 
             return self.table.get_schema_differences(df)
 
-    def schema_drifted(self, src: AllowedSources, **kwargs) -> Optional[bool]:
-        d = self.get_schema_differences(src, **kwargs)
+    def schema_drifted(self, src: AllowedSources, context: CdcContext) -> Optional[bool]:
+        d = self.get_schema_differences(src, context=context)
         if d is None:
             return None
 
@@ -155,30 +153,27 @@ class GeneratorMixin(CdcProtocol):
     def _update_schema(
         self,
         src: AllowedSources,
+        context: CdcContext,
         overwrite: bool = False,
         widen_types: bool = False,
-        **kwargs,
     ):
         if self.is_view:
             assert not isinstance(src, DataFrameLike) and not isinstance(src, StructType), (
                 "dataframe and structtype not allowed"
             )
-            self.create_or_replace_view(src=src)
+            self.create_or_replace_view(src=src, context=CdcContext())
 
         else:
-            kwargs["mode"] = "complete"
-            if "slice" in kwargs:
-                del kwargs["slice"]
-
-            df = self.get_data(src, **kwargs)
+            context = context.model_copy(update={"mode": "complete", "slice": None})
+            df = self.get_data(src, context=context)
             df = self.reorder_dataframe(df)
             if overwrite:
                 self.table.overwrite_schema(df)
             else:
                 self.table.update_schema(df, widen_types=widen_types)
 
-    def update_schema(self, src: AllowedSources, **kwargs):
-        self._update_schema(src=src, **kwargs)
+    def update_schema(self, src: AllowedSources, context: CdcContext, widen_types: bool = False):
+        self._update_schema(src=src, widen_types=widen_types, context=context)
 
-    def overwrite_schema(self, src: AllowedSources, **kwargs):
-        self._update_schema(src=src, overwrite=True, **kwargs)
+    def overwrite_schema(self, src: AllowedSources, context: CdcContext):
+        self._update_schema(src=src, overwrite=True, context=context)

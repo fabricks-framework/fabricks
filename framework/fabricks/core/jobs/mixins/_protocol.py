@@ -21,7 +21,9 @@ from fabricks.models import (
     StepTableOptions,
     TableOptions,
     TOptions,
+    UpdaterOptions,
 )
+from fabricks.models.cdc import CdcContext
 
 
 class JobProtocol(Protocol):
@@ -60,6 +62,9 @@ class JobProtocol(Protocol):
 
     @property
     def extender_options(self) -> Optional[list[ExtenderOptions]]: ...
+
+    @property
+    def updater_options(self) -> Optional[UpdaterOptions]: ...
 
     @property
     def spark_options(self) -> Optional[SparkOptions]: ...
@@ -111,7 +116,7 @@ class JobProtocol(Protocol):
 
     def base_transform(self, df: DataFrame) -> DataFrame: ...
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict: ...
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> CdcContext: ...
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs) -> None: ...
 

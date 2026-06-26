@@ -5,6 +5,7 @@ import pytest
 from fabricks.cdc import NoCDC
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.models.cdc import CdcContext
 
 DEFAULT_LOGGER.setLevel(ERROR)
 
@@ -15,9 +16,9 @@ def test_gold_nocdc_overwrite():
     df = SPARK.sql("select 1 as dummy")
     nocdc = NoCDC("gold", "nocdc", "overwrite")
 
-    nocdc.overwrite(df)
+    nocdc.overwrite(df, context=CdcContext())
     assert nocdc.table.dataframe.count() == 1
-    nocdc.overwrite(df)
+    nocdc.overwrite(df, context=CdcContext())
     assert nocdc.table.dataframe.count() == 1
 
 
@@ -26,7 +27,7 @@ def test_gold_nocdc_append():
     df = SPARK.sql("select 1 as dummy")
     nocdc = NoCDC("gold", "nocdc", "append")
 
-    nocdc.append(df)
+    nocdc.append(df, context=CdcContext())
     assert nocdc.table.dataframe.count() == 1
-    nocdc.append(df)
+    nocdc.append(df, context=CdcContext())
     assert nocdc.table.dataframe.count() == 2

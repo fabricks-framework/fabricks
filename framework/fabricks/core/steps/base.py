@@ -29,6 +29,7 @@ from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 from fabricks.models import SchemaDependencies
+from fabricks.models.cdc import CdcContext
 from fabricks.utils.helpers import run_in_parallel
 
 
@@ -347,8 +348,7 @@ class BaseStep:
 
             NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
-                keys=["dependency_id"],
-                update_where=update_where,
+                context=CdcContext(keys=["dependency_id"], update_where=update_where),
             )
 
         else:
@@ -367,9 +367,7 @@ class BaseStep:
 
             NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
-                keys=["dependency_id"],
-                update_where=update_where,
-                uuid=True,
+                context=CdcContext(keys=["dependency_id"], update_where=update_where, uuid=True),
             )
 
         return df, errors
@@ -476,21 +474,23 @@ class BaseStep:
         order = self.options.order or 0
         df = SPARK.sql(f"select '{self.expand}' as expand, '{self.name}' as step, '{order}' :: int as `order`")
 
-        NoCDC("fabricks", "steps").delete_missing(df, keys=["step"], update_where=f"step = '{self.name}'")
+        NoCDC("fabricks", "steps").delete_missing(
+            df, context=CdcContext(keys=["step"], update_where=f"step = '{self.name}'")
+        )
 
     def update_views_list(self):
         df = self.database.get_views()
         df = df.withColumn("job_id", expr("md5(view)"))
 
         DEFAULT_LOGGER.info("update views list", extra={"label": self})
-        NoCDC("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
+        NoCDC("fabricks", self.name, "views").delete_missing(df, context=CdcContext(keys=["job_id"]))
 
     def update_tables_list(self):
         df = self.database.get_tables()
         df = df.withColumn("job_id", expr("md5(table)"))
 
         DEFAULT_LOGGER.info("update tables list", extra={"label": self})
-        NoCDC("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
+        NoCDC("fabricks", self.name, "tables").delete_missing(df, context=CdcContext(keys=["job_id"]))
 
     def update_configurations(self, drop: Optional[bool] = False):
         df = self.get_jobs()
@@ -502,12 +502,12 @@ class BaseStep:
         if drop:
             cdc.table.drop()
         elif cdc.table.exists():
-            df_diffs = cdc.get_differences_with_deltatable(df)
+            df_diffs = cdc.get_differences_with_deltatable(df, context=CdcContext())
             if not df_diffs.isEmpty():
                 DEFAULT_LOGGER.warning("schema drift detected", extra={"label": self})
                 cdc.table.overwrite_schema(df=df)
 
-        cdc.delete_missing(df, keys=["job_id"])
+        cdc.delete_missing(df, context=CdcContext(keys=["job_id"]))
 
     # ========== Deprecated Methods ==========
 

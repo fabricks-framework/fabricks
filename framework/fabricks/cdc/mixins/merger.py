@@ -10,13 +10,14 @@ from fabricks.cdc.mixins._types import AllowedSources
 from fabricks.context.config import IS_DEBUGMODE
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.view import create_or_replace_global_temp_view
+from fabricks.models.cdc import CdcContext
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.helpers import backticks
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
 class MergerMixin(CdcProtocol):
-    def get_merge_context(self, src: Union[DataFrame, str], **kwargs) -> dict:
+    def get_merge_context(self, src: Union[DataFrame, str], context: CdcContext) -> dict:
         if isinstance(src, DataFrameLike):
             format = "dataframe"
             columns = self.get_columns(src, backtick=False, sort=False, check=False)  # already done in processor
@@ -33,13 +34,11 @@ class MergerMixin(CdcProtocol):
         assert "__merge_key" in columns, "__merge_key not found"
         assert "__merge_condition" in columns, "__merge_condition not found"
 
-        keys = kwargs.get("keys")
-        if isinstance(keys, str):
-            keys = [keys]
+        keys: Optional[list[str]] = list(context.keys) if context.keys else None
 
         columns = [c for c in columns if c not in ["__merge_condition", "__merge_key"]]
         fields = [c for c in columns if not c.startswith("__")]
-        where = kwargs.get("update_where") if self.table.rows > 0 else None
+        where = context.update_where if self.table.rows > 0 else None
         soft_delete = "__is_deleted" in columns
 
         has_source = "__source" in columns
@@ -80,15 +79,20 @@ class MergerMixin(CdcProtocol):
             "where": where,
         }
 
-    def get_merge_query(self, src: Union[DataFrame, str], fix: Optional[bool] = True, **kwargs) -> str:
-        context = self.get_merge_context(src=src, **kwargs)
+    def get_merge_query(
+        self,
+        src: Union[DataFrame, str],
+        context: CdcContext,
+        fix: Optional[bool] = True,
+    ) -> str:
+        merged_context = self.get_merge_context(src=src, context=context)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
         merge = environment.get_template("merge.sql.jinja")
 
         try:
-            sql = merge.render(**context)
+            sql = merge.render(**merged_context)
         except Exception as e:
-            DEFAULT_LOGGER.debug("context", extra={"label": self, "content": context})
+            DEFAULT_LOGGER.debug("context", extra={"label": self, "content": merged_context})
             raise e
 
         if fix:
@@ -105,14 +109,14 @@ class MergerMixin(CdcProtocol):
 
         return sql
 
-    def merge(self, src: AllowedSources, **kwargs):
+    def merge(self, src: AllowedSources, context: CdcContext):
         if not self.table.exists():
-            self.create_table(src, **kwargs)
+            self.create_table(src, context=context)
 
-        df = self.get_data(src, **kwargs)
+        df = self.get_data(src, context=context)
         global_temp_view = f"{self.qualified_name}__merge"
-        view = create_or_replace_global_temp_view(global_temp_view, df, uuid=kwargs.get("uuid", False), job=self)
+        view = create_or_replace_global_temp_view(global_temp_view, df, uuid=context.uuid, job=self)
 
-        merge = self.get_merge_query(view, **kwargs)
+        merge = self.get_merge_query(view, context=context)
         DEFAULT_LOGGER.debug("exec merge", extra={"label": self, "sql": merge})
         self.spark.sql(merge, src=view)

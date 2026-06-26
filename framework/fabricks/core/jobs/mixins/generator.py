@@ -379,6 +379,7 @@ class GeneratorMixin(JobProtocol):
 
             self.cdc.create_table(
                 sql,
+                context=cdc_options,
                 identity=identity,
                 liquid_clustering=liquid_clustering,
                 cluster_by=cluster_by,
@@ -390,7 +391,6 @@ class GeneratorMixin(JobProtocol):
                 foreign_keys=foreign_keys,
                 generated_columns=generated_columns,
                 comments=comments,
-                **cdc_options,
             )
 
         if not self.table.exists():

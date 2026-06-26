@@ -2,7 +2,7 @@
 
 # Common types and aliases
 # CDC
-from fabricks.models.cdc import QueryContext, QueryOptions
+from fabricks.models.cdc import CdcContext, QueryContext
 from fabricks.models.common import (
     AllowedChangeDataCaptures,
     AllowedConstraintOptions,
@@ -129,6 +129,6 @@ __all__ = [
     "get_dependency_id",
     "get_job_id",
     # CDC
-    "QueryOptions",
+    "CdcContext",
     "QueryContext",
 ]
