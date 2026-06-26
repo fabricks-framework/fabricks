@@ -164,6 +164,7 @@ cython_debug/
 !.claude/skills/skill-creator
 !.claude/skills/fabricks
 !.claude/skills/python-performance-optimization
+.claude/worktrees/
 
 # Agents
 .reports/
