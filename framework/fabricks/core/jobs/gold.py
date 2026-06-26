@@ -2,7 +2,7 @@ import re
 import sys
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Any, List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -15,6 +15,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base import BaseJob
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobGoldOptions, RegisterOptions, StepGoldConf, StepGoldOptions
+from fabricks.models.cdc import CdcContext
 from fabricks.utils.sqlglot import fix, get_tables, parse_script
 
 
@@ -194,7 +195,7 @@ class Gold(BaseJob):
 
         df = self.spark.sql(self.sql)
         cdc_options = self.get_cdc_context(df)
-        self.cdc.create_or_replace_view(self.sql, **cdc_options)
+        self.cdc.create_or_replace_view(self.sql, context=cdc_options)
 
     def get_dependencies(self) -> Sequence[JobDependency]:
         dependencies = []
@@ -256,12 +257,9 @@ class Gold(BaseJob):
 
         return dependencies
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
-        # assume no duplicate in gold (to improve performance)
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> CdcContext:
         deduplicate = self.options.deduplicate
-        # assume no reload in gold (to improve performance)
         rectify = self.options.rectify_as_upserts
-        # assume no soft delete in gold for scd1 and scd2 (unless specified otherwise)
         if self.options.hard_delete is not None:
             soft_delete = not self.options.hard_delete
         else:
@@ -271,7 +269,7 @@ class Gold(BaseJob):
         if add_metadata is None:
             add_metadata = self.step_conf.options.metadata or False
 
-        context: dict[str, Any] = {
+        updates: dict = {
             "add_metadata": add_metadata,
             "soft_delete": soft_delete,
             "deduplicate_key": None,
@@ -280,87 +278,75 @@ class Gold(BaseJob):
             "rectify": False,
         }
 
-        # force deduplicate
         if deduplicate is not None:
-            context["deduplicate"] = deduplicate
-            context["deduplicate_key"] = deduplicate
-            context["deduplicate_hash"] = deduplicate
+            updates["deduplicate"] = deduplicate
+            updates["deduplicate_key"] = deduplicate
+            updates["deduplicate_hash"] = deduplicate
 
-        # force rectify
         if rectify is not None:
-            context["rectify"] = rectify
+            updates["rectify"] = rectify
 
-        # add key and hash when needed
         if self.mode == "update" and self.change_data_capture == "nocdc":
             if "__key" not in df.columns:
-                context["add_key"] = True
+                updates["add_key"] = True
             if "__hash" not in df.columns:
-                context["add_hash"] = True
+                updates["add_hash"] = True
 
-        # add key and hash when needed
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
-                context["add_key"] = True
+                updates["add_key"] = True
             if "__hash" not in df.columns:
-                context["add_hash"] = True
+                updates["add_hash"] = True
 
         if self.slowly_changing_dimension:
             if "__operation" not in df.columns:
-                # assume no duplicate hash
                 if deduplicate is None:
-                    context["deduplicate_hash"] = None
+                    updates["deduplicate_hash"] = None
 
                 if self.mode == "update":
-                    context["add_operation"] = "reload"
+                    updates["add_operation"] = "reload"
                     if rectify is None:
-                        context["rectify"] = True
-
+                        updates["rectify"] = True
                 else:
-                    context["add_operation"] = "upsert"
+                    updates["add_operation"] = "upsert"
 
-        # filter to get latest data
         if not reload:
             if self.mode == "update" and self.change_data_capture == "scd2":
-                context["slice"] = "update"
-
+                updates["slice"] = "update"
             if self.mode == "update" and self.change_data_capture == "nocdc" and "__timestamp" in df.columns:
-                context["slice"] = "update"
-
+                updates["slice"] = "update"
             if self.mode == "append" and "__timestamp" in df.columns:
-                context["slice"] = "update"
+                updates["slice"] = "update"
 
         if self.mode == "memory":
-            context["mode"] = "complete"
+            updates["mode"] = "complete"
 
-        # correct __valid_from
         if self.change_data_capture == "scd2":
-            context["correct_valid_from"] = (
+            updates["correct_valid_from"] = (
                 self.options.correct_valid_from if self.options.correct_valid_from is not None else True
             )
 
-        # add __timestamp
         if self.options.persist_last_timestamp:
             if self.change_data_capture == "scd1":
                 if "__timestamp" not in df.columns:
-                    context["add_timestamp"] = True
+                    updates["add_timestamp"] = True
             if self.change_data_capture == "scd2":
                 if "__valid_from" not in df.columns:
-                    context["add_timestamp"] = True
+                    updates["add_timestamp"] = True
 
-        # add __updated
         if self.options.persist_last_updated_timestamp:
             if "__last_updated" not in df.columns:
-                context["add_last_updated"] = True
+                updates["add_last_updated"] = True
         if self.options.last_updated:
             if "__last_updated" not in df.columns:
-                context["add_last_updated"] = True
+                updates["add_last_updated"] = True
 
         if "__order_duplicate_by_asc" in df.columns:
-            context["order_duplicate_by"] = {"__order_duplicate_by_asc": "asc"}
+            updates["order_duplicate_by"] = {"__order_duplicate_by_asc": "asc"}
         elif "__order_duplicate_by_desc" in df.columns:
-            context["order_duplicate_by"] = {"__order_duplicate_by_desc": "desc"}
+            updates["order_duplicate_by"] = {"__order_duplicate_by_desc": "desc"}
 
-        return context
+        return CdcContext(**updates)
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
@@ -380,18 +366,18 @@ class Gold(BaseJob):
 
         if reload:
             DEFAULT_LOGGER.warning("force reload", extra={"label": self})
-            self.cdc.complete(sql, **context)
+            self.cdc.complete(sql, context)
 
         elif self.mode == "update":
-            self.cdc.update(sql, **context)
+            self.cdc.update(sql, context)
 
         elif self.mode == "append":
             assert isinstance(self.cdc, NoCDC), f"{self.change_data_capture} append not allowed"
-            self.cdc.append(sql, **context)
+            self.cdc.append(sql, context)
 
         elif self.mode == "complete":
             assert not isinstance(self.cdc, SCD0), "SCD0 complete not allowed"
-            self.cdc.complete(sql, **context)
+            self.cdc.complete(sql, context)
 
         else:
             raise ValueError(f"{self.mode} - not allowed")

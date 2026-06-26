@@ -12,11 +12,13 @@ from fabricks.models import (
     ExtenderOptions,
     InvokerOptions,
     Paths,
+    RuntimeOptions,
     SparkOptions,
     StepBronzeConf,
     StepGoldConf,
     StepOptions,
     StepSilverConf,
+    StepTableOptions,
     TableOptions,
     TOptions,
 )
@@ -64,6 +66,12 @@ class JobProtocol(Protocol):
 
     @property
     def table_options(self) -> Optional[TableOptions]: ...
+
+    @property
+    def step_table_options(self) -> Optional[StepTableOptions]: ...
+
+    @property
+    def runtime_options(self) -> RuntimeOptions: ...
 
     @property
     def step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]: ...

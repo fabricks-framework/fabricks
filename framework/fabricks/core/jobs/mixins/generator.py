@@ -56,7 +56,11 @@ class GeneratorMixin(JobProtocol):
         if deps:
             df = self.spark.createDataFrame([d.model_dump() for d in deps])
             cdc = NoCDC("fabricks", self.step, "dependencies")
-            cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
+            from fabricks.models.cdc import CdcContext
+
+            cdc.delete_missing(
+                df, context=CdcContext(keys=["dependency_id"], update_where=f"job_id = '{self.job_id}'", uuid=True)
+            )
 
     @abstractmethod
     def get_dependencies(self) -> Sequence[JobDependency]: ...
@@ -442,9 +446,9 @@ class GeneratorMixin(JobProtocol):
         def _update_schema(df: DataFrame, batch: Optional[int] = None):
             context = self.get_cdc_context(df, reload=True)
             if overwrite:
-                self.cdc.overwrite_schema(df, **context)
+                self.cdc.overwrite_schema(df, context=context)
             else:
-                self.cdc.update_schema(df, widen_types=widen_types, **context)
+                self.cdc.update_schema(df, widen_types=widen_types, context=context)
 
         if self.persist:
             if df is not None:
@@ -507,7 +511,7 @@ class GeneratorMixin(JobProtocol):
 
         context = self.get_cdc_context(df, reload=True)
 
-        return self.cdc.get_differences_with_deltatable(df, **context)
+        return self.cdc.get_differences_with_deltatable(df, context=context)
 
     def get_schema_differences(self, df: Optional[DataFrame] = None) -> Optional[Sequence[SchemaDiff]]:
         if df is None:
@@ -517,7 +521,7 @@ class GeneratorMixin(JobProtocol):
 
         context = self.get_cdc_context(df, reload=True)
 
-        return self.cdc.get_schema_differences(df, **context)
+        return self.cdc.get_schema_differences(df, context=context)
 
     def schema_drifted(self, df: Optional[DataFrame] = None) -> Optional[bool]:
         d = self.get_schema_differences(df)

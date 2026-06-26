@@ -12,6 +12,7 @@ from fabricks.models import (
     StepSilverOptions,
     TOptions,
 )
+from fabricks.models.cdc import CdcContext
 
 
 class JobABC(ABC):
@@ -44,7 +45,7 @@ class JobABC(ABC):
     def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]: ...
 
     @abstractmethod
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict: ...
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> CdcContext: ...
 
     @abstractmethod
     def get_data(self, stream: bool = False, transform: Optional[bool] = None, **kwargs) -> Optional[DataFrame]: ...

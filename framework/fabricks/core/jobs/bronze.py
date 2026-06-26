@@ -14,6 +14,7 @@ from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobBronzeOptions, JobDependency, ParserOptions, StepBronzeConf, StepBronzeOptions
+from fabricks.models.cdc import CdcContext
 from fabricks.utils.helpers import add_hash, backticks
 from fabricks.utils.path import FileSharePath
 from fabricks.utils.read import read
@@ -375,8 +376,8 @@ class Bronze(BaseJob):
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("schema overwrite not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
-        return {}
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> CdcContext:
+        return CdcContext()
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
@@ -395,7 +396,7 @@ class Bronze(BaseJob):
 
         assert isinstance(self.cdc, NoCDC)
         if self.mode == "append":
-            self.cdc.append(sql, **context)
+            self.cdc.append(sql, context)
 
     def for_each_run(self, **kwargs):
         if self.mode == "register":

@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -11,6 +11,7 @@ from fabricks.core.jobs.base import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobSilverOptions, StepSilverConf, StepSilverOptions
+from fabricks.models.cdc import CdcContext
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.read.read import read
 from fabricks.utils.sqlglot import fix as fix_sql
@@ -234,7 +235,7 @@ class Silver(BaseJob):
 
             df = self.spark.sql(sql)
             cdc_options = self.get_cdc_context(df)
-            self.cdc.create_or_replace_view(sql, **cdc_options)
+            self.cdc.create_or_replace_view(sql, context=cdc_options)
 
     def create_or_replace_current_view(self):
         from py4j.protocol import Py4JJavaError
@@ -270,7 +271,7 @@ class Silver(BaseJob):
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> CdcContext:
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
@@ -288,7 +289,7 @@ class Silver(BaseJob):
                 extra_check = "-- no extra check"
 
             sql = f"""
-                select 
+                select
                   __operation
                 from
                   {global_temp_view}
@@ -296,7 +297,7 @@ class Silver(BaseJob):
                   true
                   and __operation == 'reload'
                   {extra_check}
-                limit 
+                limit
                   1
                 """
             sql = fix_sql(sql)
@@ -307,7 +308,7 @@ class Silver(BaseJob):
                 rectify = True
                 DEFAULT_LOGGER.debug("rectify enabled", extra={"label": self})
 
-        context: dict[str, Any] = {
+        updates: dict = {
             "soft_delete": self.slowly_changing_dimension,
             "deduplicate": self.options.deduplicate if self.options.deduplicate is not None else not_append,
             "rectify": rectify,
@@ -315,30 +316,28 @@ class Silver(BaseJob):
         }
 
         if self.mode == "memory":
-            context["mode"] = "complete"
+            updates["mode"] = "complete"
 
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
-                context["add_key"] = True
+                updates["add_key"] = True
 
         if nocdc and self.mode == "memory":
             if "__operation" not in df.columns:
-                context["add_operation"] = "upsert"
+                updates["add_operation"] = "upsert"
 
         if self.mode == "latest":
-            context["slice"] = "latest"
+            updates["slice"] = "latest"
         if not self.stream and self.mode == "update":
-            context["slice"] = "update"
+            updates["slice"] = "update"
 
         if self.change_data_capture == "scd2":
-            context["correct_valid_from"] = True
+            updates["correct_valid_from"] = True
 
-        if "__operation" in df.columns:
-            context["exclude"] = ["__operation"]
-        if nocdc:  # operation is passed from the bronze layer
-            context["exclude"] = ["__operation"]
+        if "__operation" in df.columns or nocdc:  # operation is passed from the bronze layer
+            updates["exclude"] = ["__operation"]
 
-        return context
+        return CdcContext(**updates)
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
@@ -359,17 +358,17 @@ class Silver(BaseJob):
 
         if self.mode == "update":
             assert not isinstance(self.cdc, NoCDC)
-            self.cdc.update(sql, **context)
+            self.cdc.update(sql, context)
 
         elif self.mode == "append":
             assert isinstance(self.cdc, NoCDC)
-            self.cdc.append(sql, **context)
+            self.cdc.append(sql, context)
 
         elif self.mode == "latest":
             assert isinstance(self.cdc, NoCDC)
             check_df = self.spark.sql(
                 f"""
-                select 
+                select
                   __operation
                 from
                   {global_temp_view}
@@ -382,7 +381,7 @@ class Silver(BaseJob):
             # Collect once to avoid double scan
             check_rows = check_df.collect()
             assert not check_rows, f"{check_rows[0][0]} not allowed"
-            self.cdc.complete(sql, **context)
+            self.cdc.complete(sql, context)
 
         else:
             raise ValueError(f"{self.mode} - not allowed")

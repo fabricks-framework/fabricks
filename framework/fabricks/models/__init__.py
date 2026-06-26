@@ -1,6 +1,8 @@
 """Fabricks models module - All Pydantic models for jobs, steps, and runtime configuration."""
 
 # Common types and aliases
+# CDC
+from fabricks.models.cdc import QueryContext, QueryOptions
 from fabricks.models.common import (
     AllowedChangeDataCaptures,
     AllowedConstraintOptions,
@@ -126,4 +128,7 @@ __all__ = [
     # Utility functions
     "get_dependency_id",
     "get_job_id",
+    # CDC
+    "QueryOptions",
+    "QueryContext",
 ]
