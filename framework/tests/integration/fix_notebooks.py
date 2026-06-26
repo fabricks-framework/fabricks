@@ -7,16 +7,18 @@ from pathlib import Path
 
 from databricks.sdk.runtime import dbutils
 
-import fabricks.api.notebooks as _nb_pkg
+import fabricks.api.notebooks as notebooks_pkg
 from fabricks.context import PATH_NOTEBOOKS
 
 # COMMAND ----------
 
-src_dir = Path(_nb_pkg.__file__).parent
-dest_dir = Path(str(PATH_NOTEBOOKS))
+src = Path(notebooks_pkg.__file__).parent
+tgt = Path(str(PATH_NOTEBOOKS))
+
+# COMMAND ----------
 
 for name in ["initialize", "process", "standalone", "run", "terminate"]:
-    content = (src_dir / f"{name}.py").read_text()
+    content = (src / f"{name}.py").read_text()
 
     if "# MAGIC %run ./add_missing_modules" not in content:
         content = content.replace(
@@ -24,7 +26,7 @@ for name in ["initialize", "process", "standalone", "run", "terminate"]:
             "# Databricks notebook source\n# MAGIC %run ./add_missing_modules\n# COMMAND ----------\n",
         )
 
-    (dest_dir / f"{name}.py").write_text(content)
+    (tgt / f"{name}.py").write_text(content)
 
 # COMMAND ----------
 
