@@ -28,36 +28,6 @@ header() {
 	echo -e "${CYAN}=============== $msg ===============${RESET}"
 }
 
-install_prettier() {
-    header "installing prettier"
-
-    if npm list prettier --depth=0 >/dev/null 2>&1; then
-        log "prettier is already installed"
-    else
-        log "installing prettier..."
-        npm install --save-dev prettier || {
-            warn "failed to install prettier"
-            exit 1
-        }
-        log "prettier installed successfully"
-    fi
-}
-
-install_dependencies(){
-    header "installing uv dependencies"
-    uv sync --all-groups || warn "failed to install uv dependencies"
-
-    install_prettier
-}
-
-check_dependencies(){
-    header "checking dependencies"
-
-    log "running deptry..."
-    uv run deptry . || warn "deptry found missing dependencies"
-    log "all dependencies are satisfied"
-}
-
 check_ty() {
     local target_dir="${1:-.}"
     header "checking types with ty"
@@ -151,21 +121,18 @@ format_commit(){
 show_help() {
 		echo -e "   ${MAGENTA}Usage: $0 <command> [folder]${RESET}"
 		echo -e "   ${CYAN}Available commands:${RESET}"
-		echo -e "       - ${GREEN}python [folder]${RESET}           : Run Python code formatters and linters"
-        echo -e "       - ${GREEN}sql [folder]${RESET}              : Run SQL formatter"
-        echo -e "       - ${GREEN}yaml [folder]${RESET}             : Run YAML formatter"
-        echo -e "       - ${GREEN}ty [folder]${RESET}               : Run type checking with ty"
-        echo -e "       - ${GREEN}all [folder]${RESET}              : Run all formatters"
-        echo -e "       - ${GREEN}prettier [folder]${RESET}         : Run prettier for all non-Python files"
-        echo -e "       - ${GREEN}commit [folder]${RESET}           : Format code and commit changes"
-        echo -e "       - ${GREEN}install-dependencies${RESET}      : Install dev and test dependencies"
-		echo -e "       - ${GREEN}check-dependencies${RESET}        : Check for missing dependencies"
-		echo -e "       - ${GREEN}help${RESET}                      : Show help"
+		echo -e "       - ${GREEN}-p, --python [folder]${RESET}     : Run Python code formatters and linters"
+        echo -e "       - ${GREEN}-s, --sql [folder]${RESET}        : Run SQL formatter"
+        echo -e "       - ${GREEN}-y, --yaml [folder]${RESET}       : Run YAML formatter"
+        echo -e "       - ${GREEN}-t, --ty [folder]${RESET}         : Run type checking with ty"
+        echo -e "       - ${GREEN}-a, --all [folder]${RESET}        : Run all formatters"
+        echo -e "       - ${GREEN}-P, --prettier [folder]${RESET}   : Run prettier for all non-Python files"
+		echo -e "       - ${GREEN}-h, --help${RESET}                : Show help"
 		echo ""
 		echo -e "   ${CYAN}Examples:${RESET}"
-		echo -e "       $0 -python                    # Format all Python files in current directory"
-		echo -e "       $0 -python invokers/powerbi   # Format Python files in specific folder"
-		echo -e "       $0 -all src                   # Run all formatters on src folder"
+		echo -e "       $0 -p                         # Format all Python files in current directory"
+		echo -e "       $0 --python invokers/powerbi  # Format Python files in specific folder"
+		echo -e "       $0 -a src                     # Run all formatters on src folder"
 }
 
 main() {
@@ -174,40 +141,14 @@ main() {
         exit 1
     fi
 
-    local command="${1#-}"
-    shift
-
-    case "$command" in
-        python)
-            format_python "$@"
-            ;;
-        sql)
-            format_sql "$@"
-            ;;
-        prettier)
-            format_prettier "$@"
-            ;;
-        yaml)
-            format_yaml "$@"
-            ;;
-        all)
-            format_all "$@"
-            ;;
-        commit)
-            format_commit "$@"
-            ;;
-        install-dependencies)
-            install_dependencies "$@"
-            ;;
-        check-dependencies)
-            check_dependencies "$@"
-            ;;
-        ty)
-            check_ty "$@"
-            ;;
-        help|*)
-            show_help
-            ;;
+    case "$1" in
+        -p|--python)   shift; format_python "$@" ;;
+        -s|--sql)      shift; format_sql "$@" ;;
+        -P|--prettier) shift; format_prettier "$@" ;;
+        -y|--yaml)     shift; format_yaml "$@" ;;
+        -a|--all)      shift; format_all "$@" ;;
+        -t|--ty)       shift; check_ty "$@" ;;
+        -h|--help|*)   show_help ;;
     esac
 }
 
