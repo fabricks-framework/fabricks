@@ -61,9 +61,13 @@ print(packages)
 
 # COMMAND ----------
 
+root = PATH_RUNTIME.parent().parent()
+
+# COMMAND ----------
+
 if initialize:
     run_notebook(
-        PATH_RUNTIME.parent().joinpath("initialize"),
+        root.joinpath("initialize"),
         expected="True",
         i=1,
     )
@@ -71,14 +75,14 @@ if initialize:
 # COMMAND ----------
 
 if armageddon:
-    run_notebook(PATH_RUNTIME.parent().joinpath("armageddon"))
+    run_notebook(root.joinpath("armageddon"))
 elif reset:
-    run_notebook(PATH_RUNTIME.parent().joinpath("reset"))
+    run_notebook(root.joinpath("reset"))
 
 # COMMAND ----------
 
 if fix_notebooks:
-    run_notebook(PATH_RUNTIME.parent().joinpath("fix_notebooks"))
+    run_notebook(root.joinpath("fix_notebooks"))
 
 # COMMAND ----------
 

@@ -2,6 +2,7 @@ import posixpath
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path as PathlibPath
+from typing import Self
 
 
 class BasePath(ABC):
@@ -65,7 +66,7 @@ class BasePath(ABC):
         """Check if the path points to a SQL file."""
         return self.string.endswith(".sql")
 
-    def joinpath(self, *other):
+    def joinpath(self, *other) -> Self:
         """Join this path with other path segments."""
         parts = [str(o) for o in other]
         base = self.string
@@ -75,12 +76,12 @@ class BasePath(ABC):
 
         return self.__class__(path=new)
 
-    def append(self, other: str):
+    def append(self, other: str) -> Self:
         """Append a string to the path."""
         new_path = self.string + other
         return self.__class__(path=new_path)
 
-    def parent(self):
+    def parent(self) -> Self:
         """Get the parent directory of the path."""
         new_path = self.pathlibpath.parent
         return self.__class__(path=new_path)
