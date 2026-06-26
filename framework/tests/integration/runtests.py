@@ -61,7 +61,8 @@ print(packages)
 
 # COMMAND ----------
 
-root = PATH_RUNTIME.parent().parent()
+root = PATH_RUNTIME.parent().parent().joinpath("integration")
+print(root)
 
 # COMMAND ----------
 
@@ -115,5 +116,3 @@ assert res.value == 0, "failed"  # type: ignore
 # COMMAND ----------
 
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
-
-# COMMAND ----------
