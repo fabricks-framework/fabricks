@@ -18,7 +18,12 @@ DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 
+print(str(paths))
+
+# COMMAND ----------
+
 if CATALOG:
+    assert CATALOG == "bms_dna_test"
     try:
         spark.sql(f"use catalog {CATALOG}")
         spark.sql("drop schema if exists bronze cascade")

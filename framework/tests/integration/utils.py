@@ -134,7 +134,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
                 path = FileSharePath(f)
 
                 for i in range(1, 4):
-                    to_path = f.replace("landing", "raw").replace(job, "")
+                    to_path = f.replace(f"landing/{job}/", "raw/")
                     if i > 1:  # needed for unity catalog (cannot use same delta table more than once)
                         to_path = to_path.replace("raw", f"raw/{i}")
                         print(to_path)

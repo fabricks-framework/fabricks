@@ -12,9 +12,12 @@ class Paths:
     raw: FileSharePath
     out: FileSharePath
 
+    def __str__(self) -> str:
+        return f"{self.tests} {self.landing} {self.raw} {self.out}"
+
 
 paths: Final[Paths] = Paths(
-    tests=GitPath(PATH_RUNTIME.pathlibpath.parent.resolve()),
+    tests=PATH_RUNTIME.parent().parent().joinpath("integration"),
     landing=FABRICKS_STORAGE.joinpath("landing"),
     raw=FABRICKS_STORAGE.joinpath("raw"),
     out=FABRICKS_STORAGE.joinpath("out"),
