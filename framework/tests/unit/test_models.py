@@ -6,6 +6,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
+from fabricks.models.config.models import ConfigOptions
 from fabricks.models.job import JobConfBronze, JobConfGold, JobConfSilver
 from fabricks.models.runtime.models import RuntimeConf
 
@@ -101,3 +102,14 @@ def test_gold_table_options_parsed():
     assert conf.table_options is not None
     assert conf.table_options.liquid_clustering is True
     assert conf.table_options.cluster_by == ["monarch"]
+
+
+# --- ConfigOptions (fabricksconfig.json) ---
+
+
+def test_runtime_resolves_above_config_dir():
+    # fabricksconfig.json sits in tests/unit/, runtime is one level up in tests/fixtures/runtime
+    base = Path(__file__).parent
+    conf = ConfigOptions(base=base.as_posix(), runtime="../fixtures/runtime", notebooks="./notebooks")
+    resolved = conf._resolve_paths()
+    assert resolved.runtime.string == (base.parent / "fixtures/runtime").as_posix()

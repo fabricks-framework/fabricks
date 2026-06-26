@@ -218,7 +218,7 @@ class BaseStep:
         df = SPARK.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)
         return df, errors
 
-    def _create_db_objects_in_parallel(self, df: DataFrame) -> List[Dict]:
+    def _create_in_parallel(self, df: DataFrame) -> List[Dict]:
         return run_in_parallel(
             _create_db_object,
             df,
@@ -228,7 +228,7 @@ class BaseStep:
             loglevel=logging.CRITICAL,
         )
 
-    def _create_db_objects_sequentially(self, df: DataFrame) -> List[Dict]:
+    def _create_sequentially(self, df: DataFrame) -> List[Dict]:
         try:
             deps_df, dep_errors = self._get_dependencies_internal(loglevel=logging.CRITICAL)
             if dep_errors:
@@ -271,9 +271,9 @@ class BaseStep:
             df = df.join(view_df, "job_id", how="left_anti")
 
         if mode == "parallel":
-            results = self._create_db_objects_in_parallel(df)
+            results = self._create_in_parallel(df)
         elif mode == "sequential":
-            results = self._create_db_objects_sequentially(df)
+            results = self._create_sequentially(df)
 
         errors = [res for res in results if res.get("error")]
         error_count: int = len(errors) if errors else 0
@@ -293,13 +293,16 @@ class BaseStep:
             failed_job_ids = [e["job_id"] for e in errors]
             errors_df = df.where(df["job_id"].isin(failed_job_ids))
 
-            results = self._create_db_objects_sequentially(errors_df)
+            if mode == "parallel":
+                results = self._create_in_parallel(errors_df)
+            elif mode == "sequential":
+                results = self._create_sequentially(errors_df)
+
             errors = [res for res in results if res.get("error")]
 
             if len(errors) == error_count:
-                # No improvement, switch to sequential mode
                 DEFAULT_LOGGER.warning(
-                    "no improvement in parallel creation, switching to sequential mode",
+                    "no improvement in errors after retry, stop retries",
                     extra={"label": self},
                 )
                 break
@@ -307,7 +310,7 @@ class BaseStep:
             else:
                 error_count = len(errors)
                 DEFAULT_LOGGER.debug(
-                    f"{error_count} db objects still failing after retry",
+                    f"{error_count} db objects still not created, retrying...",
                     extra={"label": self},
                 )
 
