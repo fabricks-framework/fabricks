@@ -50,6 +50,7 @@ format_python() {
 	uv run pycln "$target_dir" || warn "pycln failed (optional)"
 
 	log "running ruff format..."
+    uv run ruff check --select I --fix "$target_dir" || warn "ruff check failed"
 	uv run ruff format "$target_dir" || warn "ruff format failed"
 
 	log "running ruff check..."
