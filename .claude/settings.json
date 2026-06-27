@@ -31,19 +31,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd framework && ./format.sh ty {{toolUse.file_path}}"
+            "command": "cd framework && ./format.sh -ty {{toolUse.file_path}}"
           },
           {
             "type": "command",
-            "command": "cd framework && ./format.sh python {{toolUse.file_path}}"
+            "command": "cd framework && ./format.sh -python {{toolUse.file_path}}"
           },
           {
             "type": "command",
-            "command": "cd framework && ./format.sh sql {{toolUse.file_path}}"
+            "command": "cd framework && ./format.sh -sql {{toolUse.file_path}}"
           },
           {
             "type": "command",
-            "command": "cd framework && ./format.sh yaml {{toolUse.file_path}}"
+            "command": "cd framework && ./format.sh -yaml {{toolUse.file_path}}"
           }
         ]
       }
