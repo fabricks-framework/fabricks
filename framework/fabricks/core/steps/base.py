@@ -6,7 +6,6 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
 from pyspark.sql.types import Row
 from sparkdantic import create_spark_schema
-from typing_extensions import deprecated
 
 from fabricks.cdc import NoCDC
 from fabricks.context import (
@@ -43,7 +42,6 @@ class BaseStep:
             self.expand = "silver"
         elif self.name in Golds:
             self.expand = "gold"
-
         else:
             raise ValueError(self.name, "does not expand a default step")
 
@@ -145,40 +143,22 @@ class BaseStep:
 
         self.update_configurations()
 
-        all_errors = []
+        self.create_db_objects(mode=mode, incremental=incremental, update_lists=False, max_retries=max_retries)
 
-        # Collect errors from create_db_objects
-        _, create_errors = self._create_db_objects_internal(
-            mode=mode,
-            incremental=incremental,
-            update_lists=False,
-            max_retries=max_retries,
-        )
-        all_errors.extend(create_errors)
-
-        # Collect errors from update_dependencies
         if update_dependencies:
-            _, dep_errors = self._update_dependencies_internal(progress_bar=progress_bar)
-            all_errors.extend(dep_errors)
+            self.update_dependencies(progress_bar=progress_bar)
 
         self.update_tables_list()
         self.update_views_list()
         self.update_steps_list()
 
-        if all_errors:
-            _log_and_raise_errors(all_errors, "update step")
-
-    # ========== Internal Methods ==========
-    # Private methods that return (result, errors) tuples for flexible error handling
-
-    def _get_dependencies_internal(
+    def _get_dependencies(
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
     ) -> Tuple[DataFrame, List[Dict]]:
-        """Private version that returns (df, errors) instead of raising."""
         DEFAULT_LOGGER.debug("get dependencies", extra={"label": self})
 
         df = self.get_jobs()
@@ -189,12 +169,11 @@ class BaseStep:
         if topic:
             if isinstance(topic, str):
                 topic = [topic]
-
             where = ", ".join([f"'{t}'" for t in topic])
             DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"label": self})
             df = df.where(f"topic in ({where})")
 
-        if not df:
+        if df.isEmpty():
             raise ValueError("no jobs found")
 
         results = run_in_parallel(
@@ -218,6 +197,11 @@ class BaseStep:
         df = SPARK.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)
         return df, errors
 
+    def _dispatch(self, mode: Optional[Literal["parallel", "sequential"]], df: DataFrame) -> List[Dict]:
+        if mode == "parallel":
+            return self._create_in_parallel(df)
+        return self._create_sequentially(df)
+
     def _create_in_parallel(self, df: DataFrame) -> List[Dict]:
         return run_in_parallel(
             _create_db_object,
@@ -230,7 +214,7 @@ class BaseStep:
 
     def _create_sequentially(self, df: DataFrame) -> List[Dict]:
         try:
-            deps_df, dep_errors = self._get_dependencies_internal(loglevel=logging.CRITICAL)
+            deps_df, dep_errors = self._get_dependencies(loglevel=logging.CRITICAL)
             if dep_errors:
                 DEFAULT_LOGGER.warning(
                     f"could not get some dependencies for sorting ({len(dep_errors)} error(s))",
@@ -252,31 +236,71 @@ class BaseStep:
 
         return result
 
-    def _create_db_objects_internal(
+    def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:
+        """Yield job configurations from YAML files with variable substitution."""
+        return read_yaml(self.runtime, root="job", preferred_file_name=topic)
+
+    def get_jobs(self, topic: Optional[str] = None) -> DataFrame:
+        DEFAULT_LOGGER.debug("get jobs", extra={"label": self})
+
+        try:
+            conf = get_step_conf(self.name)
+            schema = create_spark_schema(conf)
+            jobs = self.get_jobs_iter(topic=topic)
+
+            df = SPARK.createDataFrame(jobs, schema=schema)
+            df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
+            df.cache()
+
+            duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")
+            rows = duplicated_df.collect()
+            if rows:
+                duplicates = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in rows)
+                raise AssertionError(f"duplicated job(s) ({duplicates})")
+
+            if df.isEmpty():
+                raise ValueError("no jobs found")
+
+            return df
+
+        except AssertionError as e:
+            DEFAULT_LOGGER.exception("fail to get jobs", extra={"label": self})
+            raise e
+
+    def get_dependencies(
+        self,
+        progress_bar: Optional[bool] = False,
+        topic: Optional[Union[str, List[str]]] = None,
+        include_manual: Optional[bool] = False,
+        loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
+    ) -> DataFrame:
+        df, errors = self._get_dependencies(
+            progress_bar=progress_bar,
+            topic=topic,
+            include_manual=include_manual,
+            loglevel=loglevel,
+        )
+        _log_and_raise_errors(errors, "get dependencies", "jobs")
+        return df
+
+    def create_db_objects(
         self,
         mode: Optional[Literal["parallel", "sequential"]] = "parallel",
+        max_retries: Optional[int] = 2,
         update_lists: Optional[bool] = True,
         incremental: Optional[bool] = False,
-        max_retries: Optional[int] = 2,
-    ) -> Tuple[Optional[DataFrame], List[Dict]]:
-        """Private version that returns (df, errors) instead of raising."""
-
+    ) -> None:
         df = self.get_jobs()
 
         if incremental:
             table_df = self.database.get_tables()
             view_df = self.database.get_views()
-
             df = df.join(table_df, "job_id", how="left_anti")
             df = df.join(view_df, "job_id", how="left_anti")
 
-        if mode == "parallel":
-            results = self._create_in_parallel(df)
-        elif mode == "sequential":
-            results = self._create_sequentially(df)
-
+        results = self._dispatch(mode, df)
         errors = [res for res in results if res.get("error")]
-        error_count: int = len(errors) if errors else 0
+        error_count: int = len(errors)
         attempt = 0
         DEFAULT_LOGGER.debug(
             f"{len(results) - error_count} db objects created, {error_count} error(s) remaining",
@@ -292,12 +316,7 @@ class BaseStep:
 
             failed_job_ids = [e["job_id"] for e in errors]
             errors_df = df.where(df["job_id"].isin(failed_job_ids))
-
-            if mode == "parallel":
-                results = self._create_in_parallel(errors_df)
-            elif mode == "sequential":
-                results = self._create_sequentially(errors_df)
-
+            results = self._dispatch(mode, errors_df)
             errors = [res for res in results if res.get("error")]
 
             if len(errors) == error_count:
@@ -306,7 +325,6 @@ class BaseStep:
                     extra={"label": self},
                 )
                 break
-
             else:
                 error_count = len(errors)
                 DEFAULT_LOGGER.debug(
@@ -318,17 +336,16 @@ class BaseStep:
             self.update_tables_list()
             self.update_views_list()
 
-        return df, errors
+        _log_and_raise_errors(errors, "create db objects", "objects")
 
-    def _update_dependencies_internal(
+    def update_dependencies(
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> Tuple[DataFrame, List[Dict]]:
-        """Private version that returns (df, errors) instead of raising."""
-        df, errors = self._get_dependencies_internal(
+    ) -> None:
+        df, errors = self._get_dependencies(
             progress_bar=progress_bar,
             topic=topic,
             include_manual=include_manual,
@@ -373,85 +390,6 @@ class BaseStep:
                 context=CdcContext(keys=["dependency_id"], update_where=update_where, uuid=True),
             )
 
-        return df, errors
-
-    # ========== Public API Methods ==========
-
-    def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:
-        """Yield job configurations from YAML files with variable substitution."""
-        return read_yaml(self.runtime, root="job", preferred_file_name=topic)
-
-    def get_jobs(self, topic: Optional[str] = None) -> DataFrame:
-        DEFAULT_LOGGER.debug("get jobs", extra={"label": self})
-
-        try:
-            conf = get_step_conf(self.name)
-            schema = create_spark_schema(conf)
-            jobs = self.get_jobs_iter(topic=topic)
-
-            df = SPARK.createDataFrame(jobs, schema=schema)
-            df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
-
-            # Collect once to avoid double scan
-            duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")
-            rows = duplicated_df.collect()
-            if rows:
-                duplicates = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in rows)
-                raise AssertionError(f"duplicated job(s) ({duplicates})")
-
-            if not df:
-                raise ValueError("no jobs found")
-
-            return df
-
-        except AssertionError as e:
-            DEFAULT_LOGGER.exception("fail to get jobs", extra={"label": self})
-            raise e
-
-    def get_dependencies(
-        self,
-        progress_bar: Optional[bool] = False,
-        topic: Optional[Union[str, List[str]]] = None,
-        include_manual: Optional[bool] = False,
-        loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> DataFrame:
-        df, errors = self._get_dependencies_internal(
-            progress_bar=progress_bar,
-            topic=topic,
-            include_manual=include_manual,
-            loglevel=loglevel,
-        )
-        _log_and_raise_errors(errors, "get dependencies", "jobs")
-        return df
-
-    def create_db_objects(
-        self,
-        mode: Optional[Literal["parallel", "sequential"]] = "parallel",
-        max_retries: Optional[int] = 2,
-        update_lists: Optional[bool] = True,
-        incremental: Optional[bool] = False,
-    ) -> None:
-        _, errors = self._create_db_objects_internal(
-            mode=mode,
-            max_retries=max_retries,
-            update_lists=update_lists,
-            incremental=incremental,
-        )
-        _log_and_raise_errors(errors, "create db objects", "objects")
-
-    def update_dependencies(
-        self,
-        progress_bar: Optional[bool] = False,
-        topic: Optional[Union[str, List[str]]] = None,
-        include_manual: Optional[bool] = False,
-        loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> None:
-        _, errors = self._update_dependencies_internal(
-            progress_bar=progress_bar,
-            topic=topic,
-            include_manual=include_manual,
-            loglevel=loglevel,
-        )
         _log_and_raise_errors(errors, "update dependencies", "jobs")
 
     def register(self, update: Optional[bool] = False, drop: Optional[bool] = False):
@@ -463,12 +401,12 @@ class BaseStep:
             self.update_configurations()
 
         df = self.get_jobs()
-        if df:
+        if not df.isEmpty():
             table_df = self.database.get_tables()
-            if table_df:
+            if not table_df.isEmpty():
                 df = df.join(table_df, "job_id", how="left_anti")
 
-        if df:
+        if not df.isEmpty():
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
             run_in_parallel(_register, df, workers=16, progress_bar=True, run_as="Pool")
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
@@ -512,34 +450,14 @@ class BaseStep:
 
         cdc.delete_missing(df, context=CdcContext(keys=["job_id"]))
 
-    # ========== Deprecated Methods ==========
-
-    @deprecated("use create_db_objects instead")
-    def create_jobs(self, max_retries: Optional[int] = 2) -> None:
-        return self.create_db_objects(max_retries=max_retries)
-
-    @deprecated("use update_configurations instead")
-    def update_jobs(self, drop: Optional[bool] = False):
-        return self.update_configurations(drop=drop)
-
-    @deprecated("use update_tables_list instead")
-    def update_tables(self):
-        return self.update_tables_list()
-
-    @deprecated("use update_views_list instead")
-    def update_views(self):
-        return self.update_views_list()
-
     def __str__(self):
         return self.name
 
 
 def _log_and_raise_errors(errors: List[Dict], action: str, object_type: str = "operations") -> None:
-    """Log errors and raise ValueError with summary."""
     if errors:
         for e in errors:
             DEFAULT_LOGGER.exception(f"fail to {action}", extra={"label": e["job"]}, exc_info=e["error"])
-
         raise ValueError(f"could not {action} - {len(errors)} {object_type} failed, check logs for details")
 
 
