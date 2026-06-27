@@ -1,6 +1,6 @@
 import logging
 from functools import cached_property
-from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import Iterable, List, Literal, Optional, Tuple, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
@@ -23,7 +23,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.get_job import get_job, get_job_internal
 from fabricks.core.jobs.get_jobs import get_jobs_sorted
 from fabricks.core.read import read_yaml
-from fabricks.core.steps._types import Timeouts
+from fabricks.core.steps._types import JobResult, Modes, Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
@@ -118,7 +118,7 @@ class BaseStep:
 
         self.database.drop()
 
-    def create(self, mode: Optional[Literal["parallel", "sequential"]] = "parallel", max_retries: Optional[int] = 2):
+    def create(self, mode: Optional[Modes] = "parallel", max_retries: Optional[int] = 2):
         DEFAULT_LOGGER.info("create", extra={"label": self})
 
         if not self.runtime.exists():
@@ -128,7 +128,7 @@ class BaseStep:
 
     def update(
         self,
-        mode: Optional[Literal["parallel", "sequential"]] = "parallel",
+        mode: Optional[Modes] = "parallel",
         update_dependencies: Optional[bool] = True,
         progress_bar: Optional[bool] = False,
         incremental: Optional[bool] = False,
@@ -158,7 +158,7 @@ class BaseStep:
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> Tuple[DataFrame, List[Dict]]:
+    ) -> Tuple[DataFrame, List[JobResult]]:
         DEFAULT_LOGGER.debug("get dependencies", extra={"label": self})
 
         df = self.get_jobs()
@@ -189,20 +189,20 @@ class BaseStep:
         dependencies = []
 
         for res in results:
-            if res.get("error"):
+            if res.error:
                 errors.append(res)
-            elif res.get("dependencies"):
-                dependencies.extend(res.get("dependencies"))
+            elif res.dependencies:
+                dependencies.extend(res.dependencies)
 
         df = SPARK.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)
         return df, errors
 
-    def _dispatch(self, mode: Optional[Literal["parallel", "sequential"]], df: DataFrame) -> List[Dict]:
+    def _dispatch(self, mode: Optional[Modes], df: DataFrame) -> List[JobResult]:
         if mode == "parallel":
             return self._create_in_parallel(df)
         return self._create_sequentially(df)
 
-    def _create_in_parallel(self, df: DataFrame) -> List[Dict]:
+    def _create_in_parallel(self, df: DataFrame) -> List[JobResult]:
         return run_in_parallel(
             _create_db_object,
             df,
@@ -212,7 +212,7 @@ class BaseStep:
             loglevel=logging.CRITICAL,
         )
 
-    def _create_sequentially(self, df: DataFrame) -> List[Dict]:
+    def _create_sequentially(self, df: DataFrame) -> List[JobResult]:
         try:
             deps_df, dep_errors = self._get_dependencies(loglevel=logging.CRITICAL)
             if dep_errors:
@@ -285,7 +285,7 @@ class BaseStep:
 
     def create_db_objects(
         self,
-        mode: Optional[Literal["parallel", "sequential"]] = "parallel",
+        mode: Optional[Modes] = "parallel",
         max_retries: Optional[int] = 2,
         update_lists: Optional[bool] = True,
         incremental: Optional[bool] = False,
@@ -299,7 +299,7 @@ class BaseStep:
             df = df.join(view_df, "job_id", how="left_anti")
 
         results = self._dispatch(mode, df)
-        errors = [res for res in results if res.get("error")]
+        errors = [res for res in results if res.error]
         error_count: int = len(errors)
         attempt = 0
         DEFAULT_LOGGER.debug(
@@ -314,10 +314,10 @@ class BaseStep:
                 extra={"label": self},
             )
 
-            failed_job_ids = [e["job_id"] for e in errors]
+            failed_job_ids = [e.job_id for e in errors]
             errors_df = df.where(df["job_id"].isin(failed_job_ids))
             results = self._dispatch(mode, errors_df)
-            errors = [res for res in results if res.get("error")]
+            errors = [res for res in results if res.error]
 
             if len(errors) == error_count:
                 DEFAULT_LOGGER.warning(
@@ -454,38 +454,38 @@ class BaseStep:
         return self.name
 
 
-def _log_and_raise_errors(errors: List[Dict], action: str, object_type: str = "operations") -> None:
+def _log_and_raise_errors(errors: List[JobResult], action: str, object_type: str = "operations") -> None:
     if errors:
         for e in errors:
-            DEFAULT_LOGGER.exception(f"fail to {action}", extra={"label": e["job"]}, exc_info=e["error"])
+            DEFAULT_LOGGER.exception(f"fail to {action}", extra={"label": e.job}, exc_info=e.error)
         raise ValueError(f"could not {action} - {len(errors)} {object_type} failed, check logs for details")
 
 
 # to avoid AttributeError: can't pickle local object
-def _get_dependencies(row: Row):
+def _get_dependencies(row: Row) -> JobResult:
     job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
     try:
-        return {"job": str(job), "dependencies": job.get_dependencies()}
+        return JobResult(job=str(job), dependencies=job.get_dependencies())
     except Exception as e:
         DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
-        return {"job": str(job), "error": e}
+        return JobResult(job=str(job), error=e)
 
 
-def _create_db_object(row: Row):
+def _create_db_object(row: Row) -> JobResult:
     job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
     try:
         job.create()
-        return {"job": str(job), "job_id": row["job_id"]}
+        return JobResult(job=str(job), job_id=row["job_id"])
     except Exception as e:  # noqa E722
         DEFAULT_LOGGER.exception("fail to create db object", extra={"label": job})
-        return {"job": str(job), "job_id": row["job_id"], "error": e}
+        return JobResult(job=str(job), job_id=row["job_id"], error=e)
 
 
-def _register(row: Row):
+def _register(row: Row) -> JobResult:
     job = get_job(step=row["step"], topic=row["topic"], item=row["item"])
     try:
         job.register()
-        return {"job": str(job)}
+        return JobResult(job=str(job))
     except Exception as e:
         DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
-        return {"job": str(job), "error": e}
+        return JobResult(job=str(job), error=e)

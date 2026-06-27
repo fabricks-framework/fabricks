@@ -2,7 +2,7 @@ from typing import Iterable, List, Literal, Optional, Protocol, Union, runtime_c
 
 from pyspark.sql import DataFrame
 
-from fabricks.core.steps._types import Timeouts
+from fabricks.core.steps._types import Modes, Timeouts
 from fabricks.metastore.database import Database
 from fabricks.models.step import StepOptions
 
@@ -29,13 +29,13 @@ class StepProtocol(Protocol):
 
     def create(
         self,
-        mode: Optional[Literal["parallel", "sequential"]] = ...,
+        mode: Optional[Modes] = ...,
         max_retries: Optional[int] = ...,
     ) -> None: ...
 
     def update(
         self,
-        mode: Optional[Literal["parallel", "sequential"]] = ...,
+        mode: Optional[Modes] = ...,
         update_dependencies: Optional[bool] = ...,
         progress_bar: Optional[bool] = ...,
         incremental: Optional[bool] = ...,
@@ -56,7 +56,7 @@ class StepProtocol(Protocol):
 
     def create_db_objects(
         self,
-        mode: Optional[Literal["parallel", "sequential"]] = ...,
+        mode: Optional[Modes] = ...,
         max_retries: Optional[int] = ...,
         update_lists: Optional[bool] = ...,
         incremental: Optional[bool] = ...,

@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Literal, Optional, Union
+from typing import Callable, Optional, Union
 
 from fabricks.context import FABRICKS_STORAGE, Steps
 from fabricks.context.log import DEFAULT_LOGGER
@@ -8,6 +8,7 @@ from fabricks.core.jobs.bronze import Bronze
 from fabricks.core.jobs.gold import Gold
 from fabricks.core.jobs.silver import Silver
 from fabricks.core.steps import get_step
+from fabricks.core.steps._types import Modes
 from fabricks.core.steps.base import BaseStep
 from fabricks.deploy.masks import deploy_masks
 from fabricks.deploy.notebooks import deploy_notebooks
@@ -72,7 +73,7 @@ class Deploy:
     def armageddon(
         steps: Optional[Union[str, list[str]]] = None,
         nowait: bool = False,
-        mode: Optional[Literal["parallel", "sequential"]] = "parallel",
+        mode: Optional[Modes] = "parallel",
     ):
         def _call(func: Callable, operation: str):
             try:
