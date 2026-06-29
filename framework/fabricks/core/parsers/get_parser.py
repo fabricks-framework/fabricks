@@ -10,11 +10,8 @@ def get_parser(name: str, parser_options: Optional[ParserOptions] = None) -> Cal
     if name not in ["json", "parquet", "avro", "csv", "tsv", "delta", "table"]:
         path = PATH_PARSERS.joinpath(name).append(".py")
         assert path.exists(), f"parser not found ({path})"
-
         load_module_from_path(name, path)
         parser = PARSERS[name](parser_options)
-
     else:
         parser = BaseParser(parser_options, name)
-
     return parser.get_data

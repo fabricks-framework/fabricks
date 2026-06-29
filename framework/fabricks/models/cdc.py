@@ -7,7 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class CdcContext(BaseModel):
     model_config = ConfigDict(extra="ignore")
-
     keys: Optional[list[str]] = None
     mode: str = "complete"
     exclude: list[str] = Field(default_factory=list)
@@ -36,7 +35,6 @@ class CdcContext(BaseModel):
 
 class QueryContext(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-
     template: Literal["filter", "merger", "query"]
     debugmode: bool
     src: Any

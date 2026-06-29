@@ -9,7 +9,6 @@ from fabricks.models.cdc import CdcContext
 
 def deploy_tables(drop: bool = False, update: bool = False):
     DEFAULT_LOGGER.info("create or replace fabricks (default) tables", extra={"label": "fabricks"})
-
     create_table_log(drop=drop, update=update)
     create_table_dummy(drop=drop, update=update)
     create_table_step(drop=drop, update=update)
@@ -25,10 +24,8 @@ def create_table_step(drop: bool = False, update: bool = False):
             StructField("order", LongType(), True),
         ]
     )
-
     if drop:
         table.drop()
-
     if not table.exists():
         table.create(
             schema=schema,
@@ -66,10 +63,8 @@ def create_table_log(drop: bool = False, update: bool = False):
             StructField("json", VariantType(), True),
         ]
     )
-
     if drop:
         table.drop()
-
     if not table.exists():
         table.create(
             schema=schema,
@@ -91,10 +86,8 @@ def create_table_dummy(drop: bool = False, update: bool = False):
         cast('9999-12-31' as timestamp) as __valid_to
         """
     )
-
     if drop:
         cdc.drop()
-
     if not cdc.table.exists():
         cdc.overwrite(df, context=CdcContext())
     elif update:

@@ -50,9 +50,7 @@ class Path:
         """
         if assume_git is None:
             assume_git = False
-
         path_class = GitPath if assume_git else None
         if path_class is None:
             path_class = FileSharePath
-
         return path_class.from_uri(uri, regex=regex)

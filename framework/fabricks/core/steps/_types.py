@@ -16,7 +16,6 @@ class JobResult(BaseModel):
     """Outcome of a per-job worker (create / register / get dependencies)."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-
     job: str
     job_id: Optional[str] = None
     error: Optional[Exception] = None

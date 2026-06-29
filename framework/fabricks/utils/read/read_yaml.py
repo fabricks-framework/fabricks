@@ -39,28 +39,21 @@ def read_yaml(
     """
     found = False
     lookup = build_variable_lookup(variables) if variables else None
-
     for file in path.walk():
         if not file.endswith(".yml"):
             continue
-
         if preferred_file_name is not None and preferred_file_name not in file:
             continue
-
         found = True
-
         data = _read_yaml_cached(file)
         for job_config in data:
             if root:
                 config = cast(dict, job_config[root])
             else:
                 config = cast(dict, job_config)
-
             if lookup:
                 config = substitute_value(config, lookup, strict=strict)
-
             yield config
-
     if preferred_file_name is not None and not found:
         yield from read_yaml(
             path=path,

@@ -20,7 +20,6 @@ class AzureTable:
         credential: "Optional[TokenCredential]" = None,
     ):
         self.name = name
-
         if connection_string is None:
             assert storage_account, "storage_account must be provided if connection_string is not set"
             assert access_key or credential, "Either access_key or credential must be provided"
@@ -28,16 +27,13 @@ class AzureTable:
             self.access_key = access_key
             self.credential = credential
             self.storage_account = storage_account
-
             connection_string = (
                 f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net"
                 if access_key
                 else None
             )
-
         assert connection_string
         self.connection_string = connection_string
-
         self._table_client = None
 
     @property
@@ -111,7 +107,6 @@ class AzureTable:
         partitions = set()
         for d in operations:
             partitions.add(d[1]["PartitionKey"])
-
         for p in partitions:
             _operations = [d for d in operations if d[1].get("PartitionKey") == p]
             t = 50
@@ -127,7 +122,6 @@ class AzureTable:
             data = data.toPandas().to_dict("records")
         elif not isinstance(data, List):
             data = [data]
-
         operations = [("delete", d) for d in data]
         self.submit(operations)
 
@@ -136,7 +130,6 @@ class AzureTable:
             data = data.toPandas().to_dict("records")
         elif not isinstance(data, List):
             data = [data]
-
         operations = [("upsert", d) for d in data]
         self.submit(operations)
 

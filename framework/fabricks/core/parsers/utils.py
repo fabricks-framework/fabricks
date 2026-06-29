@@ -1,5 +1,4 @@
 # Backwards compatibility for utils functions
-
 from fabricks.utils.dataframe import (
     boolean_as_string,
     clean,

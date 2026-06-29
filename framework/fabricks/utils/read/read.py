@@ -11,7 +11,6 @@ def _ensure_spark(spark: Optional[SparkSession]) -> SparkSession:
         from fabricks.utils.spark import get_spark
 
         spark = get_spark()
-
     assert spark is not None
     return spark
 
@@ -25,8 +24,6 @@ def read_stream(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
-
-
 @overload
 def read_stream(
     src: Union[FileSharePath, str],
@@ -36,8 +33,6 @@ def read_stream(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
-
-
 @overload
 def read_stream(
     src: Union[FileSharePath, str],
@@ -46,8 +41,6 @@ def read_stream(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
-
-
 def read_stream(
     src: Union[FileSharePath, str],
     file_format: str,
@@ -78,57 +71,44 @@ def _read_stream(
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     spark = _ensure_spark(spark)
-
     if file_format == "table":
         assert isinstance(src, str)
         return spark.readStream.table(src)
     else:
         file_format = "binaryFile" if file_format == "pdf" else file_format
-
         if isinstance(src, str):
             src = FileSharePath(src)
-
         if file_format == "delta":
             reader = spark.readStream.format("delta")
-
         else:
             reader = spark.readStream.format("cloudFiles")
             reader.option("cloudFiles.format", file_format)
-
             if schema:
                 reader.schema(schema)
-
             else:
                 assert schema_path
                 if isinstance(schema_path, str):
                     schema_path = FileSharePath(schema_path)
-
                 reader.option("cloudFiles.inferColumnTypes", "true")
                 reader.option("cloudFiles.useIncrementalListing", "true")
                 reader.option("cloudFiles.schemaEvolutionMode", "addNewColumns")
                 reader.option("cloudFiles.schemaLocation", schema_path.string)
-
                 if hints:
                     if isinstance(hints, str):
                         hints = [hints]
                     reader.option("cloudFiles.schemaHints", f"{' ,'.join(hints)}")
-
         # default options
         reader.option("recursiveFileLookup", "true")
         reader.option("skipChangeCommits", "true")
         reader.option("ignoreDeletes", "true")
-
         if file_format == "csv":
             reader.option("header", "true")
-
         # custom / override options
         if options:
             for key, value in options.items():
                 reader.option(key, value)
-
         df = reader.load(src.string)
         df = df.withColumnRenamed("_rescued_data", "__rescued_data")
-
         return df
 
 
@@ -140,8 +120,6 @@ def read_batch(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
-
-
 @overload
 def read_batch(
     src: Union[FileSharePath, str],
@@ -150,8 +128,6 @@ def read_batch(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
-
-
 def read_batch(
     src: Union[FileSharePath, str],
     file_format: str,
@@ -176,36 +152,28 @@ def _read_batch(
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     spark = _ensure_spark(spark)
-
     if file_format == "table":
         assert isinstance(src, str)
         return spark.read.table(src)
-
     else:
         path_glob_filter = file_format
         file_format = "binaryFile" if file_format == "pdf" else file_format
-
         if isinstance(src, str):
             src = FileSharePath(src)
-
         reader = spark.read.format(file_format)
         reader = reader.option("pathGlobFilter", f"*.{path_glob_filter}")
-
         if schema:
             reader = reader.schema(schema)
-
         # default options
         reader = reader.option("recursiveFileLookup", "True")
         if file_format == "parquet":
             reader = reader.option("mergeSchema", "true")
         if file_format == "csv":
             reader = reader.option("header", "true")
-
         # custom / override options
         if options:
             for key, value in options.items():
                 reader = reader.option(key, value)
-
         return reader.load(src.string)
 
 
@@ -217,8 +185,6 @@ def read(
     metadata: Optional[bool] = False,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
-
-
 @overload
 def read(
     stream: bool,
@@ -228,8 +194,6 @@ def read(
     metadata: Optional[bool] = False,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
-
-
 @overload
 def read(
     stream: bool,
@@ -241,8 +205,6 @@ def read(
     metadata: Optional[bool] = True,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
-
-
 @overload
 def read(
     stream: bool,
@@ -254,8 +216,6 @@ def read(
     metadata: Optional[bool] = True,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
-
-
 def read(
     stream: bool,
     table: Optional[str] = None,
@@ -269,7 +229,6 @@ def read(
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     spark = _ensure_spark(spark)
-
     if table is not None:
         file_format = "table"
         src = table
@@ -277,7 +236,6 @@ def read(
         assert path
         assert file_format
         src = path
-
     if stream:
         df = _read_stream(
             src=src,
@@ -296,7 +254,6 @@ def read(
             options=options,
             spark=spark,
         )
-
     if metadata:
         if stream and file_format == "delta":
             df = df.selectExpr(
@@ -322,5 +279,4 @@ def read(
                     ) as __metadata
                 """,
             )
-
     return df

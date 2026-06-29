@@ -12,11 +12,9 @@ class BasePath(ABC):
         """Initialize the path."""
         if isinstance(path, PathlibPath):
             path = path.as_posix()
-
         new_path = str(path)
         if new_path.startswith("abfss:/") and not new_path.startswith("abfss://"):
             new_path = new_path.replace("abfss:/", "abfss://")
-
         self.path: str = new_path
 
     def __json__(self):
@@ -34,7 +32,6 @@ class BasePath(ABC):
         if regex:
             for key, value in regex.items():
                 uri = re.sub(rf"{key}", value, uri)
-
         return cls(uri)
 
     @property
@@ -56,10 +53,8 @@ class BasePath(ABC):
         p = self.string
         if not p.endswith(".sql"):
             p += ".sql"
-
         with open(p, "r") as f:
             sql = f.read()
-
         return sql
 
     def is_sql(self) -> bool:
@@ -70,10 +65,8 @@ class BasePath(ABC):
         """Join this path with other path segments."""
         parts = [str(o) for o in other]
         base = self.string
-
         joined = posixpath.join(base, *parts)
         new = posixpath.normpath(joined)
-
         return self.__class__(path=new)
 
     def append(self, other: str) -> Self:

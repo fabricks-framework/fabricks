@@ -30,7 +30,6 @@ class AzureQueue:
                 if access_key
                 else None
             )
-
         assert connection_string
         self.connection_string = connection_string
         self._queue_client = None

@@ -9,7 +9,6 @@ from fabricks.context import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, PATH_UDFS,
 from fabricks.context.log import DEFAULT_LOGGER
 
 UDFS: dict[str, Callable] = {}
-
 UDF_SCHEMA = CONF_RUNTIME.udf_options.schema_name or "default" if CONF_RUNTIME.udf_options else "default"
 UDF_PREFIX = CONF_RUNTIME.udf_options.prefix or "udf_" if CONF_RUNTIME.udf_options else "udf_"
 
@@ -19,7 +18,6 @@ def register_all_udfs(extension: str | None = None, overwrite=False):
     Register all user-defined functions (UDFs).
     """
     DEFAULT_LOGGER.info("register udfs", extra={"label": "fabricks"})
-
     for udf in get_udfs(extension=extension):
         split = udf.split(".")
         try:
@@ -41,7 +39,6 @@ def get_extension(udf: str) -> str:
         r = re.compile(rf"{udf}(\.py|\.sql)")
         if re.match(r, u):
             return u.split(".")[1]
-
     raise ValueError(f"{udf} not found")
 
 
@@ -49,14 +46,11 @@ def is_registered(udf: str, spark: SparkSession | None = None) -> bool:
     if spark is None:
         spark = SPARK
     assert spark is not None
-
     df = spark.sql(f"show user functions in {UDF_SCHEMA}")
-
     if CATALOG:
         df = df.where(f"function == '{CATALOG}.{UDF_SCHEMA}.{UDF_PREFIX}{udf}'")
     else:
         df = df.where(f"function == 'spark_catalog.{UDF_SCHEMA}.{UDF_PREFIX}{udf}'")
-
     return not df.isEmpty()
 
 
@@ -72,37 +66,27 @@ def register_udf(
     if spark is None:
         spark = SPARK
     assert spark is not None
-
     if not is_registered(udf, spark) or overwrite:
         if overwrite:
             DEFAULT_LOGGER.debug(f"override udf {udf}", extra={"label": "fabricks"})
         else:
             DEFAULT_LOGGER.debug(f"register udf {udf}", extra={"label": "fabricks"})
-
         if extension is None:
             extension = get_extension(udf)
-
         assert extension
-
         path = PATH_UDFS.joinpath(f"{udf}.{extension}")
-
         if extension == "sql":
             spark.sql(path.get_sql())
-
         elif extension == "py":
             if not IS_UNITY_CATALOG:
                 assert path.exists(), f"udf not found ({path.string})"
-
             spec = importlib.util.spec_from_file_location(udf, path.string)
             assert spec, f"no valid udf found ({path.string})"
             assert spec.loader is not None
-
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
-
             u = UDFS[udf]
             u(spark)
-
         else:
             raise ValueError(f"{udf} not found")
 

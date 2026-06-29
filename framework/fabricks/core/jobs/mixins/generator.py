@@ -29,29 +29,24 @@ class GeneratorMixin(JobProtocol):
             job_value = getattr(self.table_options, attribute, None) if self.table_options else None
             if job_value is not None:
                 return job_value
-
             step_value = (
                 getattr(self.step_conf.table_options, attribute, None) if self.step_conf.table_options else None
             )
             if step_value is not None:
                 return step_value
-
         elif into == "spark":
             job_value = getattr(self.spark_options, attribute, None) if self.spark_options else None
             if job_value is not None:
                 return job_value
-
             step_value = (
                 getattr(self.step_conf.spark_options, attribute, None) if self.step_conf.spark_options else None
             )
             if step_value is not None:
                 return step_value
-
         return default
 
     def update_dependencies(self):
         DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
-
         deps = self.get_dependencies()
         if deps:
             df = self.spark.createDataFrame([d.model_dump() for d in deps])
@@ -64,7 +59,6 @@ class GeneratorMixin(JobProtocol):
 
     @abstractmethod
     def get_dependencies(self) -> Sequence[JobDependency]: ...
-
     def rm(self):
         """
         Removes the schema folder and checkpoints associated with the generator.
@@ -107,12 +101,10 @@ class GeneratorMixin(JobProtocol):
                 _last_version = int(last_version)
                 if self.table.get_last_version() > _last_version:
                     self.table.restore_to_version(_last_version)
-
             if self.stream:
                 if last_batch is not None:
                     current_batch = int(last_batch) + 1
                     self.rm_commit(current_batch)
-
                     assert last_batch == self.table.get_property("fabricks.last_batch")
                     assert self.paths.to_commits.joinpath(last_batch).exists()
 
@@ -148,7 +140,6 @@ class GeneratorMixin(JobProtocol):
         """
         if self.options.no_drop:
             raise ValueError("no_drop is set, cannot drop the job")
-
         try:
             row = self.spark.sql(
                 f"""
@@ -164,10 +155,8 @@ class GeneratorMixin(JobProtocol):
             ).collect()[0]
             if cast(int, row.count) > 0:
                 DEFAULT_LOGGER.warning(f"{row.count} children found", extra={"label": self, "content": row.children})
-
         except Exception:
             pass
-
         self.cdc.drop()
         self.rm()
 
@@ -225,7 +214,6 @@ class GeneratorMixin(JobProtocol):
         columns = self.table_options.partition_by if self.table_options and self.table_options.partition_by else []
         if columns:
             return columns
-
         columns = [c for c in df.columns if c.startswith("__partition")]
         if columns:
             DEFAULT_LOGGER.debug(
@@ -233,7 +221,6 @@ class GeneratorMixin(JobProtocol):
                 extra={"label": self},
             )
             return columns
-
         else:
             DEFAULT_LOGGER.debug("could not determine any partitioning column", extra={"label": self})
             return None
@@ -242,7 +229,6 @@ class GeneratorMixin(JobProtocol):
         columns = self.table_options.cluster_by if self.table_options and self.table_options.cluster_by else []
         if columns:
             return columns
-
         columns = []
         df_types = dict(df.dtypes)
 
@@ -258,26 +244,21 @@ class GeneratorMixin(JobProtocol):
 
         if "__source" in df_types:
             _add_if_allowed("__source")
-
         if "__is_current" in df_types:
             _add_if_allowed("__is_current")
-
         if "__key" in df_types:
             _add_if_allowed("__key")
         elif "__hash" in df_types:
             _add_if_allowed("__hash")
-
         for column in df.columns:
             if column.startswith("__cluster"):
                 _add_if_allowed(column)
-
         if columns:
             DEFAULT_LOGGER.debug(
                 f"found {len(columns)} clustering column(s) ({', '.join(columns)})",
                 extra={"label": self},
             )
             return columns
-
         else:
             DEFAULT_LOGGER.debug("could not determine any clustering column", extra={"label": self})
             return None
@@ -286,21 +267,15 @@ class GeneratorMixin(JobProtocol):
         def _create_table(df: DataFrame, batch: Optional[int] = 0):
             df = self.base_transform(df)
             cdc_options = self.get_cdc_context(df)
-
             liquid_clustering = False
             cluster_by = []
-
             partitioning = False
             partition_by = []
-
             powerbi = self._get_option_hierarchy("powerbi", into="table", default=False)
             masks = self._get_option_hierarchy("masks", into="table", default=None)
             identity = False
-
             maximum_compatibility = self.table_options.maximum_compatibility if self.table_options else False
-
             default_properties: dict[str, str | bool | int] = {}
-
             if maximum_compatibility:
                 default_properties = {
                     "delta.minReaderVersion": "1",
@@ -322,61 +297,48 @@ class GeneratorMixin(JobProtocol):
                     "delta.minWriterVersion": "5",
                     "delta.feature.timestampNtz": "supported",
                 }
-
             default_properties["fabricks.last_version"] = "0"
-
             if "__identity" in df.columns:
                 identity = False
             else:
                 identity = self.table_options.identity if self.table_options else False
-
             # first, check for partitioning columns
             partition_by = self._get_partitioning_columns(df)
             if partition_by:
                 cluster_by = None
                 partitioning = True
-
             # second, check for clustering columns if partitioning is not enabled
             if not partitioning:
                 liquid_clustering = self._get_option_hierarchy("liquid_clustering", into="table", default=None)
-
                 if liquid_clustering == "auto":
                     liquid_clustering = True
                     cluster_by = []
-
                 elif liquid_clustering is not False:
                     cluster_by = self._get_clustering_columns(df)
-
                     if cluster_by:
                         liquid_clustering = True
                     else:
                         liquid_clustering = None
                         cluster_by = None
-
             if not powerbi:
                 properties = self._get_option_hierarchy("properties", into="table", default=None)
             else:
                 properties = None
-
             if properties is None:
                 properties = default_properties
-
             primary_key = self.table_options.primary_key or {} if self.table_options else {}
             foreign_keys = self.table_options.foreign_keys or {} if self.table_options else {}
             comments = self.table_options.comments or {} if self.table_options else {}
-
             generated_columns = self.table_options.generated_columns or {} if self.table_options else {}
             if generated_columns:
                 for key in generated_columns.keys():
                     assert key.startswith("__generated_"), (
                         "generated column name must start with '__generated_' to avoid potential issue(s) with the CDC logic"
                     )
-
             # if dataframe, reference is passed (BUG)
             name = f"{self.step}_{self.topic}_{self.item}__init"
             global_temp_view = create_or_replace_global_temp_view(name=name, df=df.limit(0), job=self)
             sql = f"select * from {global_temp_view}"
-
             self.cdc.create_table(
                 sql,
                 context=cdc_options,
@@ -395,25 +357,20 @@ class GeneratorMixin(JobProtocol):
 
         if not self.table.exists():
             DEFAULT_LOGGER.debug("create table", extra={"label": self})
-
             self.register_udfs()
-
             df = self.get_data(stream=self.stream, schema_only=True)
             if df:
                 if self.stream:
                     # add dummy stream to be sure that the writeStream will start
                     spark = df.sparkSession
-
                     dummy_df = spark.readStream.table("fabricks.dummy")
                     # __metadata is always present
                     dummy_df = dummy_df.withColumn("__metadata", lit(None))
                     dummy_df = dummy_df.select("__metadata")
-
                     df = df.unionByName(dummy_df, allowMissingColumns=True)
                     path = self.paths.to_checkpoints.append("__init")
                     if path.exists():
                         path.rm()
-
                     query = (
                         df.writeStream.foreachBatch(_create_table)
                         .option("checkpointLocation", path.string)
@@ -424,16 +381,13 @@ class GeneratorMixin(JobProtocol):
                     path.rm()
                 else:
                     _create_table(df)
-
                 constraints = self.table_options.constraints or {} if self.table_options else {}
                 if constraints:
                     for key, value in constraints.items():
                         self.table.add_constraint(name=key, expr=str(value))
-
                 comment = self.table_options.comment if self.table_options else None
                 if comment:
                     self.table.add_table_comment(comment=comment)
-
         else:
             DEFAULT_LOGGER.debug("table already exists, skipped creation", extra={"label": self})
 
@@ -453,12 +407,10 @@ class GeneratorMixin(JobProtocol):
         if self.persist:
             if df is not None:
                 _update_schema(df)
-
             else:
                 df = self.get_data(stream=self.stream, schema_only=True)
                 assert df is not None
                 df = self.base_transform(df)
-
                 if self.stream:
                     path = self.paths.to_checkpoints.append("__schema")
                     query = (
@@ -469,13 +421,10 @@ class GeneratorMixin(JobProtocol):
                     )
                     query.awaitTermination()
                     path.rm()
-
                 else:
                     _update_schema(df)
-
         elif self.virtual:
             self.create_or_replace_view()
-
         else:
             raise ValueError(f"{self.mode} not allowed")
 
@@ -488,15 +437,12 @@ class GeneratorMixin(JobProtocol):
     def update_comments(self, table: Optional[bool] = True, columns: Optional[bool] = True):
         if self.virtual:
             return
-
         if self.persist:
             self.table.drop_comments()
-
             if table:
                 comment = self.table_options.comment if self.table_options else None
                 if comment:
                     self.table.add_table_comment(comment=comment)
-
             if columns:
                 comments = self.table_options.comments or {} if self.table_options else {}
                 if comments:
@@ -508,9 +454,7 @@ class GeneratorMixin(JobProtocol):
             df = self.get_data(stream=self.stream)
             assert df is not None
             df = self.base_transform(df)
-
         context = self.get_cdc_context(df, reload=True)
-
         return self.cdc.get_differences_with_deltatable(df, context=context)
 
     def get_schema_differences(self, df: Optional[DataFrame] = None) -> Optional[Sequence[SchemaDiff]]:
@@ -518,9 +462,7 @@ class GeneratorMixin(JobProtocol):
             df = self.get_data(stream=self.stream)
             assert df is not None
             df = self.base_transform(df)
-
         context = self.get_cdc_context(df, reload=True)
-
         return self.cdc.get_schema_differences(df, context=context)
 
     def schema_drifted(self, df: Optional[DataFrame] = None) -> Optional[bool]:
@@ -532,7 +474,6 @@ class GeneratorMixin(JobProtocol):
     def _register_external_table(self, file_format: str, uri: str):
         try:
             self.spark.sql(f"create table if not exists {self.qualified_name} using {file_format} location '{uri}'")
-
         except Exception as e:
             DEFAULT_LOGGER.exception("could not register external table", extra={"label": self})
             raise e

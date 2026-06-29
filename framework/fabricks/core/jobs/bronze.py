@@ -86,17 +86,14 @@ class Bronze(BaseJob):
 
     def get_dependencies(self, *s) -> Sequence[JobDependency]:
         dependencies = []
-
         parents = self.options.parents or []
         if parents:
             for p in parents:
                 dependencies.append(JobDependency.from_parts(self.job_id, p, "parent"))
-
         wait_for = self.options.wait_for or []
         if wait_for:
             for w in wait_for:
                 dependencies.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
-
         return dependencies
 
     def register_external_table(self):
@@ -105,22 +102,17 @@ class Bronze(BaseJob):
             file_format = options.file_format
         else:
             file_format = "delta"
-
         DEFAULT_LOGGER.debug(f"register external table ({self.data_path})", extra={"label": self})
-
         try:
             df = self.spark.sql(f"select * from {file_format}.`{self.data_path}`")
-
             assert len(df.columns) > 1, "external table must have at least one column"
             if "__timestamp" in df.columns:
                 assert isinstance(df.schema["__timestamp"].dataType, TimestampType), (
                     "__timestamp must be of type timestamp"
                 )
-
         except Exception as e:
             DEFAULT_LOGGER.exception("read external table failed", extra={"label": self})
             raise e
-
         self._register_external_table(file_format=file_format, uri=self.data_path.string)
 
     def compute_statistics_external_table(self):
@@ -146,7 +138,6 @@ class Bronze(BaseJob):
         DEFAULT_LOGGER.debug("maintain (external table)", extra={"label": self})
         if vacuum:
             self.vacuum_external_table()
-
         if compute_statistics:
             self.compute_statistics_external_table()
 
@@ -168,7 +159,6 @@ class Bronze(BaseJob):
             DataFrame: The parsed data as a DataFrame.
         """
         options = self.conf.parser_options or None  # type: ignore
-
         if self.mode == "register":
             if stream:
                 df = read(
@@ -179,22 +169,18 @@ class Bronze(BaseJob):
                 )
             else:
                 df = self.spark.sql(f"select * from {self}")
-
             # cleaning should be done by parser but for delta we do it here
             should_clean = True
             if options is not None and options.clean is not None:
                 should_clean = options.clean
             elif self.step_options.clean is not None:
                 should_clean = self.step_options.clean
-
             if should_clean:
                 df = clean(df)
-
         else:
             if options is not None and options.clean is not None:
                 # if parser options provided and clean set, use parser clean
                 pass
-
             elif self.step_options.clean is not None:
                 if options and options.clean is None:
                     # if parser options provided but clean not set, use step clean
@@ -202,16 +188,13 @@ class Bronze(BaseJob):
                 elif options is None:
                     # if no parser options provided, use step clean
                     options = ParserOptions(clean=self.step_options.clean)
-
             parse = get_parser(self.parser, options)
-
             df = parse(
                 stream=stream,
                 data_path=self.data_path,
                 schema_path=self.paths.to_schema,
                 spark=self.spark,
             )
-
         return df
 
     def encrypt(self, df: DataFrame) -> DataFrame:
@@ -229,16 +212,12 @@ class Bronze(BaseJob):
                         "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead",
                         extra={"label": self},
                     )
-
             else:
                 key = os.environ.get("FABRICKS_ENCRYPTION_KEY")
-
             assert key, "encryption key not found in secrets nor in environment"
-
             for col in encrypted_columns:
                 DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"label": self})
                 df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
-
         return df
 
     def get_data(
@@ -251,23 +230,18 @@ class Bronze(BaseJob):
         df = self.parse(stream)
         df = self.filter_where(df)
         df = self.encrypt(df)
-
         if transform:
             df = self.base_transform(df)
-
         if schema_only:
             df = df.limit(0)
-
         return df
 
     def add_calculated_columns(self, df: DataFrame) -> DataFrame:
         calculated_columns = self.options.calculated_columns or {}
-
         if calculated_columns:
             for key, value in calculated_columns.items():
                 DEFAULT_LOGGER.debug(f"add calculated column ({key} -> {value})", extra={"label": self})
                 df = df.withColumn(key, expr(f"{value}"))
-
         return df
 
     def add_key(self, df: DataFrame) -> DataFrame:
@@ -275,28 +249,21 @@ class Bronze(BaseJob):
             fields = self.options.keys or []
             if fields:
                 DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"label": self})
-
                 if "__source" in df.columns:
                     fields = fields + ["__source"]
-
                 fields = backticks(fields)
                 df = add_hash("__key", df, fields=fields)
-
         return df
 
     def add_hash(self, df: DataFrame) -> DataFrame:
         if "__hash" not in df.columns:
             fields = backticks([c for c in df.columns if not c.startswith("__")])
             DEFAULT_LOGGER.debug("add hash", extra={"label": self})
-
             if "__operation" in df.columns:
                 fields += ["__operation == 'delete'"]
-
             if "__source" in df.columns:
                 fields += ["__source"]
-
             df = add_hash("__hash", df, fields=fields)
-
         return df
 
     def add_source(self, df: DataFrame) -> DataFrame:
@@ -305,7 +272,6 @@ class Bronze(BaseJob):
             if source:
                 DEFAULT_LOGGER.debug(f"add source ({source})", extra={"label": self})
                 df = df.withColumn("__source", lit(source))
-
         return df
 
     def add_operation(self, df: DataFrame) -> DataFrame:
@@ -314,16 +280,13 @@ class Bronze(BaseJob):
             if operation:
                 DEFAULT_LOGGER.debug(f"add operation ({operation})", extra={"label": self})
                 df = df.withColumn("__operation", lit(operation))
-
             else:
                 df = df.withColumn("__operation", lit("upsert"))
-
         return df
 
     def add_metadata(self, df: DataFrame) -> DataFrame:
         if "__metadata" in df.columns:
             DEFAULT_LOGGER.debug("add metadata", extra={"label": self})
-
             if self.mode == "register":
                 #  https://github.com/delta-io/delta/issues/2014 (BUG)
                 df = df.withColumn(
@@ -340,7 +303,6 @@ class Bronze(BaseJob):
                         """
                     ),
                 )
-
             else:
                 df = df.withColumn(
                     "__metadata",
@@ -356,7 +318,6 @@ class Bronze(BaseJob):
                         """
                     ),
                 )
-
         return df
 
     def base_transform(self, df: DataFrame) -> DataFrame:
@@ -367,7 +328,6 @@ class Bronze(BaseJob):
         df = df.transform(self.add_source)
         df = df.transform(self.add_key)
         df = df.transform(self.add_metadata)
-
         return df
 
     def create_or_replace_view(self):
@@ -381,19 +341,15 @@ class Bronze(BaseJob):
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
-
         context = self.get_cdc_context(df)
-
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__{batch}"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
-
         check_df = self.spark.sql(sql)
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"label": self})
             return
-
         assert isinstance(self.cdc, NoCDC)
         if self.mode == "append":
             self.cdc.append(sql, context)
@@ -401,51 +357,42 @@ class Bronze(BaseJob):
     def for_each_run(self, **kwargs):
         if self.mode == "register":
             DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})
-
         elif self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no run)", extra={"label": self})
-
         else:
             super().for_each_run(**kwargs)
 
     def create(self):
         if self.mode == "register":
             self.register_external_table()
-
         elif self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
-
         else:
             super().create()
 
     def register(self):
         if self.mode == "register":
             self.register_external_table()
-
         elif self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
-
         else:
             super().register()
 
     def truncate(self):
         if self.mode == "register":
             DEFAULT_LOGGER.info("register (no truncate)", extra={"label": self})
-
         else:
             super().truncate()
 
     def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
         if self.mode == "register":
             DEFAULT_LOGGER.info("register (no restore)", extra={"label": self})
-
         else:
             super().restore()
 
     def drop(self):
         if self.mode == "register":
             self._drop_external_table()
-
         super().drop()
 
     def maintain(
@@ -456,17 +403,14 @@ class Bronze(BaseJob):
     ):
         if self.mode == "register":
             self.maintain_external_table(vacuum=vacuum, compute_statistics=compute_statistics)
-
         else:
             super().maintain(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
 
     def vacuum(self):
         if self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no vacuum)", extra={"label": self})
-
         elif self.mode == "register":
             self.vacuum_external_table()
-
         else:
             super().vacuum()
 

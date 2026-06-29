@@ -21,7 +21,6 @@ class ResolvedPathOptions(BaseModel):
     """Resolved path objects for main configuration."""
 
     model_config = ConfigDict(extra="allow", frozen=True, arbitrary_types_allowed=True)
-
     base: GitPath
     config: GitPath
     runtime: GitPath
@@ -33,7 +32,6 @@ class ConfigOptions(BaseSettings):
     """Main configuration options for Fabricks framework."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-
     base: str = Field(
         validation_alias=AliasChoices("FABRICKS_BASE", "base"),
         default="none",
@@ -101,14 +99,12 @@ class ConfigOptions(BaseSettings):
         """
         if isinstance(v, bool):
             return v
-
         if isinstance(v, str):
             v_lower = str(v).lower()
             if v_lower in ("true", "1", "yes"):
                 return True
             elif v_lower in ("false", "0", "no"):
                 return False
-
         return v
 
     @field_validator("loglevel", mode="before")
@@ -126,9 +122,7 @@ class ConfigOptions(BaseSettings):
             v_upper = v.upper()
             if v_upper in levels:
                 return levels[v_upper]
-
             return logging.INFO  # Default log level
-
         return v
 
     @field_validator("notebooks", mode="before")
@@ -137,7 +131,6 @@ class ConfigOptions(BaseSettings):
         """Set default notebooks path if not provided."""
         if not v or v.lower() == "none":
             return "runtime/notebooks"
-
         return v
 
     @classmethod
@@ -169,7 +162,6 @@ class ConfigOptions(BaseSettings):
         """
         # Collect all storage paths with variable substitution
         root = GitPath(self.base)
-
         return ResolvedPathOptions(
             base=resolve_git_path(path=self.base),
             config=resolve_git_path(path=self.config, base=root),

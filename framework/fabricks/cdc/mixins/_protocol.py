@@ -19,13 +19,10 @@ class CdcProtocol(Protocol):
 
     @property
     def slowly_changing_dimension(self) -> bool: ...
-
     @property
     def is_view(self) -> bool: ...
-
     @property
     def qualified_name(self) -> str: ...
-
     def get_columns(
         self,
         src: AllowedSources,
@@ -33,19 +30,12 @@ class CdcProtocol(Protocol):
         sort: Optional[bool] = True,
         check: Optional[bool] = True,
     ) -> List[str]: ...
-
     def sort_columns(self, columns: List[str]) -> List[str]: ...
-
     def reorder_dataframe(self, df: DataFrame, extra__columns: Optional[List[str]] = None) -> DataFrame: ...
-
     def has_data(self, src: AllowedSources, **kwargs) -> bool: ...
-
     def get_data(self, src: AllowedSources, context: CdcContext) -> DataFrame: ...
-
     def get_query(self, src: AllowedSources, context: CdcContext, fix: Optional[bool] = True) -> str: ...
-
     def get_query_context(self, template: AllowedTemplates, src: AllowedSources, **kwargs) -> QueryContext: ...
-
     def create_table(
         self,
         src: AllowedSources,

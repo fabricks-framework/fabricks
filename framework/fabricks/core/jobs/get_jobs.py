@@ -55,21 +55,15 @@ def get_jobs_internal_df() -> DataFrame:
         dfs = run_in_parallel(_read_yaml, list(PATHS_RUNTIME.values()))
         df = concat_dfs(dfs)
         assert df is not None
-
     else:
         df = SPARK.sql("select * from fabricks.jobs")
-
     return df
 
 
 @overload
 def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[True]) -> List[BaseJob]: ...
-
-
 @overload
 def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[False]) -> DataFrame: ...
-
-
 def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) -> Union[List[BaseJob], DataFrame]:
     """
     Retrieves a list of jobs or a DataFrame containing job information.
@@ -88,7 +82,6 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
     """
     if not convert:
         return get_jobs_internal_df()
-
     else:
         if df is None:
             return list(
@@ -101,7 +94,6 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
                 )
                 for j in get_jobs_internal()
             )
-
         else:
             if "step" in df.columns and "topic" in df.columns and "item" in df.columns:
                 df = df.select("step", "topic", "item")
@@ -111,9 +103,7 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
                 df = df.select("job")
             else:
                 raise ValueError("step, topic, item or step, job_id or job mandatory")
-
         assert df
-
         jobs = run_in_parallel(_get_job, df)
         return jobs
 
@@ -156,28 +146,21 @@ def get_jobs_sorted(
     """
     # Collect all job rows
     job_rows: List[Row] = jobs_df.collect()
-
     # If no jobs, return empty DataFrame
     if not job_rows:
         return jobs_df.limit(0)
-
     # If no dependencies, return jobs as-is
     if dependencies_df is None or dependencies_df.isEmpty():
         return jobs_df
-
     # Collect dependency edges
     dep_edges = dependencies_df.select("job_id", "parent_id").collect()
-
     # Build items list (job_id, row) and dependencies list (child_id, parent_id)
     items = [(row.job_id, row) for row in job_rows]
     dependencies = [(edge.job_id, edge.parent_id) for edge in dep_edges]
-
     # Sort using pure Python topological sort
     sorted_items = topological_sort_with_data(items, dependencies)
-
     # Extract sorted rows
     sorted_rows = [row for _, row in sorted_items]
-
     # Create new DataFrame from sorted rows, preserving schema
     spark = jobs_df.sparkSession
     return spark.createDataFrame(sorted_rows, schema=jobs_df.schema)

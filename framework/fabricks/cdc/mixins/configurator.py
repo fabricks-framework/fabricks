@@ -29,7 +29,6 @@ class ConfiguratorMixin(CdcProtocol):
     @property
     def allowed_input__columns(self) -> List[str]:
         cols = self.__columns
-
         if self.slowly_changing_dimension:
             if "__valid_from" in cols:
                 cols.remove("__valid_from")
@@ -39,7 +38,6 @@ class ConfiguratorMixin(CdcProtocol):
                 cols.remove("__is_current")
             if "__is_deleted" in cols:
                 cols.remove("__is_deleted")
-
         return cols
 
     @property
@@ -55,13 +53,11 @@ class ConfiguratorMixin(CdcProtocol):
             "__is_current",
             "__is_deleted",
         ]
-
         if self.change_data_capture == "scd1":
             cols.remove("__valid_from")
             cols.remove("__valid_to")
         elif self.change_data_capture == "scd2":
             cols.remove("__timestamp")
-
         return cols
 
     @property
@@ -72,10 +68,8 @@ class ConfiguratorMixin(CdcProtocol):
             "__last_updated",
             "__rescued_data",
         ]
-
         if self.slowly_changing_dimension:
             cols.remove("__operation")
-
         return cols
 
     @property
@@ -113,7 +107,6 @@ class ConfiguratorMixin(CdcProtocol):
             df = self.spark.createDataFrame([], schema=src)
         else:
             raise ValueError(f"{src} not allowed")
-
         return df
 
     def has_data(self, src: AllowedSources, **kwargs) -> bool:
@@ -130,36 +123,28 @@ class ConfiguratorMixin(CdcProtocol):
     ) -> List[str]:
         if backtick:
             backtick = True
-
         df = self.get_src(src=src)
         columns = df.columns
-
         if check:
             for c in columns:
                 # avoid duplicate column issue in merge
                 if c.startswith("__") and c in self.__columns:
                     assert c in self.allowed_input__columns, f"{c} is not allowed"
-
         if sort:
             columns = self.sort_columns(columns)
-
         return backticks(columns) if backtick else columns
 
     def sort_columns(self, columns: List[str]) -> List[str]:
         fields = [c for c in columns if not c.startswith("__")]
-
         leading = self.allowed_ouput_leading__columns
         trailing = self.allowed_output_trailing__columns
-
         for c in columns:
             if c.startswith("__cluster"):
                 leading.append(c)  # need to be at the front to have statistics for clustering
             elif c.startswith("__partition"):
                 trailing.append(c)  # need to be at the end to avoid issues with generated columns
-
         __leading = [c for c in leading if c in columns]
         __trailing = [c for c in trailing if c in columns]
-
         return __leading + fields + __trailing
 
     def reorder_dataframe(self, df: DataFrame, extra__columns: Optional[List[str]] = None) -> DataFrame:
@@ -167,7 +152,6 @@ class ConfiguratorMixin(CdcProtocol):
         if extra__columns:
             extra__columns = [c for c in extra__columns if c in df.columns]
             columns += extra__columns
-
         columns = backticks(columns)
         return df.select(columns)
 

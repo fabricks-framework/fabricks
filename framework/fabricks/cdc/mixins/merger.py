@@ -21,33 +21,26 @@ class MergerMixin(CdcProtocol):
         if isinstance(src, DataFrameLike):
             format = "dataframe"
             columns = self.get_columns(src, backtick=False, sort=False, check=False)  # already done in processor
-
         elif isinstance(src, str):
             format = "view"
             columns = self.get_columns(
                 f"select * from {src}", backtick=False, sort=False, check=False
             )  # already done in processor
-
         else:
             raise ValueError(f"{src} not allowed")
-
         assert "__merge_key" in columns, "__merge_key not found"
         assert "__merge_condition" in columns, "__merge_condition not found"
-
         keys: Optional[list[str]] = list(context.keys) if context.keys else None
-
         columns = [c for c in columns if c not in ["__merge_condition", "__merge_key"]]
         fields = [c for c in columns if not c.startswith("__")]
         where = context.update_where if self.table.rows > 0 else None
         soft_delete = "__is_deleted" in columns
-
         has_source = "__source" in columns
         has_key = "__key" in columns
         has_metadata = "__metadata" in columns
         has_hash = "__hash" in columns
         has_timestamp = "__timestamp" in columns
         has_identity = "__identity" in columns
-
         # 'NoneType' object is not iterable
         if keys:
             keys = backticks(keys)
@@ -55,9 +48,7 @@ class MergerMixin(CdcProtocol):
             columns = backticks(columns)
         if fields:
             fields = backticks(fields)
-
         assert "__key" or keys, f"{self} - __key or keys not found"
-
         return {
             "template": "merge",
             # global
@@ -88,35 +79,28 @@ class MergerMixin(CdcProtocol):
         merged_context = self.get_merge_context(src=src, context=context)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
         merge = environment.get_template("merge.sql.jinja")
-
         try:
             sql = merge.render(**merged_context)
         except Exception as e:
             DEFAULT_LOGGER.debug("context", extra={"label": self, "content": merged_context})
             raise e
-
         if fix:
             try:
                 sql = sql.replace("{src}", "src")
                 sql = fix_sql(sql)
                 sql = sql.replace("`src`", "{src}")
-
                 DEFAULT_LOGGER.debug("merge", extra={"label": self, "sql": sql})
-
             except Exception as e:
                 DEFAULT_LOGGER.exception("fail to clean sql query", extra={"label": self, "sql": sql})
                 raise e
-
         return sql
 
     def merge(self, src: AllowedSources, context: CdcContext):
         if not self.table.exists():
             self.create_table(src, context=context)
-
         df = self.get_data(src, context=context)
         global_temp_view = f"{self.qualified_name}__merge"
         view = create_or_replace_global_temp_view(global_temp_view, df, uuid=context.uuid, job=self)
-
         merge = self.get_merge_query(view, context=context)
         DEFAULT_LOGGER.debug("exec merge", extra={"label": self, "sql": merge})
         self.spark.sql(merge, src=view)

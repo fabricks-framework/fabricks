@@ -40,15 +40,11 @@ class GeneratorMixin(CdcProtocol):
             update={"mode": "complete", "slice": None, "rectify": False, "deduplicate": False}
         )
         df = self.get_data(src, context=context)
-
         if partitioning is True:
             assert partition_by, "partitioning column(s) not found"
-
         df = self.reorder_dataframe(df)
-
         identity = False if identity is None else identity
         liquid_clustering = False if liquid_clustering is None else liquid_clustering
-
         self.table.create(
             df=df,
             partitioning=partitioning,
@@ -71,14 +67,11 @@ class GeneratorMixin(CdcProtocol):
         schema_evolution: bool = True,
     ):
         assert not isinstance(src, DataFrameLike), "dataframe not allowed"
-
         assert context.mode == "complete", f"{context.mode} not allowed"
         sql = self.get_query(src, context=context)
-
         df = self.spark.sql(sql)
         df = self.reorder_dataframe(df)
         columns = backticks(df.columns)
-
         sql = f"""
         create or replace view {self}
         {"with schema evolution" if schema_evolution else "-- no schema evolution"}
@@ -92,7 +85,6 @@ class GeneratorMixin(CdcProtocol):
         """
         sql = fix_sql(sql)
         DEFAULT_LOGGER.debug("create or replace view", extra={"label": self, "sql": sql})
-
         try:
             self.spark.sql(sql)
         except Py4JJavaError as e:
@@ -100,12 +92,10 @@ class GeneratorMixin(CdcProtocol):
 
     def optimize_table(self):
         columns = None
-
         if self.change_data_capture == "scd1":
             columns = ["__key"]
         elif self.change_data_capture == "scd2":
             columns = ["__key", "__valid_from"]
-
         self.table.optimize(columns=columns)
 
     def get_differences_with_deltatable(self, src: AllowedSources, context: CdcContext) -> DataFrame:
@@ -120,34 +110,28 @@ class GeneratorMixin(CdcProtocol):
                 StructField("status", StringType(), True),
             ]
         )
-
         if self.is_view:
             return self.spark.createDataFrame([], schema=schema)
-
         else:
             context = context.model_copy(update={"mode": "complete", "slice": None})
             df = self.get_data(src, context=context)
             df = self.reorder_dataframe(df)
-
             diffs = self.table.get_schema_differences(df)
             return self.spark.createDataFrame([cast(Any, d.model_dump()) for d in diffs], schema=schema)
 
     def get_schema_differences(self, src: AllowedSources, context: CdcContext) -> Optional[Sequence[SchemaDiff]]:
         if self.is_view:
             return None
-
         else:
             context = context.model_copy(update={"mode": "complete", "slice": None})
             df = self.get_data(src, context=context)
             df = self.reorder_dataframe(df)
-
             return self.table.get_schema_differences(df)
 
     def schema_drifted(self, src: AllowedSources, context: CdcContext) -> Optional[bool]:
         d = self.get_schema_differences(src, context=context)
         if d is None:
             return None
-
         return len(d) > 0
 
     def _update_schema(
@@ -162,7 +146,6 @@ class GeneratorMixin(CdcProtocol):
                 "dataframe and structtype not allowed"
             )
             self.create_or_replace_view(src=src, context=CdcContext())
-
         else:
             context = context.model_copy(update={"mode": "complete", "slice": None})
             df = self.get_data(src, context=context)

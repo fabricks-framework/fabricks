@@ -16,12 +16,10 @@ from fabricks.utils.path import GitPath
 def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str:
     if isinstance(fields, str):
         fields = [fields]
-
     if alias:
         coalesce = [f"coalesce(cast({alias}.{f} as string), '-1')" for f in fields]
     else:
         coalesce = [f"coalesce(cast({f} as string), '-1')" for f in fields]
-
     return "concat_ws('*', " + ",".join(coalesce) + ")"
 
 
@@ -31,7 +29,6 @@ def md5(s: Any) -> str:
 
 
 def add_hash(column: str, df: DataFrame, fields: Union[str, List[str]]):
-
     return df.withColumn(f"{column}", F.md5(F.expr(concat_ws(fields))))
 
 
@@ -59,10 +56,8 @@ def run_in_parallel(
 ) -> List[Any]:
     if logger is None:
         logger = logging.getLogger()
-
     current_loglevel = logger.getEffectiveLevel()
     logger.setLevel(loglevel)
-
     items = list(iterable.collect() if isinstance(iterable, DataFrameLike) else iterable)
 
     def _collect(mapped):
@@ -70,7 +65,6 @@ def run_in_parallel(
             from tqdm import tqdm
 
             return list(tqdm(mapped, total=len(items), position=position))
-
         return list(mapped)
 
     try:
@@ -79,7 +73,6 @@ def run_in_parallel(
 
             with Pool(processes=workers) as p:
                 return _collect(p.imap(func, items))
-
         else:
             from concurrent.futures import ThreadPoolExecutor
 
@@ -105,7 +98,6 @@ def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
 
     if timeout is None:
         timeout = 3600
-
     dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs})  # type: ignore
 
 
@@ -114,14 +106,11 @@ def load_module_from_path(name: str, path: GitPath):
 
     if path.parent not in sys.path:
         sys.path.insert(0, str(path.parent))
-
     spec = spec_from_file_location(name, path.string)
     assert spec, f"no valid module found in {path.string}"
     assert spec.loader is not None
-
     textwrap_module = module_from_spec(spec)
     spec.loader.exec_module(textwrap_module)
-
     return textwrap_module
 
 
@@ -150,26 +139,21 @@ def find_upward(
         current = Path.cwd()
     else:
         current = Path(root).resolve()
-
     if current.is_file():
         current = current.parent
-
     while True:
         candidate = current / filename
         if candidate.exists():
             return GitPath(candidate)
-
         parent = current.parent
         if parent == current:  # Reached filesystem root
             return None
-
         current = parent
 
 
 def backticks(columns: Union[str, List[str]]) -> List[str]:
     if isinstance(columns, str):
         columns = [columns]
-
     return [f"`{c}`" for c in columns]
 
 

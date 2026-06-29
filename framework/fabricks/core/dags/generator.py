@@ -55,7 +55,6 @@ class DagGenerator(BaseDags):
     def get_dependencies(self, job_df: Optional[DataFrame] = None) -> DataFrame:
         if job_df is None:
             job_df = self.get_jobs()
-
         df = SPARK.sql(
             """
             select
@@ -96,7 +95,6 @@ class DagGenerator(BaseDags):
     def get_steps(self, job_df: Optional[DataFrame] = None) -> DataFrame:
         if job_df is None:
             job_df = self.get_jobs()
-
         return SPARK.sql(
             """
             select
@@ -113,15 +111,11 @@ class DagGenerator(BaseDags):
         job_df = self.get_jobs()
         deps_df = self.get_dependencies(job_df)
         step_df = self.get_steps(job_df)
-
         table = self.get_table()
-
         table.create_if_not_exists()
         table.truncate_all_partitions()
-
         table.upsert(job_df)
         table.upsert(deps_df)
-
         df = SPARK.sql(
             """
             select
@@ -141,20 +135,14 @@ class DagGenerator(BaseDags):
             """,
             df=job_df,
         )
-
         TABLE_LOG_HANDLER.table.upsert(df)
-
         cs = self.get_connection_info()
-
         rows = step_df.collect()
         for row in rows:
             step = self.remove_invalid_characters(row.Step)
-
             with AzureQueue(f"q{step}{self.schedule_id}", **dict(cs)) as queue:
                 queue.create_if_not_exists()
                 queue.clear()
-
         # wait for queues to be ready before starting the dag
         time.sleep(60)
-
         return self.schedule_id, job_df, deps_df

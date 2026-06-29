@@ -39,7 +39,6 @@ class GanitorMixin(JobProtocol):
             job = self.table_options.retention_days if self.table_options else None
             step = self.step_table_options.retention_days if self.step_table_options else None
             runtime = self.runtime_options.retention_days
-
             if job is not None:
                 retention_days = job
             elif step:
@@ -47,5 +46,4 @@ class GanitorMixin(JobProtocol):
             else:
                 assert runtime
                 retention_days = runtime
-
             self.table.vacuum(retention_days=retention_days)

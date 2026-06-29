@@ -24,7 +24,6 @@ def _has_column(table: str, column: str, existing: set[str]) -> bool:
 
 def deploy_views():
     DEFAULT_LOGGER.info("create or replace fabricks (default) views", extra={"label": "fabricks"})
-
     create_or_replace_jobs_view()
     create_or_replace_tables_view()
     create_or_replace_views_view()
@@ -44,19 +43,16 @@ def create_or_replace_jobs_view():
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
-
     for step in Steps:
         table = f"{step}_jobs"
         if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{table}", extra={"label": "fabricks"})
             continue
-
         change_data_capture = (
             "coalesce(options.change_data_capture, 'nocdc') as change_data_capture"
             if _has_column(table, "options.change_data_capture", existing)
             else "'nocdc' as change_data_capture"
         )
-
         cte = f"""
           {step} as (
             select
@@ -92,7 +88,6 @@ def create_or_replace_jobs_view():
         """
         ctes.append(cte)
         selects.append(f"select * from {step}")
-
     sql = f"""
     create or replace view fabricks.jobs with schema evolution as
     with
@@ -100,7 +95,6 @@ def create_or_replace_jobs_view():
     {" union all ".join(selects)}
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.jobs", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -109,13 +103,11 @@ def create_or_replace_tables_view():
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
-
     for step in Steps:
         table = f"{step}_tables"
         if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_tables", extra={"label": "fabricks"})
             continue
-
         cte = f"""
             {step} as (
             select
@@ -128,7 +120,6 @@ def create_or_replace_tables_view():
             """
         ctes.append(cte)
         selects.append(f"select * from {step}")
-
     sql = f"""
     create or replace view fabricks.tables with schema evolution as
     with
@@ -136,7 +127,6 @@ def create_or_replace_tables_view():
     {" union all ".join(selects)}
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.tables", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -145,13 +135,11 @@ def create_or_replace_views_view():
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
-
     for step in Steps:
         table = f"{step}_views"
         if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_views", extra={"label": "fabricks"})
             continue
-
         cte = f"""
             {step} as (
             select
@@ -164,7 +152,6 @@ def create_or_replace_views_view():
             """
         ctes.append(cte)
         selects.append(f"select * from {step}")
-
     sql = f"""
     create or replace view fabricks.views with schema evolution as
     with
@@ -172,7 +159,6 @@ def create_or_replace_views_view():
     {" union all ".join(selects)}
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.views", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -181,13 +167,11 @@ def create_or_replace_dependencies_view():
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
-
     for step in Steps:
         table = f"{step}_dependencies"
         if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_dependencies", extra={"label": "fabricks"})
             continue
-
         cte = f"""
           {step} as (
           select
@@ -203,7 +187,6 @@ def create_or_replace_dependencies_view():
           """
         ctes.append(cte)
         selects.append(f"select * from {step}")
-
     sql = f"""
     create or replace view fabricks.dependencies with schema evolution as
     with
@@ -211,7 +194,6 @@ def create_or_replace_dependencies_view():
     {" union all ".join(selects)}
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.dependencies", extra={"sql": sql})
     SPARK.sql(sql)
 
@@ -221,7 +203,6 @@ def create_or_replace_dependencies_flat_view():
     join = "\n  ".join(
         [f"left join fabricks.dependencies d{i + 1} on d{i}.parent_id = d{i + 1}.job_id" for i in range(10)]
     )
-
     sql = f"""
     create or replace view fabricks.dependencies_flat with schema evolution as
     select
@@ -233,7 +214,6 @@ def create_or_replace_dependencies_flat_view():
       {join}
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_flat", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
@@ -274,7 +254,6 @@ def create_or_replace_dependencies_unpivot_view():
     ) = 1
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_unpivot", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
@@ -315,7 +294,6 @@ def create_or_replace_dependencies_circular_view():
       )
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.dependencies_circular", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
@@ -387,7 +365,6 @@ def create_or_replace_logs_pivot_view():
       left join fabricks.jobs j on g.job_id = j.job_id
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.logs_pivot", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
@@ -414,7 +391,6 @@ def create_or_replace_last_schedule_view():
       inner join lst on schedule_id = last_schedule_id
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.last_schedule", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
@@ -441,7 +417,6 @@ def create_or_replace_last_status_view():
       ) = 1
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.last_status", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
@@ -480,7 +455,6 @@ def create_or_replace_previous_schedule_view():
       inner join lst on schedule_id = last_schedule_id
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.previous_schedule", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
@@ -506,7 +480,6 @@ def create_or_replace_schedules_view():
     order by date desc, start_time desc
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.schedules", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
@@ -563,6 +536,5 @@ def create_or_replace_jobs_to_be_updated_view():
           on b.job_id = o.job_id    
     """
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.jobs_to_be_updated", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)

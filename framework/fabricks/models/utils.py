@@ -5,12 +5,8 @@ from typing import Any, Optional, overload
 
 @overload
 def get_job_id(step: str, topic: str, item: str) -> str: ...
-
-
 @overload
 def get_job_id(*, job: str) -> str: ...
-
-
 def get_job_id(
     step: Optional[str] = None,
     topic: Optional[str] = None,
@@ -22,7 +18,6 @@ def get_job_id(
         assert topic
         assert item
         job = f"{step}.{topic}_{item}"
-
     return md5(job)
 
 

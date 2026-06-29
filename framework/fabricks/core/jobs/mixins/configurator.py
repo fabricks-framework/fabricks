@@ -31,15 +31,12 @@ from fabricks.models import (
 class ConfiguratorMixin(JobProtocol):
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str): ...
-
     @classmethod
     def from_job_id(cls, step: str, job_id: str): ...
-
     @property
     def spark(self) -> SparkSession:
         if not self._spark:
             spark = build_spark_session(app_name=str(self))
-
             # Apply step-level spark options if configured
             step_spark = self.step_spark_options
             if step_spark:
@@ -47,12 +44,10 @@ class ConfiguratorMixin(JobProtocol):
                 for key, value in sql_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.sql(f"set {key} = {value}")
-
                 conf_options = step_spark.conf or {}
                 for key, value in conf_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.conf.set(f"{key}", f"{value}")
-
             # Apply job-level spark options if configured
             job_spark = self.spark_options
             if job_spark:
@@ -60,12 +55,10 @@ class ConfiguratorMixin(JobProtocol):
                 for key, value in sql_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.sql(f"set {key} = {value}")
-
                 conf_options = job_spark.conf or {}
                 for key, value in conf_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.conf.set(f"{key}", f"{value}")
-
             self._spark = spark
         return self._spark
 

@@ -11,20 +11,12 @@ from fabricks.models import get_job_id
 
 @overload
 def get_job(*, step: str, job_id: str) -> Bronze | Gold | Silver: ...
-
-
 @overload
 def get_job(*, step: str, topic: str, item: str) -> Bronze | Gold | Silver: ...
-
-
 @overload
 def get_job(*, row: Row) -> Bronze | Gold | Silver: ...
-
-
 @overload
 def get_job(job: str) -> Bronze | Gold | Silver: ...
-
-
 def get_job(
     job: Optional[str] = None,
     step: Optional[str] = None,
@@ -54,35 +46,28 @@ def get_job(
     if row:
         if "step" in row and "topic" in row and "item" in row:
             j = get_job_internal(step=row.step, topic=row.topic, item=row.item)
-
         elif "step" in row and "job_id" in row:
             j = get_job(step=row.step, job_id=row.job_id)
-
         elif "job" in row:
             parts = row.job.split(".")
             s = parts[0]
             job_id = get_job_id(job=row.job)
             j = get_job_internal(step=s, job_id=job_id)
-
         else:
             raise ValueError("step, topic, item or step, job_id or job mandatory")
-
     elif job:
         parts = job.split(".")
         s = parts[0]
         job_id = get_job_id(job=job)
         j = get_job_internal(step=s, job_id=job_id)
-
     elif job_id:
         assert step, "step mandatory"
         j = get_job_internal(step=step, job_id=job_id)
-
     else:
         assert step, "step mandatory"
         assert topic, "topic mandatory"
         assert item, "item mandatory"
         j = get_job_internal(step=step, topic=topic, item=item)
-
     return j
 
 
@@ -102,7 +87,6 @@ def get_job_internal(
             assert topic
             assert item
             job = Bronze.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
-
     elif step in Silvers:
         from fabricks.core.jobs.silver import Silver
 
@@ -112,7 +96,6 @@ def get_job_internal(
             assert topic
             assert item
             job = Silver.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
-
     elif step in Golds:
         from fabricks.core.jobs.gold import Gold
 
@@ -122,8 +105,6 @@ def get_job_internal(
             assert topic
             assert item
             job = Gold.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
-
     else:
         raise ValueError(f"{step} not found")
-
     return job

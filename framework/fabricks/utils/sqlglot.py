@@ -37,16 +37,13 @@ def parse_fabricks(sql: str) -> list[exp.Expr | None]:
 def get_tables(sql: str, allowed_databases: list[str] | None = None) -> list[str]:
     tables = []
     parts = [p for p in parse_fabricks(sql) if p is not None]
-
     for part in parts:
         for table in part.find_all(exp.Table):
             if len(table.db) > 0:  # exclude CTEs
                 if allowed_databases:
                     if table.db not in allowed_databases:
                         continue
-
                 tables.append(f"{table.db}.{table.name}")
-
     # Remove duplicates
     return list(set(tables))
 

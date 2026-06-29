@@ -35,7 +35,6 @@ class JobConfig:
     ):
         self.expand = expand
         self.step = step
-
         if job_id is not None:
             self.job_id = job_id
             self.conf = get_job_conf(step=step, job_id=job_id, row=row)
@@ -61,10 +60,8 @@ class JobConfig:
     def paths(self) -> Paths:
         storage = PATHS_STORAGE.get(self.step)
         assert storage
-
         runtime_root = PATHS_RUNTIME.get(self.step)
         assert runtime_root
-
         return Paths(
             to_storage=storage,
             to_tmp=storage.joinpath("tmp", self.topic, self.item),

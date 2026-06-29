@@ -12,21 +12,16 @@ def _as_variables(data: Any, source: str) -> dict[str, Any]:
     """Extract variables dictionary from various data structures."""
     if data is None:
         return {}
-
     if isinstance(data, dict):
         variables = data.get("variables", data)
         if not isinstance(variables, dict):
             raise ValueError(f"variables in {source} must be a mapping")
-
         return dict(variables)
-
     if isinstance(data, list) and len(data) == 1 and isinstance(data[0], dict):
         return _as_variables(data[0], source=source)
-
     if isinstance(data, str):
         # String is treated as a file path - handled by caller
         return {}
-
     raise ValueError(f"variables file {source} must contain a mapping")
 
 
@@ -39,11 +34,9 @@ def _resolve_variables_path(
     variables_file = external_variables_file or conf_data.get("variables_file")
     if not variables_file or str(variables_file).lower() == "none":
         return None
-
     path = Path(str(variables_file))
     if path.is_absolute():
         return path
-
     return config_path.parent / path
 
 
@@ -68,12 +61,10 @@ def load_variables(
         Resolved variables dictionary
     """
     inline_variables = data.get("variables")
-
     if variables_path:
         file_path = Path(variables_path)
         if not file_path.is_absolute():
             file_path = config_path.parent / file_path
-
         try:
             content = _read_yaml_cached(str(file_path))
             return _as_variables(content, source=str(file_path))
@@ -81,10 +72,8 @@ def load_variables(
             raise FileNotFoundError(
                 f"variables file '{file_path}' referenced by config '{config_path}' was not found",
             ) from exc
-
     if inline_variables:
         return _as_variables(inline_variables, source="runtime config")
-
     return {}
 
 
@@ -104,7 +93,6 @@ def perform_variable_substitution(
     """
     if not variables:
         return data
-
     prepared = dict(data)
     prepared["variables"] = variables
     return substitute_value(prepared, build_variable_lookup(variables), strict=True)
@@ -141,13 +129,11 @@ def resolve_runtime_paths(
     storage_paths: dict[str, FileSharePath] = {
         "fabricks": resolve_fileshare_path(path_options["storage"]),
     }
-
     # Add storage paths for bronze/silver/gold/databases
     for objects in [bronze, silver, gold, databases]:
         if objects:
             for obj in objects:
                 storage_paths[obj.name] = resolve_fileshare_path(obj.path_options.storage)
-
     # Collect runtime paths
     runtime_paths: dict[str, GitPath] = {}
     for objects in [bronze, silver, gold]:
@@ -157,7 +143,6 @@ def resolve_runtime_paths(
                     obj.path_options.runtime,
                     base=base_runtime,
                 )
-
     return {
         "storage": storage_paths["fabricks"],
         "udfs": resolve_git_path(path=path_options["udfs"], base=base_runtime),

@@ -38,10 +38,8 @@ class BaseDags:
         if not self._table:
             cs = self.get_connection_info()
             self._table = AzureTable(f"t{self.schedule_id}", **dict(cs))
-
         if self._table is None:
             raise ValueError("Azure table for logs not found")
-
         return self._table
 
     def __enter__(self):
@@ -55,14 +53,11 @@ class BaseDags:
         q = f"PartitionKey eq '{self.schedule_id}'"
         if step:
             q += f" and Step eq '{step}'"
-
         d = TABLE_LOG_HANDLER.table.query(q)
         df = SPARK.createDataFrame(d)
-
         for column in ["Exception", "NotebookId", "Json"]:
             if column not in df.columns:
                 df = df.withColumn(column, expr("null"))
-
         df = SPARK.sql(
             """
             select
@@ -82,7 +77,6 @@ class BaseDags:
             """,
             df=df,
         )
-
         return df
 
     def write_logs(self, df: DataFrame):

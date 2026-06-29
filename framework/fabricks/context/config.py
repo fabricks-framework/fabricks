@@ -4,10 +4,8 @@ from fabricks.models.config import ConfigOptions
 from fabricks.utils.path import GitPath
 
 config = ConfigOptions()
-
 # Constants
 CONFIG: Final[ConfigOptions] = config
-
 PATH_VARIABLE: Final[Optional[GitPath]] = config.resolved_paths.variable
 PATH_CONFIG: Final[GitPath] = config.resolved_paths.config
 PATH_RUNTIME: Final[GitPath] = config.resolved_paths.runtime

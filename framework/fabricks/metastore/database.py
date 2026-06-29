@@ -13,11 +13,9 @@ from fabricks.utils.path import FileSharePath
 class Database:
     def __init__(self, name: str, spark: Optional[SparkSession] = None):
         self.name = name
-
         storage = PATHS_STORAGE.get(self.name)
         assert storage is not None
         self.storage = storage
-
         if spark is None:
             spark = SPARK
         assert spark is not None
@@ -40,7 +38,6 @@ class Database:
         if self.exists():
             DEFAULT_LOGGER.warning("drop database", extra={"label": self})
             self.spark.sql(f"drop database if exists {self.name} cascade;")
-
         if rm:
             if self.delta_path.exists():
                 DEFAULT_LOGGER.debug("remove delta files", extra={"label": self})

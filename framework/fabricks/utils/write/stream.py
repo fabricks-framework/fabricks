@@ -14,9 +14,7 @@ def write_stream(
 ) -> StreamingQuery:
     if timeout is None:
         timeout = 18000
-
     assert timeout is not None
-
     query = (
         df.writeStream.foreachBatch(func)
         .option("checkpointLocation", checkpoints_path.string)

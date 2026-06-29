@@ -11,7 +11,6 @@ class StepInvokerOptions(BaseModel):
     """Grouped invoker operations for pre/run/post execution."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     pre_run: list[BaseInvokerOptions] | None = None
     post_run: list[BaseInvokerOptions] | None = None
 
@@ -20,7 +19,6 @@ class StepTimeoutOptions(BaseModel):
     """Optional timeout overrides for individual steps."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     step: int | None = None
     job: int | None = None
     pre_run: int | None = None
@@ -31,7 +29,6 @@ class StepPathOptions(BaseModel):
     """Path configuration for steps."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     runtime: str
     storage: str
 
@@ -40,7 +37,6 @@ class StepOptions(BaseModel):
     """Base step configuration options."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     order: int
     workers: int | None = None
     timeouts: StepTimeoutOptions | None = None
@@ -71,7 +67,6 @@ class Step(BaseModel):
     """Base step configuration."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     name: str
     path_options: StepPathOptions
     table_options: StepTableOptions | None = None

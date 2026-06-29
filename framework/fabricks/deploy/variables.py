@@ -11,7 +11,6 @@ def deploy_variables(deploy_runtime_first: bool = True):
         from fabricks.deploy.runtime import deploy_runtime
 
         deploy_runtime()
-
     ddl = """
     with variables as (
       select
@@ -26,6 +25,5 @@ def deploy_variables(deploy_runtime_first: bool = True):
     """
     sql = f"""create or replace view fabricks.variables with schema evolution as {ddl}"""
     sql = fix_sql(sql)
-
     DEFAULT_LOGGER.debug("create or replace fabricks.variables", extra={"sql": sql})
     SPARK.sql(sql)

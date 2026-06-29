@@ -21,7 +21,6 @@ class GitPath(BasePath):
             path = path[: -len(".ipynb")]
         elif path.endswith(".py"):
             path = path[: -len(".py")]
-
         return path
 
     def walk(
@@ -32,28 +31,23 @@ class GitPath(BasePath):
     ) -> list:
         if not self.exists():
             return []
-
         if self.pathlibpath.is_file():
             out = [self.string]
         elif file_format:
             out = [o for o in self._yield(self.string) if o.endswith(file_format)]
         else:
             out = list(self._yield(self.string))
-
         if convert:
             out = [self.__class__(path=o) for o in out]
-
         return out
 
     def _yield(self, path: str | PathlibPath):
         """Recursively yield all file paths in the git/local file system."""
         if isinstance(path, str):
             path = PathlibPath(path)
-
         for child in path.glob(r"*"):
             if child.is_dir():
                 yield from self._yield(child)
-
             else:
                 yield str(child)
 
@@ -79,15 +73,11 @@ def resolve_git_path(
     """
     if isinstance(base, str):
         base = GitPath(base)
-
     resolved_value = path or default
     if resolved_value is None:
         raise ValueError("path and default cannot both be None")
-
     if variables:
         return GitPath.from_uri(resolved_value, regex=variables)
-
     if base:
         return base.joinpath(resolved_value)
-
     return GitPath(resolved_value)

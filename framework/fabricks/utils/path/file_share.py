@@ -27,21 +27,18 @@ class FileSharePath(BasePath):
     def get_container(self) -> str:
         """Get the container name from an ABFSS path."""
         assert self.string.startswith("abfss://")
-
         m = _ABFSS_CONTAINER_PATTERN.findall(self.string)[0]
         return m
 
     def get_storage_account(self) -> str:
         """Get the storage account name from an ABFSS path."""
         assert self.string.startswith("abfss://")
-
         m = _ABFSS_ACCOUNT_PATTERN.findall(self.string)[0]
         return m
 
     def get_file_system(self) -> str:
         """Get the file system from an ABFSS path."""
         assert self.string.startswith("abfss://")
-
         m = _ABFSS_FS_PATTERN.findall(self.string)[0]
         return m
 
@@ -49,7 +46,6 @@ class FileSharePath(BasePath):
         """Get the DBFS mount path."""
         mount_point = self.pathlibpath.parts[1].split(".")[0].split("@")[0]
         rest = self.pathlibpath.parts[2:]
-
         return str(os.path.join("/dbfs/mnt", mount_point, "/".join(rest)))
 
     def walk(
@@ -66,13 +62,10 @@ class FileSharePath(BasePath):
                 out = self._list_fs(depth)
             else:
                 out = list(self._yield(self.string))
-
         if file_format:
             out = [o for o in out if o.endswith(file_format)]
-
         if convert:
             out = [self.__class__(o) for o in out]
-
         return out
 
     def get_file_info(self) -> list[dict[str, str | int]]:
@@ -97,7 +90,6 @@ class FileSharePath(BasePath):
         from databricks.sdk.runtime import dbutils
 
         paths = dbutils.fs.ls(self.string)
-
         if depth == 1:
             children = paths
         else:
@@ -108,13 +100,10 @@ class FileSharePath(BasePath):
                     break
                 else:
                     children = []
-
                 for path in paths:
                     children += dbutils.fs.ls(path.path)
-
                 paths = children
                 i += 1
-
         return [c.path for c in children]
 
     def _yield_file_info(self, path: str):
@@ -123,7 +112,6 @@ class FileSharePath(BasePath):
         for child in dbutils.fs.ls(path):
             if child.isDir():  # type: ignore
                 yield from self._yield_file_info(child.path)
-
             else:
                 yield child
 
@@ -133,7 +121,6 @@ class FileSharePath(BasePath):
 
         if isinstance(path, PathlibPath):
             path = str(path)
-
         for child in dbutils.fs.ls(path):
             if child.isDir():  # type: ignore
                 yield from self._yield(child.path)
@@ -149,7 +136,6 @@ class FileSharePath(BasePath):
                     yield from self._rm(child.path)
                 else:
                     yield dbutils.fs.rm(child.path, recurse=True)
-
         except Exception:
             return False
 
@@ -175,15 +161,11 @@ def resolve_fileshare_path(
     """
     if isinstance(base, str):
         base = FileSharePath(base)
-
     resolved_value = path or default
     if resolved_value is None:
         raise ValueError("path and default cannot both be None")
-
     if variables:
         return FileSharePath.from_uri(resolved_value, regex=variables)
-
     if base:
         return base.joinpath(resolved_value)
-
     return FileSharePath(resolved_value)

@@ -24,7 +24,6 @@ class BaseCDC(MergerMixin, ProcessorMixin, GeneratorMixin, ConfiguratorMixin, CD
             spark = SPARK
         assert spark is not None
         self.spark: SparkSession = spark
-
         self.database = Database(database)
         self.levels = levels
         self.change_data_capture = change_data_capture

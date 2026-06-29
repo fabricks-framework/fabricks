@@ -60,7 +60,6 @@ class Deploy:
         Deploy.tables()
         s: BaseStep = get_step(step)
         s.create()
-
         Deploy.views()
         Deploy.schedules()
 
@@ -84,54 +83,38 @@ class Deploy:
 
         DEFAULT_LOGGER.warning("(╯°□°）╯︵ ┻━┻", extra={"label": "armageddon"})
         print_atomic_bomb(nowait=nowait)
-
         DEFAULT_LOGGER.setLevel(logging.INFO)
-
         if steps is None:
             steps = Steps
-
         assert steps is not None
-
         if isinstance(steps, str):
             steps = [steps]
         elif isinstance(steps, list):
             steps = [s for s in steps]
-
         fabricks = Database("fabricks")
         fabricks.drop()
-
         for s in steps:
             step = get_step(s)
             step.drop()
-
         tmp = FABRICKS_STORAGE.joinpath("tmp")
         tmp.rm()
-
         checkpoint = FABRICKS_STORAGE.joinpath("checkpoints")
         checkpoint.rm()
-
         schema = FABRICKS_STORAGE.joinpath("schemas")
         schema.rm()
-
         schedule = FABRICKS_STORAGE.joinpath("schedules")
         schedule.rm()
-
         fabricks.create()
-
         errors = []
-
         _call(lambda: Deploy.tables(drop=True), "deploy-tables")
         _call(lambda: Deploy.udfs(overwrite=True), "deploy-udfs")
         _call(lambda: Deploy.masks(overwrite=True), "deploy-masks")
         _call(lambda: Deploy.notebooks(overwrite=True), "deploy-notebooks")
-
         for s in steps:
             _call(lambda s=s: get_step(s).create(mode=mode), f"create-{s}")
-
         _call(Deploy.views, "deploy-views")
         _call(Deploy.schedules, "deploy-schedules")
         _call(Deploy.variables, "deploy-variables")
         _call(Deploy.runtime, "deploy-runtime")
-
         if errors:
             raise ValueError(f"armageddon completed with {len(errors)} error(s). Check logs for details")

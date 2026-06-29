@@ -14,7 +14,6 @@ class SchemaDiff(BaseModel):
     def type_widening_compatible(self) -> bool:
         if self.status != "changed":
             return False
-
         assert self.new_data_type
         assert self.data_type
         map = {
