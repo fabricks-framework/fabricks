@@ -41,7 +41,6 @@ _ = send_message_to_channel(
 dbutils.widgets.dropdown("initialize", "True", Booleans)
 dbutils.widgets.dropdown("armageddon", "True", Booleans)
 dbutils.widgets.dropdown("reset", "False", Booleans)
-dbutils.widgets.dropdown("fix_notebooks", "True", Booleans)
 dbutils.widgets.multiselect("tests", "*", ["*"] + Tests)
 
 # COMMAND ----------
@@ -72,11 +71,6 @@ if initialize:
         expected="True",
         i=1,
     )
-
-# COMMAND ----------
-
-if fix_notebooks:
-    run_notebook(root.joinpath("fix_notebooks"))
 
 # COMMAND ----------
 
