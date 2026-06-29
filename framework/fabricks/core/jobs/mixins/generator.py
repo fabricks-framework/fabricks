@@ -381,9 +381,9 @@ class GeneratorMixin(JobProtocol):
             df = self.get_data(stream=self.stream, schema_only=True)
             if df:
                 if self.stream:
-                    from fabricks.legacy.streaming.table import run_once_via_stream
+                    from fabricks.legacy.streaming.read import read_stream_once
 
-                    run_once_via_stream(
+                    read_stream_once(
                         df,
                         self.paths.to_checkpoints.append("__init"),
                         _create_table,
@@ -425,9 +425,13 @@ class GeneratorMixin(JobProtocol):
                 df = self.base_transform(df)
 
                 if self.stream:
-                    from fabricks.legacy.streaming.table import run_once_via_stream
+                    from fabricks.legacy.streaming.read import read_stream_once
 
-                    run_once_via_stream(df, self.paths.to_checkpoints.append("__schema"), _update_schema)
+                    read_stream_once(
+                        df,
+                        self.paths.to_checkpoints.append("__schema"),
+                        _update_schema,
+                    )
                 else:
                     _update_schema(df)
         elif self.virtual:
