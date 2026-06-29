@@ -17,11 +17,3 @@
       mode: update
       change_data_capture: scd2
       stream: false
-- job:
-    step: silver
-    topic: regent
-    item: latest
-    tags: [test]
-    options:
-      mode: latest
-      stream: false
