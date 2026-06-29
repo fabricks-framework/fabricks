@@ -48,7 +48,6 @@ dbutils.widgets.multiselect("tests", "*", ["*"] + Tests)
 armageddon = dbutils.widgets.get("armageddon").lower() == "true"
 initialize = dbutils.widgets.get("initialize").lower() == "true"
 reset = dbutils.widgets.get("reset").lower() == "true"
-fix_notebooks = dbutils.widgets.get("fix_notebooks").lower() == "true"
 tests = [t for t in dbutils.widgets.get("tests").split(",")]
 if "*" in tests:
     tests = Tests
