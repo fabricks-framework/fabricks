@@ -259,7 +259,7 @@ class BaseStep:
             include_manual=include_manual,
             loglevel=loglevel,
         )
-        _log_and_raise_errors(errors, "get dependencies", "jobs")
+        _log_and_raise_errors(errors, "get dependencies")
         return df
 
     def create_db_objects(
@@ -311,7 +311,7 @@ class BaseStep:
         if update_lists:
             self.update_tables_list()
             self.update_views_list()
-        _log_and_raise_errors(errors, "create db objects", "objects")
+        _log_and_raise_errors(errors, "create db objects")
 
     def update_dependencies(
         self,
@@ -357,7 +357,7 @@ class BaseStep:
                 context=CdcContext(keys=["dependency_id"], update_where=update_where, uuid=True),
             )
 
-        _log_and_raise_errors(errors, "update dependencies", "jobs")
+        _log_and_raise_errors(errors, "update dependencies")
 
     def register(self, update: Optional[bool] = False, drop: Optional[bool] = False):
         if drop:
@@ -413,12 +413,12 @@ class BaseStep:
         return self.name
 
 
-def _log_and_raise_errors(errors: List[JobResult], action: str, object_type: str = "operations") -> None:
+def _log_and_raise_errors(errors: List[JobResult], action: str) -> None:
     if errors:
         for e in errors:
-            DEFAULT_LOGGER.exception(f"fail to {action}", extra={"label": e.job}, exc_info=e.error)
+            DEFAULT_LOGGER.warning(f"fail to {action}", extra={"label": e.job})
 
-        raise ValueError(f"could not {action} - {len(errors)} {object_type} failed, check logs for details")
+        raise ValueError(f"fail to {action} - {len(errors)} failure(s), check logs for details")
 
 
 # to avoid AttributeError: can't pickle local object
@@ -427,7 +427,7 @@ def _get_dependencies(row: Row) -> JobResult:
     try:
         return JobResult(job=str(job), dependencies=job.get_dependencies())
     except Exception as e:
-        DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
+        DEFAULT_LOGGER.warning("fail to get dependencies", extra={"label": job})
         return JobResult(job=str(job), error=e)
 
 
@@ -437,7 +437,7 @@ def _create_db_object(row: Row) -> JobResult:
         job.create()
         return JobResult(job=str(job), job_id=row["job_id"])
     except Exception as e:  # noqa E722
-        DEFAULT_LOGGER.exception("fail to create db object", extra={"label": job})
+        DEFAULT_LOGGER.warning("fail to create db object", extra={"label": job})
         return JobResult(job=str(job), job_id=row["job_id"], error=e)
 
 
@@ -447,5 +447,5 @@ def _register(row: Row) -> JobResult:
         job.register()
         return JobResult(job=str(job))
     except Exception as e:
-        DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
+        DEFAULT_LOGGER.warning("fail to register job", extra={"label": job})
         return JobResult(job=str(job), error=e)

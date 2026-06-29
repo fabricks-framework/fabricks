@@ -78,7 +78,7 @@ class Deploy:
             try:
                 func()
             except Exception as e:
-                DEFAULT_LOGGER.exception(f"fail to deploy {operation}", extra={"label": "armageddon"})
+                DEFAULT_LOGGER.warning(f"fail to {operation}", extra={"label": "armageddon"})
                 errors.append({"operation": operation, "error": e})
 
         DEFAULT_LOGGER.warning("(╯°□°）╯︵ ┻━┻", extra={"label": "armageddon"})
@@ -110,17 +110,17 @@ class Deploy:
         schedule.rm()
         fabricks.create()
         errors = []
-        _call(lambda: Deploy.tables(drop=True), "deploy-tables")
-        _call(lambda: Deploy.udfs(overwrite=True), "deploy-udfs")
-        _call(lambda: Deploy.masks(overwrite=True), "deploy-masks")
-        _call(lambda: Deploy.notebooks(overwrite=True), "deploy-notebooks")
+        _call(lambda: Deploy.tables(drop=True), "deploy tables")
+        _call(lambda: Deploy.udfs(overwrite=True), "deploy udfs")
+        _call(lambda: Deploy.masks(overwrite=True), "deploy masks")
+        _call(lambda: Deploy.notebooks(overwrite=True), "deploy notebooks")
 
         for s in steps:
-            _call(lambda s=s: get_step(s).create(mode=mode), f"create-{s}")
+            _call(lambda s=s: get_step(s).create(mode=mode), f"deploy {s}")
 
-        _call(Deploy.views, "deploy-views")
-        _call(Deploy.schedules, "deploy-schedules")
-        _call(Deploy.variables, "deploy-variables")
-        _call(Deploy.runtime, "deploy-runtime")
+        _call(Deploy.views, "deploy views")
+        _call(Deploy.schedules, "deploy schedules")
+        _call(Deploy.variables, "deploy variables")
+        _call(Deploy.runtime, "deploy runtime")
         if errors:
             raise ValueError(f"armageddon completed with {len(errors)} error(s). Check logs for details")
