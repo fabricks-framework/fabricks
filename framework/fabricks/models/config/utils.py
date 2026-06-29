@@ -39,6 +39,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
                 data["base"] = str(base)
                 data["path_to_config"] = str(pyproject_path)
                 return data
+
             return None
 
         def json_settings(base: PathLibPath):
@@ -49,10 +50,12 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
                 data["base"] = str(base)
                 data["path_to_config"] = str(json_path)
                 return data
+
             return None
 
         path = pathlib.Path(os.getcwd())
         data = None
+
         while not data:
             data = json_settings(path)
             if data:
@@ -63,4 +66,5 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
             if path == path.parent:
                 break
             path = path.parent
+
         return data or {}

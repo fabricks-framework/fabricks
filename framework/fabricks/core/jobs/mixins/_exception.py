@@ -75,6 +75,7 @@ class SchemaDriftException(Exception):
                 type_widening_compatible = False
             out.append("changed columns:\n" + "\n".join(f"\t- {col}" for col in changed))
         out = "\n".join(out)
+
         if type_widening_compatible:
             return SchemaDriftException(f"type widening detected:\n {out}", diffs, type_widening_compatible)
         else:

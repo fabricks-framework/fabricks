@@ -18,6 +18,7 @@ def _get_access_key_from_os() -> Optional[str]:
 
 def get_connection_info(storage_account: str) -> dict:
     credential = None
+
     if not IS_UNITY_CATALOG:
         access_key = _get_access_key_from_secret_scope(storage_account)
     else:
@@ -28,6 +29,7 @@ def get_connection_info(storage_account: str) -> dict:
             assert DBUTILS
             credential = DBUTILS.credentials.getServiceCredentialsProvider(FABRICKS_STORAGE_CREDENTIAL)  # type: ignore
         assert credential or access_key
+
     return {
         "storage_account": storage_account,
         "access_key": access_key,

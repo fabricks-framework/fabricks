@@ -12,6 +12,7 @@ from fabricks.core.parsers.utils import boolean_as_string, decimal_to_double, ti
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):
     cols = df_expected.columns
     order_by = "id" if "id" in df.columns else "id"
+
     if "__valid_from" in df.columns:
         order_by = f"concat_ws('|', {order_by}, __valid_from, __valid_to)"
     elif "valid_from" in df.columns:
@@ -29,12 +30,10 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):
     df = _transform(df)
     df.show()
     p_df = df.toPandas()
-
     print("<-- expected -->\n")
     df_expected = _transform(df_expected)
     df_expected.show()
     p_df_expected = df_expected.toPandas()
-
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
 
 
@@ -47,7 +46,6 @@ def compare_silver_to_expected(job: BaseJob, cdc: str, iter: int):
     expected_df = SPARK.read.table(f"expected.silver_{cdc}_job{iter}")
     if job.topic in ["monarch", "memory", "regent"]:
         expected_df = expected_df.drop("__source")
-
     assert_dfs_equal(df, expected_df)
 
 
@@ -75,7 +73,6 @@ def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: Optional[
 
     if where:
         expected_df = expected_df.where(where)
-
     assert_dfs_equal(df, expected_df)
 
 

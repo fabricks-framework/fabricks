@@ -26,6 +26,7 @@ def create_table_step(drop: bool = False, update: bool = False):
     )
     if drop:
         table.drop()
+
     if not table.exists():
         table.create(
             schema=schema,
@@ -65,6 +66,7 @@ def create_table_log(drop: bool = False, update: bool = False):
     )
     if drop:
         table.drop()
+
     if not table.exists():
         table.create(
             schema=schema,
@@ -88,6 +90,7 @@ def create_table_dummy(drop: bool = False, update: bool = False):
     )
     if drop:
         cdc.drop()
+
     if not cdc.table.exists():
         cdc.overwrite(df, context=CdcContext())
     elif update:

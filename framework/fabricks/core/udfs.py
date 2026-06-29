@@ -18,6 +18,7 @@ def register_all_udfs(extension: str | None = None, overwrite=False):
     Register all user-defined functions (UDFs).
     """
     DEFAULT_LOGGER.info("register udfs", extra={"label": "fabricks"})
+
     for udf in get_udfs(extension=extension):
         split = udf.split(".")
         try:
@@ -31,6 +32,7 @@ def get_udfs(extension: str | None = None) -> list[str]:
     udfs = [f for f in files if not str(f).endswith("__init__.py") and not str(f).endswith(".requirements.txt")]
     if extension:
         udfs = [f for f in udfs if f.endswith(f".{extension}")]
+
     return udfs
 
 
@@ -39,6 +41,7 @@ def get_extension(udf: str) -> str:
         r = re.compile(rf"{udf}(\.py|\.sql)")
         if re.match(r, u):
             return u.split(".")[1]
+
     raise ValueError(f"{udf} not found")
 
 
@@ -47,10 +50,12 @@ def is_registered(udf: str, spark: SparkSession | None = None) -> bool:
         spark = SPARK
     assert spark is not None
     df = spark.sql(f"show user functions in {UDF_SCHEMA}")
+
     if CATALOG:
         df = df.where(f"function == '{CATALOG}.{UDF_SCHEMA}.{UDF_PREFIX}{udf}'")
     else:
         df = df.where(f"function == 'spark_catalog.{UDF_SCHEMA}.{UDF_PREFIX}{udf}'")
+
     return not df.isEmpty()
 
 
@@ -71,10 +76,12 @@ def register_udf(
             DEFAULT_LOGGER.debug(f"override udf {udf}", extra={"label": "fabricks"})
         else:
             DEFAULT_LOGGER.debug(f"register udf {udf}", extra={"label": "fabricks"})
+
         if extension is None:
             extension = get_extension(udf)
         assert extension
         path = PATH_UDFS.joinpath(f"{udf}.{extension}")
+
         if extension == "sql":
             spark.sql(path.get_sql())
         elif extension == "py":

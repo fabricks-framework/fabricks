@@ -28,6 +28,7 @@ class MergerMixin(CdcProtocol):
             )  # already done in processor
         else:
             raise ValueError(f"{src} not allowed")
+
         assert "__merge_key" in columns, "__merge_key not found"
         assert "__merge_condition" in columns, "__merge_condition not found"
         keys: Optional[list[str]] = list(context.keys) if context.keys else None
@@ -93,6 +94,7 @@ class MergerMixin(CdcProtocol):
             except Exception as e:
                 DEFAULT_LOGGER.exception("fail to clean sql query", extra={"label": self, "sql": sql})
                 raise e
+
         return sql
 
     def merge(self, src: AllowedSources, context: CdcContext):

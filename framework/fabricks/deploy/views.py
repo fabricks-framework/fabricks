@@ -15,6 +15,7 @@ def _get_fabricks_tables() -> set[str]:
 def _has_column(table: str, column: str, existing: set[str]) -> bool:
     if table not in existing:
         return False
+
     try:
         SPARK.sql(f"select {column} from fabricks.{table} limit 0")
         return True
@@ -43,6 +44,7 @@ def create_or_replace_jobs_view():
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
+
     for step in Steps:
         table = f"{step}_jobs"
         if table not in existing:
@@ -88,6 +90,7 @@ def create_or_replace_jobs_view():
         """
         ctes.append(cte)
         selects.append(f"select * from {step}")
+
     sql = f"""
     create or replace view fabricks.jobs with schema evolution as
     with
@@ -103,6 +106,7 @@ def create_or_replace_tables_view():
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
+
     for step in Steps:
         table = f"{step}_tables"
         if table not in existing:
@@ -120,6 +124,7 @@ def create_or_replace_tables_view():
             """
         ctes.append(cte)
         selects.append(f"select * from {step}")
+
     sql = f"""
     create or replace view fabricks.tables with schema evolution as
     with
@@ -135,6 +140,7 @@ def create_or_replace_views_view():
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
+
     for step in Steps:
         table = f"{step}_views"
         if table not in existing:
@@ -152,6 +158,7 @@ def create_or_replace_views_view():
             """
         ctes.append(cte)
         selects.append(f"select * from {step}")
+
     sql = f"""
     create or replace view fabricks.views with schema evolution as
     with
@@ -167,6 +174,7 @@ def create_or_replace_dependencies_view():
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
+
     for step in Steps:
         table = f"{step}_dependencies"
         if table not in existing:
@@ -187,6 +195,7 @@ def create_or_replace_dependencies_view():
           """
         ctes.append(cte)
         selects.append(f"select * from {step}")
+
     sql = f"""
     create or replace view fabricks.dependencies with schema evolution as
     with

@@ -92,10 +92,12 @@ class GeneratorMixin(CdcProtocol):
 
     def optimize_table(self):
         columns = None
+
         if self.change_data_capture == "scd1":
             columns = ["__key"]
         elif self.change_data_capture == "scd2":
             columns = ["__key", "__valid_from"]
+
         self.table.optimize(columns=columns)
 
     def get_differences_with_deltatable(self, src: AllowedSources, context: CdcContext) -> DataFrame:
@@ -110,6 +112,7 @@ class GeneratorMixin(CdcProtocol):
                 StructField("status", StringType(), True),
             ]
         )
+
         if self.is_view:
             return self.spark.createDataFrame([], schema=schema)
         else:
@@ -132,6 +135,7 @@ class GeneratorMixin(CdcProtocol):
         d = self.get_schema_differences(src, context=context)
         if d is None:
             return None
+
         return len(d) > 0
 
     def _update_schema(
@@ -150,6 +154,7 @@ class GeneratorMixin(CdcProtocol):
             context = context.model_copy(update={"mode": "complete", "slice": None})
             df = self.get_data(src, context=context)
             df = self.reorder_dataframe(df)
+
             if overwrite:
                 self.table.overwrite_schema(df)
             else:

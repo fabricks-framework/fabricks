@@ -116,6 +116,7 @@ def generate(schedule: str | None = None) -> Tuple[str, DataFrame, DataFrame]:
                 "use widgets or parameters to pass schedule_id and schedule to downstream tasks",
                 extra={"label": "scheduler"},
             )
+
         return schedule_id, job_df, dep_df
 
 

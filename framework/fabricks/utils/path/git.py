@@ -17,10 +17,12 @@ class GitPath(BasePath):
     def get_notebook_path(self) -> str:
         """Get the notebook path for Databricks workspace."""
         path = self.path
+
         if path.endswith(".ipynb"):
             path = path[: -len(".ipynb")]
         elif path.endswith(".py"):
             path = path[: -len(".py")]
+
         return path
 
     def walk(
@@ -31,20 +33,24 @@ class GitPath(BasePath):
     ) -> list:
         if not self.exists():
             return []
+
         if self.pathlibpath.is_file():
             out = [self.string]
         elif file_format:
             out = [o for o in self._yield(self.string) if o.endswith(file_format)]
         else:
             out = list(self._yield(self.string))
+
         if convert:
             out = [self.__class__(path=o) for o in out]
+
         return out
 
     def _yield(self, path: str | PathlibPath):
         """Recursively yield all file paths in the git/local file system."""
         if isinstance(path, str):
             path = PathlibPath(path)
+
         for child in path.glob(r"*"):
             if child.is_dir():
                 yield from self._yield(child)
@@ -78,6 +84,8 @@ def resolve_git_path(
         raise ValueError("path and default cannot both be None")
     if variables:
         return GitPath.from_uri(resolved_value, regex=variables)
+
     if base:
         return base.joinpath(resolved_value)
+
     return GitPath(resolved_value)

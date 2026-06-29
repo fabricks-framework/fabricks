@@ -19,6 +19,7 @@ class DeleteLogBaseParser(BaseParser):
             file_format = options.file_format or "parquet"
         else:
             file_format = "parquet"
+
         super().__init__(options, file_format)
 
     def _parse(
@@ -36,8 +37,8 @@ class DeleteLogBaseParser(BaseParser):
             options=self.options.read_options if self.options else {},
             spark=spark,
         )
-
         cols = [c.casefold() for c in df.columns]
+
         if "BEL_IsFullLoad".casefold() in cols:
             df = df.withColumn(
                 "__operation",
@@ -68,7 +69,6 @@ class DeleteLogBaseParser(BaseParser):
             )
             df.columns
             return df.withColumn("__operation", lit("delete"))
-
         except (AnalysisException, Py4JError, SparkConnectGrpcException):
             if stream:
                 df = spark.readStream.table("fabricks.dummy")
@@ -82,6 +82,7 @@ class DeleteLogBaseParser(BaseParser):
                     c,
                     when(df[f"`{c}`"].cast("string") == "1753-01-01 00:00:00.000", None).otherwise(df[f"`{c}`"]),
                 )
+
         return df
 
     def parse(
@@ -92,16 +93,12 @@ class DeleteLogBaseParser(BaseParser):
         stream: bool,
     ) -> DataFrame:
         dfs = []
-
         df = self._parse(stream=stream, data_path=data_path, schema_path=schema_path, spark=spark)
         dfs.append(df)
-
         df_del = self._parse_delete_log(stream=stream, data_path=data_path, schema_path=schema_path, spark=spark)
         dfs.append(df_del)
-
         df = concat_dfs(dfs)
         assert df is not None
-
         df = self.add_timestamp_from_file_path(df)
         df = self.nullify(df)
         # avoid fake updates based on the BEL_UpdateDateUtc
@@ -123,4 +120,5 @@ class MonarchParser(DeleteLogBaseParser):
             cols = [c for c in df.columns if c.startswith("BEL_")]
             if cols:
                 df = df.drop(*cols)
+
         return df

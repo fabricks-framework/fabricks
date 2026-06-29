@@ -43,12 +43,14 @@ class LogFormatter(logging.Formatter):
         padding = self.PADDINGS[levelname]
         levelname_formatted = f"{self.COLORS[record.levelno]}{levelname}:{padding}{self.RESET}"
         prefix = ""
+
         if hasattr(record, "label"):
             prefix = f"{record.__dict__.get('label')} - "
         elif hasattr(record, "job"):
             prefix = f"{record.__dict__.get('job')} - "  # keep for backward compatibility
         elif hasattr(record, "step"):
             prefix = f"{self.BRIGHT}{record.__dict__.get('step')}{self.RESET} - "
+
         extra = ""
         if hasattr(record, "exc_info") and record.exc_info:
             exc_info = record.__dict__.get("exc_info", None)
@@ -87,6 +89,7 @@ class AzureTableLogHandler(logging.Handler):
         if hasattr(record, "target"):
             target = record.__dict__.get("target")
             level = record.levelname
+
             if "debug" in level.lower():
                 level = "DEBUG"
             elif "info" in level.lower():
@@ -99,6 +102,7 @@ class AzureTableLogHandler(logging.Handler):
                 level = "CRITICAL"
             else:
                 level = "INFO"
+
             r = {
                 "Created": self.formatTime(record),  # timestamp not present when querying Azure Table
                 "Level": level,
@@ -137,10 +141,12 @@ class AzureTableLogHandler(logging.Handler):
                 if hasattr(record, "sql"):
                     r["Sql"] = record.__dict__.get("sql", "")[:1000]
             r["PartitionKey"] = record.__dict__.get("partition_key", "default")
+
             if hasattr(record, "row_key"):
                 r["RowKey"] = record.__dict__.get("row_key", "")
             else:
                 r["RowKey"] = hashlib.md5(json.dumps(r, sort_keys=True).encode()).hexdigest()
+
             if target == "table":
                 self.table.upsert(r)
             else:
@@ -189,13 +195,16 @@ def get_logger(
     console_handler.setLevel(level)
     console_format = LogFormatter(debugmode=debugmode, timezone=timezone)
     console_handler.setFormatter(console_format)
+
     if table is not None:
         # Azure Table handler
         azure_table_handler = AzureTableLogHandler(table=table, debugmode=debugmode, timezone=timezone)
         azure_table_handler.setLevel(level)
     else:
         azure_table_handler = None
+
     logger.addHandler(console_handler)
     if azure_table_handler is not None:
         logger.addHandler(azure_table_handler)
+
     return logger, azure_table_handler

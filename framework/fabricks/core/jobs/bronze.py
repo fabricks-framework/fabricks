@@ -94,14 +94,17 @@ class Bronze(BaseJob):
         if wait_for:
             for w in wait_for:
                 dependencies.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
+
         return dependencies
 
     def register_external_table(self):
         options = self.conf.parser_options  # type: ignore
+
         if options and options.file_format:
             file_format = options.file_format
         else:
             file_format = "delta"
+
         DEFAULT_LOGGER.debug(f"register external table ({self.data_path})", extra={"label": self})
         try:
             df = self.spark.sql(f"select * from {file_format}.`{self.data_path}`")
@@ -159,6 +162,7 @@ class Bronze(BaseJob):
             DataFrame: The parsed data as a DataFrame.
         """
         options = self.conf.parser_options or None  # type: ignore
+
         if self.mode == "register":
             if stream:
                 df = read(
@@ -169,12 +173,15 @@ class Bronze(BaseJob):
                 )
             else:
                 df = self.spark.sql(f"select * from {self}")
+
             # cleaning should be done by parser but for delta we do it here
             should_clean = True
+
             if options is not None and options.clean is not None:
                 should_clean = options.clean
             elif self.step_options.clean is not None:
                 should_clean = self.step_options.clean
+
             if should_clean:
                 df = clean(df)
         else:
@@ -188,6 +195,7 @@ class Bronze(BaseJob):
                 elif options is None:
                     # if no parser options provided, use step clean
                     options = ParserOptions(clean=self.step_options.clean)
+
             parse = get_parser(self.parser, options)
             df = parse(
                 stream=stream,
@@ -195,6 +203,7 @@ class Bronze(BaseJob):
                 schema_path=self.paths.to_schema,
                 spark=self.spark,
             )
+
         return df
 
     def encrypt(self, df: DataFrame) -> DataFrame:
@@ -214,10 +223,13 @@ class Bronze(BaseJob):
                     )
             else:
                 key = os.environ.get("FABRICKS_ENCRYPTION_KEY")
+
             assert key, "encryption key not found in secrets nor in environment"
+
             for col in encrypted_columns:
                 DEFAULT_LOGGER.debug(f"encrypt column: {col}", extra={"label": self})
                 df = df.withColumn(col, expr(f"aes_encrypt({col}, '{key}')"))
+
         return df
 
     def get_data(
@@ -234,6 +246,7 @@ class Bronze(BaseJob):
             df = self.base_transform(df)
         if schema_only:
             df = df.limit(0)
+
         return df
 
     def add_calculated_columns(self, df: DataFrame) -> DataFrame:
@@ -242,6 +255,7 @@ class Bronze(BaseJob):
             for key, value in calculated_columns.items():
                 DEFAULT_LOGGER.debug(f"add calculated column ({key} -> {value})", extra={"label": self})
                 df = df.withColumn(key, expr(f"{value}"))
+
         return df
 
     def add_key(self, df: DataFrame) -> DataFrame:
@@ -253,6 +267,7 @@ class Bronze(BaseJob):
                     fields = fields + ["__source"]
                 fields = backticks(fields)
                 df = add_hash("__key", df, fields=fields)
+
         return df
 
     def add_hash(self, df: DataFrame) -> DataFrame:
@@ -264,6 +279,7 @@ class Bronze(BaseJob):
             if "__source" in df.columns:
                 fields += ["__source"]
             df = add_hash("__hash", df, fields=fields)
+
         return df
 
     def add_source(self, df: DataFrame) -> DataFrame:
@@ -272,21 +288,25 @@ class Bronze(BaseJob):
             if source:
                 DEFAULT_LOGGER.debug(f"add source ({source})", extra={"label": self})
                 df = df.withColumn("__source", lit(source))
+
         return df
 
     def add_operation(self, df: DataFrame) -> DataFrame:
         if "__operation" not in df.columns:
             operation = self.options.operation
+
             if operation:
                 DEFAULT_LOGGER.debug(f"add operation ({operation})", extra={"label": self})
                 df = df.withColumn("__operation", lit(operation))
             else:
                 df = df.withColumn("__operation", lit("upsert"))
+
         return df
 
     def add_metadata(self, df: DataFrame) -> DataFrame:
         if "__metadata" in df.columns:
             DEFAULT_LOGGER.debug("add metadata", extra={"label": self})
+
             if self.mode == "register":
                 #  https://github.com/delta-io/delta/issues/2014 (BUG)
                 df = df.withColumn(
@@ -318,6 +338,7 @@ class Bronze(BaseJob):
                         """
                     ),
                 )
+
         return df
 
     def base_transform(self, df: DataFrame) -> DataFrame:
@@ -350,6 +371,7 @@ class Bronze(BaseJob):
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"label": self})
             return
+
         assert isinstance(self.cdc, NoCDC)
         if self.mode == "append":
             self.cdc.append(sql, context)

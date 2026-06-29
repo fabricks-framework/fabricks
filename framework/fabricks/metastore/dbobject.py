@@ -45,6 +45,7 @@ class DbObject:
             table = self.get_spark_table()
             if table.tableType == "VIEW":
                 return True
+
             return False
         except Exception:
             return False
@@ -55,6 +56,7 @@ class DbObject:
             table = self.get_spark_table()
             if table.tableType == "VIEW":
                 return False
+
             return True
         except Exception:
             return False

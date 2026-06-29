@@ -77,13 +77,16 @@ class DagProcessor(BaseDags):
         with self.get_azure_queue() as queue, self.get_azure_table() as azure_table:
             while True:
                 scheduled = self.get_scheduled(azure_table=azure_table)
+
                 if len(scheduled) == 0:
                     for _ in range(self.step.workers):
                         queue.send_sentinel()
+
                     LOGGER.info("no more job to schedule", extra={"label": str(self.step)})
                     break
                 else:
                     sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
+
                     for s in sorted_scheduled:
                         dependencies = azure_table.query(
                             f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'"
@@ -93,12 +96,14 @@ class DagProcessor(BaseDags):
                             LOGGER.debug("waiting", extra=self.extra(s))
                             azure_table.upsert(s)
                             queue.send(s)
+
                 time.sleep(5)
 
     def receive(self):
         with self.get_azure_queue() as queue, self.get_azure_table() as azure_table:
             while True:
                 response = queue.receive()
+
                 if response == queue.sentinel:
                     LOGGER.info("no more job to process", extra={"label": str(self.step)})
                     break
@@ -144,6 +149,7 @@ class DagProcessor(BaseDags):
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
         if azure_table is not None:
             return azure_table.query(query)
+
         with self.get_azure_table() as at:
             return at.query(query)
 
@@ -157,6 +163,7 @@ class DagProcessor(BaseDags):
             )
             sender.start()
             receivers = []
+
             for i in range(self.step.workers):
                 receiver = threading.Thread(
                     target=self.receive,
@@ -165,12 +172,15 @@ class DagProcessor(BaseDags):
                 )
                 receiver.start()
                 receivers.append(receiver)
+
             sender.join()
+
             for receiver in receivers:
                 receiver.join()
 
     def process(self):
         scheduled = self.get_scheduled()
+
         if len(scheduled) > 0:
             LOGGER.info("start", extra={"label": str(self.step)})
             p = Process(target=self._process)
@@ -183,6 +193,7 @@ class DagProcessor(BaseDags):
             except AzureError:
                 # Queue may already be deleted or not exist
                 pass
+
             if p.exitcode is None:
                 LOGGER.critical("timeout", extra={"label": str(self.step)})
                 raise ValueError(f"{self.step} timed out")

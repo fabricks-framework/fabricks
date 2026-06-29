@@ -22,5 +22,4 @@ paths: Final[Paths] = Paths(
     raw=FABRICKS_STORAGE.joinpath("raw"),
     out=FABRICKS_STORAGE.joinpath("out"),
 )
-
 steps = ["bronze", "silver", "transf", "gold", "semantic"]

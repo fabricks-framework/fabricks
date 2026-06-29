@@ -32,6 +32,7 @@ class BasePath(ABC):
         if regex:
             for key, value in regex.items():
                 uri = re.sub(rf"{key}", value, uri)
+
         return cls(uri)
 
     @property
@@ -55,6 +56,7 @@ class BasePath(ABC):
             p += ".sql"
         with open(p, "r") as f:
             sql = f.read()
+
         return sql
 
     def is_sql(self) -> bool:

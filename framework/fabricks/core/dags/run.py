@@ -100,9 +100,11 @@ def run(
         extra["json"] = data
     if notebook_id is not None:
         extra["notebook_id"] = notebook_id
+
     for k, v in extra.items():
         if k not in kwargs:
             kwargs[k] = v
+
     LOGGER.info("running", extra=extra)
     try:
         if pre_run_callable is not None:

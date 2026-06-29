@@ -44,6 +44,7 @@ class InvokerMixin(JobProtocol):
         schema_only = kwargs.get("schema_only")
         if schema_only is not None:
             arguments["schema_only"] = schema_only
+
         return self._run_notebook(
             path=path,
             arguments=arguments,
@@ -66,6 +67,7 @@ class InvokerMixin(JobProtocol):
                         self._invoke_notebook(invoker=invoker, schedule=schedule, **kwargs)
                 except Exception as e:
                     DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self})
+
                     if position == "pre_run":
                         errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
@@ -85,6 +87,7 @@ class InvokerMixin(JobProtocol):
                     self._invoke_notebook(invoker=invoker, schedule=schedule)
                 except Exception as e:
                     DEFAULT_LOGGER.warning(f"fail to run invoker by step ({i}, {position})", extra={"label": self})
+
                     if position == "pre_run":
                         errors.append(PreRunInvokeException(e))
                     elif position == "post_run":
@@ -120,6 +123,7 @@ class InvokerMixin(JobProtocol):
             if path_with_file_format.exists():
                 path = path_with_file_format
                 break
+
         if timeout is None:
             timeout = self.timeout
         assert timeout is not None
@@ -130,6 +134,7 @@ class InvokerMixin(JobProtocol):
             variables = {}
         if arguments is None:
             arguments = {}
+
         return dbutils.notebook.run(
             path=path.get_notebook_path(),  # type: ignore
             timeout_seconds=timeout,  # type: ignore

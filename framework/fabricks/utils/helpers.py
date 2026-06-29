@@ -16,10 +16,12 @@ from fabricks.utils.path import GitPath
 def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str:
     if isinstance(fields, str):
         fields = [fields]
+
     if alias:
         coalesce = [f"coalesce(cast({alias}.{f} as string), '-1')" for f in fields]
     else:
         coalesce = [f"coalesce(cast({f} as string), '-1')" for f in fields]
+
     return "concat_ws('*', " + ",".join(coalesce) + ")"
 
 
@@ -36,6 +38,7 @@ def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
     dfs = [df for df in dfs if df is not None]
     if len(dfs) == 0:
         return None
+
     return reduce(lambda x, y: x.unionByName(y, allowMissingColumns=True), dfs)
 
 
@@ -65,6 +68,7 @@ def run_in_parallel(
             from tqdm import tqdm
 
             return list(tqdm(mapped, total=len(items), position=position))
+
         return list(mapped)
 
     try:
@@ -135,25 +139,31 @@ def find_upward(
         >>> # Search from a specific location
         >>> config = find_upward(".env", root="/path/to/start")
     """
+
     if root is None:
         current = Path.cwd()
     else:
         current = Path(root).resolve()
+
     if current.is_file():
         current = current.parent
+
     while True:
         candidate = current / filename
         if candidate.exists():
             return GitPath(candidate)
+
         parent = current.parent
         if parent == current:  # Reached filesystem root
             return None
+
         current = parent
 
 
 def backticks(columns: Union[str, List[str]]) -> List[str]:
     if isinstance(columns, str):
         columns = [columns]
+
     return [f"`{c}`" for c in columns]
 
 

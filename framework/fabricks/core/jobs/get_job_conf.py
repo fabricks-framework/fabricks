@@ -11,6 +11,7 @@ def get_job_conf_internal(step: str, row: Union[Row, dict]) -> JobConf:
         row = row.asDict(recursive=True)
     # Add step to row data (job_id will be computed automatically)
     row["step"] = step
+
     # Use Pydantic validation - handles nested models and validation automatically
     if step in Bronzes:
         from fabricks.models import JobConfBronze
@@ -41,14 +42,17 @@ def get_job_conf(
 ) -> JobConf:
     if row:
         return get_job_conf_internal(step=step, row=row)
+
     if IS_JOB_CONFIG_FROM_YAML:
         from fabricks.core.steps import get_step
 
         s = get_step(step=step)
+
         if topic:
             iter = s.get_jobs_iter(topic=topic)
         else:
             iter = s.get_jobs_iter()
+
         if job_id:
             conf = next(
                 (
@@ -60,6 +64,7 @@ def get_job_conf(
             )
             if not conf:
                 raise ValueError(f"job not found ({step}, {job_id})")
+
             return get_job_conf_internal(step=step, row=conf)
         elif topic and item:
             conf = next(
@@ -68,10 +73,13 @@ def get_job_conf(
             )
             if not conf:
                 raise ValueError(f"job not found ({step}, {topic}, {item})")
+
             return get_job_conf_internal(step=step, row=conf)
     else:
         df = SPARK.sql(f"select * from fabricks.{step}_jobs")
+
     assert df, f"{step} not found"
+
     if job_id:
         try:
             row = df.where(f"job_id == '{job_id}'").collect()[0]
@@ -82,4 +90,5 @@ def get_job_conf(
             row = df.where(f"topic == '{topic}' and item == '{item}'").collect()[0]
         except IndexError:
             raise ValueError(f"job not found ({step}, {topic}, {item})")
+
     return get_job_conf_internal(step=step, row=row)

@@ -14,6 +14,7 @@ def register_all_masks(overwrite=False):
     Register all masks.
     """
     DEFAULT_LOGGER.info("register masks", extra={"label": "fabricks"})
+
     for mask in get_masks():
         split = mask.split(".")
         try:
@@ -31,10 +32,12 @@ def is_registered(mask: str, spark: SparkSession | None = None) -> bool:
         spark = SPARK
     assert spark is not None
     df = spark.sql(f"show user functions in {MASK_SCHEMA}")
+
     if CATALOG:
         df = df.where(f"function == '{CATALOG}.{MASK_SCHEMA}.{MASK_PREFIX}{mask}'")
     else:
         df = df.where(f"function == 'spark_catalog.{MASK_SCHEMA}.{MASK_PREFIX}{mask}'")
+
     return not df.isEmpty()
 
 
@@ -47,5 +50,6 @@ def register_mask(mask: str, overwrite: bool = False, spark: SparkSession | None
             DEFAULT_LOGGER.debug(f"drop mask {mask}", extra={"label": "fabricks"})
         else:
             DEFAULT_LOGGER.debug(f"register mask {mask}", extra={"label": "fabricks"})
+
         path = PATH_MASKS.joinpath(f"{mask}.sql")
         spark.sql(path.get_sql())

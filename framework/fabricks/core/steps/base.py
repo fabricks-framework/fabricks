@@ -35,6 +35,7 @@ from fabricks.utils.helpers import run_in_parallel
 class BaseStep:
     def __init__(self, step: str):
         self.name = step
+
         if self.name in Bronzes:
             self.expand = "bronze"
         elif self.name in Silvers:
@@ -43,6 +44,7 @@ class BaseStep:
             self.expand = "gold"
         else:
             raise ValueError(self.name, "does not expand a default step")
+
         _storage = PATHS_STORAGE.get(self.name)
         assert _storage
         _runtime = PATHS_RUNTIME.get(self.name)
@@ -99,9 +101,11 @@ class BaseStep:
             DEFAULT_LOGGER.debug("clean schema folder", extra={"label": self})
             schema.rm()
         DEFAULT_LOGGER.debug("clean fabricks", extra={"label": self})
+
         for t in ["jobs", "tables", "dependencies", "views"]:
             tbl = Table("fabricks", self.name, t)
             tbl.drop()
+
         try:
             SPARK.sql(f"delete from fabricks.steps where step = '{self}'")
         except Exception:
@@ -110,6 +114,7 @@ class BaseStep:
 
     def create(self, mode: Optional[Modes] = "parallel", max_retries: Optional[int] = 2):
         DEFAULT_LOGGER.info("create", extra={"label": self})
+
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
         else:
@@ -126,6 +131,7 @@ class BaseStep:
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
             return
+
         if not self.database.exists():
             self.database.create()
         self.update_configurations()
@@ -165,17 +171,20 @@ class BaseStep:
         )
         errors = []
         dependencies = []
+
         for res in results:
             if res.error:
                 errors.append(res)
             elif res.dependencies:
                 dependencies.extend(res.dependencies)
+
         df = SPARK.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)
         return df, errors
 
     def _dispatch(self, mode: Optional[Modes], df: DataFrame) -> List[JobResult]:
         if mode == "parallel":
             return self._create_in_parallel(df)
+
         return self._create_sequentially(df)
 
     def _create_in_parallel(self, df: DataFrame) -> List[JobResult]:
@@ -204,9 +213,11 @@ class BaseStep:
             )
             sorted_df = df
         result = []
+
         for row in sorted_df.collect():
             res = _create_db_object(row)
             result.append(res)
+
         return result
 
     def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:
@@ -229,6 +240,7 @@ class BaseStep:
                 raise AssertionError(f"duplicated job(s) ({duplicates})")
             if df.isEmpty():
                 raise ValueError("no jobs found")
+
             return df
         except AssertionError as e:
             DEFAULT_LOGGER.exception("fail to get jobs", extra={"label": self})
@@ -271,6 +283,7 @@ class BaseStep:
             f"{len(results) - error_count} db objects created, {error_count} error(s) remaining",
             extra={"label": self},
         )
+
         while errors and max_retries and attempt < max_retries:
             attempt += 1
             DEFAULT_LOGGER.warning(
@@ -281,6 +294,7 @@ class BaseStep:
             errors_df = df.where(df["job_id"].isin(failed_job_ids))
             results = self._dispatch(mode, errors_df)
             errors = [res for res in results if res.error]
+
             if len(errors) == error_count:
                 DEFAULT_LOGGER.warning(
                     "no improvement in errors after retry, stop retries",
@@ -293,6 +307,7 @@ class BaseStep:
                     f"{error_count} db objects still not created, retrying...",
                     extra={"label": self},
                 )
+
         if update_lists:
             self.update_tables_list()
             self.update_views_list()
@@ -314,6 +329,7 @@ class BaseStep:
         df.cache()
         DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
         update_where = None
+
         if topic is None:
             if not include_manual:
                 update_where = (
@@ -340,6 +356,7 @@ class BaseStep:
                 df,
                 context=CdcContext(keys=["dependency_id"], update_where=update_where, uuid=True),
             )
+
         _log_and_raise_errors(errors, "update dependencies", "jobs")
 
     def register(self, update: Optional[bool] = False, drop: Optional[bool] = False):
@@ -381,6 +398,7 @@ class BaseStep:
         df = self.get_jobs()
         DEFAULT_LOGGER.info("update configurations", extra={"label": self})
         cdc = NoCDC("fabricks", self.name, "jobs")
+
         if drop:
             cdc.table.drop()
         elif cdc.table.exists():
@@ -388,6 +406,7 @@ class BaseStep:
             if not df_diffs.isEmpty():
                 DEFAULT_LOGGER.warning("schema drift detected", extra={"label": self})
                 cdc.table.overwrite_schema(df=df)
+
         cdc.delete_missing(df, context=CdcContext(keys=["job_id"]))
 
     def __str__(self):
@@ -398,6 +417,7 @@ def _log_and_raise_errors(errors: List[JobResult], action: str, object_type: str
     if errors:
         for e in errors:
             DEFAULT_LOGGER.exception(f"fail to {action}", extra={"label": e.job}, exc_info=e.error)
+
         raise ValueError(f"could not {action} - {len(errors)} {object_type} failed, check logs for details")
 
 

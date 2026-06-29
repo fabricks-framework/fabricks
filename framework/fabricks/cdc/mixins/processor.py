@@ -37,6 +37,7 @@ class ProcessorMixin(CdcProtocol):
         self, template: Literal["filter", "merger", "query"], src: AllowedSources, **kwargs
     ) -> QueryContext:
         DEFAULT_LOGGER.debug("deduce query context", extra={"label": self})
+
         if isinstance(src, DataFrameLike):
             format = "dataframe"
         elif isinstance(src, Table):
@@ -45,17 +46,20 @@ class ProcessorMixin(CdcProtocol):
             format = "query"
         else:
             raise ValueError(f"{src} not allowed")
+
         context = CdcContext.model_validate(kwargs)
         inputs = self.get_columns(src, backtick=False, sort=False)
         fields = [c for c in inputs if not c.startswith("__")]
         keys = context.keys
         mode = context.mode
+
         if mode == "update":
             tgt = str(self.table)
         elif mode == "append" and "__timestamp" in inputs:
             tgt = str(self.table)
         else:
             tgt = None
+
         overwrite: list = []
         exclude = list(context.exclude)
         cast = dict(context.cast)
@@ -97,12 +101,14 @@ class ProcessorMixin(CdcProtocol):
         except Exception:
             rows = None
             has_rows = None
+
         # only needed when comparing to current
         # delete all records in current if there is no new data
         if mode == "update" and delete_missing and self.change_data_capture in ["scd1", "scd2"]:
             has_no_data = not self.has_data(src)
         else:
             has_no_data = None
+
         # always deduplicate if not set for slowly changing dimensions
         if self.slowly_changing_dimension:
             if deduplicate is None:
@@ -132,11 +138,13 @@ class ProcessorMixin(CdcProtocol):
         # override operation if added and found in df
         if add_operation and "__operation" in inputs:
             overwrite.append("__operation")
+
         # override timestamp if added and found in df
         if add_timestamp and "__timestamp" in inputs:
             overwrite.append("__timestamp")
         elif "__timestamp" in inputs:
             cast["__timestamp"] = "timestamp"
+
         # override key if added and found in df (key needed for merge)
         if add_key and "__key" in inputs:
             overwrite.append("__key")
@@ -179,12 +187,14 @@ class ProcessorMixin(CdcProtocol):
             hashes = [f for f in fields]
             if "__operation" in inputs or add_operation:
                 hashes.append("__operation")
+
         if self.change_data_capture == "nocdc":
             intermediates = [i for i in inputs]
             outputs = [i for i in inputs]
         else:
             intermediates = [f for f in fields]
             outputs = [f for f in fields]
+
         if has_operation:
             if "__operation" not in outputs:
                 outputs.append("__operation")
@@ -332,6 +342,7 @@ class ProcessorMixin(CdcProtocol):
         try:
             context["template"] = "filter"
             sql = template.render(**context)
+
             if fix:
                 sql = self.fix_sql(sql)
             else:
@@ -345,6 +356,7 @@ class ProcessorMixin(CdcProtocol):
         if context.get("has_source"):
             assert row.sources, "no sources found"
             context["sources"] = row.sources
+
         return context
 
     def get_query(self, src: AllowedSources, context: CdcContext, fix: Optional[bool] = True) -> str:
@@ -355,6 +367,7 @@ class ProcessorMixin(CdcProtocol):
                 ctx = self.fix_context(ctx, fix=fix)
             template = environment.get_template("query.sql.jinja")
             sql = template.render(**ctx)
+
             if fix:
                 sql = self.fix_sql(sql)
             else:
@@ -363,6 +376,7 @@ class ProcessorMixin(CdcProtocol):
             DEFAULT_LOGGER.debug("context", extra={"label": self, "context": ctx})
             DEFAULT_LOGGER.exception("fail to render sql query", extra={"label": self, "context": ctx})
             raise e
+
         return sql
 
     def append(self, src: AllowedSources, context: CdcContext):

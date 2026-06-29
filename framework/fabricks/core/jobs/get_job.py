@@ -43,6 +43,7 @@ def get_job(
         ValueError: If the required parameters are not provided.
 
     """
+
     if row:
         if "step" in row and "topic" in row and "item" in row:
             j = get_job_internal(step=row.step, topic=row.topic, item=row.item)
@@ -68,6 +69,7 @@ def get_job(
         assert topic, "topic mandatory"
         assert item, "item mandatory"
         j = get_job_internal(step=step, topic=topic, item=item)
+
     return j
 
 
@@ -107,4 +109,5 @@ def get_job_internal(
             job = Gold.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
     else:
         raise ValueError(f"{step} not found")
+
     return job

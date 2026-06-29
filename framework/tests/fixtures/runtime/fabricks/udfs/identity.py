@@ -17,5 +17,4 @@ def identity(spark: SparkSession):
             end
         as bigint)
     """
-
     spark.sql(sql)

@@ -22,6 +22,7 @@ class ExtenderMixin(JobProtocol):
             arguments = e.arguments or {}
             extender = get_extender(name)
             df = extender(df, **arguments)
+
         return df
 
     def extend(self, df: DataFrame) -> DataFrame:

@@ -13,7 +13,6 @@ DEFAULT_LOGGER.setLevel(ERROR)
 def test_silver_monarch_scd2():
     job = get_job(step="silver", topic="monarch", item="scd2")
     compare_silver_to_expected(job=job, cdc="scd2", iter=11)
-
     job.truncate()
     job.run()
     compare_silver_to_expected(job=job, cdc="scd2", iter=11)
@@ -23,7 +22,6 @@ def test_silver_monarch_scd2():
 def test_silver_monarch_scd1():
     job = get_job(step="silver", topic="monarch", item="scd1")
     compare_silver_to_expected(job=job, cdc="scd1", iter=11)
-
     job.truncate()
     job.run()
     compare_silver_to_expected(job=job, cdc="scd1", iter=11)
@@ -57,7 +55,6 @@ def test_silver_memory_scd1():
 def test_silver_king_and_queen_scd2():
     job = get_job(step="silver", topic="king_and_queen", item="scd2")
     compare_silver_to_expected(job=job, cdc="scd2", iter=11)
-
     job.truncate()
     job.run()
     compare_silver_to_expected(job=job, cdc="scd2", iter=11)
@@ -67,7 +64,6 @@ def test_silver_king_and_queen_scd2():
 def test_silver_king_and_queen_scd1():
     job = get_job(step="silver", topic="king_and_queen", item="scd1")
     compare_silver_to_expected(job=job, cdc="scd1", iter=11)
-
     job.truncate()
     job.run()
     compare_silver_to_expected(job=job, cdc="scd1", iter=11)

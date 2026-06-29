@@ -40,6 +40,9 @@ format_python() {
 	local target_dir="${1:-.}"
 	header "python formatting started (target: $target_dir)"
 
+	log "running densify..."
+	uv run python densify.py "$target_dir" || warn "densify failed (optional)"
+
 	log "running autoflake..."
 	uv run autoflake -r -i "$target_dir" || warn "autoflake failed"
 
@@ -48,9 +51,6 @@ format_python() {
 
 	log "running pycln..."
 	uv run pycln "$target_dir" || warn "pycln failed (optional)"
-
-	log "running densify..."
-	uv run python densify.py "$target_dir" || warn "densify failed (optional)"
 
 	log "running ruff format..."
     uv run ruff check --select I --fix "$target_dir" || warn "ruff check failed"

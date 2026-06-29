@@ -28,6 +28,7 @@ class ProcessorMixin(JobProtocol):
         if f:
             DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
             df = df.where(f"{f}")
+
         return df
 
     def _for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs):
@@ -42,6 +43,7 @@ class ProcessorMixin(JobProtocol):
                 self.update_schema(df=df)
             else:
                 only_type_widening_compatible = all(d.type_widening_compatible for d in diffs if d.status == "changed")
+
                 if only_type_widening_compatible and self.table.type_widening_enabled and IS_TYPE_WIDENING:
                     self.update_schema(df=df, widen_types=True)
                 else:
@@ -54,6 +56,7 @@ class ProcessorMixin(JobProtocol):
 
     def for_each_run(self, **kwargs):
         DEFAULT_LOGGER.debug("start (for each run)", extra={"label": self})
+
         if self.virtual:
             self.create_or_replace_view()
         elif self.persist:
@@ -61,6 +64,7 @@ class ProcessorMixin(JobProtocol):
             df = self.get_data(stream=self.stream, **kwargs)
             assert df is not None, "no data"
             partial(self._for_each_batch, **kwargs)
+
             if self.stream:
                 DEFAULT_LOGGER.debug("use streaming", extra={"label": self})
                 write_stream(
@@ -73,6 +77,7 @@ class ProcessorMixin(JobProtocol):
                 self._for_each_batch(df, **kwargs)
         else:
             raise ValueError(f"{self.mode} - not allowed")
+
         DEFAULT_LOGGER.debug("end (for each run)", extra={"label": self})
 
     def run(
@@ -101,10 +106,12 @@ class ProcessorMixin(JobProtocol):
         exception = None
         if self.persist:
             last_version = self.table.get_property("fabricks.last_version")
+
             if last_version is not None:
                 DEFAULT_LOGGER.debug(f"last version {last_version}", extra={"label": self})
             else:
                 last_version = str(self.table.last_version)
+
             if self.stream:
                 last_batch = self.table.get_property("fabricks.last_batch")
                 if last_batch is not None:

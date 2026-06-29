@@ -47,6 +47,7 @@ class Database:
         try:
             self.spark.sql(f"show tables in {self.name}")
             return True
+
         # database not found
         except AnalysisException:
             return False

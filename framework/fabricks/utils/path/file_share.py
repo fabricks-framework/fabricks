@@ -66,6 +66,7 @@ class FileSharePath(BasePath):
             out = [o for o in out if o.endswith(file_format)]
         if convert:
             out = [self.__class__(o) for o in out]
+
         return out
 
     def get_file_info(self) -> list[dict[str, str | int]]:
@@ -90,20 +91,25 @@ class FileSharePath(BasePath):
         from databricks.sdk.runtime import dbutils
 
         paths = dbutils.fs.ls(self.string)
+
         if depth == 1:
             children = paths
         else:
             i = 1
             children = []
+
             while True:
                 if i == depth:
                     break
                 else:
                     children = []
+
                 for path in paths:
                     children += dbutils.fs.ls(path.path)
+
                 paths = children
                 i += 1
+
         return [c.path for c in children]
 
     def _yield_file_info(self, path: str):
@@ -121,6 +127,7 @@ class FileSharePath(BasePath):
 
         if isinstance(path, PathlibPath):
             path = str(path)
+
         for child in dbutils.fs.ls(path):
             if child.isDir():  # type: ignore
                 yield from self._yield(child.path)
@@ -166,6 +173,8 @@ def resolve_fileshare_path(
         raise ValueError("path and default cannot both be None")
     if variables:
         return FileSharePath.from_uri(resolved_value, regex=variables)
+
     if base:
         return base.joinpath(resolved_value)
+
     return FileSharePath(resolved_value)

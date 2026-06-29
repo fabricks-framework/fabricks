@@ -99,12 +99,15 @@ class ConfigOptions(BaseSettings):
         """
         if isinstance(v, bool):
             return v
+
         if isinstance(v, str):
             v_lower = str(v).lower()
+
             if v_lower in ("true", "1", "yes"):
                 return True
             elif v_lower in ("false", "0", "no"):
                 return False
+
         return v
 
     @field_validator("loglevel", mode="before")
@@ -122,7 +125,9 @@ class ConfigOptions(BaseSettings):
             v_upper = v.upper()
             if v_upper in levels:
                 return levels[v_upper]
+
             return logging.INFO  # Default log level
+
         return v
 
     @field_validator("notebooks", mode="before")
@@ -131,6 +136,7 @@ class ConfigOptions(BaseSettings):
         """Set default notebooks path if not provided."""
         if not v or v.lower() == "none":
             return "runtime/notebooks"
+
         return v
 
     @classmethod

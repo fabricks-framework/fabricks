@@ -71,6 +71,7 @@ def _read_stream(
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     spark = _ensure_spark(spark)
+
     if file_format == "table":
         assert isinstance(src, str)
         return spark.readStream.table(src)
@@ -78,11 +79,13 @@ def _read_stream(
         file_format = "binaryFile" if file_format == "pdf" else file_format
         if isinstance(src, str):
             src = FileSharePath(src)
+
         if file_format == "delta":
             reader = spark.readStream.format("delta")
         else:
             reader = spark.readStream.format("cloudFiles")
             reader.option("cloudFiles.format", file_format)
+
             if schema:
                 reader.schema(schema)
             else:
@@ -97,6 +100,7 @@ def _read_stream(
                     if isinstance(hints, str):
                         hints = [hints]
                     reader.option("cloudFiles.schemaHints", f"{' ,'.join(hints)}")
+
         # default options
         reader.option("recursiveFileLookup", "true")
         reader.option("skipChangeCommits", "true")
@@ -152,6 +156,7 @@ def _read_batch(
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     spark = _ensure_spark(spark)
+
     if file_format == "table":
         assert isinstance(src, str)
         return spark.read.table(src)
@@ -174,6 +179,7 @@ def _read_batch(
         if options:
             for key, value in options.items():
                 reader = reader.option(key, value)
+
         return reader.load(src.string)
 
 
@@ -229,6 +235,7 @@ def read(
     spark: Optional[SparkSession] = None,
 ) -> DataFrame:
     spark = _ensure_spark(spark)
+
     if table is not None:
         file_format = "table"
         src = table
@@ -236,6 +243,7 @@ def read(
         assert path
         assert file_format
         src = path
+
     if stream:
         df = _read_stream(
             src=src,
@@ -254,6 +262,7 @@ def read(
             options=options,
             spark=spark,
         )
+
     if metadata:
         if stream and file_format == "delta":
             df = df.selectExpr(
@@ -279,4 +288,5 @@ def read(
                     ) as __metadata
                 """,
             )
+
     return df

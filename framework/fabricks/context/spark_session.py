@@ -19,6 +19,7 @@ def add_credentials_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = get_spark()
     credentials = CONF_RUNTIME.credentials or {}
+
     for uri, secret in credentials.items():
         s = get_secret_from_secret_scope(secret_scope=SECRET_SCOPE, name=secret)
         add_secret_to_spark(secret=s, uri=uri, spark=spark)
@@ -36,9 +37,12 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     spark_options = CONF_RUNTIME.spark_options
     if spark_options:
         sql_options = spark_options.sql or {}
+
         for key, value in sql_options.items():
             spark.sql(f"set {key} = {value};")
+
         conf_options = spark_options.conf or {}
+
         for key, value in conf_options.items():
             spark.conf.set(key, value)
 
@@ -46,6 +50,7 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
 def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional[str] = "default") -> SparkSession:
     if app_name is None:
         app_name = "default"
+
     if spark is not None:
         _spark = spark
         _spark.builder.appName(app_name)
@@ -56,6 +61,7 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
             .enableHiveSupport()
             .getOrCreate()
         )
+
     add_catalog_to_spark(spark=_spark)
     if not IS_UNITY_CATALOG:
         add_credentials_to_spark(spark=_spark)
@@ -67,6 +73,7 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
 def init_spark_session(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = get_spark()
+
     return build_spark_session(spark=spark)
 
 

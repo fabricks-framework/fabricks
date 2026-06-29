@@ -13,10 +13,12 @@ class UDFMixin(JobProtocol):
         updated_columns = self.updater_options.columns if self.updater_options else {}
         if updated_columns:
             udfs = []
+
             for value in updated_columns.values():
                 matches = self._match_udfs(value)
                 if matches:
                     udfs += matches
+
             return list(set(udfs))
 
     def register_udfs(self, force: bool | None = False):

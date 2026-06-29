@@ -48,6 +48,7 @@ class AzureQueue:
                     queue_name=self.name,
                     credential=self.access_key if self.access_key else self.credential,
                 )
+
         return self._queue_client
 
     def create_if_not_exists(self):
@@ -79,6 +80,7 @@ class AzureQueue:
             self.queue_client.delete_message(msg)
             # print("receiving ->", msg.content)
             return msg.content
+
         return None
 
     def delete(self):

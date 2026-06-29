@@ -38,6 +38,7 @@ def _get_scopes() -> list[str]:
         from databricks.sdk.runtime import dbutils
 
         _scopes_cache = [s.name for s in dbutils.secrets.listScopes()]
+
     return _scopes_cache
 
 
@@ -58,6 +59,7 @@ def _get_secret_from_secret_scope_cached(secret_scope: str, name: str) -> str:
 
 def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
     secret = _get_secret_from_secret_scope_cached(secret_scope=secret_scope, name=name)
+
     if name.endswith("application-registration"):
         s = json.loads(secret)
         assert s.get("secret"), f"no secret found in {name}"
@@ -85,6 +87,7 @@ def _add_secret_to_spark(key: str, value: str, spark: Optional[SparkSession] = N
 def add_secret_to_spark(secret: Secret, uri: str, spark: Optional[SparkSession] = None):
     if spark is None:
         spark = _spark
+
     if isinstance(secret, ApplicationRegistration):
         _add_secret_to_spark(f"fs.azure.account.auth.type.{uri}", "OAuth", spark=spark)
         _add_secret_to_spark(

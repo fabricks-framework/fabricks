@@ -13,4 +13,5 @@ DEFAULT_LOGGER.setLevel(ERROR)
 def test_run():
     for i in range(3, 12):
         run_notebook(PATH_RUNTIME.parent().joinpath("run"), i=i)
+
     assert True

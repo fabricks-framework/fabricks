@@ -23,6 +23,7 @@ def pprint_runtime(extended: bool = True) -> None:
     ):
         if steps:
             print(f"   {icon} {layer}:")
+
             for step in steps.values():
                 print(f"      • {step.name}")
                 if extended:
@@ -58,5 +59,6 @@ def pprint_runtime(extended: bool = True) -> None:
             ("Views", r.PATH_VIEWS),
             ("Schedules", r.PATH_SCHEDULES),
         ]
+
         for name, path in components:
             print(f"    • {name}: {path.string}")

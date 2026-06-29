@@ -35,6 +35,7 @@ class JobConfig:
     ):
         self.expand = expand
         self.step = step
+
         if job_id is not None:
             self.job_id = job_id
             self.conf = get_job_conf(step=step, job_id=job_id, row=row)

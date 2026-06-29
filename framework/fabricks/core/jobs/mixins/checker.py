@@ -37,6 +37,7 @@ class CheckerMixin(JobProtocol):
                         f"check {position} failed due to {row['__message']}",
                         extra={"label": self},
                     )
+
                 if position == "pre_run":
                     raise PreRunCheckException(rows[-1]["__message"], dataframe=df)
                 elif position == "post_run":
@@ -49,6 +50,7 @@ class CheckerMixin(JobProtocol):
                         f"check {position} failed due to {row['__message']}",
                         extra={"label": self},
                     )
+
                 if position == "pre_run":
                     raise PreRunCheckWarning(rows[-1]["__message"], dataframe=df)
                 elif position == "post_run":
@@ -84,6 +86,7 @@ class CheckerMixin(JobProtocol):
             cols = [column]
             if "__source" in self.table.columns:
                 cols.append("__source")
+
             if self.change_data_capture == "scd2":
                 cols.append("__valid_to")
             elif self.change_data_capture == "nocdc":
@@ -91,6 +94,7 @@ class CheckerMixin(JobProtocol):
                     cols.append("__valid_to")
                 elif self.mode == "append" and "__timestamp" in self.table.columns:
                     cols.append("__timestamp")
+
             cols = ", ".join(cols)
             df = self.spark.sql(f"select {cols} from {self} group by all having count(*) > 1 limit 5")
             # Collect once to avoid double scan
@@ -128,6 +132,7 @@ class CheckerMixin(JobProtocol):
                         f"skip run due to {row['__message']}",
                         extra={"label": self},
                     )
+
                 raise SkipRunCheckWarning(skip_rows[-1]["__message"], dataframe=df)
 
     def check_run_before(self):
@@ -143,6 +148,7 @@ class CheckerMixin(JobProtocol):
         time_as_time = datetime.datetime.strptime(time, "%H:%M:%S").time()
         target = datetime.datetime.combine(now.date(), time_as_time, tzinfo=TIMEZONE)
         DEFAULT_LOGGER.debug(f"check {when} {target}", extra={"label": self})
+
         if when == "before" and now >= target:
             raise SkipRunTimeWarning(f"current time {now} is after {target}")
         elif when == "after" and now <= target:

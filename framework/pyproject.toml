@@ -85,6 +85,9 @@ remove-unused-variables = true
 expand-star-imports = true
 exclude = ["_init__.py"]
 
+[tool.densify]
+exclude = [".venv"]
+
 [tool.uv]
 native-tls = true
 keyring-provider = "subprocess"

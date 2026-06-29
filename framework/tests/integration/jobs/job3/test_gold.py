@@ -62,7 +62,6 @@ def test_gold_scd2_memory():
 def test_gold_nocdc_update():
     j = get_job(step="gold", topic="nocdc", item="update")
     j.run()
-
     df_a = SPARK.sql(
         """
         select
@@ -75,7 +74,6 @@ def test_gold_nocdc_update():
           gold.nocdc_update
         """
     )
-
     df_b = SPARK.sql(
         """
         select
@@ -88,5 +86,4 @@ def test_gold_nocdc_update():
           expected.gold_scd2_job11
         """
     )
-
     assert_dfs_equal(df_a, df_b)

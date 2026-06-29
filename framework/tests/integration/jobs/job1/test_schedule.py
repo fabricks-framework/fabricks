@@ -8,8 +8,6 @@ from fabricks.metastore.table import Table
 from fabricks.utils.helpers import run_notebook
 
 DEFAULT_LOGGER.setLevel(ERROR)
-
-
 expected_failures = [
     "silver.princess_drop",
     "gold.invoke_failed_pre_run",
@@ -35,7 +33,6 @@ expected_skips_as_str = ", ".join(f'"{f}"' for f in expected_skips)
 def test_schedule():
     t = Table("silver", "princess", "drop")
     t.drop()
-
     try:
         run_notebook(PATH_NOTEBOOKS.joinpath("standalone"), schedule="test")
         assert False  # notebook should fail

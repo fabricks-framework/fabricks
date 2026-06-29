@@ -63,6 +63,7 @@ class Silver(BaseJob):
         _stream = self.options.stream
         if _stream is None:
             _stream = self.step_conf.options.stream
+
         return _stream if _stream is not None else True
 
     @property
@@ -101,6 +102,7 @@ class Silver(BaseJob):
                     """
                 ),
             )
+
         return df
 
     def base_transform(self, df: DataFrame) -> DataFrame:
@@ -116,22 +118,27 @@ class Silver(BaseJob):
         **kwargs,
     ) -> DataFrame:
         lineage = self.get_dependencies_lineage()
+
         if self.mode == "memory":
             assert len(lineage) == 1, f"more than 1 dependency not allowed ({lineage})"
             parent = lineage[0].parent
             df = self.spark.sql(f"select * from {parent}")
         elif self.mode == "combine":
             dfs = []
+
             for row in sorted(lineage, key=lambda x: x.parent_id):
                 df = self.spark.sql(f"select * from {row.parent}")
                 dfs.append(df)
+
             df = concat_dfs(dfs)
             assert df is not None
         else:
             dfs = []
+
             for item in sorted(lineage, key=lambda x: x.parent_id):
                 try:
                     bronze = Bronze.from_job_id(step=self.parent_step, job_id=item.parent_id)
+
                     if bronze.mode in ["memory", "register"]:
                         # data already transformed if bronze is persisted
                         df = bronze.get_data(stream=stream, transform=True)
@@ -143,6 +150,7 @@ class Silver(BaseJob):
                             metadata=False,
                             spark=self.spark,
                         )
+
                     if df is not None:
                         if len(lineage) > 1:
                             assert "__source" in df.columns, "__source not found"
@@ -150,29 +158,35 @@ class Silver(BaseJob):
                 except Exception as e:
                     DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": self})
                     raise e
+
             df = concat_dfs(dfs)
             assert df is not None
+
         # transforms
         df = self.filter_where(df)
         if transform:
             df = self.base_transform(df)
         if schema_only:
             df = df.limit(0)
+
         return df
 
     def get_dependencies(self) -> Sequence[JobDependency]:
         dependencies = []
         parents = self.options.parents or []
+
         if parents:
             for p in parents:
                 dependencies.append(JobDependency.from_parts(self.job_id, p, "parent"))
         else:
             p = f"{self.parent_step}.{self.topic}_{self.item}"
             dependencies.append(JobDependency.from_parts(self.job_id, p, "parser"))
+
         wait_for = self.options.wait_for or []
         if wait_for:
             for w in wait_for:
                 dependencies.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
+
         return dependencies
 
     def get_dependencies_lineage(self) -> Sequence[JobDependency]:
@@ -184,8 +198,10 @@ class Silver(BaseJob):
     def create_or_replace_view(self):
         assert self.mode in ["memory", "combine"], f"{self.mode} not allowed"
         lineage = self.get_dependencies_lineage()
+
         if self.mode == "combine":
             queries = []
+
             for item in lineage:
                 columns = self.get_data().columns
                 df = self.spark.sql(f"select * from {item.parent}")
@@ -193,6 +209,7 @@ class Silver(BaseJob):
                 source = "__source" if "__source" in df.columns else f"'{item.parent}' as __source"
                 query = f"select {', '.join(cols)}, {source} from {item.parent}"
                 queries.append(query)
+
             sql = f"create or replace view {self.qualified_name} as {' union all '.join(queries)}"
             sql = fix_sql(sql)
             DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
@@ -251,6 +268,7 @@ class Silver(BaseJob):
                 extra_check = f" and __timestamp > coalesce((select max({timestamp}) from {self}), cast('0001-01-01' as timestamp))"
             else:
                 extra_check = "-- no extra check"
+
             sql = f"""
                 select
                   __operation
@@ -291,6 +309,7 @@ class Silver(BaseJob):
             updates["correct_valid_from"] = True
         if "__operation" in df.columns or nocdc:  # operation is passed from the bronze layer
             updates["exclude"] = ["__operation"]
+
         return CdcContext(**updates)
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
@@ -306,6 +325,7 @@ class Silver(BaseJob):
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"label": self})
             return
+
         if self.mode == "update":
             assert not isinstance(self.cdc, NoCDC)
             self.cdc.update(sql, context)

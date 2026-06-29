@@ -12,7 +12,6 @@ def mock_spark():
     """Mock Spark and related dependencies for unit tests."""
     mock_spark_session = MagicMock()
     mock_dbutils_obj = MagicMock()
-
     # Mock fabricks.utils.spark
     sys.modules["fabricks.utils.spark"] = MagicMock(
         spark=mock_spark_session,
@@ -21,7 +20,6 @@ def mock_spark():
         get_dbutils=MagicMock(return_value=mock_dbutils_obj),
         DATABRICKS_LOCALMODE=False,
     )
-
     # Mock fabricks.context and related modules
     mock_context = MagicMock()
     mock_context.SPARK = mock_spark_session
@@ -57,6 +55,7 @@ def minimal_runtime_config() -> dict[str, Any]:
 def pytest_collection_modifyitems(items):
     """Automatically add 'unit' marker to all tests in this directory."""
     root = Path(__file__).parent
+
     for item in items:
         try:
             if Path(item.fspath).is_relative_to(root):

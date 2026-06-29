@@ -34,12 +34,14 @@ def _get_job(row: Row):
 
 def get_jobs_internal():
     """Yield job configurations from YAML files with variable substitution."""
+
     for p in PATHS_RUNTIME.values():
         yield from read_yaml(p, root="job")
 
 
 def get_jobs_internal_df() -> DataFrame:
     """Get jobs as a DataFrame with variable substitution."""
+
     if IS_JOB_CONFIG_FROM_YAML:
         schema = create_spark_schema(JobConfGeneric)
 
@@ -57,6 +59,7 @@ def get_jobs_internal_df() -> DataFrame:
         assert df is not None
     else:
         df = SPARK.sql("select * from fabricks.jobs")
+
     return df
 
 
@@ -80,6 +83,7 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
         ValueError: If the DataFrame does not contain the required columns.
 
     """
+
     if not convert:
         return get_jobs_internal_df()
     else:
@@ -103,6 +107,7 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
                 df = df.select("job")
             else:
                 raise ValueError("step, topic, item or step, job_id or job mandatory")
+
         assert df
         jobs = run_in_parallel(_get_job, df)
         return jobs
@@ -149,9 +154,11 @@ def get_jobs_sorted(
     # If no jobs, return empty DataFrame
     if not job_rows:
         return jobs_df.limit(0)
+
     # If no dependencies, return jobs as-is
     if dependencies_df is None or dependencies_df.isEmpty():
         return jobs_df
+
     # Collect dependency edges
     dep_edges = dependencies_df.select("job_id", "parent_id").collect()
     # Build items list (job_id, row) and dependencies list (child_id, parent_id)

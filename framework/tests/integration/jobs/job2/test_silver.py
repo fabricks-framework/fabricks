@@ -81,7 +81,6 @@ def test_silver_princess_schema_drift():
     job = get_job(step="silver", topic="princess", item="schema_drift")
     df = job.table.dataframe
     assert "newField" in df.columns, "newField not found in table"
-
     df = SPARK.sql("select * from silver.princess_schema_drift__current")
     assert "newField" in df.columns, "newField not found in current view"
 

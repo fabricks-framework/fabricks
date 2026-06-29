@@ -31,37 +31,46 @@ def topological(nodes: List[str], dependencies: List[Tuple[str, str]]) -> List[s
     # Build adjacency list and in-degree counts
     graph: Dict[str, List[str]] = defaultdict(list)  # parent_id -> [child_ids]
     in_degree: Dict[str, int] = defaultdict(int)
+
     # Initialize all nodes with in-degree 0
     for node in nodes:
         if node not in in_degree:
             in_degree[node] = 0
+
     # Build graph from dependency edges
     for child_id, parent_id in dependencies:
         graph[parent_id].append(child_id)
         in_degree[child_id] += 1
+
     # Kahn's Algorithm
     # Start with all nodes that have no dependencies
     queue: deque[str] = deque()
+
     for node in nodes:
         if in_degree[node] == 0:
             queue.append(node)
+
     sorted_nodes: List[str] = []
     processed: Set[str] = set()
+
     while queue:
         current_id = queue.popleft()
         sorted_nodes.append(current_id)
         processed.add(current_id)
+
         # Reduce in-degree for all children
         for child_id in graph[current_id]:
             in_degree[child_id] -= 1
             # If in-degree becomes 0, add to queue
             if in_degree[child_id] == 0 and child_id not in processed:
                 queue.append(child_id)
+
     # Check for cycles
     if len(sorted_nodes) != len(nodes):
         # Find the nodes that are part of the cycle
         unprocessed = [node for node in nodes if node not in processed]
         raise CircularDependency(f"Circular dependency detected. Nodes involved: {', '.join(unprocessed)}")
+
     return sorted_nodes
 
 

@@ -25,10 +25,12 @@ class GeneratorMixin(JobProtocol):
         Returns:
             The first non-None value found, or default if none found
         """
+
         if into == "table":
             job_value = getattr(self.table_options, attribute, None) if self.table_options else None
             if job_value is not None:
                 return job_value
+
             step_value = (
                 getattr(self.step_conf.table_options, attribute, None) if self.step_conf.table_options else None
             )
@@ -38,11 +40,13 @@ class GeneratorMixin(JobProtocol):
             job_value = getattr(self.spark_options, attribute, None) if self.spark_options else None
             if job_value is not None:
                 return job_value
+
             step_value = (
                 getattr(self.step_conf.spark_options, attribute, None) if self.step_conf.spark_options else None
             )
             if step_value is not None:
                 return step_value
+
         return default
 
     def update_dependencies(self):
@@ -172,6 +176,7 @@ class GeneratorMixin(JobProtocol):
             ValueError: If neither `persist` nor `virtual` is True.
 
         """
+
         if self.persist:
             self.create_table()
         elif self.virtual:
@@ -191,6 +196,7 @@ class GeneratorMixin(JobProtocol):
             ValueError: If `persist` and `virtual` are both False.
 
         """
+
         if self.persist:
             self.table.register()
         elif self.virtual:
@@ -214,7 +220,9 @@ class GeneratorMixin(JobProtocol):
         columns = self.table_options.partition_by if self.table_options and self.table_options.partition_by else []
         if columns:
             return columns
+
         columns = [c for c in df.columns if c.startswith("__partition")]
+
         if columns:
             DEFAULT_LOGGER.debug(
                 f"found {len(columns)} partitioning column(s) ({', '.join(columns)})",
@@ -229,11 +237,13 @@ class GeneratorMixin(JobProtocol):
         columns = self.table_options.cluster_by if self.table_options and self.table_options.cluster_by else []
         if columns:
             return columns
+
         columns = []
         df_types = dict(df.dtypes)
 
         def _add_if_allowed(column: str):
             c_type = df_types[column]
+
             if c_type not in ["boolean"]:
                 columns.append(column)
             else:
@@ -246,13 +256,16 @@ class GeneratorMixin(JobProtocol):
             _add_if_allowed("__source")
         if "__is_current" in df_types:
             _add_if_allowed("__is_current")
+
         if "__key" in df_types:
             _add_if_allowed("__key")
         elif "__hash" in df_types:
             _add_if_allowed("__hash")
+
         for column in df.columns:
             if column.startswith("__cluster"):
                 _add_if_allowed(column)
+
         if columns:
             DEFAULT_LOGGER.debug(
                 f"found {len(columns)} clustering column(s) ({', '.join(columns)})",
@@ -276,6 +289,7 @@ class GeneratorMixin(JobProtocol):
             identity = False
             maximum_compatibility = self.table_options.maximum_compatibility if self.table_options else False
             default_properties: dict[str, str | bool | int] = {}
+
             if maximum_compatibility:
                 default_properties = {
                     "delta.minReaderVersion": "1",
@@ -297,11 +311,14 @@ class GeneratorMixin(JobProtocol):
                     "delta.minWriterVersion": "5",
                     "delta.feature.timestampNtz": "supported",
                 }
+
             default_properties["fabricks.last_version"] = "0"
+
             if "__identity" in df.columns:
                 identity = False
             else:
                 identity = self.table_options.identity if self.table_options else False
+
             # first, check for partitioning columns
             partition_by = self._get_partitioning_columns(df)
             if partition_by:
@@ -310,20 +327,24 @@ class GeneratorMixin(JobProtocol):
             # second, check for clustering columns if partitioning is not enabled
             if not partitioning:
                 liquid_clustering = self._get_option_hierarchy("liquid_clustering", into="table", default=None)
+
                 if liquid_clustering == "auto":
                     liquid_clustering = True
                     cluster_by = []
                 elif liquid_clustering is not False:
                     cluster_by = self._get_clustering_columns(df)
+
                     if cluster_by:
                         liquid_clustering = True
                     else:
                         liquid_clustering = None
                         cluster_by = None
+
             if not powerbi:
                 properties = self._get_option_hierarchy("properties", into="table", default=None)
             else:
                 properties = None
+
             if properties is None:
                 properties = default_properties
             primary_key = self.table_options.primary_key or {} if self.table_options else {}
@@ -381,6 +402,7 @@ class GeneratorMixin(JobProtocol):
                     path.rm()
                 else:
                     _create_table(df)
+
                 constraints = self.table_options.constraints or {} if self.table_options else {}
                 if constraints:
                     for key, value in constraints.items():
@@ -399,6 +421,7 @@ class GeneratorMixin(JobProtocol):
     ):
         def _update_schema(df: DataFrame, batch: Optional[int] = None):
             context = self.get_cdc_context(df, reload=True)
+
             if overwrite:
                 self.cdc.overwrite_schema(df, context=context)
             else:
@@ -411,6 +434,7 @@ class GeneratorMixin(JobProtocol):
                 df = self.get_data(stream=self.stream, schema_only=True)
                 assert df is not None
                 df = self.base_transform(df)
+
                 if self.stream:
                     path = self.paths.to_checkpoints.append("__schema")
                     query = (
@@ -437,6 +461,7 @@ class GeneratorMixin(JobProtocol):
     def update_comments(self, table: Optional[bool] = True, columns: Optional[bool] = True):
         if self.virtual:
             return
+
         if self.persist:
             self.table.drop_comments()
             if table:
@@ -469,6 +494,7 @@ class GeneratorMixin(JobProtocol):
         d = self.get_schema_differences(df)
         if d is None:
             return None
+
         return len(d) > 0
 
     def _register_external_table(self, file_format: str, uri: str):

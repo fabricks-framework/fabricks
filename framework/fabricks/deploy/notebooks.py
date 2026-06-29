@@ -38,6 +38,7 @@ def deploy_notebooks(overwrite: bool = False):
     d = str(PATH_NOTEBOOKS)
     os.makedirs(d, exist_ok=True)
     DEFAULT_LOGGER.info(f"deploying notebooks {'(overwrite)' if overwrite else ''}", extra={"label": "fabricks"})
+
     for n in [
         "cluster",
         "initialize",

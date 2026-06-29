@@ -9,4 +9,5 @@ def get_step_conf(step: str):
         return JobConfSilver
     elif step in Golds:
         return JobConfGold
+
     raise ValueError(f"{step} - not found")

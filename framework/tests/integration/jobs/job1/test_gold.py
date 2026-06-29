@@ -58,7 +58,6 @@ def test_gold_scd2_correct_valid_from():
 def test_gold_fact_udf():
     addition = SPARK.sql("select addition from gold.fact_udf").collect()[0][0]
     assert addition == "3", f"{addition} <> 3"
-
     # phone_number = spark.sql("select phone_number from gold.fact_udf").collect()[0][0]
     # assert phone_number.clean_phone_nr == "+32478478478", f"{phone_number} <> +32478478478"
 
@@ -108,28 +107,21 @@ def test_gold_dim_date():
 @pytest.mark.order(129)
 def test_gold_fact_option():
     j = get_job(step="gold", topic="fact", item="option")
-
     assert "__identity" in j.table.columns, "__identity not found"
-
     country = j.table.get_property("country")
     assert country, "country not found"
     assert country == "Belgium", "country is not Belgium"
-
     clusters = j.table.describe_detail().collect()[0].clusteringColumns
     assert "monarch" in clusters, "cluster not found"
-
     comment = j.table.describe_detail().collect()[0].description
     assert comment == "Strength lies in unity", "comment not found"
-
     # spark options
     optimize_write = j.table.get_property("delta.autoOptimize.optimizeWrite")
     assert optimize_write, "optimizeWrite not found"
     assert optimize_write.lower() == "false", "optimizeWrite enabled"
-
     change_data_feed = j.table.get_property("delta.enableChangeDataFeed")
     assert change_data_feed, "enableChangeDataFeed not found"
     assert change_data_feed.lower() == "true", "enableChangeDataFeed not enabled"
-
     assert j.timeout == 1800, f"timeout {j.timeout} <> 1800"
 
 
@@ -142,7 +134,6 @@ def test_gold_scd1_last_timestamp():
 @pytest.mark.order(130)
 def test_gold_fact_no_drop():
     j = get_job(step="gold", topic="fact", item="no_drop")
-
     try:
         j.drop()
         assert False, "drop is allowed while no_drop is set"
@@ -153,9 +144,7 @@ def test_gold_fact_no_drop():
 @pytest.mark.order(131)
 def test_gold_fact_masker_and_commenter():
     df = SPARK.sql("select dummy from gold.fact_masker_and_commenter order by 1 asc")
-
     masked_value = df.select("dummy").collect()[0][0]
     assert masked_value == "***", f"dummy {masked_value} <> ***"
-
     masked_value = df.select("dummy").collect()[1][0]
     assert masked_value == "2", f"dummy {masked_value} <> 2"

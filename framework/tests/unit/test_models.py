@@ -24,15 +24,12 @@ def _load_conf(path: Path) -> dict:
 
 
 # ---   ---
-
-
 def test_runtime_conf_loads_fixture():
     conf = RuntimeConf.model_validate(_load_conf(FIXTURES / "fabricks/conf.fabricks.yml"))
     assert conf.name == "test"
     assert conf.options.secret_scope == "bmskv"
     assert conf.options.workers == 8
     assert conf.options.retention_days == 7
-
     assert conf.bronze
     assert len(conf.bronze) == 1
     assert conf.silver
@@ -48,8 +45,6 @@ def test_runtime_conf_missing_required(minimal_runtime_config):
 
 
 # --- Bronze ---
-
-
 def test_bronze_all_jobs_parse():
     jobs = _load_jobs(FIXTURES / "bronze/_config.kings.yml")
     confs = [JobConfBronze.model_validate(j) for j in jobs]
@@ -65,8 +60,6 @@ def test_bronze_uri_and_parser():
 
 
 # --- Silver ---
-
-
 def test_silver_all_jobs_parse():
     jobs = _load_jobs(FIXTURES / "silver/_config.monarchs.yml")
     confs = [JobConfSilver.model_validate(j) for j in jobs]
@@ -81,8 +74,6 @@ def test_silver_cdc_modes():
 
 
 # --- Gold ---
-
-
 def test_gold_all_fact_jobs_parse():
     jobs = _load_jobs(FIXTURES / "gold/gold/fact/_config.fact.yml")
     confs = [JobConfGold.model_validate(j) for j in jobs]
@@ -105,8 +96,6 @@ def test_gold_table_options_parsed():
 
 
 # --- ConfigOptions (fabricksconfig.json) ---
-
-
 def test_runtime_resolves_above_config_dir():
     # fabricksconfig.json sits in tests/unit/, runtime is one level up in tests/fixtures/runtime
     base = Path(__file__).parent

@@ -15,7 +15,6 @@ DEFAULT_LOGGER.setLevel(ERROR)
 def test_gold_nocdc_overwrite():
     df = SPARK.sql("select 1 as dummy")
     nocdc = NoCDC("gold", "nocdc", "overwrite")
-
     nocdc.overwrite(df, context=CdcContext())
     assert nocdc.table.dataframe.count() == 1
     nocdc.overwrite(df, context=CdcContext())
@@ -26,7 +25,6 @@ def test_gold_nocdc_overwrite():
 def test_gold_nocdc_append():
     df = SPARK.sql("select 1 as dummy")
     nocdc = NoCDC("gold", "nocdc", "append")
-
     nocdc.append(df, context=CdcContext())
     assert nocdc.table.dataframe.count() == 1
     nocdc.append(df, context=CdcContext())

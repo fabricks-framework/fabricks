@@ -47,6 +47,7 @@ class BaseParser(ABC):
         )
         if "__timestamp" not in df.columns:
             df = self.add_timestamp_from_file_path(df)
+
         return df
 
     @final

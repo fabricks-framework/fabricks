@@ -10,6 +10,7 @@ def parse_phone_number(spark: SparkSession):
         from phonenumbers import PhoneNumberFormat, PhoneNumberMatcher, format_number  # ty: ignore[unresolved-import]
 
         number = None
+
         for match in PhoneNumberMatcher(phone_number, country):
             number = match.number
 

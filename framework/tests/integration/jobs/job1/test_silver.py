@@ -62,10 +62,8 @@ def test_silver_king_and_queen_scd1():
 def test_silver_monarch_delta():
     job = get_job(step="silver", topic="monarch", item="delta")
     compare_silver_to_expected(job=job, cdc="scd2", iter=1)
-
     data_type = job.table.get_column_data_type("decimalField")
     assert data_type == "double", "decimalField is not double"
-
     cols = Table("silver", "monarch", "delta").columns
     assert "country" in cols, "country not found"
 
@@ -117,13 +115,10 @@ def test_silver_timeout():
 @pytest.mark.order(119)
 def test_hashing():
     job = get_job(step="silver", topic="monarch", item="scd2")
-
     df = job.table.dataframe
     assert "__hash" in df.columns, "__hash column not found"
     assert "__key" in df.columns, "__key column not found"
-
     df = df.where("name == 'Louise'")
-
     assert df.select("__key").collect()[0][0] == "38b3eff8baf56627478ec76a704e9b52", (
         "__key value does not match expected value"
     )

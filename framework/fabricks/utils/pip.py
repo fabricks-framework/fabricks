@@ -27,6 +27,7 @@ def pip_package(
     if tgt_path:
         t = tgt_path.get_dbfs_mnt_path()
         args += ["--target", t]
+
     for p in package:
         out = subprocess.run(args + [p], capture_output=True)
         if out.returncode == 1:
@@ -89,10 +90,12 @@ def pip_list(
         raise ValueError("pip freeze failed", out.stderr)
     # Parse installed packages into dict
     installed = {}
+
     for line in out.stdout.strip().split("\n"):
         if line and "==" in line:
             package, version = line.split("==", 1)
             installed[package.lower()] = (package, version)
+
     if pyproject:
         if path is None:
             path = find_upward("pyproject.toml")
@@ -102,25 +105,32 @@ def pip_list(
             content = tomllib.load(f)
         dependencies = content.get("project", {}).get("dependencies", [])
         parsed = set()
+
         for d in dependencies:
             # Extract package name from dependency specification (e.g., "pandas>=2.0.0" -> "pandas")
             match = re.match(r"^([a-zA-Z0-9_-]+)", d)
             if match:
                 parsed.add(match.group(1).lower())
+
         installed = {k: v for k, v in installed.items() if k in parsed}
+
     if format == "freeze":
         return "\n".join(f"{pkg}=={ver}" for pkg, ver in installed.values())
     elif format == "pretty":
         lines = ["Package            Version", "------------------ -------"]
+
         for pkg, ver in sorted(installed.values()):
             lines.append(f"{pkg:<18} {ver}")
+
         return "\n".join(lines)
     elif format == "dict":
         return {pkg: ver for pkg, ver in installed.values()}
     elif format == "pyproject":
         lines = ["dependencies = ["]
+
         for pkg, ver in sorted(installed.values()):
             lines.append(f'    "{pkg}=={ver}",')
+
         lines.append("]")
         return "\n".join(lines)
     else:

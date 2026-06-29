@@ -14,4 +14,5 @@ def get_parser(name: str, parser_options: Optional[ParserOptions] = None) -> Cal
         parser = PARSERS[name](parser_options)
     else:
         parser = BaseParser(parser_options, name)
+
     return parser.get_data

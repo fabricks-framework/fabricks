@@ -30,6 +30,7 @@ def create_or_replace_view(name: str):
 
 def create_or_replace_views():
     DEFAULT_LOGGER.info("create or replace (custom) views")
+
     for p in PATH_VIEWS.walk(file_format="sql", convert=True):
         try:
             create_or_replace_view_internal(p)

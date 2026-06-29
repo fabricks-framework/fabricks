@@ -41,10 +41,13 @@ class ConfiguratorMixin(JobProtocol):
             step_spark = self.step_spark_options
             if step_spark:
                 sql_options = step_spark.sql or {}
+
                 for key, value in sql_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.sql(f"set {key} = {value}")
+
                 conf_options = step_spark.conf or {}
+
                 for key, value in conf_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.conf.set(f"{key}", f"{value}")
@@ -52,14 +55,18 @@ class ConfiguratorMixin(JobProtocol):
             job_spark = self.spark_options
             if job_spark:
                 sql_options = job_spark.sql or {}
+
                 for key, value in sql_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.sql(f"set {key} = {value}")
+
                 conf_options = job_spark.conf or {}
+
                 for key, value in conf_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.conf.set(f"{key}", f"{value}")
             self._spark = spark
+
         return self._spark
 
     @property

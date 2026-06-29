@@ -67,7 +67,6 @@ def test_gold_type_widening_overwrite():
         """
     )
     j._for_each_batch(df)
-
     data_type = j.table.get_column_data_type("field")
     assert data_type == "double", "field is not double"
 
@@ -86,6 +85,5 @@ def test_gold_type_widening_merge():
         """
     )
     j._for_each_batch(df)
-
     data_type = j.table.get_column_data_type("field")
     assert data_type == "double", "field is not double"

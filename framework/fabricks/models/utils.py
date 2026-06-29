@@ -18,6 +18,7 @@ def get_job_id(
         assert topic
         assert item
         job = f"{step}.{topic}_{item}"
+
     return md5(job)
 
 

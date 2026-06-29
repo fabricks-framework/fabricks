@@ -29,7 +29,6 @@ def test_gold_fact_dependency_sql():
             """
         )
         assert dep_df.count() == 3, f"dependency {dep_df.count()} <> 3"
-
         expected_parents = set(
             sorted(
                 [
@@ -43,7 +42,6 @@ def test_gold_fact_dependency_sql():
         assert parents == expected_parents, f"{', '.join(parents)} <> {', '.join(expected_parents)}"
 
     check()
-
     j = get_job(step="gold", topic="fact", item="dependency_sql")
     j.update_dependencies()
     check()
@@ -74,7 +72,6 @@ def test_gold_fact_dependency_notebook():
             """
         )
         assert dep_df.count() == 4, f"dependency {dep_df.count()} <> 4"
-
         expected_parents = set(
             sorted(
                 [
@@ -87,7 +84,6 @@ def test_gold_fact_dependency_notebook():
         )
         parents = set(sorted([row.parent for row in dep_df.select("parent").collect()]))
         assert parents == expected_parents, f"{', '.join(parents)} <> {', '.join(expected_parents)}"
-
         # check specific ids to ensure hashing is correct
         row = dep_df.filter("parent = 'gold.dim_time'").collect()[0]
         assert row.job_id == "c576b41222d104dbbc0e0b84cda29ff5", (
