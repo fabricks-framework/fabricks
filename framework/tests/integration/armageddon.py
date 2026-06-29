@@ -18,7 +18,7 @@ DEFAULT_LOGGER.setLevel(DEBUG)
 # COMMAND ----------
 
 try:
-    Deploy.armageddon(steps=steps, nowait=True, mode="sequential")  # why wait ?
+    Deploy.armageddon(steps=steps, nowait=True, mode="parallel")  # why wait ?
     assert False, "armageddon should have failed"
 except Exception as e:
     assert True, f"armageddon failed as expected: {e}"
