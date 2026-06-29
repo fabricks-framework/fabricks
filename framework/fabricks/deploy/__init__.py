@@ -73,6 +73,7 @@ class Deploy:
         steps: Optional[Union[str, list[str]]] = None,
         nowait: bool = False,
         mode: Optional[Modes] = "parallel",
+        **kwargs,
     ):
         def _call(func: Callable, operation: str):
             try:
@@ -100,27 +101,33 @@ class Deploy:
             step = get_step(s)
             step.drop()
 
-        tmp = FABRICKS_STORAGE.joinpath("tmp")
-        tmp.rm()
-        checkpoint = FABRICKS_STORAGE.joinpath("checkpoints")
-        checkpoint.rm()
-        schema = FABRICKS_STORAGE.joinpath("schemas")
-        schema.rm()
-        schedule = FABRICKS_STORAGE.joinpath("schedules")
-        schedule.rm()
+        for p in ["tmp", "checkpoints", "schemas", "schedules"]:
+            path = FABRICKS_STORAGE.joinpath(p)
+            if path.exists():
+                path.rm()
+
         fabricks.create()
         errors = []
-        _call(lambda: Deploy.tables(drop=True), "deploy tables")
-        _call(lambda: Deploy.udfs(overwrite=True), "deploy udfs")
-        _call(lambda: Deploy.masks(overwrite=True), "deploy masks")
-        _call(lambda: Deploy.notebooks(overwrite=True), "deploy notebooks")
+        if kwargs.get("deploy_tables", True):
+            _call(lambda: Deploy.tables(drop=True), "deploy tables")
+        if kwargs.get("deploy_udfs", True):
+            _call(lambda: Deploy.udfs(overwrite=True), "deploy udfs")
+        if kwargs.get("deploy_masks", True):
+            _call(lambda: Deploy.masks(overwrite=True), "deploy masks")
+        if kwargs.get("deploy_notebooks", True):
+            _call(lambda: Deploy.notebooks(overwrite=True), "deploy notebooks")
 
         for s in steps:
-            _call(lambda s=s: get_step(s).create(mode=mode), f"deploy {s}")
+            if kwargs.get(f"deploy_{s}", True):
+                _call(lambda s=s: get_step(s).create(mode=mode), f"deploy {s}")
 
-        _call(Deploy.views, "deploy views")
-        _call(Deploy.schedules, "deploy schedules")
-        _call(Deploy.variables, "deploy variables")
-        _call(Deploy.runtime, "deploy runtime")
+        if kwargs.get("deploy_views", True):
+            _call(Deploy.views, "deploy views")
+        if kwargs.get("deploy_schedules", True):
+            _call(Deploy.schedules, "deploy schedules")
+        if kwargs.get("deploy_variables", True):
+            _call(Deploy.variables, "deploy variables")
+        if kwargs.get("deploy_runtime", True):
+            _call(Deploy.runtime, "deploy runtime")
         if errors:
             raise ValueError(f"armageddon completed with {len(errors)} error(s). Check logs for details")
