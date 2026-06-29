@@ -24,9 +24,11 @@ COLORS = {
     "ERROR": "#F44336",
     "CRITICAL": "#C62828",
 }
+
 if IS_FUNMODE:
     # 🎄 Christmas Easter Egg 🎅
     _now = datetime.now()
+
     if _now.month == 12:
         _day = _now.day
 
@@ -45,56 +47,72 @@ if IS_FUNMODE:
             DEFAULT_LOGGER.info("🎄🎅 MERRY CHRISTMAS! May all your queries be optimized and your data be clean! 🎁✨")
         else:
             DEFAULT_LOGGER.info("🎄 Happy Holidays! Hope you're enjoying the festive season between data runs! 🎉")
+
     if _now.month == 10 and _now.day == 31:
         DEFAULT_LOGGER.info("🎃👻 Happy Halloween! May your data be spooky good and your bugs be few! 🕸️🦇")
+
     if _now.month == 7 and _now.day == 4:
         DEFAULT_LOGGER.info("🎆🇺🇸 Happy 4th of July! Celebrate freedom with flawless data processing! 🎇🍔")
+
     if _now.month == 1 and _now.day == 1:
         DEFAULT_LOGGER.info("🎉 Happy New Year! Wishing you a year of successful data projects and clean code! 🥳🎆")
+
     if _now.month == 2 and _now.day == 14:
         DEFAULT_LOGGER.info(
             "💖 Happy Valentine's Day! May your data relationships be strong and your joins be perfect! 🌹📊"
         )
+
     if _now.month == 3 and _now.day == 17:
         DEFAULT_LOGGER.info(
             "🍀 Happy St. Patrick's Day! Wishing you the luck of the Irish in all your data endeavors! 🌈☘️"
         )
+
     if _now.month == 6 and _now.day == 19:
         DEFAULT_LOGGER.info(
             "🌞 Happy Juneteenth! Celebrating freedom and the power of data to enlighten and empower! ✊🏿📈"
         )
+
     if _now.month == 11 and _now.day == 11:
         DEFAULT_LOGGER.info(
             "🦃 Happy Veterans Day! Honoring those who served while we serve up great data insights! 🇺🇸📊"
         )
+
     if _now.month == 5 and _now.day == 1:
         DEFAULT_LOGGER.info("🌸 Happy May Day! Celebrating spring and the blossoming of new data opportunities! 🌷📈")
+
     if _now.month == 5 and _now.day == 5:
         DEFAULT_LOGGER.info("🎉 Happy Cinco de Mayo! Celebrating culture and the fiesta of data analytics! 🌮📊")
+
     if _now.month == 5 and _now.day == 4:
         DEFAULT_LOGGER.info(
             "🌌 May the 4th be with you! Harness the force of data to conquer your analytics challenges! 🚀📊"
         )
+
     if _now.month == 8 and _now.day == 1:
         DEFAULT_LOGGER.info(
             "🏖️ Happy Swiss National Day! Celebrating precision and excellence in data, just like Swiss craftsmanship! 🇨🇭📈"
         )
+
     if _now.month == 7 and _now.day == 14:
         DEFAULT_LOGGER.info(
             "🎉 Happy Bastille Day! Celebrating liberty, equality, and the power of data to transform societies! 🇫🇷📊"
         )
+
     if _now.month == 7 and _now.day == 21:
         DEFAULT_LOGGER.info(
             "🚴 Happy Belgian National Day! Celebrating unity and the strength of data-driven decisions! 🇧🇪📈"
         )
+
     if _now.day > 27 and _now.day < 31:
         DEFAULT_LOGGER.warning(
             "⚠️ Warning: End of month is near! Make sure to finalize your data reports and close out any pending tasks! 📅✅"
         )
+
     if _now.weekday() == 4:
         DEFAULT_LOGGER.warning(
             "📅🚫 Please do not deploy on Fridays! Avoid end-of-week surprises in your data pipelines! 🚫📅"
         )
+
     if _now.weekday() == 0:
         DEFAULT_LOGGER.info(
             "☕ Happy Monday! Kickstart your week with fresh data insights and a strong cup of coffee! 📊☕"
@@ -130,6 +148,7 @@ def send_message_to_channel(
         "@context": "http://schema.org/extensions",
         "summary": title,
     }
+
     if title:
         teams_message["title"] = title
 

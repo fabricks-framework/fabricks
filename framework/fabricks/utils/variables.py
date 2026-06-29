@@ -16,6 +16,7 @@ def _build_variable_lookup_cached(items: tuple[tuple[str, Any], ...]) -> dict[st
         key_string = str(key)
         lookup[key_string] = value
         normalized = key_string.lstrip("\\")
+
         if normalized != key_string:
             lookup[normalized] = value
 
@@ -26,6 +27,7 @@ def build_variable_lookup(variables: dict[str, Any]) -> dict[str, Any]:
     """Build a lookup dictionary for variable substitution."""
     # Convert dict to hashable tuple of items for caching
     items = tuple(sorted(variables.items()))
+
     return _build_variable_lookup_cached(items)
 
 
@@ -41,6 +43,7 @@ def substitute_value(value: Any, lookup: dict[str, Any], strict: bool = False) -
     Raises:
         ValueError: If strict=True and a variable is not found in lookup
     """
+
     if isinstance(value, dict):
         return {k: substitute_value(v, lookup, strict) for k, v in value.items()}
 
@@ -64,13 +67,16 @@ def substitute_value(value: Any, lookup: dict[str, Any], strict: bool = False) -
 
         def _substitute(match):
             var_name = match.group(0)
+
             if var_name not in lookup:
                 missing_vars.append(var_name)
+
                 return var_name
 
             return str(lookup[var_name])
 
         result = _DOLLAR_VAR_PATTERN.sub(_substitute, value)
+
         if missing_vars:
             raise ValueError(f"Variable(s) not found in lookup: {', '.join(missing_vars)}")
 

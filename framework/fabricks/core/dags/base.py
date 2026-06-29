@@ -39,6 +39,7 @@ class BaseDags:
         if not self._table:
             cs = self.get_connection_info()
             self._table = AzureTable(f"t{self.schedule_id}", **dict(cs))
+
         if self._table is None:
             raise ValueError("Azure table for logs not found")
 
@@ -53,8 +54,10 @@ class BaseDags:
 
     def get_logs(self, step: Optional[str] = None) -> DataFrame:
         q = f"PartitionKey eq '{self.schedule_id}'"
+
         if step:
             q += f" and Step eq '{step}'"
+
         d = TABLE_LOG_HANDLER.table.query(q)
         df = SPARK.createDataFrame(d)
 
@@ -81,6 +84,7 @@ class BaseDags:
             """,
             df=df,
         )
+
         return df
 
     def write_logs(self, df: DataFrame):
@@ -103,4 +107,5 @@ class BaseDags:
 
     def remove_invalid_characters(self, s: str) -> str:
         out = re.sub("[^a-zA-Z0-9]", "", s)
+
         return out

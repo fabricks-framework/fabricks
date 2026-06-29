@@ -7,10 +7,12 @@ def deploy_variables(deploy_runtime_first: bool = True):
     """
     Deploy variables to the fabricks.variables view.
     """
+
     if deploy_runtime_first:
         from fabricks.deploy.runtime import deploy_runtime
 
         deploy_runtime()
+
     ddl = """
     with variables as (
       select

@@ -35,11 +35,14 @@ class colors:
 def progress_bar(progress: int = 0, width: int = 40, msg: Optional[str] = None):
     if not isinstance(progress, int):
         progress = int(progress)
+
     left = width * progress // 100
     right = width - left
     tags = "#" * left
     spaces = " " * right
     pct = f" {progress}%"
+
     if msg:
         pct = f"{pct} ({msg})"
+
     print("\r[", tags, spaces, "]", pct, sep="", end="", flush=True)

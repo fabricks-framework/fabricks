@@ -21,13 +21,17 @@ class View(DbObject):
                 spark = df.sparkSession
             else:
                 spark = SPARK
+
         assert spark is not None
         uuid = str(uuid4().hex)
         df = spark.createDataFrame(df) if isinstance(df, pd.DataFrame) else df
+
         if dependencies:
             for d in dependencies:
                 df = df.join(d.limit(0), how="leftanti")
+
         df.createOrReplaceGlobalTempView(uuid)
+
         return uuid
 
 
@@ -39,8 +43,11 @@ def create_or_replace_global_temp_view(
 ) -> str:
     if uuid:
         name = f"{name}__{str(uuid4().hex)}"
+
     if job is None:
         job = name.split("__")[0]
+
     DEFAULT_LOGGER.debug(f"create global temp view {name}", extra={"label": job})
     df.createOrReplaceGlobalTempView(name)
+
     return f"global_temp.{name}"

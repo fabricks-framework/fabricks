@@ -33,6 +33,7 @@ expected_skips_as_str = ", ".join(f'"{f}"' for f in expected_skips)
 def test_schedule():
     t = Table("silver", "princess", "drop")
     t.drop()
+
     try:
         run_notebook(PATH_NOTEBOOKS.joinpath("standalone"), schedule="test")
         assert False  # notebook should fail

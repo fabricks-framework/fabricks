@@ -69,22 +69,26 @@ def run(
             job = get_job(step=step, topic=topic, item=item)
         else:
             raise ValueError("either job or step+job_id or step+topic+item must be provided")
+
     if schedule_id is None:
         try:
             schedule_id = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule_id")
         except (TypeError, IllegalArgumentException, ValueError):
             schedule_id = dbutils.widgets.get("schedule_id")
+
     if schedule is None:
         try:
             schedule = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule")
         except (TypeError, IllegalArgumentException, ValueError):
             schedule = dbutils.widgets.get("schedule")
+
     if notebook_id is None:
         try:
             context = json.loads(dbutils.notebook.entry_point.getDbutils().notebook().getContext().toJson())  # type: ignore
             notebook_id = context.get("tags").get("jobId")
         except:  # noqa: E722
             notebook_id = None
+
     assert job is not None
     assert schedule_id is not None
     assert schedule is not None
@@ -96,8 +100,10 @@ def run(
         "job": str(job),
         "target": "buffer",
     }
+
     if data is not None:
         extra["json"] = data
+
     if notebook_id is not None:
         extra["notebook_id"] = notebook_id
 
@@ -106,10 +112,12 @@ def run(
             kwargs[k] = v
 
     LOGGER.info("running", extra=extra)
+
     try:
         if pre_run_callable is not None:
             LOGGER.debug("invoke pre-run callable", extra=extra)
             pre_run_callable(**kwargs)
+
         # use kwargs to pass retry, invoke, reload, vacuum, optimize, compute_statistics, etc. to the job.run method
         retry = kwargs.get("retry", True)
         invoke = kwargs.get("invoke", True)
@@ -128,9 +136,11 @@ def run(
             compute_statistics=compute_statistics,
         )
         LOGGER.info("done", extra=extra)
+
         if post_run_callable is not None:
             LOGGER.debug("invoke post-run callable", extra=extra)
             post_run_callable(**kwargs)
+
     except SkipWarning:
         LOGGER.exception("skipped", extra=extra)
     except CheckWarning:

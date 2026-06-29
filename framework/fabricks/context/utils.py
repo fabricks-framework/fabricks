@@ -26,6 +26,7 @@ def pprint_runtime(extended: bool = True) -> None:
 
             for step in steps.values():
                 print(f"      • {step.name}")
+
                 if extended:
                     print(f"         - 📖 {r.PATHS_RUNTIME.get(step.name)}")
                     print(f"         - 💾 {r.PATHS_STORAGE.get(step.name)}")
@@ -42,13 +43,16 @@ def pprint_runtime(extended: bool = True) -> None:
     # Unity Catalog Section
     print("\n🏛️ UNITY CATALOG:")
     print(f"    • Enabled:  {'✅' if r.IS_UNITY_CATALOG else '❌'}")
+
     if r.IS_UNITY_CATALOG and r.CATALOG:
         print(f"    • Catalog: {r.CATALOG}")
+
     # Security Section
     print("\n🔐 SECURITY:")
     print(f"    • Secret Scope: {r.SECRET_SCOPE}")
     print("\n🌐 ADDITIONAL SETTINGS:")
     print(f"    • Timezone: {r.TIMEZONE}")
+
     if extended:
         # Component Paths Section
         print("\n🛠️ COMPONENT PATHS:")

@@ -113,6 +113,7 @@ class RuntimeConf(BaseModel):
         Loads variables from path_options.variables if defined, otherwise uses
         inline variables dict. Uses config.path_to_config to resolve relative paths.
         """
+
         if not isinstance(data, dict):
             return data
 
@@ -133,6 +134,7 @@ class RuntimeConf(BaseModel):
             config_path=config_path,
             variables_path=variables_path,
         )
+
         # Step 2: Perform substitution
         return perform_variable_substitution(data=data, variables=variables)
 
@@ -148,4 +150,5 @@ class RuntimeConf(BaseModel):
             databases=self.databases,
             base_runtime=self.config.resolved_paths.runtime,
         )
+
         return RuntimeResolvedPathOptions(**resolved)

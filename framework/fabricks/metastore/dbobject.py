@@ -11,10 +11,12 @@ class DbObject:
     def __init__(self, database: str, *levels: str, spark: Optional[SparkSession] = None):
         self.database = Database(database)
         self.levels = levels
+
         if spark is None:
             from fabricks.utils.spark import spark
 
             spark = spark
+
         assert spark is not None
         self.spark = spark
 
@@ -43,6 +45,7 @@ class DbObject:
     def is_view(self) -> bool:
         try:
             table = self.get_spark_table()
+
             if table.tableType == "VIEW":
                 return True
 
@@ -54,6 +57,7 @@ class DbObject:
     def is_table(self) -> bool:
         try:
             table = self.get_spark_table()
+
             if table.tableType == "VIEW":
                 return False
 
@@ -71,10 +75,12 @@ class DbObject:
         else:
             try:
                 df = self.spark.sql(f"show tables in {self.database.name} like '{self.name}'")
+
                 if not df.isEmpty():
                     DEFAULT_LOGGER.warning("drop object from metastore", extra={"label": self})
                     self.spark.sql(f"drop table if exists {self}")
                     self.spark.sql(f"drop view if exists {self}")
+
             except Exception:
                 DEFAULT_LOGGER.debug("object not found in metastore, skipping drop", extra={"label": self})
 

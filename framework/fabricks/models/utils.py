@@ -24,6 +24,7 @@ def get_job_id(
 
 def get_dependency_id(parent: str, job_id: str) -> str:
     base = f"{job_id}*{parent}"
+
     return md5(base)
 
 
@@ -31,4 +32,5 @@ def md5(s: Any) -> str:
     from hashlib import md5
 
     hash_obj = md5(str(s).encode())
+
     return hash_obj.hexdigest()

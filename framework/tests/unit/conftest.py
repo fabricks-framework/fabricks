@@ -35,6 +35,7 @@ mock_spark()
 @pytest.fixture
 def minimal_runtime_config() -> dict[str, Any]:
     """Minimal valid RuntimeConf configuration for testing."""
+
     return {
         "name": "test",
         "options": {
@@ -60,6 +61,7 @@ def pytest_collection_modifyitems(items):
         try:
             if Path(item.fspath).is_relative_to(root):
                 item.add_marker(pytest.mark.unit)
+
         except (ValueError, AttributeError):
             # Fallback for older Python or edge cases
             if "unit" in str(item.fspath):

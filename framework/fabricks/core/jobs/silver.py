@@ -46,21 +46,25 @@ class Silver(BaseJob):
     @property
     def options(self) -> JobSilverOptions:
         """Direct access to typed silver job options."""
+
         return self.conf.options  # type: ignore
 
     @property
     def step_conf(self) -> StepSilverConf:
         """Direct access to typed silver step conf."""
+
         return self.base_step_conf  # type: ignore
 
     @property
     def step_options(self) -> StepSilverOptions:
         """Direct access to typed silver step options."""
+
         return self.base_step_conf.options  # type: ignore
 
     @cached_property
     def stream(self) -> bool:
         _stream = self.options.stream
+
         if _stream is None:
             _stream = self.step_conf.options.stream
 
@@ -83,6 +87,7 @@ class Silver(BaseJob):
     def parent_step(self) -> str:
         _parent_step = self.step_conf.options.parent
         assert _parent_step is not None
+
         return str(_parent_step)
 
     def update_metadata(self, df: DataFrame) -> DataFrame:
@@ -109,6 +114,7 @@ class Silver(BaseJob):
     def base_transform(self, df: DataFrame) -> DataFrame:
         df = df.transform(self.extend)
         df = self.update_metadata(df)
+
         return df
 
     def get_data(
@@ -155,7 +161,9 @@ class Silver(BaseJob):
                     if df is not None:
                         if len(lineage) > 1:
                             assert "__source" in df.columns, "__source not found"
+
                         dfs.append(df)
+
                 except Exception as e:
                     DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": self})
                     raise e
@@ -165,8 +173,10 @@ class Silver(BaseJob):
 
         # transforms
         df = self.filter_where(df)
+
         if transform:
             df = self.base_transform(df)
+
         if schema_only:
             df = df.limit(0)
 
@@ -184,6 +194,7 @@ class Silver(BaseJob):
             dependencies.append(JobDependency.from_parts(self.job_id, p, "parser"))
 
         wait_for = self.options.wait_for or []
+
         if wait_for:
             for w in wait_for:
                 dependencies.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
@@ -194,6 +205,7 @@ class Silver(BaseJob):
         dependencies = self.get_dependencies()
         dependencies = [d for d in dependencies if d.origin != "wait_for"]
         assert dependencies, "no dependency found"
+
         return dependencies
 
     def create_or_replace_view(self):
@@ -232,8 +244,10 @@ class Silver(BaseJob):
             DEFAULT_LOGGER.debug("create or replace current view", extra={"label": self})
             df = self.spark.sql(f"select * from {self.qualified_name}")
             where_clause = "-- no where clause"
+
             if "__is_current" in df.columns:
                 where_clause = "where __is_current"
+
             sql = f"""
             create or replace view {self.qualified_name}__current with schema evolution as
             select
@@ -263,6 +277,7 @@ class Silver(BaseJob):
         nocdc = self.change_data_capture == "nocdc"
         order_duplicate_by = self.options.order_duplicate_by or {}
         rectify = False
+
         if not_append and not nocdc:
             if not self.stream and self.mode == "update" and self.table.exists():
                 timestamp = "__valid_from" if self.change_data_capture == "scd2" else "__timestamp"
@@ -285,29 +300,38 @@ class Silver(BaseJob):
             sql = fix_sql(sql)
             DEFAULT_LOGGER.debug("check", extra={"label": self, "sql": sql})
             check_df = self.spark.sql(sql)
+
             if not check_df.isEmpty():
                 rectify = True
                 DEFAULT_LOGGER.debug("rectify enabled", extra={"label": self})
+
         updates: dict = {
             "soft_delete": self.slowly_changing_dimension,
             "deduplicate": self.options.deduplicate if self.options.deduplicate is not None else not_append,
             "rectify": rectify,
             "order_duplicate_by": order_duplicate_by,
         }
+
         if self.mode == "memory":
             updates["mode"] = "complete"
+
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
                 updates["add_key"] = True
+
         if nocdc and self.mode == "memory":
             if "__operation" not in df.columns:
                 updates["add_operation"] = "upsert"
+
         if self.mode == "latest":
             updates["slice"] = "latest"
+
         if not self.stream and self.mode == "update":
             updates["slice"] = "update"
+
         if self.change_data_capture == "scd2":
             updates["correct_valid_from"] = True
+
         if "__operation" in df.columns or nocdc:  # operation is passed from the bronze layer
             updates["exclude"] = ["__operation"]
 
@@ -318,13 +342,17 @@ class Silver(BaseJob):
         context = self.get_cdc_context(df)
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}"
+
         if batch is not None:
             name = f"{name}__{batch}"
+
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
         check_df = self.spark.sql(sql)
+
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"label": self})
+
             return
 
         if self.mode == "update":
@@ -378,8 +406,10 @@ class Silver(BaseJob):
         name = f"{self.step}_{self.topic}_{self.item}__rewrite__key"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         extra = "-- no extra join"
+
         if "__valid_to" in df.columns:
             extra = "and t.__valid_to = s.__valid_to"
+
         query = f"""
         merge into {self.qualified_name} t
         using {global_temp_view} s

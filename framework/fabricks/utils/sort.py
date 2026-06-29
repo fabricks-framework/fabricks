@@ -61,6 +61,7 @@ def topological(nodes: List[str], dependencies: List[Tuple[str, str]]) -> List[s
         # Reduce in-degree for all children
         for child_id in graph[current_id]:
             in_degree[child_id] -= 1
+
             # If in-degree becomes 0, add to queue
             if in_degree[child_id] == 0 and child_id not in processed:
                 queue.append(child_id)
@@ -102,5 +103,6 @@ def topological_with_data(
     nodes = list(item_map.keys())
     # Get sorted order
     sorted_ids = topological(nodes, dependencies)
+
     # Return items in sorted order
     return [(item_id, item_map[item_id]) for item_id in sorted_ids]

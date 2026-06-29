@@ -24,6 +24,7 @@ def create_table_step(drop: bool = False, update: bool = False):
             StructField("order", LongType(), True),
         ]
     )
+
     if drop:
         table.drop()
 
@@ -64,6 +65,7 @@ def create_table_log(drop: bool = False, update: bool = False):
             StructField("json", VariantType(), True),
         ]
     )
+
     if drop:
         table.drop()
 
@@ -88,6 +90,7 @@ def create_table_dummy(drop: bool = False, update: bool = False):
         cast('9999-12-31' as timestamp) as __valid_to
         """
     )
+
     if drop:
         cdc.drop()
 

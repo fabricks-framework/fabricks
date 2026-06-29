@@ -14,6 +14,7 @@ def write_stream(
 ) -> StreamingQuery:
     if timeout is None:
         timeout = 18000
+
     assert timeout is not None
     query = (
         df.writeStream.foreachBatch(func)
@@ -22,4 +23,5 @@ def write_stream(
         .start()
     )
     query.awaitTermination(timeout=timeout)
+
     return query

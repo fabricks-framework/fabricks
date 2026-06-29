@@ -55,6 +55,7 @@ class DagGenerator(BaseDags):
     def get_dependencies(self, job_df: Optional[DataFrame] = None) -> DataFrame:
         if job_df is None:
             job_df = self.get_jobs()
+
         df = SPARK.sql(
             """
             select
@@ -90,6 +91,7 @@ class DagGenerator(BaseDags):
             job=job_df,
         )
         df = df.withColumn("ScheduleId", lit(self.schedule_id))
+
         return df.withColumn("Schedule", lit(self.schedule))
 
     def get_steps(self, job_df: Optional[DataFrame] = None) -> DataFrame:
@@ -148,4 +150,5 @@ class DagGenerator(BaseDags):
 
         # wait for queues to be ready before starting the dag
         time.sleep(60)
+
         return self.schedule_id, job_df, deps_df

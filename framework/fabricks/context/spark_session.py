@@ -11,6 +11,7 @@ from fabricks.utils.spark import get_dbutils, get_spark
 def add_catalog_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = get_spark()
+
     if CATALOG is not None:
         spark.sql(f"use catalog {CATALOG};")
 
@@ -18,6 +19,7 @@ def add_catalog_to_spark(spark: Optional[SparkSession] = None):
 def add_credentials_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = get_spark()
+
     credentials = CONF_RUNTIME.credentials or {}
 
     for uri, secret in credentials.items():
@@ -28,6 +30,7 @@ def add_credentials_to_spark(spark: Optional[SparkSession] = None):
 def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     if spark is None:
         spark = get_spark()
+
     # delta default options
     spark.sql("set spark.databricks.delta.schema.autoMerge.enabled = True;")
     spark.sql("set spark.databricks.delta.resolveMergeUpdateStructsByName.enabled = True;")
@@ -35,6 +38,7 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     spark.conf.set("spark.sql.session.timeZone", CONF_RUNTIME.options.timezone)
     # runtime options
     spark_options = CONF_RUNTIME.spark_options
+
     if spark_options:
         sql_options = spark_options.sql or {}
 
@@ -63,9 +67,12 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
         )
 
     add_catalog_to_spark(spark=_spark)
+
     if not IS_UNITY_CATALOG:
         add_credentials_to_spark(spark=_spark)
+
     add_spark_options_to_spark(spark=_spark)
+
     return _spark
 
 

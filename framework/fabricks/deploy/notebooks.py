@@ -16,10 +16,12 @@ def deploy_notebook(notebook: str, overwrite: bool = True):
     w = WorkspaceClient()
     target = f"{PATH_NOTEBOOKS}/{notebook}.py"
     src = resources.files(notebooks) / f"{notebook}.py"
+
     if overwrite:
         if os.path.isfile(target):
             DEFAULT_LOGGER.debug(f"removing {notebook}.py", extra={"label": "fabricks"})
             os.remove(target)
+
     if not os.path.exists(target):
         DEFAULT_LOGGER.debug(f"deploying {notebook}.py", extra={"label": "fabricks"})
         with io.open(src, "rb") as file:  # type: ignore

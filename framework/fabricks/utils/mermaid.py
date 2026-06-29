@@ -16,9 +16,11 @@ def get_mermaid_diagram(df: DataFrame) -> str:
             if parent_id not in unique_nodes:
                 out += f"    {parent_id}[{parent_name}]\n"
                 unique_nodes.add(parent_id)
+
             if child_id not in unique_nodes:
                 out += f"    {child_id}[{child_name}]\n"
                 unique_nodes.add(child_id)
+
             out += f"    {parent_id} --> {child_id}\n"
         else:
             if child_id not in unique_nodes:

@@ -33,15 +33,18 @@ class InvokerMixin(JobProtocol):
         **kwargs,
     ):
         path = kwargs.get("path")
+
         if path is None:
             notebook = invoker.get("notebook") if isinstance(invoker, dict) else invoker.notebook
             assert notebook, "notebook mandatory"
             path = PATH_RUNTIME.joinpath(notebook)
+
         assert path is not None, "path could not be resolved"
         timeout = invoker.get("timeout") if isinstance(invoker, dict) else invoker.timeout
         arguments = invoker.get("arguments") if isinstance(invoker, dict) else invoker.arguments
         arguments = arguments or {}
         schema_only = kwargs.get("schema_only")
+
         if schema_only is not None:
             arguments["schema_only"] = schema_only
 
@@ -54,17 +57,22 @@ class InvokerMixin(JobProtocol):
 
     def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
         invokers = getattr(self.invoker_options, position, None) or [] if self.invoker_options else []
+
         if position == "run":
             invokers = invokers if len(invokers) > 0 else [{}]  # run must work even without run invoker options
+
         errors = []
+
         if invokers:
             for i, invoker in enumerate(invokers):
                 DEFAULT_LOGGER.debug(f"invoke ({i}, {position})", extra={"label": self})
+
                 try:
                     if len(invokers) == 1 and position == "run":
                         return self._invoke_notebook(invoker, schedule=schedule, **kwargs)
                     else:
                         self._invoke_notebook(invoker=invoker, schedule=schedule, **kwargs)
+
                 except Exception as e:
                     DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self})
 
@@ -74,15 +82,18 @@ class InvokerMixin(JobProtocol):
                         errors.append(PostRunInvokeException(e))
                     else:
                         errors.append(e)
+
         if errors:
             raise Exception(errors)
 
     def _invoke_step(self, position: str, schedule: Optional[str] = None):
         invokers = getattr(self.step_conf.invoker_options, position, []) if self.step_conf.invoker_options else []
         errors = []
+
         if invokers:
             for i, invoker in enumerate(invokers):
                 DEFAULT_LOGGER.debug(f"invoke by step ({i}, {position})", extra={"label": self})
+
                 try:
                     self._invoke_notebook(invoker=invoker, schedule=schedule)
                 except Exception as e:
@@ -94,6 +105,7 @@ class InvokerMixin(JobProtocol):
                         errors.append(PostRunInvokeException(e))
                     else:
                         errors.append(e)
+
         if errors:
             raise Exception(errors)
 
@@ -120,18 +132,23 @@ class InvokerMixin(JobProtocol):
 
         for file_format in [None, ".py", ".ipynb"]:
             path_with_file_format = path.append(file_format) if file_format else path
+
             if path_with_file_format.exists():
                 path = path_with_file_format
                 break
 
         if timeout is None:
             timeout = self.timeout
+
         assert timeout is not None
         variables = None
+
         if schedule is not None:
             variables = get_schedule(name=schedule).get("options", {}).get("variables", {})
+
         if variables is None:
             variables = {}
+
         if arguments is None:
             arguments = {}
 

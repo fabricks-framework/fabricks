@@ -9,10 +9,12 @@ from fabricks.models.common import ExtenderOptions
 class ExtenderMixin(JobProtocol):
     def extend_job(self, df: DataFrame) -> DataFrame:
         extenders = self.extender_options or []
+
         return self._extend(df, extenders, extended="job")
 
     def extend_step(self, df: DataFrame) -> DataFrame:
         extenders = self.step_conf.extender_options or []
+
         return self._extend(df, extenders, extended="step")
 
     def _extend(self, df: DataFrame, extenders: list[ExtenderOptions], extended: str) -> DataFrame:
@@ -28,4 +30,5 @@ class ExtenderMixin(JobProtocol):
     def extend(self, df: DataFrame) -> DataFrame:
         df = self.extend_job(df)
         df = self.extend_step(df)
+
         return df

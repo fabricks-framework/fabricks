@@ -22,8 +22,10 @@ variables = CONF_RUNTIME.variables or {}
 VARIABLES: dict = variables
 IS_UNITY_CATALOG: Final[bool] = CONF_RUNTIME.options.unity_catalog or False
 CATALOG: Optional[str] = CONF_RUNTIME.options.catalog
+
 if IS_UNITY_CATALOG and not CATALOG:
     raise ValueError("catalog mandatory in options if unity catalog is enabled")
+
 SECRET_SCOPE: Final[str] = CONF_RUNTIME.options.secret_scope
 TIMEZONE: Final[ZoneInfo] = ZoneInfo(CONF_RUNTIME.options.timezone)
 IS_TYPE_WIDENING: Final[bool] = CONF_RUNTIME.options.type_widening or False

@@ -21,6 +21,7 @@ def get_spark() -> SparkSession:
         spark = SparkSession.builder.getOrCreate()
 
     assert spark is not None
+
     return spark
 
 
@@ -35,12 +36,14 @@ def display(df: DataFrame, limit: Optional[int] = None) -> None:
 
         if limit is not None:
             df = df.limit(limit)
+
         display(df.toPandas())
     else:
         from databricks.sdk.runtime import display
 
         if limit is not None:
             df = df.limit(limit)
+
         display(df)
 
 
@@ -57,6 +60,7 @@ def get_dbutils(spark: Optional[SparkSession] = None) -> Optional[RemoteDbUtils]
             dbutils = DBUtils(spark)
 
         assert dbutils is not None
+
         return dbutils  # type: ignore
     except Exception:
         return None

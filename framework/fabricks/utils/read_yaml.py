@@ -43,8 +43,10 @@ def read_yaml(
     for file in path.walk():
         if not file.endswith(".yml"):
             continue
+
         if preferred_file_name is not None and preferred_file_name not in file:
             continue
+
         found = True
         data = _read_yaml_cached(file)
 
@@ -56,6 +58,7 @@ def read_yaml(
 
             if lookup:
                 config = substitute_value(config, lookup, strict=strict)
+
             yield config
 
     if preferred_file_name is not None and not found:

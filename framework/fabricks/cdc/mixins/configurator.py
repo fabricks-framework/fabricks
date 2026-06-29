@@ -29,13 +29,17 @@ class ConfiguratorMixin(CdcProtocol):
     @property
     def allowed_input__columns(self) -> List[str]:
         cols = self.__columns
+
         if self.slowly_changing_dimension:
             if "__valid_from" in cols:
                 cols.remove("__valid_from")
+
             if "__valid_to" in cols:
                 cols.remove("__valid_to")
+
             if "__is_current" in cols:
                 cols.remove("__is_current")
+
             if "__is_deleted" in cols:
                 cols.remove("__is_deleted")
 
@@ -71,6 +75,7 @@ class ConfiguratorMixin(CdcProtocol):
             "__last_updated",
             "__rescued_data",
         ]
+
         if self.slowly_changing_dimension:
             cols.remove("__operation")
 
@@ -117,6 +122,7 @@ class ConfiguratorMixin(CdcProtocol):
     def has_data(self, src: AllowedSources, **kwargs) -> bool:
         DEFAULT_LOGGER.debug("check if has data", extra={"label": self})
         df = self.get_src(src=src)
+
         return not df.isEmpty()
 
     def get_columns(
@@ -128,13 +134,16 @@ class ConfiguratorMixin(CdcProtocol):
     ) -> List[str]:
         if backtick:
             backtick = True
+
         df = self.get_src(src=src)
         columns = df.columns
+
         if check:
             for c in columns:
                 # avoid duplicate column issue in merge
                 if c.startswith("__") and c in self.__columns:
                     assert c in self.allowed_input__columns, f"{c} is not allowed"
+
         if sort:
             columns = self.sort_columns(columns)
 
@@ -153,14 +162,18 @@ class ConfiguratorMixin(CdcProtocol):
 
         __leading = [c for c in leading if c in columns]
         __trailing = [c for c in trailing if c in columns]
+
         return __leading + fields + __trailing
 
     def reorder_dataframe(self, df: DataFrame, extra__columns: Optional[List[str]] = None) -> DataFrame:
         columns = self.sort_columns(df.columns)
+
         if extra__columns:
             extra__columns = [c for c in extra__columns if c in df.columns]
             columns += extra__columns
+
         columns = backticks(columns)
+
         return df.select(columns)
 
     def __str__(self):

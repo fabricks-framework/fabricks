@@ -20,6 +20,7 @@ class AzureTable:
         credential: "Optional[TokenCredential]" = None,
     ):
         self.name = name
+
         if connection_string is None:
             assert storage_account, "storage_account must be provided if connection_string is not set"
             assert access_key or credential, "Either access_key or credential must be provided"
@@ -32,6 +33,7 @@ class AzureTable:
                 if access_key
                 else None
             )
+
         assert connection_string
         self.connection_string = connection_string
         self._table_client = None

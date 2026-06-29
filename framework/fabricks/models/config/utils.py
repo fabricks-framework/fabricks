@@ -25,6 +25,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
     def __call__(self):
         """Load settings from hierarchical file search."""
         data = self._load_hierarchical_file()
+
         return data
 
     def _load_hierarchical_file(self):
@@ -32,23 +33,27 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
 
         def pyproject_settings(base: PathLibPath):
             pyproject_path = base / "pyproject.toml"
+
             if pyproject_path.exists():
                 with open(pyproject_path, "rb") as f:
                     data = tomllib.load(f)
                 data = data.get("tool", {}).get("fabricks", {})
                 data["base"] = str(base)
                 data["path_to_config"] = str(pyproject_path)
+
                 return data
 
             return None
 
         def json_settings(base: PathLibPath):
             json_path = base / "fabricksconfig.json"
+
             if json_path.exists():
                 with open(json_path, "r") as f:
                     data = json.load(f)
                 data["base"] = str(base)
                 data["path_to_config"] = str(json_path)
+
                 return data
 
             return None
@@ -58,13 +63,18 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
 
         while not data:
             data = json_settings(path)
+
             if data:
                 break
+
             data = pyproject_settings(path)
+
             if data:
                 break
+
             if path == path.parent:
                 break
+
             path = path.parent
 
         return data or {}

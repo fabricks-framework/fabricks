@@ -34,6 +34,7 @@ _scopes_cache: list[str] | None = None
 def _get_scopes() -> list[str]:
     """Get list of available secret scopes. Cached at module level."""
     global _scopes_cache
+
     if _scopes_cache is None:
         from databricks.sdk.runtime import dbutils
 
@@ -48,12 +49,15 @@ def _get_secret_from_secret_scope_cached(secret_scope: str, name: str) -> str:
     from databricks.sdk.runtime import dbutils
 
     scopes = _get_scopes()
+
     if secret_scope not in scopes:
         # Refresh scopes cache and retry
         global _scopes_cache
         _scopes_cache = None
         scopes = _get_scopes()
+
     assert secret_scope in scopes, f"scope {secret_scope} not found"
+
     return dbutils.secrets.get(scope=secret_scope, key=name)
 
 
@@ -65,6 +69,7 @@ def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
         assert s.get("secret"), f"no secret found in {name}"
         assert s.get("application_id"), f"no application_id found in {name}"
         assert s.get("directory_id"), f"no directory_id found in {name}"
+
         return ApplicationRegistration(
             secret=s.get("secret"),
             application_id=s.get("application_id"),
@@ -79,7 +84,9 @@ def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
 def _add_secret_to_spark(key: str, value: str, spark: Optional[SparkSession] = None):
     if spark is None:
         spark = _spark
+
     spark.conf.set(key, value)  # needed for check (invalid configuration value detected for fs.azure.account.key)
+
     if not IS_UNITY_CATALOG:
         spark._jsc.hadoopConfiguration().set(key, value)  # type: ignore
 

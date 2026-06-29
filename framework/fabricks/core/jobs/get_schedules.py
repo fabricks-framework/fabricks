@@ -14,4 +14,5 @@ def get_schedules_df() -> DataFrame:
     schema = create_spark_schema(Schedule)
     df = SPARK.createDataFrame(list(get_schedules()), schema=schema)
     assert df, "no schedules found"
+
     return df

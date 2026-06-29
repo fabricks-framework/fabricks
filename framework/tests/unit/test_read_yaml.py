@@ -11,12 +11,14 @@ from fabricks.utils.read_yaml import read_yaml
 @pytest.fixture
 def fixtures_dir() -> Path:
     """Return the path to the test fixtures directory."""
+
     return (Path(__file__).parent / "fixtures/jobs").absolute()
 
 
 @pytest.fixture
 def test_variables() -> dict[str, str]:
     """Return test variables for substitution."""
+
     return {
         "$storage_account": "testaccount.dfs.core.windows.net",
         "$container": "testcontainer",

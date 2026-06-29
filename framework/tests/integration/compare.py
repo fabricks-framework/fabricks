@@ -24,6 +24,7 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):
         df_ = df_.transform(timestamp_as_string)
         df_ = df_.transform(boolean_as_string)
         df_ = df_.transform(value_to_none)
+
         return df_
 
     print("<-- df -->\n")
@@ -44,8 +45,10 @@ def compare_silver_to_expected(job: BaseJob, cdc: str, iter: int):
         df = job.table.dataframe
 
     expected_df = SPARK.read.table(f"expected.silver_{cdc}_job{iter}")
+
     if job.topic in ["monarch", "memory", "regent"]:
         expected_df = expected_df.drop("__source")
+
     assert_dfs_equal(df, expected_df)
 
 
@@ -73,6 +76,7 @@ def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: Optional[
 
     if where:
         expected_df = expected_df.where(where)
+
     assert_dfs_equal(df, expected_df)
 
 

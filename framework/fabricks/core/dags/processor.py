@@ -27,10 +27,12 @@ class DagProcessor(BaseDags):
     def get_azure_queue(self) -> AzureQueue:
         step = self.remove_invalid_characters(str(self.step))
         name = f"q{step}{self.schedule_id}"
+
         return AzureQueue(name, **self.get_connection_info())
 
     def get_azure_table(self) -> AzureTable:
         name = f"t{self.schedule_id}"
+
         return AzureTable(name, **self.get_connection_info())
 
     @retry(
@@ -91,6 +93,7 @@ class DagProcessor(BaseDags):
                         dependencies = azure_table.query(
                             f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'"
                         )
+
                         if len(dependencies) == 0:
                             s["Status"] = "waiting"
                             LOGGER.debug("waiting", extra=self.extra(s))
@@ -112,6 +115,7 @@ class DagProcessor(BaseDags):
                     j["Status"] = "starting"
                     azure_table.upsert(j)
                     LOGGER.info("start", extra=self.extra(j))
+
                     try:
                         if self.notebook:
                             path: str = PATH_NOTEBOOKS.joinpath("run").get_notebook_path()
@@ -133,6 +137,7 @@ class DagProcessor(BaseDags):
                                 schedule_id=self.schedule_id,
                                 schedule=self.schedule,
                             )
+
                     except Exception:
                         LOGGER.warning("fail", extra={"label": j.get("Job")})
                     finally:
@@ -140,6 +145,7 @@ class DagProcessor(BaseDags):
                         azure_table.upsert(j)
                         LOGGER.info("end", extra=self.extra(j))
                         TABLE_LOG_HANDLER.flush()
+
                     dependencies = azure_table.query(
                         f"PartitionKey eq 'dependencies' and ParentId eq '{j.get('JobId')}'"
                     )
@@ -147,6 +153,7 @@ class DagProcessor(BaseDags):
 
     def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict]:
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
+
         if azure_table is not None:
             return azure_table.query(query)
 
@@ -155,6 +162,7 @@ class DagProcessor(BaseDags):
 
     def _process(self):
         scheduled = self.get_scheduled()
+
         if len(scheduled) > 0:
             sender = threading.Thread(
                 target=self.send,
@@ -187,6 +195,7 @@ class DagProcessor(BaseDags):
             p.start()
             p.join(timeout=self.step.timeouts.step)
             p.terminate()
+
             try:
                 with self.get_azure_queue() as queue:
                     queue.delete()

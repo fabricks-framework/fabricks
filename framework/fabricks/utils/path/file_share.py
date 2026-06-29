@@ -15,11 +15,13 @@ class FileSharePath(BasePath):
 
     def exists(self) -> bool:
         """Check if the path exists in the distributed file system."""
+
         try:
             from fabricks.utils.spark import dbutils
 
             assert dbutils is not None, "dbutils not found"
             dbutils.fs.ls(self.string)
+
             return True
         except Exception:
             return False
@@ -28,24 +30,28 @@ class FileSharePath(BasePath):
         """Get the container name from an ABFSS path."""
         assert self.string.startswith("abfss://")
         m = _ABFSS_CONTAINER_PATTERN.findall(self.string)[0]
+
         return m
 
     def get_storage_account(self) -> str:
         """Get the storage account name from an ABFSS path."""
         assert self.string.startswith("abfss://")
         m = _ABFSS_ACCOUNT_PATTERN.findall(self.string)[0]
+
         return m
 
     def get_file_system(self) -> str:
         """Get the file system from an ABFSS path."""
         assert self.string.startswith("abfss://")
         m = _ABFSS_FS_PATTERN.findall(self.string)[0]
+
         return m
 
     def get_dbfs_mnt_path(self) -> str:
         """Get the DBFS mount path."""
         mount_point = self.pathlibpath.parts[1].split(".")[0].split("@")[0]
         rest = self.pathlibpath.parts[2:]
+
         return str(os.path.join("/dbfs/mnt", mount_point, "/".join(rest)))
 
     def walk(
@@ -55,6 +61,7 @@ class FileSharePath(BasePath):
         file_format: str | None = None,
     ) -> list:
         out = []
+
         if self.exists():
             if self.pathlibpath.is_file():
                 out = [self.string]
@@ -62,8 +69,10 @@ class FileSharePath(BasePath):
                 out = self._list_fs(depth)
             else:
                 out = list(self._yield(self.string))
+
         if file_format:
             out = [o for o in out if o.endswith(file_format)]
+
         if convert:
             out = [self.__class__(o) for o in out]
 
@@ -143,6 +152,7 @@ class FileSharePath(BasePath):
                     yield from self._rm(child.path)
                 else:
                     yield dbutils.fs.rm(child.path, recurse=True)
+
         except Exception:
             return False
 
@@ -166,11 +176,15 @@ def resolve_fileshare_path(
     Returns:
         Resolved FileSharePath object
     """
+
     if isinstance(base, str):
         base = FileSharePath(base)
+
     resolved_value = path or default
+
     if resolved_value is None:
         raise ValueError("path and default cannot both be None")
+
     if variables:
         return FileSharePath.from_uri(resolved_value, regex=variables)
 

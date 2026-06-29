@@ -58,6 +58,7 @@ class DeleteLogBaseParser(BaseParser):
     ) -> Optional[DataFrame]:
         data_path = data_path.append("__deletelog")
         schema_path = schema_path.append("__deletelog")
+
         try:
             df = read(
                 stream=stream,
@@ -68,11 +69,13 @@ class DeleteLogBaseParser(BaseParser):
                 spark=spark,
             )
             df.columns
+
             return df.withColumn("__operation", lit("delete"))
         except (AnalysisException, Py4JError, SparkConnectGrpcException):
             if stream:
                 df = spark.readStream.table("fabricks.dummy")
                 df = df.selectExpr("'delete' as __operation").limit(0)
+
                 return df.withColumn("__operation", lit("delete"))
 
     def nullify(self, df: DataFrame) -> DataFrame:
@@ -103,6 +106,7 @@ class DeleteLogBaseParser(BaseParser):
         df = self.nullify(df)
         # avoid fake updates based on the BEL_UpdateDateUtc
         df = df.drop("BEL_IsFullLoad", "BEL_UpdateDateUtc", "BEL_DeleteDateUtc")
+
         return df
 
 
@@ -116,8 +120,10 @@ class MonarchParser(DeleteLogBaseParser):
         stream: bool,
     ) -> DataFrame:
         df = super().parse(stream=stream, data_path=data_path, schema_path=schema_path, spark=spark)
+
         if df:
             cols = [c for c in df.columns if c.startswith("BEL_")]
+
             if cols:
                 df = df.drop(*cols)
 

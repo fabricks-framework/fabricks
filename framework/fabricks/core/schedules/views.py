@@ -10,13 +10,17 @@ def create_or_replace_view_internal(name: str, options: dict):
     tag = "-- no tag provided"
     view = "-- no view provided"
     assert isinstance(options, dict), "options must be a dict"
+
     if options.get("steps") is not None:
         steps = [f"'{s}'" for s in options.get("steps")]  # type: ignore
         step = f"and j.step in ({', '.join(steps)})"
+
     if options.get("tag") is not None:
         tag = f"""and array_contains(j.tags, '{options.get("tag")}')"""
+
     if options.get("view") is not None:
         view = f"""inner join fabricks.{options.get("view")} v on j.job_id = v.job_id"""
+
     sql = f"""
     create or replace view fabricks.{name}_schedule
     as
@@ -38,6 +42,7 @@ def create_or_replace_view_internal(name: str, options: dict):
 
 def create_or_replace_view(name: str):
     sc = get_schedule(name=name)
+
     try:
         create_or_replace_view_internal(sc["name"], sc["options"])
     except Exception as e:

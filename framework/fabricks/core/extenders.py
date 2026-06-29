@@ -17,12 +17,14 @@ def get_extender(name: str) -> Callable:
 
     load_module_from_path(name, path)
     e = EXTENDERS[name]
+
     return e
 
 
 def extender(name: str):
     def decorator(fn: Callable):
         EXTENDERS[name] = fn
+
         return fn
 
     return decorator

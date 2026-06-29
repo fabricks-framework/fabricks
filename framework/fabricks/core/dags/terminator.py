@@ -39,5 +39,6 @@ class DagTerminator(BaseDags):
         TABLE_LOG_HANDLER.table.truncate_partition(self.schedule_id)
         table = self.get_table()
         table.drop()
+
         if rows:
             raise ValueError(f"{len(rows)} job(s) failed")

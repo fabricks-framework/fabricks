@@ -23,6 +23,7 @@ def fix(sql: str, keep_comments: bool = True):
         comments=keep_comments,
     )
     sql = ";\n".join(parts)
+
     return sql
 
 
@@ -44,6 +45,7 @@ def get_tables(sql: str, allowed_databases: list[str] | None = None) -> list[str
                 if allowed_databases:
                     if table.db not in allowed_databases:
                         continue
+
                 tables.append(f"{table.db}.{table.name}")
 
     # Remove duplicates
@@ -52,9 +54,11 @@ def get_tables(sql: str, allowed_databases: list[str] | None = None) -> list[str
 
 def parse_script(sql: str) -> list[str]:
     parts = [p for p in parse_fabricks(sql) if p is not None]
+
     return [p.sql(dialect="fabricks") for p in parts]
 
 
 def parse_script_expressions(sql: str) -> list[exp.Expr]:
     parts = [p for p in parse_fabricks(sql) if p is not None]
+
     return parts

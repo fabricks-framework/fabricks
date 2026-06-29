@@ -9,6 +9,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 def _get_fabricks_tables() -> set[str]:
     """Get all table names in the fabricks database. Cached to avoid repeated queries."""
     rows = SPARK.sql("SHOW TABLES IN fabricks").collect()
+
     return {row["tableName"] for row in rows}
 
 
@@ -18,6 +19,7 @@ def _has_column(table: str, column: str, existing: set[str]) -> bool:
 
     try:
         SPARK.sql(f"select {column} from fabricks.{table} limit 0")
+
         return True
     except Exception:
         return False
@@ -47,9 +49,11 @@ def create_or_replace_jobs_view():
 
     for step in Steps:
         table = f"{step}_jobs"
+
         if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{table}", extra={"label": "fabricks"})
             continue
+
         change_data_capture = (
             "coalesce(options.change_data_capture, 'nocdc') as change_data_capture"
             if _has_column(table, "options.change_data_capture", existing)
@@ -109,9 +113,11 @@ def create_or_replace_tables_view():
 
     for step in Steps:
         table = f"{step}_tables"
+
         if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_tables", extra={"label": "fabricks"})
             continue
+
         cte = f"""
             {step} as (
             select
@@ -143,9 +149,11 @@ def create_or_replace_views_view():
 
     for step in Steps:
         table = f"{step}_views"
+
         if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_views", extra={"label": "fabricks"})
             continue
+
         cte = f"""
             {step} as (
             select
@@ -177,9 +185,11 @@ def create_or_replace_dependencies_view():
 
     for step in Steps:
         table = f"{step}_dependencies"
+
         if table not in existing:
             DEFAULT_LOGGER.debug(f"could not find fabricks.{step}_dependencies", extra={"label": "fabricks"})
             continue
+
         cte = f"""
           {step} as (
           select

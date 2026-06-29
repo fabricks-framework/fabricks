@@ -42,14 +42,19 @@ class MergerMixin(CdcProtocol):
         has_hash = "__hash" in columns
         has_timestamp = "__timestamp" in columns
         has_identity = "__identity" in columns
+
         # 'NoneType' object is not iterable
         if keys:
             keys = backticks(keys)
+
         if columns:
             columns = backticks(columns)
+
         if fields:
             fields = backticks(fields)
+
         assert "__key" or keys, f"{self} - __key or keys not found"
+
         return {
             "template": "merge",
             # global
@@ -80,11 +85,13 @@ class MergerMixin(CdcProtocol):
         merged_context = self.get_merge_context(src=src, context=context)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
         merge = environment.get_template("merge.sql.jinja")
+
         try:
             sql = merge.render(**merged_context)
         except Exception as e:
             DEFAULT_LOGGER.debug("context", extra={"label": self, "content": merged_context})
             raise e
+
         if fix:
             try:
                 sql = sql.replace("{src}", "src")
@@ -100,6 +107,7 @@ class MergerMixin(CdcProtocol):
     def merge(self, src: AllowedSources, context: CdcContext):
         if not self.table.exists():
             self.create_table(src, context=context)
+
         df = self.get_data(src, context=context)
         global_temp_view = f"{self.qualified_name}__merge"
         view = create_or_replace_global_temp_view(global_temp_view, df, uuid=context.uuid, job=self)

@@ -20,6 +20,7 @@ _CTES_PIPELINE = ("__base", "__sliced", "__deduplicated_key", "__rectified", "__
 
 def _previous_cte(stage: str, flags: dict[str, bool]) -> str:
     idx = _CTES_PIPELINE.index(stage)
+
     return next((s for s in reversed(_CTES_PIPELINE[:idx]) if flags.get(s, s == "__base")), "__base")
 
 
@@ -29,8 +30,10 @@ class ProcessorMixin(CdcProtocol):
             name = f"{self.qualified_name}__data"
             global_temp_view = create_or_replace_global_temp_view(name, src, uuid=context.uuid, job=self)
             src = f"select * from {global_temp_view}"
+
         sql = self.get_query(src, fix=True, context=context)
         DEFAULT_LOGGER.debug("exec query", extra={"label": self, "sql": sql})
+
         return self.spark.sql(sql)
 
     def get_query_context(
@@ -68,8 +71,10 @@ class ProcessorMixin(CdcProtocol):
         )
         add_source = context.add_source
         add_calculated_columns = context.add_calculated_columns
+
         if add_calculated_columns:
             raise ValueError("add_calculated_columns is not yet supported")
+
         add_operation = context.add_operation
         add_key = context.add_key
         add_hash = context.add_hash
@@ -95,6 +100,7 @@ class ProcessorMixin(CdcProtocol):
         deduplicate_key = context.deduplicate_key
         deduplicate_hash = context.deduplicate_hash
         correct_valid_from = context.correct_valid_from
+
         try:
             rows = self.table.rows
             has_rows = rows > 0
@@ -113,28 +119,36 @@ class ProcessorMixin(CdcProtocol):
         if self.slowly_changing_dimension:
             if deduplicate is None:
                 deduplicate = True
+
         # order duplicates by implies key deduplication
         if order_duplicate_by:
             deduplicate_key = True
+
         if deduplicate:
             deduplicate_key = True
             deduplicate_hash = True
+
         # if any deduplication is requested, deduplicate all
         deduplicate = deduplicate or deduplicate_key or deduplicate_hash
+
         # always rectify if not set
         if self.slowly_changing_dimension:
             if rectify is None:
                 rectify = True
+
         # only correct valid_from on first load
         if self.slowly_changing_dimension and mode == "update":
             correct_valid_from = correct_valid_from and not has_rows
+
         # override slice for incremental load if timestamp and rows are present
         if slice is None:
             if mode == "update" and has_timestamp and has_rows:
                 slice = "update"
+
         # override slice for full load if update and table is empty
         if slice == "update" and not has_rows:
             slice = None
+
         # override operation if added and found in df
         if add_operation and "__operation" in inputs:
             overwrite.append("__operation")
@@ -148,43 +162,56 @@ class ProcessorMixin(CdcProtocol):
         # override key if added and found in df (key needed for merge)
         if add_key and "__key" in inputs:
             overwrite.append("__key")
+
         # override hash if added and found in df (hash needed to identify fake updates)
         if add_hash and "__hash" in inputs:
             overwrite.append("__hash")
+
         # override __last_updated if added and found in df
         if add_last_updated and "__last_updated" in inputs:
             overwrite.append("__last_updated")
+
         # override metadata if added and found in df
         if add_metadata and "__metadata" in inputs:
             overwrite.append("__metadata")
+
         advanced_ctes = ((rectify or deduplicate) and self.slowly_changing_dimension) or self.slowly_changing_dimension
         advanced_deduplication = advanced_ctes and deduplicate
+
         # add key and hash if not added nor found in df but exclude from output
         # needed for merge
         if mode == "update" or advanced_ctes or deduplicate:
             if not add_key and "__key" not in inputs:
                 add_key = True
                 exclude.append("__key")
+
             if not add_hash and "__hash" not in inputs:
                 add_hash = True
                 exclude.append("__hash")
+
         # add operation and timestamp if not added nor found in df but exclude from output
         # needed for deduplication and/or rectification
         if advanced_ctes:
             if not add_operation and "__operation" not in inputs:
                 add_operation = "upsert"
                 exclude.append("__operation")
+
             if not add_timestamp and "__timestamp" not in inputs:
                 add_timestamp = True
                 exclude.append("__timestamp")
+
         if add_key:
             if keys is None:
                 keys = list(fields)
+
             if has_source:
                 keys.append("__source")
+
         hashes = None
+
         if add_hash:
             hashes = [f for f in fields]
+
             if "__operation" in inputs or add_operation:
                 hashes.append("__operation")
 
@@ -198,63 +225,86 @@ class ProcessorMixin(CdcProtocol):
         if has_operation:
             if "__operation" not in outputs:
                 outputs.append("__operation")
+
         if has_timestamp:
             if "__timestamp" not in outputs:
                 outputs.append("__timestamp")
+
         if has_key:
             if "__key" not in outputs:
                 outputs.append("__key")
+
         if has_hash:
             if "__hash" not in outputs:
                 outputs.append("__hash")
+
         if has_metadata:
             if "__metadata" not in outputs:
                 outputs.append("__metadata")
+
             if "__metadata" not in intermediates:
                 intermediates.append("__metadata")
+
         if has_last_updated:
             if "__last_updated" not in outputs:
                 outputs.append("__last_updated")
+
             if "__last_updated" not in intermediates:
                 intermediates.append("__last_updated")
+
         if has_source:
             if "__source" not in outputs:
                 outputs.append("__source")
+
             if "__source" not in intermediates:
                 intermediates.append("__source")
+
         if has_identity:
             if "__identity" not in outputs:
                 outputs.append("__identity")
+
             if "__identity" not in intermediates:
                 intermediates.append("__identity")
+
         if has_rescued_data:
             if "__rescued_data" not in outputs:
                 outputs.append("__rescued_data")
+
             if "__rescued_data" not in intermediates:
                 intermediates.append("__rescued_data")
+
         if soft_delete:
             if "__is_deleted" not in outputs:
                 outputs.append("__is_deleted")
+
             if "__is_current" not in outputs:
                 outputs.append("__is_current")
+
         if self.change_data_capture == "scd2":
             if "__valid_from" not in outputs:
                 outputs.append("__valid_from")
+
             if "__valid_to" not in outputs:
                 outputs.append("__valid_to")
+
             if "__is_current" not in outputs:
                 outputs.append("__is_current")
+
         if advanced_ctes:
             if "__operation" not in intermediates:
                 intermediates.append("__operation")
+
             if "__timestamp" not in intermediates:
                 intermediates.append("__timestamp")
+
         # needed for deduplication and/or rectification
         # might need __operation or __source
         if "__key" not in intermediates:
             intermediates.append("__key")
+
         if "__hash" not in intermediates:
             intermediates.append("__hash")
+
         outputs = [o for o in outputs if o not in exclude]
         outputs = self.sort_columns(outputs)
         _flags = {
@@ -269,6 +319,7 @@ class ProcessorMixin(CdcProtocol):
         parent_deduplicate_hash = _previous_cte("__deduplicated_hash", _flags) if deduplicate_hash else None
         parent_cdc = next((s for s in reversed(_CTES_PIPELINE) if _flags.get(s, s == "__base")), "__base")
         parent_final = "__final"
+
         return QueryContext(
             template=template,
             debugmode=IS_DEBUGMODE,
@@ -331,6 +382,7 @@ class ProcessorMixin(CdcProtocol):
             sql = fix_sql(sql)
             sql = sql.replace("`src`", "{src}")
             DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql, "target": "buffer"})
+
             return sql
         except Exception as e:
             DEFAULT_LOGGER.exception("fail to fix sql query", extra={"label": self, "sql": sql})
@@ -339,20 +391,25 @@ class ProcessorMixin(CdcProtocol):
     def fix_context(self, context: dict, fix: Optional[bool] = True) -> dict:
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
         template = environment.get_template("filter.sql.jinja")
+
         try:
-            context["template"] = "filter"
-            sql = template.render(**context)
+            filter_context = context.copy()
+            filter_context["template"] = "filter"
+            sql = template.render(**filter_context)
 
             if fix:
                 sql = self.fix_sql(sql)
             else:
                 DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql})
+
         except (Exception, TypeError) as e:
             DEFAULT_LOGGER.exception("fail to render sql query", extra={"label": self, "context": context})
             raise e
+
         row = self.spark.sql(sql).collect()[0]
         assert row.slices, "no slices found"
         context["slices"] = row.slices
+
         if context.get("has_source"):
             assert row.sources, "no sources found"
             context["sources"] = row.sources
@@ -362,9 +419,11 @@ class ProcessorMixin(CdcProtocol):
     def get_query(self, src: AllowedSources, context: CdcContext, fix: Optional[bool] = True) -> str:
         ctx = self.get_query_context(template="query", src=src, **context.model_dump()).model_dump()
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
+
         try:
             if ctx.get("slice"):
                 ctx = self.fix_context(ctx, fix=fix)
+
             template = environment.get_template("query.sql.jinja")
             sql = template.render(**ctx)
 
@@ -372,6 +431,7 @@ class ProcessorMixin(CdcProtocol):
                 sql = self.fix_sql(sql)
             else:
                 DEFAULT_LOGGER.debug("print query", extra={"label": self, "sql": sql})
+
         except (Exception, TypeError) as e:
             DEFAULT_LOGGER.debug("context", extra={"label": self, "context": ctx})
             DEFAULT_LOGGER.exception("fail to render sql query", extra={"label": self, "context": ctx})
@@ -382,6 +442,7 @@ class ProcessorMixin(CdcProtocol):
     def append(self, src: AllowedSources, context: CdcContext):
         if not self.table.registered:
             self.create_table(src, context=context)
+
         df = self.get_data(src, context=context)
         df = self.reorder_dataframe(df)
         name = f"{self.qualified_name}__append"
@@ -398,13 +459,17 @@ class ProcessorMixin(CdcProtocol):
     ):
         if not self.table.registered:
             self.create_table(src, context=context)
+
         df = self.get_data(src, context=context)
         df = self.reorder_dataframe(df)
+
         if not dynamic:
             if context.update_where:
                 dynamic = True
+
         if dynamic:
             self.spark.sql("set spark.sql.sources.partitionOverwriteMode = dynamic")
+
         name = f"{self.qualified_name}__overwrite"
         create_or_replace_global_temp_view(name, df, uuid=context.uuid, job=self)
         overwrite = f"insert overwrite table {self.table} by name select * from global_temp.{name}"

@@ -12,7 +12,9 @@ def _ensure_spark(spark: Optional[SparkSession]) -> SparkSession:
         from fabricks.utils.spark import get_spark
 
         spark = get_spark()
+
     assert spark is not None
+
     return spark
 
 
@@ -105,22 +107,30 @@ def _read_batch(
 
     if file_format == "table":
         assert isinstance(src, str)
+
         return spark.read.table(src)
     else:
         path_glob_filter = file_format
         file_format = "binaryFile" if file_format == "pdf" else file_format
+
         if isinstance(src, str):
             src = FileSharePath(src)
+
         reader = spark.read.format(file_format)
         reader = reader.option("pathGlobFilter", f"*.{path_glob_filter}")
+
         if schema:
             reader = reader.schema(schema)
+
         # default options
         reader = reader.option("recursiveFileLookup", "True")
+
         if file_format == "parquet":
             reader = reader.option("mergeSchema", "true")
+
         if file_format == "csv":
             reader = reader.option("header", "true")
+
         # custom / override options
         if options:
             for key, value in options.items():
@@ -142,9 +152,11 @@ def _read_stream(
 
     if file_format == "table":
         assert isinstance(src, str)
+
         return spark.readStream.table(src)
     else:
         file_format = "binaryFile" if file_format == "pdf" else file_format
+
         if isinstance(src, str):
             src = FileSharePath(src)
 
@@ -158,29 +170,37 @@ def _read_stream(
                 reader.schema(schema)
             else:
                 assert schema_path
+
                 if isinstance(schema_path, str):
                     schema_path = FileSharePath(schema_path)
+
                 reader.option("cloudFiles.inferColumnTypes", "true")
                 reader.option("cloudFiles.useIncrementalListing", "true")
                 reader.option("cloudFiles.schemaEvolutionMode", "addNewColumns")
                 reader.option("cloudFiles.schemaLocation", schema_path.string)
+
                 if hints:
                     if isinstance(hints, str):
                         hints = [hints]
+
                     reader.option("cloudFiles.schemaHints", f"{' ,'.join(hints)}")
 
         # default options
         reader.option("recursiveFileLookup", "true")
         reader.option("skipChangeCommits", "true")
         reader.option("ignoreDeletes", "true")
+
         if file_format == "csv":
             reader.option("header", "true")
+
         # custom / override options
         if options:
             for key, value in options.items():
                 reader.option(key, value)
+
         df = reader.load(src.string)
         df = df.withColumnRenamed("_rescued_data", "__rescued_data")
+
         return df
 
 
@@ -304,13 +324,16 @@ def read_stream_once(
     Used to create a table / update its schema on the streaming load path. `add_dummy`
     unions a row from `fabricks.dummy` so the stream is guaranteed to start.
     """
+
     if add_dummy:
         dummy_df = df.sparkSession.readStream.table("fabricks.dummy")
         dummy_df = dummy_df.withColumn("__metadata", lit(None))  # __metadata is always present
         dummy_df = dummy_df.select("__metadata")
         df = df.unionByName(dummy_df, allowMissingColumns=True)
+
     if checkpoints_path.exists():
         checkpoints_path.rm()
+
     query = (
         df.writeStream.foreachBatch(func)
         .option("checkpointLocation", checkpoints_path.string)

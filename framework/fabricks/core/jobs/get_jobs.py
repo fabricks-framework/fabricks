@@ -50,8 +50,10 @@ def get_jobs_internal_df() -> DataFrame:
                 read_yaml(path, root="job"),
                 schema=schema,
             )
+
             if df:
                 df = df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))
+
                 return df
 
         dfs = run_in_parallel(_read_yaml, list(PATHS_RUNTIME.values()))
@@ -110,6 +112,7 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
 
         assert df
         jobs = run_in_parallel(_get_job, df)
+
         return jobs
 
 
@@ -151,6 +154,7 @@ def get_jobs_sorted(
     """
     # Collect all job rows
     job_rows: List[Row] = jobs_df.collect()
+
     # If no jobs, return empty DataFrame
     if not job_rows:
         return jobs_df.limit(0)
@@ -170,4 +174,5 @@ def get_jobs_sorted(
     sorted_rows = [row for _, row in sorted_items]
     # Create new DataFrame from sorted rows, preserving schema
     spark = jobs_df.sparkSession
+
     return spark.createDataFrame(sorted_rows, schema=jobs_df.schema)

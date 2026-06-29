@@ -24,6 +24,7 @@ class ProcessorMixin(JobProtocol):
     def filter_where(self, df: DataFrame) -> DataFrame:
         assert isinstance(self.options, (JobBronzeOptions, JobSilverOptions))
         f = self.options.filter_where
+
         if f:
             DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
             df = df.where(f"{f}")
@@ -32,10 +33,13 @@ class ProcessorMixin(JobProtocol):
 
     def _for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs):
         DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
+
         if batch is not None:
             DEFAULT_LOGGER.debug(f"batch {batch}", extra={"label": self})
+
         df = self.base_transform(df)
         diffs = self.get_schema_differences(df)
+
         if diffs:
             if self.schema_drift or kwargs.get("reload", False):
                 DEFAULT_LOGGER.warning("schema drifted", extra={"label": self, "diffs": diffs})
@@ -47,9 +51,12 @@ class ProcessorMixin(JobProtocol):
                     self.update_schema(df=df, widen_types=True)
                 else:
                     raise SchemaDriftException.from_diffs(str(self), diffs)
+
         self.for_each_batch(df, batch, **kwargs)
+
         if batch is not None:
             self.table.set_property("fabricks.last_batch", batch)
+
         self.table.create_restore_point()
         DEFAULT_LOGGER.debug("end (for each batch)", extra={"label": self})
 
@@ -105,6 +112,7 @@ class ProcessorMixin(JobProtocol):
         last_version = None
         last_batch = None
         exception = None
+
         if self.persist:
             last_version = self.table.get_property("fabricks.last_version")
 
@@ -115,48 +123,64 @@ class ProcessorMixin(JobProtocol):
 
             if self.stream:
                 last_batch = self.table.get_property("fabricks.last_batch")
+
                 if last_batch is not None:
                     DEFAULT_LOGGER.debug(f"last batch {last_batch}", extra={"label": self})
+
         try:
             DEFAULT_LOGGER.info("start (run)", extra={"label": self})
+
             if reload:
                 DEFAULT_LOGGER.debug("force reload", extra={"label": self})
+
             if not reload:
                 self.check_run_before()
                 self.check_run_after()
                 self.check_skip_run()
+
             if invoke:
                 self.invoke_pre_run(schedule=schedule)
+
             try:
                 self.check_pre_run()
             except PreRunCheckWarning as e:
                 exception = e
+
             self.for_each_run(schedule=schedule, reload=reload)
+
             try:
                 self.check_post_run()
             except PostRunCheckWarning as e:
                 exception = e
+
             self.check_post_run_extra()
+
             if invoke:
                 self.invoke_post_run(schedule=schedule)
+
             if exception:
                 raise exception
+
             if vacuum is None:
                 vacuum = self.options.vacuum if self.options and self.options.vacuum is not None else False
+
             if optimize is None:
                 optimize = self.options.optimize if self.options and self.options.optimize is not None else False
+
             if compute_statistics is None:
                 compute_statistics = (
                     self.options.compute_statistics
                     if self.options and self.options.compute_statistics is not None
                     else False
                 )
+
             if vacuum or optimize or compute_statistics:
                 self.maintain(
                     compute_statistics=compute_statistics,
                     optimize=optimize,
                     vacuum=vacuum,
                 )
+
             DEFAULT_LOGGER.info("end (run)", extra={"label": self})
         except SkipRunCheckWarning as e:
             DEFAULT_LOGGER.warning("skip run", extra={"label": self})

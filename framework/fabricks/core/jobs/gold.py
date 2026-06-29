@@ -48,21 +48,25 @@ class Gold(BaseJob):
     @property
     def options(self) -> JobGoldOptions:
         """Direct access to typed gold job options."""
+
         return self.conf.options  # type: ignore
 
     @property
     def step_conf(self) -> StepGoldConf:
         """Direct access to typed gold step conf."""
+
         return self.base_step_conf  # type: ignore
 
     @property
     def step_options(self) -> StepGoldOptions:
         """Direct access to typed gold step options."""
+
         return self.base_step_conf.options  # type: ignore
 
     @property
     def register_options(self) -> Optional[RegisterOptions]:
         """Direct access to typed register options."""
+
         return self.conf.register_options  # type: ignore
 
     @property
@@ -73,6 +77,7 @@ class Gold(BaseJob):
     def schema_drift(self) -> bool:
         _schema_drift = self.step_conf.options.schema_drift or False
         assert _schema_drift is not None
+
         return _schema_drift
 
     @property
@@ -116,13 +121,16 @@ class Gold(BaseJob):
             return udfs
         else:
             matches = self._match_udfs(self.sql) or []
+
             if udfs:
                 matches += udfs
+
             if len(matches) > 0:
                 return list(set(matches))
 
     def base_transform(self, df: DataFrame) -> DataFrame:
         df = df.transform(self.extend)
+
         return df
 
     def get_data(
@@ -141,12 +149,15 @@ class Gold(BaseJob):
             invokers = self.invoker_options.run or [] if self.invoker_options else []
             assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
             path = None
+
             if invokers:
                 from fabricks.context import PATH_RUNTIME
 
                 path = PATH_RUNTIME.joinpath(invokers[0].notebook) if invokers[0].notebook else None
+
             if path is None:
                 path = self.paths.to_runtime
+
             assert path is not None, "path could not be resolved"
             global_temp_view = self.invoke(path=path, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"
@@ -171,6 +182,7 @@ class Gold(BaseJob):
 
         if transform:
             df = self.base_transform(df)
+
         if schema_only:
             df = df.limit(0)
 
@@ -208,6 +220,7 @@ class Gold(BaseJob):
                 dependencies.append(d)
 
         wait_for = self.options.wait_for or []
+
         if wait_for:
             for w in wait_for:
                 if w.lower() not in parents and w.lower() not in parsed:
@@ -220,6 +233,7 @@ class Gold(BaseJob):
         from fabricks.context import Steps
 
         steps = [str(s) for s in Steps]
+
         return get_tables(self.sql, allowed_databases=steps)
 
     def _get_notebook_dependencies(self) -> List[str]:
@@ -227,6 +241,7 @@ class Gold(BaseJob):
 
         dependencies = []
         df = self.get_data(stream=self.stream)
+
         if df is not None:
             explain_plan = self.spark.sql("explain extended select * from {df}", df=df).collect()[0][0]
 
@@ -250,8 +265,10 @@ class Gold(BaseJob):
             soft_delete = True if self.change_data_capture in ["scd1", "scd2"] else None
 
         add_metadata = self.options.metadata
+
         if add_metadata is None:
             add_metadata = self.step_conf.options.metadata or False
+
         updates: dict = {
             "add_metadata": add_metadata,
             "soft_delete": soft_delete,
@@ -260,22 +277,29 @@ class Gold(BaseJob):
             "deduplicate": False,
             "rectify": False,
         }
+
         if deduplicate is not None:
             updates["deduplicate"] = deduplicate
             updates["deduplicate_key"] = deduplicate
             updates["deduplicate_hash"] = deduplicate
+
         if rectify is not None:
             updates["rectify"] = rectify
+
         if self.mode == "update" and self.change_data_capture == "nocdc":
             if "__key" not in df.columns:
                 updates["add_key"] = True
+
             if "__hash" not in df.columns:
                 updates["add_hash"] = True
+
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
                 updates["add_key"] = True
+
             if "__hash" not in df.columns:
                 updates["add_hash"] = True
+
         if self.slowly_changing_dimension:
             if "__operation" not in df.columns:
                 if deduplicate is None:
@@ -283,33 +307,43 @@ class Gold(BaseJob):
 
                 if self.mode == "update":
                     updates["add_operation"] = "reload"
+
                     if rectify is None:
                         updates["rectify"] = True
                 else:
                     updates["add_operation"] = "upsert"
+
         if not reload:
             if self.mode == "update" and self.change_data_capture == "scd2":
                 updates["slice"] = "update"
+
             if self.mode == "update" and self.change_data_capture == "nocdc" and "__timestamp" in df.columns:
                 updates["slice"] = "update"
+
             if self.mode == "append" and "__timestamp" in df.columns:
                 updates["slice"] = "update"
+
         if self.mode == "memory":
             updates["mode"] = "complete"
+
         if self.change_data_capture == "scd2":
             updates["correct_valid_from"] = (
                 self.options.correct_valid_from if self.options.correct_valid_from is not None else True
             )
+
         if self.options.persist_last_timestamp:
             if self.change_data_capture == "scd1":
                 if "__timestamp" not in df.columns:
                     updates["add_timestamp"] = True
+
             if self.change_data_capture == "scd2":
                 if "__valid_from" not in df.columns:
                     updates["add_timestamp"] = True
+
         if self.options.persist_last_updated_timestamp:
             if "__last_updated" not in df.columns:
                 updates["add_last_updated"] = True
+
         if self.options.last_updated:
             if "__last_updated" not in df.columns:
                 updates["add_last_updated"] = True
@@ -330,8 +364,10 @@ class Gold(BaseJob):
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
         check_df = self.spark.sql(sql)
+
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"label": self})
+
             return
 
         if reload:
@@ -360,17 +396,24 @@ class Gold(BaseJob):
             DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})
         else:
             last_version = None
+
             if self.options.persist_last_timestamp:
                 last_version = self.table.get_last_version()
+
             if self.options.persist_last_updated_timestamp:
                 last_version = self.table.get_last_version()
+
             if self.updater_options and self.updater_options.columns:
                 last_version = self.table.get_last_version()
+
             super().for_each_run(**kwargs)
+
             if self.options.persist_last_timestamp:
                 self._persist_timestamp(field="__timestamp", last_version=last_version)
+
             if self.options.persist_last_updated_timestamp:
                 self._persist_timestamp(field="__last_updated", last_version=last_version)
+
             if self.updater_options and self.updater_options.columns:
                 self._update_post_run(last_version=last_version)
 
@@ -382,8 +425,10 @@ class Gold(BaseJob):
         else:
             self.register_udfs()
             super().create()
+
             if self.options.persist_last_timestamp:
                 self._persist_timestamp(create=True)
+
             if self.updater_options and self.updater_options.columns:
                 self._update__columns(drop=False)
 
@@ -409,8 +454,10 @@ class Gold(BaseJob):
     def drop(self):
         if self.options.persist_last_timestamp:
             self.cdc_last_timestamp.drop()
+
         if self.mode == "register":
             self._drop_external_table()
+
         super().drop()
 
     @property
@@ -418,6 +465,7 @@ class Gold(BaseJob):
         assert self.mode == "update", "persist_last_timestamp only allowed in update"
         assert self.change_data_capture in ["scd1", "scd2"], "persist_last_timestamp only allowed in scd1 or scd2"
         cdc = NoCDC(self.step, self.topic, f"{self.item}__last_timestamp")
+
         return cdc
 
     def _persist_timestamp(
@@ -439,9 +487,12 @@ class Gold(BaseJob):
 
         if "__source" in df.columns:
             fields.append("__source")
+
         asof = None
+
         if last_version is not None:
             asof = f"version as of {last_version}"
+
         sql = f"select {', '.join(fields)} from {self} {asof} group by all"
         df = self.spark.sql(sql)
 
@@ -453,10 +504,12 @@ class Gold(BaseJob):
     def overwrite(self, schedule: Optional[str] = None, invoke: Optional[bool] = False):
         if self.mode == "invoke":
             DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"label": self})
+
             return
         elif self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"label": self})
             self.create_or_replace_view()
+
             return
 
         self.overwrite_schema()
@@ -496,6 +549,7 @@ class Gold(BaseJob):
                 for c, expression in columns.items():
                     assert c.startswith("__updated_"), f"{c} not allowed, columns must start with __updated_"
                     df = df.withColumn(c, expr(expression).cast("variant"))
+
             name = f"{self.step}_{self.topic}_{self.item}"
             global_temp_view = create_or_replace_global_temp_view(name=f"{name}__update_post_run", df=df, job=self)
             merge = f"""
@@ -511,6 +565,7 @@ class Gold(BaseJob):
     def _update__columns(self, drop: bool = False):
         if self.updater_options and self.updater_options.columns:
             columns = [c for c in self.updater_options.columns.keys() if c.startswith("__updated_")]
+
             if drop:
                 # drop __columns (from the updater options) that are not in the table anymore
                 for c in self.table.columns:

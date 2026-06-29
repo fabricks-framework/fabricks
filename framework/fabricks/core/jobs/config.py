@@ -63,6 +63,7 @@ class JobConfig:
         assert storage
         runtime_root = PATHS_RUNTIME.get(self.step)
         assert runtime_root
+
         return Paths(
             to_storage=storage,
             to_tmp=storage.joinpath("tmp", self.topic, self.item),

@@ -5,6 +5,7 @@ def print_atomic_bomb(nowait: bool = False):
     def print_and_wait(message: str):
         if not nowait:
             time.sleep(0.5)
+
         print(message)
 
     print("")

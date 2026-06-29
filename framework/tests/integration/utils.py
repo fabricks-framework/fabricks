@@ -16,6 +16,7 @@ from tests.integration._types import paths
 def create_random_tables():
     if CATALOG:
         spark.sql(f"use catalog {CATALOG}")
+
     spark.sql("create schema if not exists bronze")
     uri = f"{paths.raw}/delta/no_column"
     spark.sql(f"create table if not exists bronze.princess_no_column using delta location '{uri}'")
@@ -25,9 +26,12 @@ def convert_parquet_to_delta(topic: str, deletelog: bool = True):
     for i in range(1, 4):
         dfs = []
         root = paths.raw
+
         if i > 1:
             root = root.joinpath(str(i))
+
         _paths = [topic]
+
         if deletelog:
             _paths.append(f"{topic}__deletelog")
 
@@ -48,8 +52,10 @@ def convert_parquet_to_delta(topic: str, deletelog: bool = True):
 
         df = concat_dfs(dfs)
         assert df is not None
+
         if topic == "duke":
             df = df.withColumn("__operation", lit("reload"))
+
         df = df.withColumn(
             "__split",
             expr("split(replace(__file_path, __file_name), '/')"),
@@ -62,8 +68,10 @@ def convert_parquet_to_delta(topic: str, deletelog: bool = True):
         df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
         df = df.drop("__split", "__split_size", "__file_path", "__file_name")
         writer = df.write.mode("append").option("mergeSchema", "True").format("delta")
+
         if any(not re.match(r"^[a-zA-Z0-9_]+$", c) for c in df.columns):
             writer = writer.option("delta.columnMapping.mode", "name")
+
         writer.save(f"{root}/delta/{topic}")
 
 
@@ -109,6 +117,7 @@ def git_to_landing():
 
 def landing_to_raw(iter: Union[int, List[int]]):
     DEFAULT_LOGGER.info("landing to raw")
+
     if isinstance(iter, int):
         iter = [iter]
 
@@ -123,9 +132,11 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
                 for i in range(1, 4):
                     to_path = f.replace(f"landing/{job}/", "raw/")
+
                     if i > 1:  # needed for unity catalog (cannot use same delta table more than once)
                         to_path = to_path.replace("raw", f"raw/{i}")
                         print(to_path)
+
                     to_path = FileSharePath(to_path)
                     dbutils.fs.cp(path.string, to_path.string)
 

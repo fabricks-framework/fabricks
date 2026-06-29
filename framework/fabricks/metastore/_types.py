@@ -24,6 +24,7 @@ class SchemaDiff(BaseModel):
             "long": {"decimal"},
             "float": {"double"},
         }
+
         return self.new_data_type.lower() in map.get(self.data_type.lower(), set())
 
 

@@ -22,6 +22,7 @@ class BaseCDC(MergerMixin, ProcessorMixin, GeneratorMixin, ConfiguratorMixin, CD
     ):
         if spark is None:
             spark = SPARK
+
         assert spark is not None
         self.spark: SparkSession = spark
         self.database = Database(database)

@@ -10,15 +10,20 @@ class BasePath(ABC):
 
     def __init__(self, path: str | PathlibPath):
         """Initialize the path."""
+
         if isinstance(path, PathlibPath):
             path = path.as_posix()
+
         new_path = str(path)
+
         if new_path.startswith("abfss:/") and not new_path.startswith("abfss://"):
             new_path = new_path.replace("abfss:/", "abfss://")
+
         self.path: str = new_path
 
     def __json__(self):
         """Return the JSON representation of the path."""
+
         return self.string
 
     @classmethod
@@ -29,6 +34,7 @@ class BasePath(ABC):
     ):
         """Create a path from a URI with optional regex substitution."""
         uri = uri.strip()
+
         if regex:
             for key, value in regex.items():
                 uri = re.sub(rf"{key}", value, uri)
@@ -38,22 +44,27 @@ class BasePath(ABC):
     @property
     def string(self) -> str:
         """Get the string representation of the path."""
+
         return self.path
 
     @property
     def pathlibpath(self) -> PathlibPath:
         """Get the pathlib representation of the path."""
+
         return PathlibPath(self.string)
 
     def get_file_name(self) -> str:
         """Get the file name from the path."""
+
         return self.pathlibpath.name
 
     def get_sql(self) -> str:
         """Read and return SQL content from a .sql file."""
         p = self.string
+
         if not p.endswith(".sql"):
             p += ".sql"
+
         with open(p, "r") as f:
             sql = f.read()
 
@@ -61,6 +72,7 @@ class BasePath(ABC):
 
     def is_sql(self) -> bool:
         """Check if the path points to a SQL file."""
+
         return self.string.endswith(".sql")
 
     def joinpath(self, *other) -> Self:
@@ -69,16 +81,19 @@ class BasePath(ABC):
         base = self.string
         joined = posixpath.join(base, *parts)
         new = posixpath.normpath(joined)
+
         return self.__class__(path=new)
 
     def append(self, other: str) -> Self:
         """Append a string to the path."""
         new_path = self.string + other
+
         return self.__class__(path=new_path)
 
     def parent(self) -> Self:
         """Get the parent directory of the path."""
         new_path = self.pathlibpath.parent
+
         return self.__class__(path=new_path)
 
     @abstractmethod

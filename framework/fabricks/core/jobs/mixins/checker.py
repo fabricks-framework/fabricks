@@ -31,6 +31,7 @@ class CheckerMixin(JobProtocol):
             warning_df = df.where("__action == 'warning'")
             # Collect once to avoid double scan
             rows = fail_df.collect()
+
             if rows:
                 for row in rows:
                     DEFAULT_LOGGER.warning(
@@ -42,8 +43,10 @@ class CheckerMixin(JobProtocol):
                     raise PreRunCheckException(rows[-1]["__message"], dataframe=df)
                 elif position == "post_run":
                     raise PostRunCheckException(rows[-1]["__message"], dataframe=df)
+
             # Collect once to avoid double scan
             rows = warning_df.collect()
+
             if rows:
                 for row in rows:
                     DEFAULT_LOGGER.warning(
@@ -60,20 +63,27 @@ class CheckerMixin(JobProtocol):
         min_rows = self.check_options.min_rows if self.check_options else None
         max_rows = self.check_options.max_rows if self.check_options else None
         count_must_equal = self.check_options.count_must_equal if self.check_options else None
+
         if min_rows or max_rows or count_must_equal:
             df = self.spark.sql(f"select count(*) from {self}")
             rows = df.collect()[0][0]
+
             if min_rows:
                 DEFAULT_LOGGER.debug("check min rows", extra={"label": self})
+
                 if rows < min_rows:
                     raise PostRunCheckException(f"min rows check failed ({rows} < {min_rows})", dataframe=df)
+
             if max_rows:
                 DEFAULT_LOGGER.debug("check max rows", extra={"label": self})
+
                 if rows > max_rows:
                     raise PostRunCheckException(f"max rows check failed ({rows} > {max_rows})", dataframe=df)
+
             if count_must_equal:
                 DEFAULT_LOGGER.debug("check count must equal", extra={"label": self})
                 equals_rows = self.spark.read.table(count_must_equal).count()
+
                 if rows != equals_rows:
                     raise PostRunCheckException(
                         f"count must equal check failed ({count_must_equal} - {rows} != {equals_rows})",
@@ -84,6 +94,7 @@ class CheckerMixin(JobProtocol):
         if column in self.table.columns:
             DEFAULT_LOGGER.debug(f"check duplicate in {column}", extra={"label": self})
             cols = [column]
+
             if "__source" in self.table.columns:
                 cols.append("__source")
 
@@ -99,6 +110,7 @@ class CheckerMixin(JobProtocol):
             df = self.spark.sql(f"select {cols} from {self} group by all having count(*) > 1 limit 5")
             # Collect once to avoid double scan
             duplicate_rows = df.collect()
+
             if duplicate_rows:
                 duplicates = ",".join([str(row[column]) for row in duplicate_rows])
                 raise PostRunCheckException(
@@ -126,6 +138,7 @@ class CheckerMixin(JobProtocol):
             skip_df = df.where("__skip")
             # Collect once to avoid double scan
             skip_rows = skip_df.collect()
+
             if skip_rows:
                 for row in skip_rows:
                     DEFAULT_LOGGER.warning(

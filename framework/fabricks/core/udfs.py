@@ -21,6 +21,7 @@ def register_all_udfs(extension: str | None = None, overwrite=False):
 
     for udf in get_udfs(extension=extension):
         split = udf.split(".")
+
         try:
             register_udf(udf=split[0], extension=split[1], overwrite=overwrite)
         except Exception as e:
@@ -30,6 +31,7 @@ def register_all_udfs(extension: str | None = None, overwrite=False):
 def get_udfs(extension: str | None = None) -> list[str]:
     files = [os.path.basename(f) for f in PATH_UDFS.walk()]
     udfs = [f for f in files if not str(f).endswith("__init__.py") and not str(f).endswith(".requirements.txt")]
+
     if extension:
         udfs = [f for f in udfs if f.endswith(f".{extension}")]
 
@@ -39,6 +41,7 @@ def get_udfs(extension: str | None = None) -> list[str]:
 def get_extension(udf: str) -> str:
     for u in get_udfs():
         r = re.compile(rf"{udf}(\.py|\.sql)")
+
         if re.match(r, u):
             return u.split(".")[1]
 
@@ -48,6 +51,7 @@ def get_extension(udf: str) -> str:
 def is_registered(udf: str, spark: SparkSession | None = None) -> bool:
     if spark is None:
         spark = SPARK
+
     assert spark is not None
     df = spark.sql(f"show user functions in {UDF_SCHEMA}")
 
@@ -68,9 +72,12 @@ def register_udf(
     """
     Register a user-defined function (UDF).
     """
+
     if spark is None:
         spark = SPARK
+
     assert spark is not None
+
     if not is_registered(udf, spark) or overwrite:
         if overwrite:
             DEFAULT_LOGGER.debug(f"override udf {udf}", extra={"label": "fabricks"})
@@ -79,6 +86,7 @@ def register_udf(
 
         if extension is None:
             extension = get_extension(udf)
+
         assert extension
         path = PATH_UDFS.joinpath(f"{udf}.{extension}")
 
@@ -87,6 +95,7 @@ def register_udf(
         elif extension == "py":
             if not IS_UNITY_CATALOG:
                 assert path.exists(), f"udf not found ({path.string})"
+
             spec = importlib.util.spec_from_file_location(udf, path.string)
             assert spec, f"no valid udf found ({path.string})"
             assert spec.loader is not None
@@ -101,6 +110,7 @@ def register_udf(
 def udf(name: str):
     def decorator(fn: Callable):
         UDFS[name] = fn
+
         return fn
 
     return decorator

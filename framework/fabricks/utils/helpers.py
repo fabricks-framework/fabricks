@@ -27,6 +27,7 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
 
 def md5(s: Any) -> str:
     hash_obj = hashlib_md5(str(s).encode())
+
     return hash_obj.hexdigest()
 
 
@@ -36,6 +37,7 @@ def add_hash(column: str, df: DataFrame, fields: Union[str, List[str]]):
 
 def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
     dfs = [df for df in dfs if df is not None]
+
     if len(dfs) == 0:
         return None
 
@@ -59,6 +61,7 @@ def run_in_parallel(
 ) -> List[Any]:
     if logger is None:
         logger = logging.getLogger()
+
     current_loglevel = logger.getEffectiveLevel()
     logger.setLevel(loglevel)
     items = list(iterable.collect() if isinstance(iterable, DataFrameLike) else iterable)
@@ -82,6 +85,7 @@ def run_in_parallel(
 
             with ThreadPoolExecutor(max_workers=workers) as exe:
                 return _collect(exe.map(func, items))
+
     finally:
         logger.setLevel(current_loglevel)
 
@@ -102,6 +106,7 @@ def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
 
     if timeout is None:
         timeout = 3600
+
     dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs})  # type: ignore
 
 
@@ -110,11 +115,13 @@ def load_module_from_path(name: str, path: GitPath):
 
     if path.parent not in sys.path:
         sys.path.insert(0, str(path.parent))
+
     spec = spec_from_file_location(name, path.string)
     assert spec, f"no valid module found in {path.string}"
     assert spec.loader is not None
     textwrap_module = module_from_spec(spec)
     spec.loader.exec_module(textwrap_module)
+
     return textwrap_module
 
 
@@ -150,10 +157,12 @@ def find_upward(
 
     while True:
         candidate = current / filename
+
         if candidate.exists():
             return GitPath(candidate)
 
         parent = current.parent
+
         if parent == current:  # Reached filesystem root
             return None
 

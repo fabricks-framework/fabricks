@@ -30,6 +30,7 @@ def read_yaml(
     Raises:
         ValueError: If strict=True and variables are not found in lookup
     """
+
     return _read_yaml(
         path=path,
         root=root,

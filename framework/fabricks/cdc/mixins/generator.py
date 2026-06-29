@@ -40,8 +40,10 @@ class GeneratorMixin(CdcProtocol):
             update={"mode": "complete", "slice": None, "rectify": False, "deduplicate": False}
         )
         df = self.get_data(src, context=context)
+
         if partitioning is True:
             assert partition_by, "partitioning column(s) not found"
+
         df = self.reorder_dataframe(df)
         identity = False if identity is None else identity
         liquid_clustering = False if liquid_clustering is None else liquid_clustering
@@ -85,6 +87,7 @@ class GeneratorMixin(CdcProtocol):
         """
         sql = fix_sql(sql)
         DEFAULT_LOGGER.debug("create or replace view", extra={"label": self, "sql": sql})
+
         try:
             self.spark.sql(sql)
         except Py4JJavaError as e:
@@ -120,6 +123,7 @@ class GeneratorMixin(CdcProtocol):
             df = self.get_data(src, context=context)
             df = self.reorder_dataframe(df)
             diffs = self.table.get_schema_differences(df)
+
             return self.spark.createDataFrame([cast(Any, d.model_dump()) for d in diffs], schema=schema)
 
     def get_schema_differences(self, src: AllowedSources, context: CdcContext) -> Optional[Sequence[SchemaDiff]]:
@@ -129,10 +133,12 @@ class GeneratorMixin(CdcProtocol):
             context = context.model_copy(update={"mode": "complete", "slice": None})
             df = self.get_data(src, context=context)
             df = self.reorder_dataframe(df)
+
             return self.table.get_schema_differences(df)
 
     def schema_drifted(self, src: AllowedSources, context: CdcContext) -> Optional[bool]:
         d = self.get_schema_differences(src, context=context)
+
         if d is None:
             return None
 

@@ -97,6 +97,7 @@ class ConfigOptions(BaseSettings):
 
         Non-string inputs or strings not matching the above values are returned unchanged.
         """
+
         if isinstance(v, bool):
             return v
 
@@ -114,6 +115,7 @@ class ConfigOptions(BaseSettings):
     @classmethod
     def validate_loglevel(cls, v):
         """Validate log level."""
+
         if isinstance(v, str):
             levels = {
                 "DEBUG": logging.DEBUG,
@@ -123,6 +125,7 @@ class ConfigOptions(BaseSettings):
                 "CRITICAL": logging.CRITICAL,
             }
             v_upper = v.upper()
+
             if v_upper in levels:
                 return levels[v_upper]
 
@@ -134,6 +137,7 @@ class ConfigOptions(BaseSettings):
     @classmethod
     def validate_notebooks(cls, v):
         """Set default notebooks path if not provided."""
+
         if not v or v.lower() == "none":
             return "runtime/notebooks"
 
@@ -168,6 +172,7 @@ class ConfigOptions(BaseSettings):
         """
         # Collect all storage paths with variable substitution
         root = GitPath(self.base)
+
         return ResolvedPathOptions(
             base=resolve_git_path(path=self.base),
             config=resolve_git_path(path=self.config, base=root),
@@ -180,6 +185,7 @@ class ConfigOptions(BaseSettings):
     @property
     def resolved_paths(self) -> ResolvedPathOptions:
         """Get all paths resolved as Path objects."""
+
         return self._resolve_paths()
 
 

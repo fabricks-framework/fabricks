@@ -39,6 +39,7 @@ class ConfiguratorMixin(JobProtocol):
             spark = build_spark_session(app_name=str(self))
             # Apply step-level spark options if configured
             step_spark = self.step_spark_options
+
             if step_spark:
                 sql_options = step_spark.sql or {}
 
@@ -51,8 +52,10 @@ class ConfiguratorMixin(JobProtocol):
                 for key, value in conf_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.step})
                     spark.conf.set(f"{key}", f"{value}")
+
             # Apply job-level spark options if configured
             job_spark = self.spark_options
+
             if job_spark:
                 sql_options = job_spark.sql or {}
 
@@ -65,6 +68,7 @@ class ConfiguratorMixin(JobProtocol):
                 for key, value in conf_options.items():
                     DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self})
                     spark.conf.set(f"{key}", f"{value}")
+
             self._spark = spark
 
         return self._spark
@@ -79,17 +83,23 @@ class ConfiguratorMixin(JobProtocol):
 
     def _get_timeout(self, what: str) -> int:
         t = getattr(self.step_options.timeouts, what, None)
+
         if t is None:
             t = getattr(self.runtime_options.timeouts, what)
+
         assert t is not None
+
         return t
 
     @cached_property
     def timeout(self) -> int:
         t = self.options.timeout
+
         if t is None:
             t = self._get_timeout("job")
+
         assert t is not None
+
         return int(t)
 
     def pip(self):
@@ -106,22 +116,26 @@ class ConfiguratorMixin(JobProtocol):
     @property
     def runtime_conf(self) -> RuntimeConf:
         """Direct access to typed runtime conf."""
+
         return self.config.runtime_conf
 
     @property
     def step_table_options(self) -> Optional[StepTableOptions]:
         """Direct access to typed step-level table options from context configuration."""
+
         return self.config.step_table_options
 
     @property
     def runtime_options(self) -> RuntimeOptions:
         """Direct access to typed runtime options from context configuration."""
+
         return self.config.runtime_options
 
     @property
     def step_spark_options(self) -> Optional[SparkOptions]:
         """Direct access to typed step-level spark options from context configuration.
         Returns None if not configured at step level."""
+
         return self.step_conf.spark_options
 
     @property
@@ -173,6 +187,7 @@ class ConfiguratorMixin(JobProtocol):
     def mode(self) -> AllowedModes:
         _mode = self.options.mode
         assert _mode is not None
+
         return _mode
 
     def __str__(self) -> str:

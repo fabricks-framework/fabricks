@@ -36,6 +36,7 @@ class LogFormatter(logging.Formatter):
     def formatTime(self, record, datefmt: str | None = None) -> str:
         ct = datetime.fromtimestamp(record.created, tz=tz.utc).astimezone(self.timezone)
         s = ct.strftime("%d/%m/%y %H:%M:%S")
+
         return f"{self.COLORS[logging.DEBUG]}{s}{self.RESET}"
 
     def format(self, record):
@@ -52,23 +53,30 @@ class LogFormatter(logging.Formatter):
             prefix = f"{self.BRIGHT}{record.__dict__.get('step')}{self.RESET} - "
 
         extra = ""
+
         if hasattr(record, "exc_info") and record.exc_info:
             exc_info = record.__dict__.get("exc_info", None)
             extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
+
         if hasattr(record, "json"):
             json_data = record.__dict__.get("json")
             extra += f"\n---\n{json.dumps(json_data, indent=2, default=str)}\n---"
+
         if self.debugmode:
             if hasattr(record, "sql"):
                 extra += f"\n---\n%sql\n{record.__dict__.get('sql')}\n---"
+
             if hasattr(record, "content"):
                 extra += f"\n---\n{record.__dict__.get('content')}\n---"
+
             if hasattr(record, "context"):
                 extra += f"\n---\n{json.dumps(record.__dict__.get('context'), indent=2, default=str)}\n---"
+
         record.levelname = levelname_formatted
         record.prefix = prefix
         record.timestamp = self.formatTime(record)
         record.extra = extra
+
         return super().format(record)
 
 
@@ -83,6 +91,7 @@ class AzureTableLogHandler(logging.Handler):
     def formatTime(self, record) -> str:
         ct = datetime.fromtimestamp(record.created, tz=tz.utc).astimezone(self.timezone)
         s = ct.strftime("%d/%m/%y %H:%M:%S")
+
         return s
 
     def emit(self, record):
@@ -108,24 +117,32 @@ class AzureTableLogHandler(logging.Handler):
                 "Level": level,
                 "Message": record.message,
             }
+
             if hasattr(record, "job"):
                 j = str(record.__dict__.get("job", ""))
                 r["Job"] = j
                 r["JobId"] = hashlib.md5(j.encode()).hexdigest()
+
             if hasattr(record, "table"):
                 t = str(record.__dict__.get("table", ""))
                 r["Job"] = t
                 r["JobId"] = hashlib.md5(t.encode()).hexdigest()
+
             if hasattr(record, "step"):
                 r["Step"] = record.__dict__.get("step", "")
+
             if hasattr(record, "schedule_id"):
                 r["ScheduleId"] = record.__dict__.get("schedule_id", "")
+
             if hasattr(record, "schedule"):
                 r["Schedule"] = record.__dict__.get("schedule", "")
+
             if hasattr(record, "notebook_id"):
                 r["NotebookId"] = record.__dict__.get("notebook_id", "")
+
             if hasattr(record, "exc_info"):
                 e = record.__dict__.get("exc_info", None)
+
                 if e is not None:
                     d = {
                         "type": str(e[0].__name__)[:1000],
@@ -133,13 +150,17 @@ class AzureTableLogHandler(logging.Handler):
                         "traceback": str(logging.Formatter.formatException(self, e))[:1000],  # type: ignore
                     }
                     r["Exception"] = json.dumps(d)
+
             if hasattr(record, "json"):
                 r["Json"] = json.dumps(record.__dict__.get("json", ""))
+
             if self.debugmode:
                 if hasattr(record, "content"):
                     r["Content"] = json.dumps(record.__dict__.get("content", ""))[:1000]
+
                 if hasattr(record, "sql"):
                     r["Sql"] = record.__dict__.get("sql", "")[:1000]
+
             r["PartitionKey"] = record.__dict__.get("partition_key", "default")
 
             if hasattr(record, "row_key"):
@@ -183,11 +204,15 @@ def get_logger(
     timezone: str | ZoneInfo | None = None,
 ) -> Tuple[logging.Logger, AzureTableLogHandler | None]:
     logger = logging.getLogger(name)
+
     if logger.hasHandlers():
         logger.handlers.clear()
+
     root = logging.getLogger()
+
     if root.hasHandlers():
         root.handlers.clear()
+
     logger.setLevel(level)
     logger.propagate = False
     # Console handler
@@ -204,6 +229,7 @@ def get_logger(
         azure_table_handler = None
 
     logger.addHandler(console_handler)
+
     if azure_table_handler is not None:
         logger.addHandler(azure_table_handler)
 

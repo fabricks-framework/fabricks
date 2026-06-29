@@ -45,8 +45,10 @@ def get_job_schema(step: str | None = None) -> str:
         for ent, prop in removals:
             if key.startswith(ent) and prop in defi.get("properties", {}):
                 req: List[str] = defi.get("required", [])
+
                 if prop in req:
                     req.remove(prop)  # not defined in yaml
+
                 jobprops: dict = defi.get("properties", {})
                 jobprops.pop(prop, None)
 

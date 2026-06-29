@@ -48,9 +48,12 @@ class Path:
         Returns:
             GitPath if assume_git is True, FileSharePath otherwise
         """
+
         if assume_git is None:
             assume_git = False
+
         path_class = GitPath if assume_git else None
+
         if path_class is None:
             path_class = FileSharePath
 

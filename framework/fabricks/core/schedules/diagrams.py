@@ -5,6 +5,7 @@ def get_dependencies(name: str) -> DataFrame:
     from fabricks.core.dags import DagGenerator
 
     g = DagGenerator(schedule=name)
+
     return g.get_dependencies()
 
 
@@ -16,4 +17,5 @@ def get_mermaid_diagram(name: str) -> str:
     df = df.withColumnRenamed("Parent", "parent")
     df = df.withColumnRenamed("JobId", "job_id")
     df = df.withColumnRenamed("Job", "job")
+
     return get_diagram(df)

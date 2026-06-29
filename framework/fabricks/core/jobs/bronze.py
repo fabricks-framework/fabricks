@@ -55,16 +55,19 @@ class Bronze(BaseJob):
     @property
     def options(self) -> JobBronzeOptions:
         """Direct access to typed bronze job options."""
+
         return self.conf.options  # type: ignore
 
     @property
     def step_conf(self) -> StepBronzeConf:
         """Direct access to typed bronze step conf."""
+
         return self.base_step_conf  # type: ignore
 
     @property
     def step_options(self) -> StepBronzeOptions:
         """Direct access to typed bronze step options."""
+
         return self.base_step_conf.options  # type: ignore
 
     @classmethod
@@ -80,15 +83,19 @@ class Bronze(BaseJob):
         uri = self.options.uri
         assert uri is not None, "no uri provided in options"
         path = FileSharePath.from_uri(uri, regex=VARIABLES)
+
         return path
 
     def get_dependencies(self, *s) -> Sequence[JobDependency]:
         dependencies = []
         parents = self.options.parents or []
+
         if parents:
             for p in parents:
                 dependencies.append(JobDependency.from_parts(self.job_id, p, "parent"))
+
         wait_for = self.options.wait_for or []
+
         if wait_for:
             for w in wait_for:
                 dependencies.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
@@ -104,16 +111,20 @@ class Bronze(BaseJob):
             file_format = "delta"
 
         DEFAULT_LOGGER.debug(f"register external table ({self.data_path})", extra={"label": self})
+
         try:
             df = self.spark.sql(f"select * from {file_format}.`{self.data_path}`")
             assert len(df.columns) > 1, "external table must have at least one column"
+
             if "__timestamp" in df.columns:
                 assert isinstance(df.schema["__timestamp"].dataType, TimestampType), (
                     "__timestamp must be of type timestamp"
                 )
+
         except Exception as e:
             DEFAULT_LOGGER.exception("read external table failed", extra={"label": self})
             raise e
+
         self._register_external_table(file_format=file_format, uri=self.data_path.string)
 
     def compute_statistics_external_table(self):
@@ -124,6 +135,7 @@ class Bronze(BaseJob):
         from delta import DeltaTable
 
         DEFAULT_LOGGER.debug("vacuum (external table)", extra={"label": self})
+
         try:
             dt = DeltaTable.forPath(self.spark, self.data_path.string)
             self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
@@ -137,8 +149,10 @@ class Bronze(BaseJob):
         compute_statistics: Optional[bool] = True,
     ):
         DEFAULT_LOGGER.debug("maintain (external table)", extra={"label": self})
+
         if vacuum:
             self.vacuum_external_table()
+
         if compute_statistics:
             self.compute_statistics_external_table()
 
@@ -147,6 +161,7 @@ class Bronze(BaseJob):
         assert self.mode not in ["register"], f"{self.mode} not allowed"
         parser = self.options.parser
         assert parser is not None, "parser not found"
+
         return parser
 
     def parse(self, stream: bool = False) -> DataFrame:
@@ -210,6 +225,7 @@ class Bronze(BaseJob):
 
     def encrypt(self, df: DataFrame) -> DataFrame:
         encrypted_columns = self.options.encrypted_columns or []
+
         if encrypted_columns:
             if self.runtime_options.encryption_key is not None:
                 from databricks.sdk.runtime import dbutils
@@ -218,6 +234,7 @@ class Bronze(BaseJob):
                     scope=self.runtime_options.secret_scope,
                     key=self.runtime_options.encryption_key,
                 )
+
                 if self.runtime_options.unity_catalog:
                     DEFAULT_LOGGER.warning(
                         "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead",
@@ -244,8 +261,10 @@ class Bronze(BaseJob):
         df = self.parse(stream)
         df = self.filter_where(df)
         df = self.encrypt(df)
+
         if transform:
             df = self.base_transform(df)
+
         if schema_only:
             df = df.limit(0)
 
@@ -253,6 +272,7 @@ class Bronze(BaseJob):
 
     def add_calculated_columns(self, df: DataFrame) -> DataFrame:
         calculated_columns = self.options.calculated_columns or {}
+
         if calculated_columns:
             for key, value in calculated_columns.items():
                 DEFAULT_LOGGER.debug(f"add calculated column ({key} -> {value})", extra={"label": self})
@@ -263,10 +283,13 @@ class Bronze(BaseJob):
     def add_key(self, df: DataFrame) -> DataFrame:
         if "__key" not in df.columns:
             fields = self.options.keys or []
+
             if fields:
                 DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"label": self})
+
                 if "__source" in df.columns:
                     fields = fields + ["__source"]
+
                 fields = backticks(fields)
                 df = add_hash("__key", df, fields=fields)
 
@@ -276,10 +299,13 @@ class Bronze(BaseJob):
         if "__hash" not in df.columns:
             fields = backticks([c for c in df.columns if not c.startswith("__")])
             DEFAULT_LOGGER.debug("add hash", extra={"label": self})
+
             if "__operation" in df.columns:
                 fields += ["__operation == 'delete'"]
+
             if "__source" in df.columns:
                 fields += ["__source"]
+
             df = add_hash("__hash", df, fields=fields)
 
         return df
@@ -287,6 +313,7 @@ class Bronze(BaseJob):
     def add_source(self, df: DataFrame) -> DataFrame:
         if "__source" not in df.columns:
             source = self.options.source
+
             if source:
                 DEFAULT_LOGGER.debug(f"add source ({source})", extra={"label": self})
                 df = df.withColumn("__source", lit(source))
@@ -351,6 +378,7 @@ class Bronze(BaseJob):
         df = df.transform(self.add_source)
         df = df.transform(self.add_key)
         df = df.transform(self.add_metadata)
+
         return df
 
     def create_or_replace_view(self):
@@ -370,11 +398,14 @@ class Bronze(BaseJob):
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
         check_df = self.spark.sql(sql)
+
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"label": self})
+
             return
 
         assert isinstance(self.cdc, NoCDC)
+
         if self.mode == "append":
             self.cdc.append(sql, context)
 
@@ -417,6 +448,7 @@ class Bronze(BaseJob):
     def drop(self):
         if self.mode == "register":
             self._drop_external_table()
+
         super().drop()
 
     def maintain(

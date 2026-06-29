@@ -12,4 +12,5 @@ def monarch(df: DataFrame, **kwargs) -> DataFrame:
     )
     cols = [c for c in df.columns if c.startswith("BEL_")]
     df = df.drop(*cols)
+
     return df

@@ -14,14 +14,19 @@ def write_delta(
     partition_by: Union[Optional[List[str]], str] = None,
 ):
     assert mode in list(get_args(AllowedIOModes))
+
     if isinstance(partition_by, str):
         partition_by = [partition_by]
+
     writer = df.write.format("delta").mode(mode).option("mergeSchema", "True").option("overwriteSchema", "True")
+
     if partition_by:
         writer = writer.partitionBy(*partition_by)
+
     if options:
         for key, value in options.items():
             writer = writer.option(key, value)
+
     writer.save(path.string)
 
 

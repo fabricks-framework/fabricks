@@ -134,6 +134,7 @@ def test_gold_scd1_last_timestamp():
 @pytest.mark.order(130)
 def test_gold_fact_no_drop():
     j = get_job(step="gold", topic="fact", item="no_drop")
+
     try:
         j.drop()
         assert False, "drop is allowed while no_drop is set"

@@ -9,6 +9,7 @@ from fabricks.models import JobConf, get_job_id
 def get_job_conf_internal(step: str, row: Union[Row, dict]) -> JobConf:
     if isinstance(row, Row):
         row = row.asDict(recursive=True)
+
     # Add step to row data (job_id will be computed automatically)
     row["step"] = step
 
@@ -62,6 +63,7 @@ def get_job_conf(
                 ),
                 None,
             )
+
             if not conf:
                 raise ValueError(f"job not found ({step}, {job_id})")
 
@@ -71,6 +73,7 @@ def get_job_conf(
                 (i for i in iter if i.get("topic") == topic and i.get("item") == item),
                 None,
             )
+
             if not conf:
                 raise ValueError(f"job not found ({step}, {topic}, {item})")
 

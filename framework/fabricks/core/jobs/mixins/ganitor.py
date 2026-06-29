@@ -27,8 +27,10 @@ class GanitorMixin(JobProtocol):
         else:
             if vacuum:
                 self.vacuum()
+
             if optimize:
                 self.cdc.optimize_table()
+
             if compute_statistics:
                 self.table.compute_statistics()
 
