@@ -5,10 +5,10 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, expr, from_json, lit
 from pyspark.sql.types import MapType, StringType
 
-from fabricks.core.parsers.utils import clean
+from fabricks.legacy.streaming.read import read
 from fabricks.models import ParserOptions
+from fabricks.utils.dataframe import clean
 from fabricks.utils.path import FileSharePath
-from fabricks.utils.read.read import read
 
 
 class BaseParser(ABC):

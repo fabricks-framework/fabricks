@@ -1,6 +1,6 @@
 from typing import Callable, Optional
 
-from fabricks.core.parsers.base import PARSERS, BaseParser
+from fabricks.legacy.streaming.parsers.base import PARSERS, BaseParser
 from fabricks.models import ParserOptions
 
 

@@ -10,14 +10,12 @@ from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base import BaseJob
-from fabricks.core.parsers.get_parser import get_parser
-from fabricks.core.parsers.utils import clean
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobBronzeOptions, JobDependency, ParserOptions, StepBronzeConf, StepBronzeOptions
 from fabricks.models.cdc import CdcContext
+from fabricks.utils.dataframe import clean
 from fabricks.utils.helpers import add_hash, backticks
 from fabricks.utils.path import FileSharePath
-from fabricks.utils.read import read
 
 
 class Bronze(BaseJob):
@@ -165,6 +163,8 @@ class Bronze(BaseJob):
 
         if self.mode == "register":
             if stream:
+                from fabricks.legacy.streaming.read import read
+
                 df = read(
                     stream=stream,
                     path=self.data_path,
@@ -185,6 +185,8 @@ class Bronze(BaseJob):
             if should_clean:
                 df = clean(df)
         else:
+            from fabricks.legacy.streaming.parsers import get_parser
+
             if options is not None and options.clean is not None:
                 # if parser options provided and clean set, use parser clean
                 pass

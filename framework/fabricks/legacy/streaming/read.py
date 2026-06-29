@@ -61,61 +61,6 @@ def read_stream(
     )
 
 
-def _read_stream(
-    src: Union[FileSharePath, str],
-    file_format: str,
-    schema_path: Optional[Union[FileSharePath, str]] = None,
-    hints: Optional[Union[str, List[str]]] = None,
-    schema: Optional[StructType] = None,
-    options: Optional[dict[str, str | bool | int]] = None,
-    spark: Optional[SparkSession] = None,
-) -> DataFrame:
-    spark = _ensure_spark(spark)
-
-    if file_format == "table":
-        assert isinstance(src, str)
-        return spark.readStream.table(src)
-    else:
-        file_format = "binaryFile" if file_format == "pdf" else file_format
-        if isinstance(src, str):
-            src = FileSharePath(src)
-
-        if file_format == "delta":
-            reader = spark.readStream.format("delta")
-        else:
-            reader = spark.readStream.format("cloudFiles")
-            reader.option("cloudFiles.format", file_format)
-
-            if schema:
-                reader.schema(schema)
-            else:
-                assert schema_path
-                if isinstance(schema_path, str):
-                    schema_path = FileSharePath(schema_path)
-                reader.option("cloudFiles.inferColumnTypes", "true")
-                reader.option("cloudFiles.useIncrementalListing", "true")
-                reader.option("cloudFiles.schemaEvolutionMode", "addNewColumns")
-                reader.option("cloudFiles.schemaLocation", schema_path.string)
-                if hints:
-                    if isinstance(hints, str):
-                        hints = [hints]
-                    reader.option("cloudFiles.schemaHints", f"{' ,'.join(hints)}")
-
-        # default options
-        reader.option("recursiveFileLookup", "true")
-        reader.option("skipChangeCommits", "true")
-        reader.option("ignoreDeletes", "true")
-        if file_format == "csv":
-            reader.option("header", "true")
-        # custom / override options
-        if options:
-            for key, value in options.items():
-                reader.option(key, value)
-        df = reader.load(src.string)
-        df = df.withColumnRenamed("_rescued_data", "__rescued_data")
-        return df
-
-
 @overload
 def read_batch(
     src: Union[FileSharePath, str],
@@ -181,6 +126,61 @@ def _read_batch(
                 reader = reader.option(key, value)
 
         return reader.load(src.string)
+
+
+def _read_stream(
+    src: Union[FileSharePath, str],
+    file_format: str,
+    schema_path: Optional[Union[FileSharePath, str]] = None,
+    hints: Optional[Union[str, List[str]]] = None,
+    schema: Optional[StructType] = None,
+    options: Optional[dict[str, str | bool | int]] = None,
+    spark: Optional[SparkSession] = None,
+) -> DataFrame:
+    spark = _ensure_spark(spark)
+
+    if file_format == "table":
+        assert isinstance(src, str)
+        return spark.readStream.table(src)
+    else:
+        file_format = "binaryFile" if file_format == "pdf" else file_format
+        if isinstance(src, str):
+            src = FileSharePath(src)
+
+        if file_format == "delta":
+            reader = spark.readStream.format("delta")
+        else:
+            reader = spark.readStream.format("cloudFiles")
+            reader.option("cloudFiles.format", file_format)
+
+            if schema:
+                reader.schema(schema)
+            else:
+                assert schema_path
+                if isinstance(schema_path, str):
+                    schema_path = FileSharePath(schema_path)
+                reader.option("cloudFiles.inferColumnTypes", "true")
+                reader.option("cloudFiles.useIncrementalListing", "true")
+                reader.option("cloudFiles.schemaEvolutionMode", "addNewColumns")
+                reader.option("cloudFiles.schemaLocation", schema_path.string)
+                if hints:
+                    if isinstance(hints, str):
+                        hints = [hints]
+                    reader.option("cloudFiles.schemaHints", f"{' ,'.join(hints)}")
+
+        # default options
+        reader.option("recursiveFileLookup", "true")
+        reader.option("skipChangeCommits", "true")
+        reader.option("ignoreDeletes", "true")
+        if file_format == "csv":
+            reader.option("header", "true")
+        # custom / override options
+        if options:
+            for key, value in options.items():
+                reader.option(key, value)
+        df = reader.load(src.string)
+        df = df.withColumnRenamed("_rescued_data", "__rescued_data")
+        return df
 
 
 @overload
@@ -271,7 +271,7 @@ def read(
                 struct(
                     cast(null as string) as file_path,
                     cast(null as string) as file_name,
-                    cast(null as string) as file_size,            
+                    cast(null as string) as file_size,
                     cast(null as string) as file_modification_time
                     ) as __metadata
                 """,
@@ -283,7 +283,7 @@ def read(
                 struct(
                     _metadata.file_path as file_path,
                     _metadata.file_name as file_name,
-                    _metadata.file_size as file_size,            
+                    _metadata.file_size as file_size,
                     _metadata.file_modification_time as file_modification_time
                     ) as __metadata
                 """,

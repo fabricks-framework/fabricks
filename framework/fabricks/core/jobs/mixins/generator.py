@@ -2,7 +2,6 @@ from abc import abstractmethod
 from typing import List, Literal, Optional, Sequence, Union, cast
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import lit
 
 from fabricks.cdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
@@ -382,24 +381,14 @@ class GeneratorMixin(JobProtocol):
             df = self.get_data(stream=self.stream, schema_only=True)
             if df:
                 if self.stream:
-                    # add dummy stream to be sure that the writeStream will start
-                    spark = df.sparkSession
-                    dummy_df = spark.readStream.table("fabricks.dummy")
-                    # __metadata is always present
-                    dummy_df = dummy_df.withColumn("__metadata", lit(None))
-                    dummy_df = dummy_df.select("__metadata")
-                    df = df.unionByName(dummy_df, allowMissingColumns=True)
-                    path = self.paths.to_checkpoints.append("__init")
-                    if path.exists():
-                        path.rm()
-                    query = (
-                        df.writeStream.foreachBatch(_create_table)
-                        .option("checkpointLocation", path.string)
-                        .trigger(once=True)
-                        .start()
+                    from fabricks.legacy.streaming.table import run_once_via_stream
+
+                    run_once_via_stream(
+                        df,
+                        self.paths.to_checkpoints.append("__init"),
+                        _create_table,
+                        add_dummy=True,
                     )
-                    query.awaitTermination()
-                    path.rm()
                 else:
                     _create_table(df)
 
@@ -436,15 +425,9 @@ class GeneratorMixin(JobProtocol):
                 df = self.base_transform(df)
 
                 if self.stream:
-                    path = self.paths.to_checkpoints.append("__schema")
-                    query = (
-                        df.writeStream.foreachBatch(_update_schema)
-                        .option("checkpointLocation", path.string)
-                        .trigger(once=True)
-                        .start()
-                    )
-                    query.awaitTermination()
-                    path.rm()
+                    from fabricks.legacy.streaming.table import run_once_via_stream
+
+                    run_once_via_stream(df, self.paths.to_checkpoints.append("__schema"), _update_schema)
                 else:
                     _update_schema(df)
         elif self.virtual:

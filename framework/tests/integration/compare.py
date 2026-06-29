@@ -6,7 +6,7 @@ from pyspark.sql.functions import expr
 
 from fabricks.context import SPARK
 from fabricks.core.jobs.base import BaseJob
-from fabricks.core.parsers.utils import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
+from fabricks.utils.dataframe import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
 
 
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):

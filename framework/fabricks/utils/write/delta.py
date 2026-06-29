@@ -3,7 +3,7 @@ from typing import List, Optional, Union, get_args
 from pyspark.sql import DataFrame
 
 from fabricks.utils.path import FileSharePath
-from fabricks.utils.read._types import AllowedIOModes
+from fabricks.utils.write._types import AllowedIOModes
 
 
 def write_delta(

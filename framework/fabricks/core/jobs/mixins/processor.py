@@ -18,7 +18,6 @@ from fabricks.core.jobs.mixins._exception import (
 )
 from fabricks.core.jobs.mixins._protocol import JobProtocol
 from fabricks.models import JobBronzeOptions, JobSilverOptions
-from fabricks.utils.write import write_stream
 
 
 class ProcessorMixin(JobProtocol):
@@ -66,6 +65,8 @@ class ProcessorMixin(JobProtocol):
             partial(self._for_each_batch, **kwargs)
 
             if self.stream:
+                from fabricks.legacy.streaming.write import write_stream
+
                 DEFAULT_LOGGER.debug("use streaming", extra={"label": self})
                 write_stream(
                     df,

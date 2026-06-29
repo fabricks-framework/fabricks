@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, resolve_git_path
-from fabricks.utils.read.read_yaml import _read_yaml_cached
+from fabricks.utils.read_yaml import _read_yaml_cached
 from fabricks.utils.variables import build_variable_lookup, substitute_value
 
 

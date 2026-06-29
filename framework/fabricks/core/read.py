@@ -4,7 +4,7 @@ from typing import Any, Iterable, Optional
 
 from fabricks.context import VARIABLES
 from fabricks.utils.path import BasePath
-from fabricks.utils.read.read_yaml import read_yaml as _read_yaml
+from fabricks.utils.read_yaml import read_yaml as _read_yaml
 
 
 def read_yaml(
@@ -16,7 +16,7 @@ def read_yaml(
     """
     Read YAML files with automatic variable substitution from runtime context.
 
-    This is a convenience wrapper around fabricks.utils.read.read_yaml that
+    This is a convenience wrapper around fabricks.utils.read_yaml that
     automatically passes VARIABLES from the global context.
 
     Args:

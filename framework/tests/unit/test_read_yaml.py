@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from fabricks.utils.path import GitPath
-from fabricks.utils.read.read_yaml import read_yaml
+from fabricks.utils.read_yaml import read_yaml
 
 
 @pytest.fixture
