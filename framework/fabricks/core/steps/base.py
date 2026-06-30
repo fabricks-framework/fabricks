@@ -260,6 +260,9 @@ class BaseStep:
             df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
 
             df.cache()
+            
+            if df.isEmpty():
+                raise ValueError("no jobs found")
 
             duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")
             rows = duplicated_df.collect()
@@ -268,8 +271,12 @@ class BaseStep:
                 duplicates = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in rows)
                 raise AssertionError(f"duplicated job(s) ({duplicates})")
 
-            if df.isEmpty():
-                raise ValueError("no jobs found")
+            not_expected_step = df.where(f"step != '{self.name}'")
+            rows = not_expected_step.collect()
+
+            if rows:
+                unexpected = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in rows)
+                raise AssertionError(f"unexpected step(s) ({unexpected})")
 
             return df
         except AssertionError as e:
