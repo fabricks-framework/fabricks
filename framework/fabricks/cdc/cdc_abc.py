@@ -13,8 +13,10 @@ from fabricks.models.cdc import CdcContext
 class CDCAbstract(ABC):
     @abstractmethod
     def get_query(self, src: AllowedSources, context: CdcContext) -> str: ...
+
     @abstractmethod
     def get_data(self, src: AllowedSources, context: CdcContext) -> DataFrame: ...
+
     @abstractmethod
     def create_table(
         self,
@@ -32,15 +34,21 @@ class CDCAbstract(ABC):
         generated_columns: Optional[dict[str, str]] = None,
         comments: Optional[dict[str, Any]] = None,
     ): ...
+
     @abstractmethod
     def drop(self): ...
+
     @abstractmethod
     def create_or_replace_view(self, src: Union[Table, str], context: CdcContext): ...
+
     @abstractmethod
     def optimize_table(self): ...
+
     @abstractmethod
     def update_schema(self, src: AllowedSources, context: CdcContext, widen_types: bool = False): ...
+
     @abstractmethod
     def get_differences_with_deltatable(self, src: AllowedSources, context: CdcContext): ...
+
     @abstractmethod
     def overwrite_schema(self, src: AllowedSources, context: CdcContext): ...

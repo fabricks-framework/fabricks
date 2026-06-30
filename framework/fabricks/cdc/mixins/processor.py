@@ -20,7 +20,6 @@ _CTES_PIPELINE = ("__base", "__sliced", "__deduplicated_key", "__rectified", "__
 
 def _previous_cte(stage: str, flags: dict[str, bool]) -> str:
     idx = _CTES_PIPELINE.index(stage)
-
     return next((s for s in reversed(_CTES_PIPELINE[:idx]) if flags.get(s, s == "__base")), "__base")
 
 

@@ -143,7 +143,6 @@ class BaseStep:
     ):
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
-
             return
 
         if not self.database.exists():
@@ -248,7 +247,6 @@ class BaseStep:
 
     def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:
         """Yield job configurations from YAML files with variable substitution."""
-
         return read_yaml(self.runtime, root="job", preferred_file_name=topic)
 
     def get_jobs(self, topic: Optional[str] = None) -> DataFrame:
@@ -260,7 +258,9 @@ class BaseStep:
             jobs = self.get_jobs_iter(topic=topic)
             df = SPARK.createDataFrame(jobs, schema=schema)
             df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
+
             df.cache()
+
             duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")
             rows = duplicated_df.collect()
 
@@ -360,7 +360,9 @@ class BaseStep:
             include_manual=include_manual,
             loglevel=loglevel,
         )
+
         df.cache()
+
         DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
         update_where = None
 
@@ -474,7 +476,6 @@ def _get_dependencies(row: Row) -> JobResult:
         return JobResult(job=str(job), dependencies=job.get_dependencies())
     except Exception as e:
         DEFAULT_LOGGER.warning("fail to get dependencies", extra={"label": job})
-
         return JobResult(job=str(job), error=e)
 
 
@@ -483,11 +484,9 @@ def _create_db_object(row: Row) -> JobResult:
 
     try:
         job.create()
-
         return JobResult(job=str(job), job_id=row["job_id"])
     except Exception as e:  # noqa E722
         DEFAULT_LOGGER.warning("fail to create db object", extra={"label": job})
-
         return JobResult(job=str(job), job_id=row["job_id"], error=e)
 
 
@@ -496,9 +495,7 @@ def _register(row: Row) -> JobResult:
 
     try:
         job.register()
-
         return JobResult(job=str(job))
     except Exception as e:
         DEFAULT_LOGGER.warning("fail to register job", extra={"label": job})
-
         return JobResult(job=str(job), error=e)

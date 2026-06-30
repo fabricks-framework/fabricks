@@ -67,6 +67,16 @@ def _suites(node: ast.AST):
             yield handler.body
 
 
+def _is_stub(stmt: ast.AST) -> bool:
+    return (
+        isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and len(stmt.body) == 1
+        and isinstance(stmt.body[0], ast.Expr)
+        and isinstance(stmt.body[0].value, ast.Constant)
+        and stmt.body[0].value.value is ...
+    )
+
+
 def _mark(stmts: list, before: set[int], after: set[int], after_clause: set[int]) -> None:
     """Flag a blank line before/after each isolated block that has a sibling on that side."""
     last = len(stmts) - 1
@@ -82,12 +92,28 @@ def _mark(stmts: list, before: set[int], after: set[int], after_clause: set[int]
                 # Last in suite: separate it from an enclosing except/finally (e.g. try body).
                 after_clause.add(stmt.end_lineno)
 
+        if _is_stub(stmt) and i < last:
+            after.add(stmt.end_lineno)
+
+        # Isolate df.cache() calls — they mutate Spark plan state and must be visible.
+        if (
+            isinstance(stmt, ast.Expr)
+            and isinstance(stmt.value, ast.Call)
+            and isinstance(stmt.value.func, ast.Attribute)
+            and stmt.value.func.attr == "cache"
+        ):
+            if i > 0:
+                before.add(stmt.lineno)
+
+            if i < last:
+                after.add(stmt.end_lineno)
+
         # Isolate a `return`: blank after (so guard clauses separate; skipped before else/EOF in
         # rebuild) and blank before whenever it has a sibling above.
         if isinstance(stmt, ast.Return):
             after.add(stmt.end_lineno)
 
-            if i > 0:
+            if i > 1:
                 before.add(stmt.lineno)
 
         for suite in _suites(stmt):
@@ -137,7 +163,6 @@ def _isolate_blocks(src: str) -> str:
 
 def _starts_clause(line: str, clauses: tuple[str, ...] = _CLAUSES) -> bool:
     s = line.lstrip()
-
     return any(s == kw or s.startswith(kw + " ") or s.startswith(kw + ":") for kw in clauses)
 
 
