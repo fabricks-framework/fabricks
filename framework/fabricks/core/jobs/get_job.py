@@ -79,10 +79,8 @@ def get_job_internal(
     item: Optional[str] = None,
     job_id: Optional[str] = None,
     conf: Optional[Union[dict, Row]] = None,
-):
+) -> Bronze | Gold | Silver:
     if step in Bronzes:
-        from fabricks.core.jobs.bronze import Bronze
-
         if job_id is not None:
             job = Bronze.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
@@ -90,8 +88,6 @@ def get_job_internal(
             assert item
             job = Bronze.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
     elif step in Silvers:
-        from fabricks.core.jobs.silver import Silver
-
         if job_id is not None:
             job = Silver.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
@@ -99,8 +95,6 @@ def get_job_internal(
             assert item
             job = Silver.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
     elif step in Golds:
-        from fabricks.core.jobs.gold import Gold
-
         if job_id is not None:
             job = Gold.from_job_id(step=step, job_id=job_id, conf=conf)
         else:

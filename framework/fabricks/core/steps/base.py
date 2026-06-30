@@ -20,7 +20,7 @@ from fabricks.context import (
     Silvers,
 )
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.get_job import get_job, get_job_internal
+from fabricks.core.jobs.get_job import get_job_internal
 from fabricks.core.jobs.get_jobs import get_jobs_sorted
 from fabricks.core.read import read_yaml
 from fabricks.core.steps._types import JobResult, Modes, Timeouts
@@ -475,32 +475,35 @@ def _log_and_raise_errors(errors: List[JobResult], action: str) -> None:
 
 # to avoid AttributeError: can't pickle local object
 def _get_dependencies(row: Row) -> JobResult:
-    job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
+    j = row.get("job") or f"{row['step']}.{row['topic']}_{row['item']}"
 
     try:
-        return JobResult(job=str(job), dependencies=job.get_dependencies())
+        job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
+        return JobResult(job=j, dependencies=job.get_dependencies())
     except Exception as e:
-        DEFAULT_LOGGER.warning("fail to get dependencies", extra={"label": job})
-        return JobResult(job=str(job), error=e)
+        DEFAULT_LOGGER.warning("fail to get dependencies", extra={"label": j})
+        return JobResult(job=j, error=e)
 
 
 def _create_db_object(row: Row) -> JobResult:
-    job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
+    j = row.get("job") or f"{row['step']}.{row['topic']}_{row['item']}"
 
     try:
+        job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
         job.create()
-        return JobResult(job=str(job), job_id=row["job_id"])
+        return JobResult(job=j, job_id=row["job_id"])
     except Exception as e:  # noqa E722
-        DEFAULT_LOGGER.warning("fail to create db object", extra={"label": job})
-        return JobResult(job=str(job), job_id=row["job_id"], error=e)
+        DEFAULT_LOGGER.warning("fail to create db object", extra={"label": j})
+        return JobResult(job=j, job_id=row["job_id"], error=e)
 
 
 def _register(row: Row) -> JobResult:
-    job = get_job(step=row["step"], topic=row["topic"], item=row["item"])
+    j = row.get("job") or f"{row['step']}.{row['topic']}_{row['item']}"
 
     try:
+        job = get_job_internal(step=row["step"], topic=row["topic"], item=row["item"])
         job.register()
-        return JobResult(job=str(job))
+        return JobResult(job=j)
     except Exception as e:
-        DEFAULT_LOGGER.warning("fail to register job", extra={"label": job})
-        return JobResult(job=str(job), error=e)
+        DEFAULT_LOGGER.warning("fail to register job", extra={"label": j})
+        return JobResult(job=j, error=e)

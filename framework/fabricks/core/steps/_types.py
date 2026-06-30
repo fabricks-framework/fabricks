@@ -1,7 +1,9 @@
 from dataclasses import dataclass
-from typing import Any, List, Literal, Optional
+from typing import Literal, Optional, Sequence
 
 from pydantic import BaseModel, ConfigDict
+
+from fabricks.models import JobDependency
 
 Modes = Literal["parallel", "sequential"]
 
@@ -19,4 +21,4 @@ class JobResult(BaseModel):
     job: str
     job_id: Optional[str] = None
     error: Optional[Exception] = None
-    dependencies: Optional[List[Any]] = None
+    dependencies: Optional[Sequence[JobDependency]] = None

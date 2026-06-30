@@ -11,7 +11,13 @@ from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 from tests.integration._types import paths
-from tests.integration.utils import create_expected_views, create_random_tables, git_to_landing, landing_to_raw
+from tests.integration.utils import (
+    create_expected_views,
+    create_input_views,
+    create_random_tables,
+    git_to_landing,
+    landing_to_raw,
+)
 
 # COMMAND ----------
 
@@ -72,5 +78,14 @@ if expected:
     create_expected_views()
 
 # COMMAND ----------
+
+if input:
+    db = Database("input")
+    db.drop()
+    db.create()
+
+    create_input_views()
+
+# COMMAND ---------
 
 dbutils.notebook.exit(value="exit (0)")  # type: ignore

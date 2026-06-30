@@ -146,6 +146,42 @@ def landing_to_raw(iter: Union[int, List[int]]):
     convert_parquet_to_delta("duke", deletelog=False)
 
 
+def create_input_views(topics: List[str] | None = None):
+    DEFAULT_LOGGER.info("input - create views")
+
+    if topics is None:
+        topics = ["monarch", "prince", "princess"]
+
+    spark.sql("create schema if not exists input")
+
+    dates = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
+    data_dir = paths.tests.joinpath("data")
+    job_dirs = sorted(data_dir.pathlibpath.glob("job*"), key=lambda p: int(p.name[3:]))
+
+    for topic in topics:
+        accumulated: List[Any] = []
+
+        for job_dir in job_dirs:
+            topic_dir = job_dir / topic
+
+            if topic_dir.exists():
+                for json_file in sorted(topic_dir.rglob("*.json")):
+                    p_df = pd.read_json(str(json_file), orient="records", convert_dates=cast(Any, dates))
+                    p_df["__job"] = job_dir.name
+                    accumulated.append(p_df)
+
+            if not accumulated:
+                continue
+
+            p_df = pd.concat(accumulated, ignore_index=True)
+            df = spark.createDataFrame(p_df)
+            df.createOrReplaceTempView(f"_input_{topic}_{job_dir.name}")
+            spark.sql(
+                f"create or replace view input.{topic}_{job_dir.name} as select * from `_input_{topic}_{job_dir.name}`"
+            )
+            DEFAULT_LOGGER.debug(f"created view input.{topic}_{job_dir.name}")
+
+
 def create_expected_views():
     DEFAULT_LOGGER.info("expected - create views")
 
