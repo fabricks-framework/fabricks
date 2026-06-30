@@ -475,7 +475,7 @@ def _log_and_raise_errors(errors: List[JobResult], action: str) -> None:
 
 # to avoid AttributeError: can't pickle local object
 def _get_dependencies(row: Row) -> JobResult:
-    j = row.get("job") or f"{row['step']}.{row['topic']}_{row['item']}"
+    j = row.get["job"] or f"{row['step']}.{row['topic']}_{row['item']}"
 
     try:
         job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
@@ -486,7 +486,7 @@ def _get_dependencies(row: Row) -> JobResult:
 
 
 def _create_db_object(row: Row) -> JobResult:
-    j = row.get("job") or f"{row['step']}.{row['topic']}_{row['item']}"
+    j = row.get["job"] or f"{row['step']}.{row['topic']}_{row['item']}"
 
     try:
         job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
@@ -498,7 +498,7 @@ def _create_db_object(row: Row) -> JobResult:
 
 
 def _register(row: Row) -> JobResult:
-    j = row.get("job") or f"{row['step']}.{row['topic']}_{row['item']}"
+    j = row.get["job"] or f"{row['step']}.{row['topic']}_{row['item']}"
 
     try:
         job = get_job_internal(step=row["step"], topic=row["topic"], item=row["item"])
