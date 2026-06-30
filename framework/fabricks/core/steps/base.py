@@ -440,6 +440,11 @@ class BaseStep:
         DEFAULT_LOGGER.info("update tables list", extra={"label": self})
         NoCDC("fabricks", self.name, "tables").delete_missing(df, context=CdcContext(keys=["job_id"]))
 
+    def update_lists(self):
+        self.update_tables_list()
+        self.update_views_list()
+        self.update_steps_list()
+
     def update_configurations(self, drop: Optional[bool] = False):
         df = self.get_jobs()
         DEFAULT_LOGGER.info("update configurations", extra={"label": self})
