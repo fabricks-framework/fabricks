@@ -154,7 +154,7 @@
     options:
       mode: complete
 - job:
-    step: transf
+    step: gold
     topic: fact
     item: dummy_notebook
     options:
