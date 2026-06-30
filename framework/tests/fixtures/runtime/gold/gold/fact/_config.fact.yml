@@ -147,3 +147,16 @@
       primary_key:
         pk_primary_key: 
           keys: [dummy, less_dummy, dummier]
+- job:
+    step: gold
+    topic: fact
+    item: dummy_sql
+    options:
+      mode: complete
+- job:
+    step: transf
+    topic: fact
+    item: dummy_notebook
+    options:
+      mode: complete
+      notebook: true

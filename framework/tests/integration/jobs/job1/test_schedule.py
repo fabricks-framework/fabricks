@@ -29,6 +29,12 @@ expected_failures_as_str = ", ".join(f'"{f}"' for f in expected_failures)
 expected_skips_as_str = ", ".join(f'"{f}"' for f in expected_skips)
 
 
+@pytest.mark.order(101)
+def test_armageddon():
+    df = SPARK.sql("select * from fabricks.dbojects where exists")
+    assert df.count() == 128, "armageddon should have created 128 tables and views"
+
+
 @pytest.mark.order(102)
 def test_schedule():
     t = Table("silver", "princess", "drop")

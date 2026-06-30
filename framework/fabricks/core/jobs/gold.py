@@ -200,6 +200,11 @@ class Gold(BaseJob):
         parents = self.options.parents or []
         parents = [] if len(parents) == 1 and parents[0].lower() in ["none", "null", "0"] else parents
 
+        if self.options.table:
+            table = self.options.table
+            d = JobDependency.from_parts(self.job_id, table, "table")
+            return [d]
+
         if parents:
             for p in parents:
                 d = JobDependency.from_parts(self.job_id, p, "parent")

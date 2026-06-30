@@ -29,6 +29,7 @@ def deploy_views():
     DEFAULT_LOGGER.info("create or replace fabricks (default) views", extra={"label": "fabricks"})
     create_or_replace_jobs_view()
     create_or_replace_tables_view()
+    create_or_replace_dbojects_view()
     create_or_replace_views_view()
     create_or_replace_logs_pivot_view()
     create_or_replace_last_schedule_view()
@@ -175,6 +176,30 @@ def create_or_replace_views_view():
     """
     sql = fix_sql(sql)
     DEFAULT_LOGGER.debug("create or replace fabricks.views", extra={"sql": sql})
+    SPARK.sql(sql)
+
+
+def create_or_replace_dbojects_view():
+    sql = """
+    create or replace view fabricks.dbojects with schema evolution as
+    select
+      j.expand,
+      j.step,
+      j.topic,
+      j.item,
+      j.job,
+      j.object_type == 'table' as is_table,
+      j.object_type == 'view' as is_view,
+      if(is_table, t.table is not null, null) as table_exists,
+      if(is_view, v.view is not null, null) as view_exists,
+      table_exists or view_exists as `exists`
+    from
+      fabricks.jobs j
+      left join fabricks.views v on j.job = v.view
+      left join fabricks.tables t on j.job = t.table
+    """
+    sql = fix_sql(sql)
+    DEFAULT_LOGGER.debug("create or replace fabricks.dbojects", extra={"sql": sql, "label": "fabricks"})
     SPARK.sql(sql)
 
 

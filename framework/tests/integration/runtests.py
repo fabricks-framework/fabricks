@@ -20,7 +20,7 @@ assert IS_TESTMODE
 
 # COMMAND ----------
 
-Tests = ["job1", "job2", "job3", "job4", "job5"]
+Tests = ["job0", "job1", "job2", "job3", "job4", "job5"]
 Booleans = ["True", "False"]
 
 # COMMAND ----------
