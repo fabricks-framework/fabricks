@@ -442,7 +442,7 @@ class ProcessorMixin(CdcProtocol):
         if not self.table.registered:
             self.create_table(src, context=context)
         elif context.schema_drift:
-            self.update_schema(src, context=context, widen_types=True)
+            self.update_schema(src, context=context, widen_types=False)
 
         df = self.get_data(src, context=context)
         df = self.reorder_dataframe(df)
@@ -461,7 +461,7 @@ class ProcessorMixin(CdcProtocol):
         if not self.table.registered:
             self.create_table(src, context=context)
         elif context.schema_drift:
-            self.update_schema(src, context=context, widen_types=True)
+            self.update_schema(src, context=context, widen_types=False)
 
         df = self.get_data(src, context=context)
         df = self.reorder_dataframe(df)

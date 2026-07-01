@@ -168,8 +168,8 @@ class GeneratorMixin(CdcProtocol):
 
     def update_schema(self, src: AllowedSources, context: CdcContext, widen_types: Optional[bool] = False):
         if self.schema_drifted(src=src, context=context):
-            self._update_schema(src=src, widen_types=widen_types, context=context)
+            self._update_schema(src=src, context=context, widen_types=widen_types)
 
     def overwrite_schema(self, src: AllowedSources, context: CdcContext):
         if self.schema_drifted(src=src, context=context):
-            self._update_schema(src=src, overwrite=True, context=context)
+            self._update_schema(src=src, context=context, overwrite=True, widen_types=False)
