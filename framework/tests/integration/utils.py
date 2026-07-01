@@ -174,7 +174,14 @@ def create_input_views(topics: List[str] | None = None):
 
             p_df = pd.concat(accumulated, ignore_index=True)
             df = spark.createDataFrame(p_df)
-            df.write.mode("overwrite").option("overwriteSchema", "True").saveAsTable(f"input.{topic}_{job_dir.name}")
+            (
+                df.write.mode("overwrite")
+                .option("overwriteSchema", "True")
+                .option("delta.columnMapping.mode", "name")
+                .option("delta.minReaderVersion", "2")
+                .option("delta.minWriterVersion", "5")
+                .saveAsTable(f"input.{topic}_{job_dir.name}")
+            )
             DEFAULT_LOGGER.debug(f"created table input.{topic}_{job_dir.name}")
 
 
