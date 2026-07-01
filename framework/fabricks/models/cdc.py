@@ -31,6 +31,7 @@ class CdcContext(BaseModel):
     filter_where: Optional[str] = None
     update_where: Optional[str] = None
     uuid: bool = False
+    schema_drift: bool = False
 
 
 class QueryContext(BaseModel):

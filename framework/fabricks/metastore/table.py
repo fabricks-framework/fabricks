@@ -1,6 +1,6 @@
 import re
 from functools import cached_property, lru_cache
-from typing import Sequence, overload
+from typing import Optional, Sequence, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
@@ -448,7 +448,7 @@ class Table(DbObject):
         self,
         df: DataFrame | None = None,
         schema: StructType | None = None,
-        widen_types: bool = False,
+        widen_types: Optional[bool] = False,
         diffs: Sequence[SchemaDiff] | None = None,
     ):
         if df is None and schema is None:

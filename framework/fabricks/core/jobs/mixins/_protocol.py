@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Protocol, Sequence, Union
+from typing import Optional, Protocol, Sequence, Union
 
 from pyspark.sql import DataFrame, SparkSession
 
+from fabricks.cdc import BaseCDC
 from fabricks.core.jobs.config import JobConfig
 from fabricks.metastore.table import SchemaDiff, Table
 from fabricks.models import (
@@ -84,7 +85,7 @@ class JobProtocol(Protocol):
     def timeout(self) -> int: ...
 
     @property
-    def cdc(self) -> Any: ...  # NoCDC | SCD0 | SCD1 | SCD2 — Any avoids circular import
+    def cdc(self) -> BaseCDC: ...  # NoCDC | SCD0 | SCD1 | SCD2 — Any avoids circular import
 
     def maintain(
         self,

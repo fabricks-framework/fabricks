@@ -107,6 +107,8 @@ class MergerMixin(CdcProtocol):
     def merge(self, src: AllowedSources, context: CdcContext):
         if not self.table.exists():
             self.create_table(src, context=context)
+        elif context.schema_drift:
+            self.update_schema(src, context=context, widen_types=True)
 
         df = self.get_data(src, context=context)
         global_temp_view = f"{self.qualified_name}__merge"

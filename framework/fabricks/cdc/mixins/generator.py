@@ -149,7 +149,7 @@ class GeneratorMixin(CdcProtocol):
         src: AllowedSources,
         context: CdcContext,
         overwrite: bool = False,
-        widen_types: bool = False,
+        widen_types: Optional[bool] = False,
     ):
         if self.is_view:
             assert not isinstance(src, DataFrameLike) and not isinstance(src, StructType), (
@@ -166,8 +166,10 @@ class GeneratorMixin(CdcProtocol):
             else:
                 self.table.update_schema(df, widen_types=widen_types)
 
-    def update_schema(self, src: AllowedSources, context: CdcContext, widen_types: bool = False):
-        self._update_schema(src=src, widen_types=widen_types, context=context)
+    def update_schema(self, src: AllowedSources, context: CdcContext, widen_types: Optional[bool] = False):
+        if self.schema_drifted(src=src, context=context):
+            self._update_schema(src=src, widen_types=widen_types, context=context)
 
     def overwrite_schema(self, src: AllowedSources, context: CdcContext):
-        self._update_schema(src=src, overwrite=True, context=context)
+        if self.schema_drifted(src=src, context=context):
+            self._update_schema(src=src, overwrite=True, context=context)
