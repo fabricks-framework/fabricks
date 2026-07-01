@@ -87,7 +87,7 @@ def _alias_paths(path: str) -> list[str]:
 
 
 def _convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
-    DEFAULT_LOGGER.debug(f"convert json to parquet - {to_dir}")
+    DEFAULT_LOGGER.debug(f"converting json to parquet - {to_dir}")
     files = from_dir.walk()
 
     for f in files:
@@ -103,25 +103,25 @@ def _convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
 
 
 def git_to_landing():
-    DEFAULT_LOGGER.info("git to landing")
+    DEFAULT_LOGGER.info("moving data from git to landing")
 
     for i in range(1, 12):
         job = f"job{i}"
-        DEFAULT_LOGGER.debug(f"copy json from git to landing ({job})")
+        DEFAULT_LOGGER.debug(f"copying json from git to landing ({job})")
         from_dir = paths.tests.joinpath("data", job)
         to_dir = paths.landing.joinpath(job)
         _convert_json_to_parquet(from_dir, to_dir)
 
 
 def landing_to_raw(iter: Union[int, List[int]]):
-    DEFAULT_LOGGER.info("landing to raw")
+    DEFAULT_LOGGER.info("moving data from landing to raw")
 
     if isinstance(iter, int):
         iter = [iter]
 
     for i in iter:
         job = f"job{i}"
-        DEFAULT_LOGGER.debug(f"copy parquet from landing to raw ({job})")
+        DEFAULT_LOGGER.debug(f"copying parquet from landing to raw ({job})")
         landing = paths.landing.joinpath(job)
 
         for f in landing.walk():
@@ -133,7 +133,6 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
                     if j > 1:  # needed for unity catalog (cannot use same delta table more than once)
                         to_path = to_path.replace("raw", f"raw/{j}")
-                        DEFAULT_LOGGER.debug(f"raw copy: {to_path}")
 
                     dbutils.fs.cp(path.string, FileSharePath(to_path).string)
 
@@ -148,7 +147,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
 
 def create_input_tables(topics: List[str] | None = None):
-    DEFAULT_LOGGER.info("input - create tables")
+    DEFAULT_LOGGER.info("input - creating tables")
 
     if topics is None:
         topics = ["monarch", "prince", "princess"]
@@ -161,6 +160,7 @@ def create_input_tables(topics: List[str] | None = None):
         accumulated: List[Any] = []
 
         for job_dir in job_dirs:
+            DEFAULT_LOGGER.debug(f"creating table input.{topic}_{job_dir.name}")
             topic_dir = job_dir / topic
             scan_dirs = [topic_dir] if topic_dir.exists() else [job_dir / s for s in _TOPIC_SOURCES.get(topic, [])]
 
@@ -168,7 +168,6 @@ def create_input_tables(topics: List[str] | None = None):
                 if scan_dir.exists():
                     for json_file in sorted(scan_dir.rglob("*.json")):
                         p_df = pd.read_json(str(json_file), orient="records", convert_dates=cast(Any, _DATES))
-                        p_df["__job"] = job_dir.name
                         p_df["__file_path"] = str(json_file).replace("\\", "/")
                         p_df["__file_name"] = json_file.name
                         accumulated.append(p_df)
@@ -179,13 +178,19 @@ def create_input_tables(topics: List[str] | None = None):
             p_df = pd.concat(accumulated, ignore_index=True)
             df = spark.createDataFrame(p_df)
             df = _transform(df, topic)
-            df = df.withColumn(
-                "__operation",
-                expr("if(BEL_DeleteDateUtc is not null, 'delete', if(BEL_IsFullLoad=='true', 'reload', 'upsert'))"),
-            )
+            if "__operation" not in df.columns:
+                if "BEL_IsFullLoad" in df.columns:
+                    df = df.withColumn(
+                        "__operation",
+                        expr(
+                            "if(BEL_DeleteDateUtc is not null, 'delete', if(BEL_IsFullLoad=='true', 'reload', 'upsert'))"
+                        ),
+                    )
+                else:
+                    df = df.withColumn("__operation", lit("upsert"))
             cols = [c for c in df.columns if c.startswith("BEL_")]
-            df = df.drop(*cols)
-
+            if cols:
+                df = df.drop(*cols)
             (
                 df.write.mode("overwrite")
                 .option("overwriteSchema", "True")
@@ -194,24 +199,48 @@ def create_input_tables(topics: List[str] | None = None):
                 .option("delta.minWriterVersion", "5")
                 .saveAsTable(f"input.{topic}_{job_dir.name}")
             )
-            DEFAULT_LOGGER.debug(f"created table input.{topic}_{job_dir.name}")
 
 
 def create_expected_views():
-    DEFAULT_LOGGER.info("expected - create views")
+    DEFAULT_LOGGER.info("expected - creating views")
 
     def _create_views(step: str, cdc: str):
         views = paths.tests.joinpath("expected", step, cdc)
 
         for v in sorted(views.walk()):
-            DEFAULT_LOGGER.debug(f"create view {v}")
+            DEFAULT_LOGGER.debug(f"creating view {v}")
             spark.sql(GitPath(v).get_sql())
 
+    def _create_latest_views(step: str, cdc: str):
+        views = paths.tests.joinpath("expected", step, cdc)
+        for v in sorted(views.walk()):
+            job_n = int(str(v).split("job")[-1].split(".")[0])
+            source = f"expected.{step}_{cdc}_job{job_n}"
+            latest = f"expected.{step}_latest_job{job_n}"
+            spark.sql(
+                f"create or replace view {latest} as select * from {source} where __timestamp = (select max(__timestamp) from {source})"
+            )
+
+    def _create_append_views(step: str):
+        views = paths.tests.joinpath("expected", step, "scd2")
+        for v in sorted(views.walk()):
+            job_n = int(str(v).split("job")[-1].split(".")[0])
+            source = f"expected.{step}_scd2_job{job_n}"
+            spark.sql(f"create or replace view expected.{step}_append_job{job_n} as select * from {source}")
+
+    # silver
     _create_views("silver", "scd2")
     _create_views("silver", "scd1")
+    # gold
     _create_views("gold", "scd2")
     _create_views("gold", "scd1")
     _create_views("gold", "scd0")
+    # latest
+    _create_latest_views("silver", "scd1")
+    _create_latest_views("gold", "scd1")
+    # append
+    _create_append_views("silver")
+    _create_append_views("gold")
 
 
 def create_random_tables():
