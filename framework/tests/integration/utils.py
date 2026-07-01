@@ -14,6 +14,7 @@ from tests.integration._types import paths
 
 _DATES = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
 _TOPIC_SOURCES = {t: ["king", "queen"] for t in ["monarch", "regent", "duke"]}
+_TOPIC_OPERATIONS = {"duke": "reload"}
 
 
 def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
@@ -47,26 +48,32 @@ def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
         df = concat_dfs(dfs)
         assert df is not None
 
-        if topic == "duke":
-            df = df.withColumn("__operation", lit("reload"))
-
-        df = df.withColumn(
-            "__split",
-            expr("split(replace(__file_path, __file_name), '/')"),
-        )
-        df = df.withColumn("__split_size", expr("size(__split)"))
-        df = df.withColumn(
-            "__timestamp",
-            expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"),
-        )
-        df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
-        df = df.drop("__split", "__split_size", "__file_path", "__file_name")
+        df = _transform(df, topic)
         writer = df.write.mode("append").option("mergeSchema", "True").format("delta")
 
         if any(not re.match(r"^[a-zA-Z0-9_]+$", c) for c in df.columns):
             writer = writer.option("delta.columnMapping.mode", "name")
 
         writer.save(f"{root}/delta/{topic}")
+
+
+def _add_operation(df, topic: str):
+    operation = _TOPIC_OPERATIONS.get(topic)
+    if operation:
+        df = df.withColumn("__operation", lit(operation))
+    return df
+
+
+def _transform(df, topic: str):
+    return _add_timestamp(_add_operation(df, topic))
+
+
+def _add_timestamp(df):
+    df = df.withColumn("__split", expr("split(replace(__file_path, __file_name), '/')"))
+    df = df.withColumn("__split_size", expr("size(__split)"))
+    df = df.withColumn("__timestamp", expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"))
+    df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
+    return df.drop("__split", "__split_size", "__file_path", "__file_name")
 
 
 def _alias_paths(path: str) -> list[str]:
@@ -159,6 +166,8 @@ def create_input_tables(topics: List[str] | None = None):
                     for json_file in sorted(scan_dir.rglob("*.json")):
                         p_df = pd.read_json(str(json_file), orient="records", convert_dates=cast(Any, _DATES))
                         p_df["__job"] = job_dir.name
+                        p_df["__file_path"] = str(json_file).replace("\\", "/")
+                        p_df["__file_name"] = json_file.name
                         accumulated.append(p_df)
 
             if not accumulated:
@@ -166,6 +175,7 @@ def create_input_tables(topics: List[str] | None = None):
 
             p_df = pd.concat(accumulated, ignore_index=True)
             df = spark.createDataFrame(p_df)
+            df = _transform(df, topic)
             (
                 df.write.mode("overwrite")
                 .option("overwriteSchema", "True")
