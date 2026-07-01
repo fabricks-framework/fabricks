@@ -94,6 +94,9 @@
       - name: expected
         path_options:
           storage: abfss://dummy@$standard
+      - name: input
+        path_options:
+          storage: abfss://dummy@$standard
     credentials:
       bmsstatsteuwfabrickssnd.dfs.core.windows.net: bmsstatsteuwfabrickssnd-access-key
       onelake.dfs.fabric.microsoft.com/Fabricks.Lakehouse/Tables: powerbi-application-registration
