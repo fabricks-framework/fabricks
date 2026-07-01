@@ -14,7 +14,7 @@ from fabricks.utils.path import FileSharePath, GitPath
 from tests.integration._types import paths
 
 _DATES = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
-_TOPIC_SOURCES = {t: ["king", "queen"] for t in ["monarch", "regent", "duke"]}
+_TOPIC_SOURCES = {t: ["king", "queen", "king__deletelog", "queen__deletelog"] for t in ["monarch", "regent", "duke"]}
 _TOPIC_OPERATIONS = {"duke": "reload"}
 
 
@@ -48,8 +48,12 @@ def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
 
         df = concat_dfs(dfs)
         assert df is not None
+        df = _add_timestamp(df)
+        df = _drop_extra__columns(df)
 
-        df = _transform(df, topic)
+        if topic in ["duke"]:
+            df = _force_operation(df, topic)
+
         writer = df.write.mode("append").option("mergeSchema", "True").format("delta")
 
         if any(not re.match(r"^[a-zA-Z0-9_]+$", c) for c in df.columns):
@@ -58,16 +62,12 @@ def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
         writer.save(f"{root}/delta/{topic}")
 
 
-def _add_operation(df: DataFrame, topic: str) -> DataFrame:
+def _force_operation(df: DataFrame, topic: str) -> DataFrame:
     operation = _TOPIC_OPERATIONS.get(topic)
+
     if operation:
         df = df.withColumn("__operation", lit(operation))
-    return df
 
-
-def _transform(df: DataFrame, topic: str) -> DataFrame:
-    df = _add_operation(df, topic)
-    df = _add_timestamp(df)
     return df
 
 
@@ -76,13 +76,23 @@ def _add_timestamp(df: DataFrame) -> DataFrame:
     df = df.withColumn("__split_size", expr("size(__split)"))
     df = df.withColumn("__timestamp", expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"))
     df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
-    return df.drop("__split", "__split_size", "__file_path", "__file_name")
+
+    return df
+
+
+def _drop_extra__columns(df: DataFrame) -> DataFrame:
+    for c in ["__file_path", "__file_name", "__split", "__split_size"]:
+        if c in df.columns:
+            df = df.drop(c)
+
+    return df
 
 
 def _alias_paths(path: str) -> list[str]:
     for source in ("king", "queen"):
         if source in path:
             return [path.replace(source, t) for t in ["monarch", "regent", "duke"]]
+
     return []
 
 
@@ -177,8 +187,10 @@ def create_input_tables(topics: List[str] | None = None):
 
             p_df = pd.concat(accumulated, ignore_index=True)
             df = spark.createDataFrame(p_df)
-            df = _transform(df, topic)
-            if "__operation" not in df.columns:
+
+            if topic in ["duke"]:
+                df = _force_operation(df, topic)
+            elif "__operation" not in df.columns:
                 if "BEL_IsFullLoad" in df.columns:
                     df = df.withColumn(
                         "__operation",
@@ -187,10 +199,14 @@ def create_input_tables(topics: List[str] | None = None):
                         ),
                     )
                 else:
-                    df = df.withColumn("__operation", lit("upsert"))
+                    df = df.withColumn("__operation", expr("if(__file_path like '%deletelog%', 'delete', 'upsert')"))
+
+            df: DataFrame = _add_timestamp(df)
             cols = [c for c in df.columns if c.startswith("BEL_")]
+
             if cols:
                 df = df.drop(*cols)
+
             (
                 df.write.mode("overwrite")
                 .option("overwriteSchema", "True")
@@ -213,6 +229,7 @@ def create_expected_views():
 
     def _create_latest_views(step: str, cdc: str):
         views = paths.tests.joinpath("expected", step, cdc)
+
         for v in sorted(views.walk()):
             job_n = int(str(v).split("job")[-1].split(".")[0])
             source = f"expected.{step}_{cdc}_job{job_n}"
@@ -223,6 +240,7 @@ def create_expected_views():
 
     def _create_append_views(step: str):
         views = paths.tests.joinpath("expected", step, "scd2")
+
         for v in sorted(views.walk()):
             job_n = int(str(v).split("job")[-1].split(".")[0])
             source = f"expected.{step}_scd2_job{job_n}"

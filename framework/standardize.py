@@ -193,11 +193,11 @@ def main(targets: list[str]) -> None:
             if exclude.intersection(path.parts):
                 continue
 
-            src = path.read_text()
+            src = path.read_text(encoding="utf-8")
             out = standardize(src)
 
             if out != src:
-                path.write_text(out)
+                path.write_text(out, encoding="utf-8")
                 print(f"standardized {path} (-{src.count(chr(10)) - out.count(chr(10))} blank lines)")
 
 
