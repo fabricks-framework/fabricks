@@ -5,7 +5,7 @@ from fabricks.context import SPARK
 from fabricks.metastore.database import Database
 from fabricks.models.cdc import CdcContext
 from tests.integration.compare import assert_dfs_equal
-from tests.integration.utils import create_input_views
+from tests.integration.utils import create_input_tables
 
 CDC = {"scd1": SCD1, "scd2": SCD2}
 
@@ -14,7 +14,7 @@ CDC = {"scd1": SCD1, "scd2": SCD2}
 @pytest.mark.parametrize("cdc", ["scd1", "scd2"])
 def test_cdc_isolated(cdc):
     topic = "monarch"
-    create_input_views([topic])  # input.monarch_jobN (cumulative, __job tags each row)
+    create_input_tables([topic])  # input.monarch_jobN (cumulative, __job tags each row)
     Database("test").create()
     tgt = CDC[cdc]("test", f"{topic}_{cdc}")
     tgt.drop()

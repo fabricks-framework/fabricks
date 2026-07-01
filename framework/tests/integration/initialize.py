@@ -13,7 +13,7 @@ from fabricks.metastore.database import Database
 from tests.integration._types import paths
 from tests.integration.utils import (
     create_expected_views,
-    create_input_views,
+    create_input_tables,
     create_random_tables,
     git_to_landing,
     landing_to_raw,
@@ -84,7 +84,7 @@ if input:
     db.drop()
     db.create()
 
-    create_input_views()
+    create_input_tables()
 
 # COMMAND ---------
 

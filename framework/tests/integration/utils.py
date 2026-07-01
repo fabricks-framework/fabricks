@@ -12,17 +12,11 @@ from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import FileSharePath, GitPath
 from tests.integration._types import paths
 
-
-def create_random_tables():
-    if CATALOG:
-        spark.sql(f"use catalog {CATALOG}")
-
-    spark.sql("create schema if not exists bronze")
-    uri = f"{paths.raw}/delta/no_column"
-    spark.sql(f"create table if not exists bronze.princess_no_column using delta location '{uri}'")
+_DATES = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
+_TOPIC_SOURCES = {t: ["king", "queen"] for t in ["monarch", "regent", "duke"]}
 
 
-def convert_parquet_to_delta(topic: str, deletelog: bool = True):
+def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
     for i in range(1, 4):
         dfs = []
         root = paths.raw
@@ -75,33 +69,27 @@ def convert_parquet_to_delta(topic: str, deletelog: bool = True):
         writer.save(f"{root}/delta/{topic}")
 
 
-def convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
+def _alias_paths(path: str) -> list[str]:
+    for source in ("king", "queen"):
+        if source in path:
+            return [path.replace(source, t) for t in ["monarch", "regent", "duke"]]
+    return []
+
+
+def _convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
     DEFAULT_LOGGER.debug(f"convert json to parquet - {to_dir}")
-    dates = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
     files = from_dir.walk()
 
     for f in files:
-        p_df = pd.read_json(f, orient="records", convert_dates=cast(Any, dates))
+        p_df = pd.read_json(f, orient="records", convert_dates=cast(Any, _DATES))
         df = spark.createDataFrame(p_df)
         folder = os.path.dirname(f)
         to_folder = folder.replace("\\", "/").replace(from_dir.string, to_dir.string)
-        DEFAULT_LOGGER.debug(f"{folder} -> {to_folder}")
         df.coalesce(2).write.format("parquet").mode("overwrite").save(to_folder)
 
-        # monarch and regent load
-        # custom load for 2022/04/01/0001 as there is a reload for queen and no reload for king
-        for t in ["monarch", "regent", "duke"]:
-            if "king" in to_folder or "queen" in to_folder:
-                if "2022/04/01/0001" not in str(f):
-                    to_folder_ = to_folder
-
-                    if "king" in to_folder:
-                        to_folder_ = to_folder_.replace("king", t)
-                    elif "queen" in to_folder:
-                        to_folder_ = to_folder_.replace("queen", t)
-
-                    DEFAULT_LOGGER.debug(f"{folder} -> {to_folder_}")
-                    df.coalesce(1).write.format("parquet").mode("append").save(to_folder_)
+        if "2022/04/01/0001" not in str(f):
+            for to_folder_ in _alias_paths(to_folder):
+                df.coalesce(1).write.format("parquet").mode("append").save(to_folder_)
 
 
 def git_to_landing():
@@ -112,7 +100,7 @@ def git_to_landing():
         DEFAULT_LOGGER.debug(f"copy json from git to landing ({job})")
         from_dir = paths.tests.joinpath("data", job)
         to_dir = paths.landing.joinpath(job)
-        convert_json_to_parquet(from_dir, to_dir)
+        _convert_json_to_parquet(from_dir, to_dir)
 
 
 def landing_to_raw(iter: Union[int, List[int]]):
@@ -135,31 +123,27 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
                     if j > 1:  # needed for unity catalog (cannot use same delta table more than once)
                         to_path = to_path.replace("raw", f"raw/{j}")
-                        print(to_path)
+                        DEFAULT_LOGGER.debug(f"raw copy: {to_path}")
 
                     dbutils.fs.cp(path.string, FileSharePath(to_path).string)
 
-                    if i <= 4 and "2022/04/01/0001" not in str(f):
-                        for t in ["monarch", "regent", "duke"]:
-                            if "king" in to_path:
-                                dbutils.fs.cp(path.string, FileSharePath(to_path.replace("king", t)).string)
-                            elif "queen" in to_path:
-                                dbutils.fs.cp(path.string, FileSharePath(to_path.replace("queen", t)).string)
+                    if "2022/04/01/0001" not in str(f):
+                        for to_path_ in _alias_paths(to_path):
+                            dbutils.fs.cp(path.string, FileSharePath(to_path_).string)
 
-    convert_parquet_to_delta("regent")
-    convert_parquet_to_delta("monarch")
-    convert_parquet_to_delta("prince", deletelog=False)
-    convert_parquet_to_delta("duke", deletelog=False)
+    _convert_parquet_to_delta("regent")
+    _convert_parquet_to_delta("monarch")
+    _convert_parquet_to_delta("prince", deletelog=False)
+    _convert_parquet_to_delta("duke", deletelog=False)
 
 
-def create_input_views(topics: List[str] | None = None):
-    DEFAULT_LOGGER.info("input - create views")
+def create_input_tables(topics: List[str] | None = None):
+    DEFAULT_LOGGER.info("input - create tables")
 
     if topics is None:
         topics = ["monarch", "prince", "princess"]
 
     spark.sql("create schema if not exists input")
-    dates = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
     data_dir = paths.tests.joinpath("data")
     job_dirs = sorted(data_dir.pathlibpath.glob("job*"), key=lambda p: int(p.name[3:]))
 
@@ -168,12 +152,14 @@ def create_input_views(topics: List[str] | None = None):
 
         for job_dir in job_dirs:
             topic_dir = job_dir / topic
+            scan_dirs = [topic_dir] if topic_dir.exists() else [job_dir / s for s in _TOPIC_SOURCES.get(topic, [])]
 
-            if topic_dir.exists():
-                for json_file in sorted(topic_dir.rglob("*.json")):
-                    p_df = pd.read_json(str(json_file), orient="records", convert_dates=cast(Any, dates))
-                    p_df["__job"] = job_dir.name
-                    accumulated.append(p_df)
+            for scan_dir in scan_dirs:
+                if scan_dir.exists():
+                    for json_file in sorted(scan_dir.rglob("*.json")):
+                        p_df = pd.read_json(str(json_file), orient="records", convert_dates=cast(Any, _DATES))
+                        p_df["__job"] = job_dir.name
+                        accumulated.append(p_df)
 
             if not accumulated:
                 continue
@@ -206,3 +192,12 @@ def create_expected_views():
     _create_views("gold", "scd2")
     _create_views("gold", "scd1")
     _create_views("gold", "scd0")
+
+
+def create_random_tables():
+    if CATALOG:
+        spark.sql(f"use catalog {CATALOG}")
+
+    spark.sql("create schema if not exists bronze")
+    uri = f"{paths.raw}/delta/no_column"
+    spark.sql(f"create table if not exists bronze.princess_no_column using delta location '{uri}'")
