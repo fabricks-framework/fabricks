@@ -130,15 +130,21 @@ def landing_to_raw(iter: Union[int, List[int]]):
             if str(f).endswith("parquet"):
                 path = FileSharePath(f)
 
-                for i in range(1, 4):
+                for j in range(1, 4):
                     to_path = f.replace(f"landing/{job}/", "raw/")
 
-                    if i > 1:  # needed for unity catalog (cannot use same delta table more than once)
-                        to_path = to_path.replace("raw", f"raw/{i}")
+                    if j > 1:  # needed for unity catalog (cannot use same delta table more than once)
+                        to_path = to_path.replace("raw", f"raw/{j}")
                         print(to_path)
 
-                    to_path = FileSharePath(to_path)
-                    dbutils.fs.cp(path.string, to_path.string)
+                    dbutils.fs.cp(path.string, FileSharePath(to_path).string)
+
+                    if i <= 4 and "2022/04/01/0001" not in str(f):
+                        for t in ["monarch", "regent", "duke"]:
+                            if "king" in to_path:
+                                dbutils.fs.cp(path.string, FileSharePath(to_path.replace("king", t)).string)
+                            elif "queen" in to_path:
+                                dbutils.fs.cp(path.string, FileSharePath(to_path.replace("queen", t)).string)
 
     convert_parquet_to_delta("regent")
     convert_parquet_to_delta("monarch")
