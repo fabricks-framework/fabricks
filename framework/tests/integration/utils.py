@@ -4,6 +4,7 @@ from typing import Any, List, Union, cast
 
 import pandas as pd
 from databricks.sdk.runtime import dbutils, spark
+from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
 
 from fabricks.context import CATALOG
@@ -57,18 +58,20 @@ def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
         writer.save(f"{root}/delta/{topic}")
 
 
-def _add_operation(df, topic: str):
+def _add_operation(df: DataFrame, topic: str) -> DataFrame:
     operation = _TOPIC_OPERATIONS.get(topic)
     if operation:
         df = df.withColumn("__operation", lit(operation))
     return df
 
 
-def _transform(df, topic: str):
-    return _add_timestamp(_add_operation(df, topic))
+def _transform(df: DataFrame, topic: str) -> DataFrame:
+    df = _add_operation(df, topic)
+    df = _add_timestamp(df)
+    return df
 
 
-def _add_timestamp(df):
+def _add_timestamp(df: DataFrame) -> DataFrame:
     df = df.withColumn("__split", expr("split(replace(__file_path, __file_name), '/')"))
     df = df.withColumn("__split_size", expr("size(__split)"))
     df = df.withColumn("__timestamp", expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"))
@@ -176,6 +179,13 @@ def create_input_tables(topics: List[str] | None = None):
             p_df = pd.concat(accumulated, ignore_index=True)
             df = spark.createDataFrame(p_df)
             df = _transform(df, topic)
+            df = df.withColumn(
+                "__operation",
+                expr("if(BEL_DeleteDateUtc is not null, 'delete', if(BEL_IsFullLoad=='true', 'reload', 'upsert'))"),
+            )
+            cols = [c for c in df.columns if c.startswith("BEL_")]
+            df = df.drop(*cols)
+
             (
                 df.write.mode("overwrite")
                 .option("overwriteSchema", "True")
