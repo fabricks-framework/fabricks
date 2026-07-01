@@ -3,7 +3,7 @@
     step: bronze
     topic: customers
     item: raw
-    tags: [test]
+    tags: [run_1]
     options:
       mode: append
       uri: abfss://fabricks@$storage_account/$container/raw/customers
@@ -15,7 +15,7 @@
     step: bronze
     topic: orders
     item: raw
-    tags: [test]
+    tags: [run_1]
     options:
       mode: append
       uri: abfss://fabricks@$storage_account/$container/raw/orders

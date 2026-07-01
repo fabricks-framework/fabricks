@@ -4,21 +4,21 @@
     step: semantic
     topic: fact
     item: zstd
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
 - job:
     step: semantic
     topic: fact
     item: step_option
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
 - job:
     step: semantic
     topic: fact
     item: job_option
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     table_options:
@@ -30,14 +30,14 @@
     step: semantic
     topic: fact
     item: schema_drift
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
 - job:
     step: semantic
     topic: fact
     item: powerbi
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     table_options:
@@ -47,7 +47,7 @@
     step: semantic
     topic: fact
     item: table
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
       table: gold.fact_overwrite
@@ -55,13 +55,13 @@
     step: semantic
     topic: fact
     item: clustering
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
 - job:
     step: semantic
     topic: fact    
     item: partitioning
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete

@@ -4,7 +4,7 @@
     step: gold
     topic: scd0
     item: update
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       change_data_capture: scd0
       mode: update

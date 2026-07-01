@@ -3,7 +3,7 @@
     step: silver
     topic: princess
     item: extend
-    tags: [test]
+    tags: [run_1]
     options:
       mode: update
       change_data_capture: scd1
@@ -30,7 +30,7 @@
     step: silver
     topic: princess
     item: drop
-    tags: [test]
+    tags: [run_1]
     options:
       mode: update
       change_data_capture: scd1
@@ -38,21 +38,21 @@
     step: silver
     topic: princess
     item: latest
-    tags: [test]
+    tags: [run_1]
     options:
       mode: latest
 - job:
     step: silver
     topic: princess
     item: append
-    tags: [test]
+    tags: [run_1]
     options:
       mode: append
 - job:
     step: silver
     topic: princess
     item: schema_drift
-    tags: [test]
+    tags: [run_1]
     options:
       mode: update
       change_data_capture: scd1
@@ -60,7 +60,7 @@
     step: silver
     topic: princess
     item: type_widening
-    tags: [test]
+    tags: [run_1]
     options:
       mode: update
       change_data_capture: scd1
@@ -68,7 +68,7 @@
     step: silver
     topic: princess
     item: order_duplicate
-    tags: [test]
+    tags: [run_1]
     options:
       mode: update
       change_data_capture: scd1
@@ -78,7 +78,7 @@
     step: silver
     topic: princess
     item: calculated_column
-    tags: [test]
+    tags: [run_1]
     options:
       mode: update
       change_data_capture: scd1
@@ -88,7 +88,7 @@
     step: silver
     topic: princess
     item: check
-    tags: [test]
+    tags: [run_1]
     options:
       mode: update
       change_data_capture: scd1
@@ -98,7 +98,7 @@
     step: silver
     topic: princess
     item: combine
-    tags: [test]
+    tags: [run_1]
     options:
       mode: combine
       parents:
@@ -109,6 +109,6 @@
     step: silver
     topic: princess
     item: too_many_columns
-    tags: [test]
+    tags: [run_1]
     options:
       mode: latest

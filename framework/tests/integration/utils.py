@@ -227,15 +227,22 @@ def create_expected_views():
             DEFAULT_LOGGER.debug(f"creating view {v}")
             spark.sql(GitPath(v).get_sql())
 
-    def _create_latest_views(step: str, cdc: str):
-        views = paths.tests.joinpath("expected", step, cdc)
+    def _create_latest_views(step: str):
+        views = paths.tests.joinpath("expected", step, "scd2")
 
         for v in sorted(views.walk()):
             job_n = int(str(v).split("job")[-1].split(".")[0])
-            source = f"expected.{step}_{cdc}_job{job_n}"
+            source = f"expected.{step}_scd2_job{job_n}"
             latest = f"expected.{step}_latest_job{job_n}"
             spark.sql(
-                f"create or replace view {latest} as select * from {source} where __timestamp = (select max(__timestamp) from {source})"
+                f"""
+                create or replace view {latest} as 
+                select 
+                  * 
+                  except(__valid_from, __valid_to, __is_current, __is_deleted) 
+                from 
+                  {source} 
+                where __valid_from = (select max(__valid_from) from {source})"""
             )
 
     def _create_append_views(step: str):
@@ -244,7 +251,13 @@ def create_expected_views():
         for v in sorted(views.walk()):
             job_n = int(str(v).split("job")[-1].split(".")[0])
             source = f"expected.{step}_scd2_job{job_n}"
-            spark.sql(f"create or replace view expected.{step}_append_job{job_n} as select * from {source}")
+            spark.sql(f"""
+            create or replace view expected.{step}_append_job{job_n} as 
+            select 
+              *
+                except(__valid_from, __valid_to, __is_current, __is_deleted) 
+            from {source}
+            """)
 
     # silver
     _create_views("silver", "scd2")
@@ -254,8 +267,8 @@ def create_expected_views():
     _create_views("gold", "scd1")
     _create_views("gold", "scd0")
     # latest
-    _create_latest_views("silver", "scd1")
-    _create_latest_views("gold", "scd1")
+    _create_latest_views("silver")
+    _create_latest_views("gold")
     # append
     _create_append_views("silver")
     _create_append_views("gold")

@@ -4,7 +4,7 @@
     step: bronze
     topic: duke
     item: latest
-    tags: [test]
+    tags: [run_1]
     options:
       mode: register
       uri: abfss://test@$datahub/raw/3/delta/duke

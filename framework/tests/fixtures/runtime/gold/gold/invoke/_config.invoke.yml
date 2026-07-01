@@ -4,7 +4,7 @@
     step: gold
     topic: invoke
     item: post_run
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
     invoker_options:
@@ -19,7 +19,7 @@
     step: gold
     topic: invoke
     item: failed_pre_run
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
     invoker_options:
@@ -31,7 +31,7 @@
     step: gold
     topic: invoke
     item: timedout_pre_run
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
     invoker_options:
@@ -44,7 +44,7 @@
     step: gold
     topic: invoke
     item: notebook
-    tags: [test]
+    tags: [run_1]
     options:
       mode: invoke
     invoker_options:
@@ -59,7 +59,7 @@
     step: gold
     topic: invoke
     item: notebooks
-    tags: [test]
+    tags: [run_1]
     options:
       mode: invoke
     invoker_options:
@@ -80,7 +80,7 @@
     step: gold
     topic: invoke
     item: notebook_without_argument
-    tags: [test]
+    tags: [run_1]
     options:
       mode: invoke
     invoker_options:
@@ -90,7 +90,7 @@
     step: gold
     topic: invoke
     item: timedout
-    tags: [test]
+    tags: [run_1]
     options:
       mode: invoke
       timeout: 10
@@ -101,7 +101,7 @@
     step: gold
     topic: invoke
     item: notebooks_failed_pre_run
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
     invoker_options:
@@ -119,7 +119,7 @@
     step: gold
     topic: invoke
     item: complete_invoker
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
       notebook: true
@@ -132,7 +132,7 @@
     step: gold
     topic: invoke
     item: complete_notebook
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
       notebook: true

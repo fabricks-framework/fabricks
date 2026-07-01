@@ -4,7 +4,7 @@
     step: gold
     topic: check
     item: fail
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     check_options:
@@ -13,7 +13,7 @@
     step: gold
     topic: check
     item: warning
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     check_options:
@@ -22,7 +22,7 @@
     step: gold
     topic: check
     item: max_rows
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     check_options:
@@ -31,7 +31,7 @@
     step: gold
     topic: check
     item: min_rows
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     check_options:
@@ -40,7 +40,7 @@
     step: gold
     topic: check
     item: count_must_equal
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     check_options:
@@ -49,21 +49,21 @@
     step: gold
     topic: check
     item: duplicate_key
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
 - job:
     step: gold
     topic: check
     item: duplicate_identity
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
 - job:
     step: gold
     topic: check
     item: skip
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     check_options:
@@ -72,7 +72,7 @@
     step: gold
     topic: check
     item: time_ok
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     check_options:
@@ -82,7 +82,7 @@
     step: gold
     topic: check
     item: time_ko
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     check_options:

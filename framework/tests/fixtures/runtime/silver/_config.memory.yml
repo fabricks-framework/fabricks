@@ -3,7 +3,7 @@
     step: silver
     topic: memory
     item: scd1
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       mode: memory
       change_data_capture: scd1
@@ -11,7 +11,7 @@
     step: silver
     topic: memory
     item: scd2
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       mode: memory
       change_data_capture: scd2

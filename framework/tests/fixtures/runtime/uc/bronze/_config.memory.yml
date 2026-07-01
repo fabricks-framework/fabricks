@@ -4,7 +4,7 @@
     step: bronze
     topic: memory
     item: scd1
-    tags: [test]
+    tags: [run_1]
     options:
       mode: append
       uri: abfss://test@$datahub/raw/monarch
@@ -14,7 +14,7 @@
     step: bronze
     topic: memory
     item: scd2
-    tags: [test]
+    tags: [run_1]
     options:
       mode: append
       uri: abfss://test@$datahub/raw/2/monarch

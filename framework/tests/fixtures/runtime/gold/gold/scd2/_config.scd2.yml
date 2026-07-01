@@ -4,7 +4,7 @@
     step: gold
     topic: scd2
     item: update
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       change_data_capture: scd2
       mode: update
@@ -13,7 +13,7 @@
     step: gold
     topic: scd2
     item: last_timestamp
-    tags: [test]
+    tags: [run_1]
     options:
       change_data_capture: scd2
       mode: update
@@ -22,7 +22,7 @@
     step: gold
     topic: scd2
     item: complete
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       change_data_capture: scd2
       mode: complete
@@ -30,7 +30,7 @@
     step: gold
     topic: scd2
     item: memory
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       change_data_capture: scd2
       mode: memory
@@ -38,7 +38,7 @@
     step: gold
     topic: scd2
     item: correct_valid_from
-    tags: [test]
+    tags: [run_1]
     options:
       change_data_capture: scd2
       mode: memory

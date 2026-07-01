@@ -3,7 +3,7 @@
     step: silver
     topic: regent
     item: scd1
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       mode: update
       change_data_capture: scd1
@@ -12,7 +12,7 @@
     step: silver
     topic: regent
     item: scd2
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       mode: update
       change_data_capture: scd2

@@ -4,7 +4,7 @@
     step: gold
     topic: dim
     item: time
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
 - job:
@@ -20,7 +20,7 @@
     step: gold
     topic: dim
     item: overwrite
-    tags: [test]
+    tags: [run_1]
     options:
       change_data_capture: scd1
       mode: update

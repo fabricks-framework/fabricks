@@ -4,7 +4,7 @@
     step: gold
     topic: type_widening
     item: merge
-    tags: [test]
+    tags: [run_1]
     options:
       change_data_capture: scd1
       mode: update
@@ -12,6 +12,6 @@
     step: gold
     topic: type_widening
     item: overwrite
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete

@@ -13,7 +13,7 @@
     step: bronze
     topic: princess
     item: manual
-    tags: [test]
+    tags: [run_1]
     options:
       type: manual
       mode: memory
@@ -24,7 +24,7 @@
     step: bronze
     topic: princess
     item: drop
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
       uri: abfss://fabricks@$datahub/raw/princess
@@ -34,7 +34,7 @@
     step: bronze
     topic: princess
     item: encrypt
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
       uri: abfss://fabricks@$datahub/raw/princess
@@ -45,7 +45,7 @@
     step: bronze
     topic: princess
     item: latest
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
       uri: abfss://fabricks@$datahub/raw/princess
@@ -57,7 +57,7 @@
     step: bronze
     topic: princess
     item: append
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
       uri: abfss://fabricks@$datahub/raw/princess
@@ -67,7 +67,7 @@
     step: bronze
     topic: princess
     item: schema_drift
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
       uri: abfss://fabricks@$datahub/raw/princess
@@ -77,7 +77,7 @@
     step: bronze
     topic: princess
     item: type_widening
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
       uri: abfss://fabricks@$datahub/raw/princess
@@ -87,7 +87,7 @@
     step: bronze
     topic: princess
     item: order_duplicate
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
       uri: abfss://fabricks@$datahub/raw/princess
@@ -97,7 +97,7 @@
     step: bronze
     topic: princess
     item: calculated_column
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
       uri: abfss://fabricks@$datahub/raw/princess
@@ -109,7 +109,7 @@
     step: bronze
     topic: princess
     item: check
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
       uri: abfss://fabricks@$datahub/raw/princess

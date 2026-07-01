@@ -4,7 +4,7 @@
     step: gold
     topic: scd1
     item: update
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       change_data_capture: scd1
       mode: update
@@ -12,7 +12,7 @@
     step: gold
     topic: scd1
     item: last_timestamp
-    tags: [test]
+    tags: [run_1]
     options:
       change_data_capture: scd1
       mode: update
@@ -21,7 +21,7 @@
     step: gold
     topic: scd1
     item: complete
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       change_data_capture: scd1
       mode: complete
@@ -29,7 +29,7 @@
     step: gold
     topic: scd1
     item: memory
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       change_data_capture: scd1
       mode: memory
@@ -37,7 +37,7 @@
     step: gold
     topic: scd1
     item: identity
-    tags: [test]
+    tags: [run_1, run_2]
     options:
       change_data_capture: scd1
       mode: update
@@ -46,7 +46,7 @@
     step: gold
     topic: scd1
     item: special_char
-    tags: [test]
+    tags: [run_1]
     options:
       change_data_capture: scd1
       mode: update
@@ -55,7 +55,7 @@
     step: gold
     topic: scd1
     item: script
-    tags: [test]
+    tags: [run_1]
     options:
       change_data_capture: scd1
       mode: update
@@ -65,7 +65,7 @@
     step: gold
     topic: scd1
     item: generated_column
-    tags: [test]
+    tags: [run_1]
     options:
       change_data_capture: scd1
       mode: update
@@ -76,7 +76,7 @@
     step: gold
     topic: scd1
     item: updated_column
-    tags: [test]
+    tags: [run_1]
     options:
       change_data_capture: scd1
       mode: update

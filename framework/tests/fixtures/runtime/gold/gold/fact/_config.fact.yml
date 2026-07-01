@@ -4,14 +4,14 @@
     step: gold
     topic: fact
     item: udf
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
 - job:
     step: gold
     topic: fact
     item: manual
-    tags: [test]
+    tags: [run_1]
     options:
       type: manual
       mode: complete
@@ -19,7 +19,7 @@
     step: gold
     topic: fact
     item: notebook
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
       notebook: true
@@ -37,7 +37,7 @@
     step: gold
     topic: fact
     item: dependency_notebook
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
       notebook: true
@@ -45,7 +45,7 @@
     step: gold
     topic: fact
     item: memory
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
 - job:
@@ -69,14 +69,14 @@
     step: gold
     topic: fact
     item: order_duplicate
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
 - job:
     step: gold
     topic: fact
     item: deduplicate
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
       deduplicate: true
@@ -84,14 +84,14 @@
     step: gold
     topic: fact
     item: overwrite
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
 - job:
     step: gold
     topic: fact
     item: append
-    tags: [test]
+    tags: [run_1]
     options:
       mode: append
 - job:
@@ -113,7 +113,7 @@
     step: gold
     topic: fact
     item: masker_and_commenter
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
     table_options:

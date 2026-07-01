@@ -30,12 +30,12 @@ expected_skips_as_str = ", ".join(f'"{f}"' for f in expected_skips)
 
 
 @pytest.mark.order(102)
-def test_schedule():
+def test_schedule_run_1():
     t = Table("silver", "princess", "drop")
     t.drop()
 
     try:
-        run_notebook(PATH_NOTEBOOKS.joinpath("standalone"), schedule="test")
+        run_notebook(PATH_NOTEBOOKS.joinpath("standalone"), schedule="run_1")
         assert False  # notebook should fail
     except Exception:
         assert True

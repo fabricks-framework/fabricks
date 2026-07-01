@@ -4,7 +4,7 @@
     step: bronze
     topic: regent
     item: scd1
-    tags: [test]
+    tags: [run_1]
     options:
       mode: register
       uri: abfss://fabricks@$datahub/raw/delta/regent
@@ -15,7 +15,7 @@
     step: bronze
     topic: regent
     item: scd2
-    tags: [test]
+    tags: [run_1]
     options:
       mode: register
       uri: abfss://fabricks@$datahub/raw/delta/regent

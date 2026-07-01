@@ -3,7 +3,7 @@
     step: silver
     topic: duke
     item: latest
-    tags: [test]
+    tags: [run_1]
     options:
       mode: latest
       stream: false

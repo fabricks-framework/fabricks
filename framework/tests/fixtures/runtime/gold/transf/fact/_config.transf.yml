@@ -4,7 +4,7 @@
     step: transf
     topic: fact
     item: memory
-    tags: [test]
+    tags: [run_1]
     options:
       mode: memory
 - job:
@@ -20,7 +20,7 @@
     step: transf
     topic: fact
     item: wait_for
-    tags: [test]
+    tags: [run_1]
     options:
       mode: complete
       wait_for: [transf.fact_memory, silver.monarch_scd1]

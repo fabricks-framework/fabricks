@@ -4,14 +4,14 @@
     step: gold
     topic: nocdc
     item: update
-    tags: [test]
+    tags: [run_1]
     options:
       mode: update
 - job:
     step: gold
     topic: nocdc
     item: deduplicate
-    tags: [test]
+    tags: [run_1]
     options:
       mode: update
       deduplicate: true
