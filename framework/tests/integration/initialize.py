@@ -25,13 +25,13 @@ DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 
-dbutils.widgets.dropdown("expected", "True", ["True", "False"])
+dbutils.widgets.dropdown("extra", "True", ["True", "False"])
 dbutils.widgets.dropdown("rm", "True", ["True", "False"])
 dbutils.widgets.dropdown("i", "1", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"])
 
 # COMMAND ----------
 
-expected = dbutils.widgets.get("expected").lower() == "true"
+extra = dbutils.widgets.get("extra").lower() == "true"
 rm = dbutils.widgets.get("rm").lower() == "true"
 i = dbutils.widgets.get("i")
 i = list(range(1, int(i) + 1))
@@ -70,20 +70,13 @@ if i:
 
 # COMMAND ----------
 
-if expected:
-    db = Database("expected")
-    db.drop()
-    db.create()
+if extra:
+    for d in ["expected", "input", "test"]:
+        db = Database(d)
+        db.drop()
+        db.create()
 
     create_expected_views()
-
-# COMMAND ----------
-
-if input:
-    db = Database("input")
-    db.drop()
-    db.create()
-
     create_input_tables()
 
 # COMMAND ---------

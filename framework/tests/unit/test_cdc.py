@@ -1,33 +1,30 @@
+from typing import Literal
+
 import pytest
 
 from fabricks.cdc import SCD1, SCD2
 from fabricks.context import SPARK
-from fabricks.metastore.database import Database
 from fabricks.models.cdc import CdcContext
 from tests.integration.compare import assert_dfs_equal
-from tests.integration.utils import create_input_tables
 
 CDC = {"scd1": SCD1, "scd2": SCD2}
 
 
 @pytest.mark.integration
 @pytest.mark.parametrize("cdc", ["scd1", "scd2"])
-def test_cdc_isolated(cdc):
+def test_cdc_isolated(cdc: Literal["scd1", "scd2", "latest"]):
     topic = "monarch"
-    create_input_tables([topic])  # input.monarch_jobN (cumulative, __job tags each row)
-    Database("test").create()
-    tgt = CDC[cdc]("test", f"{topic}_{cdc}")
-    tgt.drop()
 
     for i in range(1, 12):
+        tgt: SCD1 | SCD2 = CDC[cdc]("test", f"{topic}_{cdc}")
+        tgt.drop()
+
         view = f"input.{topic}_job{i}"
 
         if not SPARK.catalog.tableExists(view):
             continue
 
-        # ponytail: input views are cumulative -> take only this job's rows, mirroring the
-        # per-batch increment the real Silver job feeds. Drop the filter if you want snapshot/complete.
-        batch = f"select * from {view} where __job = 'job{i}'"
+        batch = f"select * from {view}"
 
         if i == 1:
             tgt.create_table(batch, CdcContext())

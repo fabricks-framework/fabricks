@@ -70,14 +70,14 @@ def test_silver_monarch_delta():
 
 @pytest.mark.order(119)
 def test_silver_princess_append():
-    df = Table("silver", "princess", "append").dataframe
-    assert df.count() == 2
+    job = get_job(step="silver", topic="princess", item="append")
+    compare_silver_to_expected(job=job, cdc="append", iter=1)
 
 
 @pytest.mark.order(119)
 def test_silver_princess_latest():
-    df = Table("silver", "princess", "latest").dataframe
-    assert df.count() == 1
+    job = get_job(step="silver", topic="princess", item="latest")
+    compare_silver_to_expected(job=job, cdc="latest", iter=1)
 
 
 @pytest.mark.order(119)

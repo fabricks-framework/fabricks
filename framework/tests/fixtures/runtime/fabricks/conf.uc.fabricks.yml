@@ -98,6 +98,9 @@
       - name: input
         path_options:
           storage: abfss://test@$standard/dummy
+      - name: test
+        path_options:
+          storage: abfss://dummy@$standard
     variables:
       \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$datastore: bmsstatsteuwfabrickssnd.dfs.core.windows.net
