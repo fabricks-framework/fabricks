@@ -100,7 +100,7 @@
           storage: abfss://test@$standard/dummy
       - name: test
         path_options:
-          storage: abfss://dummy@$standard
+          storage: abfss://test@$standard/dummy
     variables:
       \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$datastore: bmsstatsteuwfabrickssnd.dfs.core.windows.net
