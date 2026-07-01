@@ -31,8 +31,10 @@ from fabricks.models import (
 class ConfiguratorMixin(JobProtocol):
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str): ...
+
     @classmethod
     def from_job_id(cls, step: str, job_id: str): ...
+
     @property
     def spark(self) -> SparkSession:
         if not self._spark:
@@ -116,26 +118,22 @@ class ConfiguratorMixin(JobProtocol):
     @property
     def runtime_conf(self) -> RuntimeConf:
         """Direct access to typed runtime conf."""
-
         return self.config.runtime_conf
 
     @property
     def step_table_options(self) -> Optional[StepTableOptions]:
         """Direct access to typed step-level table options from context configuration."""
-
         return self.config.step_table_options
 
     @property
     def runtime_options(self) -> RuntimeOptions:
         """Direct access to typed runtime options from context configuration."""
-
         return self.config.runtime_options
 
     @property
     def step_spark_options(self) -> Optional[SparkOptions]:
         """Direct access to typed step-level spark options from context configuration.
         Returns None if not configured at step level."""
-
         return self.step_conf.spark_options
 
     @property

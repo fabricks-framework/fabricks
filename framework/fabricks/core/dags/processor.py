@@ -32,7 +32,6 @@ class DagProcessor(BaseDags):
 
     def get_azure_table(self) -> AzureTable:
         name = f"t{self.schedule_id}"
-
         return AzureTable(name, **self.get_connection_info())
 
     @retry(

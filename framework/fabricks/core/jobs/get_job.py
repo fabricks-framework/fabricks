@@ -11,12 +11,20 @@ from fabricks.models import get_job_id
 
 @overload
 def get_job(*, step: str, job_id: str) -> Bronze | Gold | Silver: ...
+
+
 @overload
 def get_job(*, step: str, topic: str, item: str) -> Bronze | Gold | Silver: ...
+
+
 @overload
 def get_job(*, row: Row) -> Bronze | Gold | Silver: ...
+
+
 @overload
 def get_job(job: str) -> Bronze | Gold | Silver: ...
+
+
 def get_job(
     job: Optional[str] = None,
     step: Optional[str] = None,

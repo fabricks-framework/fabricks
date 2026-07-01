@@ -19,7 +19,6 @@ def _has_column(table: str, column: str, existing: set[str]) -> bool:
 
     try:
         SPARK.sql(f"select {column} from fabricks.{table} limit 0")
-
         return True
     except Exception:
         return False

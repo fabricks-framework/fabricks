@@ -110,7 +110,6 @@ def register_udf(
 def udf(name: str):
     def decorator(fn: Callable):
         UDFS[name] = fn
-
         return fn
 
     return decorator

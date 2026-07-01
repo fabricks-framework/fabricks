@@ -260,7 +260,7 @@ class BaseStep:
             df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
 
             df.cache()
-            
+
             if df.isEmpty():
                 raise ValueError("no jobs found")
 
@@ -498,6 +498,7 @@ def _create_db_object(row: Row) -> JobResult:
     try:
         job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
         job.create()
+
         return JobResult(job=j, job_id=row["job_id"])
     except Exception as e:  # noqa E722
         DEFAULT_LOGGER.warning("fail to create db object", extra={"label": j})
@@ -510,6 +511,7 @@ def _register(row: Row) -> JobResult:
     try:
         job = get_job_internal(step=row["step"], topic=row["topic"], item=row["item"])
         job.register()
+
         return JobResult(job=j)
     except Exception as e:
         DEFAULT_LOGGER.warning("fail to register job", extra={"label": j})

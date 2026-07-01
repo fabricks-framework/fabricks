@@ -48,25 +48,21 @@ class Gold(BaseJob):
     @property
     def options(self) -> JobGoldOptions:
         """Direct access to typed gold job options."""
-
         return self.conf.options  # type: ignore
 
     @property
     def step_conf(self) -> StepGoldConf:
         """Direct access to typed gold step conf."""
-
         return self.base_step_conf  # type: ignore
 
     @property
     def step_options(self) -> StepGoldOptions:
         """Direct access to typed gold step options."""
-
         return self.base_step_conf.options  # type: ignore
 
     @property
     def register_options(self) -> Optional[RegisterOptions]:
         """Direct access to typed register options."""
-
         return self.conf.register_options  # type: ignore
 
     @property
@@ -130,7 +126,6 @@ class Gold(BaseJob):
 
     def base_transform(self, df: DataFrame) -> DataFrame:
         df = df.transform(self.extend)
-
         return df
 
     def get_data(
@@ -203,6 +198,7 @@ class Gold(BaseJob):
         if self.options.table:
             table = self.options.table
             d = JobDependency.from_parts(self.job_id, table, "table")
+
             return [d]
 
         if parents:
@@ -372,7 +368,6 @@ class Gold(BaseJob):
 
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"label": self})
-
             return
 
         if reload:
@@ -509,7 +504,6 @@ class Gold(BaseJob):
     def overwrite(self, schedule: Optional[str] = None, invoke: Optional[bool] = False):
         if self.mode == "invoke":
             DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"label": self})
-
             return
         elif self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"label": self})

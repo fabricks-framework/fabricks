@@ -81,7 +81,6 @@ def load_variables(
 
         try:
             content = _read_yaml_cached(str(file_path))
-
             return _as_variables(content, source=str(file_path))
         except FileNotFoundError as exc:
             raise FileNotFoundError(

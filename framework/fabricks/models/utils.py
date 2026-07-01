@@ -5,8 +5,12 @@ from typing import Any, Optional, overload
 
 @overload
 def get_job_id(step: str, topic: str, item: str) -> str: ...
+
+
 @overload
 def get_job_id(*, job: str) -> str: ...
+
+
 def get_job_id(
     step: Optional[str] = None,
     topic: Optional[str] = None,
@@ -24,7 +28,6 @@ def get_job_id(
 
 def get_dependency_id(parent: str, job_id: str) -> str:
     base = f"{job_id}*{parent}"
-
     return md5(base)
 
 

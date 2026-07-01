@@ -38,5 +38,4 @@ class UDFMixin(JobProtocol):
     def _match_udfs(self, string: str) -> Optional[list[str]]:
         if UDF_PREFIX in string:
             matches = _UDF_PATTERN.findall(string)
-
             return list(set(matches)) if matches else None

@@ -55,19 +55,16 @@ class Bronze(BaseJob):
     @property
     def options(self) -> JobBronzeOptions:
         """Direct access to typed bronze job options."""
-
         return self.conf.options  # type: ignore
 
     @property
     def step_conf(self) -> StepBronzeConf:
         """Direct access to typed bronze step conf."""
-
         return self.base_step_conf  # type: ignore
 
     @property
     def step_options(self) -> StepBronzeOptions:
         """Direct access to typed bronze step options."""
-
         return self.base_step_conf.options  # type: ignore
 
     @classmethod
@@ -401,7 +398,6 @@ class Bronze(BaseJob):
 
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"label": self})
-
             return
 
         assert isinstance(self.cdc, NoCDC)

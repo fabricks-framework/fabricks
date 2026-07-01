@@ -67,6 +67,7 @@ class GeneratorMixin(JobProtocol):
 
     @abstractmethod
     def get_dependencies(self) -> Sequence[JobDependency]: ...
+
     def rm(self):
         """
         Removes the schema folder and checkpoints associated with the generator.
@@ -245,11 +246,9 @@ class GeneratorMixin(JobProtocol):
                 f"found {len(columns)} partitioning column(s) ({', '.join(columns)})",
                 extra={"label": self},
             )
-
             return columns
         else:
             DEFAULT_LOGGER.debug("could not determine any partitioning column", extra={"label": self})
-
             return None
 
     def _get_clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
@@ -292,11 +291,9 @@ class GeneratorMixin(JobProtocol):
                 f"found {len(columns)} clustering column(s) ({', '.join(columns)})",
                 extra={"label": self},
             )
-
             return columns
         else:
             DEFAULT_LOGGER.debug("could not determine any clustering column", extra={"label": self})
-
             return None
 
     def create_table(self):

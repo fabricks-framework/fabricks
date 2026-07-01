@@ -185,7 +185,6 @@ class ConfigOptions(BaseSettings):
     @property
     def resolved_paths(self) -> ResolvedPathOptions:
         """Get all paths resolved as Path objects."""
-
         return self._resolve_paths()
 
 

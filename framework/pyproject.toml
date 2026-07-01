@@ -85,7 +85,7 @@ remove-unused-variables = true
 expand-star-imports = true
 exclude = ["_init__.py"]
 
-[tool.densify]
+[tool.standardize]
 exclude = [".venv"]
 
 [tool.uv]

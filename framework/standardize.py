@@ -42,7 +42,7 @@ def _protected_lines(src: str) -> set[int] | None:
     return protected
 
 
-def densify(src: str) -> str:
+def standardize(src: str) -> str:
     if src.startswith("# Databricks notebook source"):
         return src
 
@@ -77,8 +77,18 @@ def _is_stub(stmt: ast.AST) -> bool:
     )
 
 
+def _is_cache_call(stmt: ast.AST) -> bool:
+    """`df.cache()` — mutates Spark plan state, so it's isolated to stay visible."""
+    return (
+        isinstance(stmt, ast.Expr)
+        and isinstance(stmt.value, ast.Call)
+        and isinstance(stmt.value.func, ast.Attribute)
+        and stmt.value.func.attr == "cache"
+    )
+
+
 def _mark(stmts: list, before: set[int], after: set[int], after_clause: set[int]) -> None:
-    """Flag a blank line before/after each isolated block that has a sibling on that side."""
+    """Flag blank lines to insert before/after statements that should stand out in dense code."""
     last = len(stmts) - 1
 
     for i, stmt in enumerate(stmts):
@@ -95,13 +105,7 @@ def _mark(stmts: list, before: set[int], after: set[int], after_clause: set[int]
         if _is_stub(stmt) and i < last:
             after.add(stmt.end_lineno)
 
-        # Isolate df.cache() calls — they mutate Spark plan state and must be visible.
-        if (
-            isinstance(stmt, ast.Expr)
-            and isinstance(stmt.value, ast.Call)
-            and isinstance(stmt.value.func, ast.Attribute)
-            and stmt.value.func.attr == "cache"
-        ):
+        if _is_cache_call(stmt):
             if i > 0:
                 before.add(stmt.lineno)
 
@@ -152,7 +156,7 @@ def _isolate_blocks(src: str) -> str:
         nxt = lines[idx] if idx < len(lines) else ""
 
         # No blank right before a continuation clause (else/elif/except/finally/case) or at EOF.
-        if idx in after and idx < len(lines) and not _starts_clause(nxt):
+        if idx in after and nxt and not _starts_clause(nxt):
             out.append("\n")
         # ...except a nested block at the suite's tail does get split from except/finally.
         elif idx in after_clause and _starts_clause(nxt, _TAIL_CLAUSES):
@@ -167,7 +171,7 @@ def _starts_clause(line: str, clauses: tuple[str, ...] = _CLAUSES) -> bool:
 
 
 def _excludes() -> list[str]:
-    """Folder names to skip, from [tool.densify].exclude in pyproject.toml."""
+    """Folder names to skip, from [tool.standardize].exclude in pyproject.toml."""
     pyproject = Path(__file__).with_name("pyproject.toml")
 
     if not pyproject.exists():
@@ -175,7 +179,7 @@ def _excludes() -> list[str]:
 
     cfg = tomllib.loads(pyproject.read_text())
 
-    return cfg.get("tool", {}).get("densify", {}).get("exclude", [])
+    return cfg.get("tool", {}).get("standardize", {}).get("exclude", [])
 
 
 def main(targets: list[str]) -> None:
@@ -190,11 +194,11 @@ def main(targets: list[str]) -> None:
                 continue
 
             src = path.read_text()
-            out = densify(src)
+            out = standardize(src)
 
             if out != src:
                 path.write_text(out)
-                print(f"densified {path} (-{src.count(chr(10)) - out.count(chr(10))} blank lines)")
+                print(f"standardized {path} (-{src.count(chr(10)) - out.count(chr(10))} blank lines)")
 
 
 if __name__ == "__main__":

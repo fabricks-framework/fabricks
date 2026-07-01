@@ -46,19 +46,16 @@ class Silver(BaseJob):
     @property
     def options(self) -> JobSilverOptions:
         """Direct access to typed silver job options."""
-
         return self.conf.options  # type: ignore
 
     @property
     def step_conf(self) -> StepSilverConf:
         """Direct access to typed silver step conf."""
-
         return self.base_step_conf  # type: ignore
 
     @property
     def step_options(self) -> StepSilverOptions:
         """Direct access to typed silver step options."""
-
         return self.base_step_conf.options  # type: ignore
 
     @cached_property
@@ -352,7 +349,6 @@ class Silver(BaseJob):
 
         if check_df.isEmpty():
             DEFAULT_LOGGER.warning("no data", extra={"label": self})
-
             return
 
         if self.mode == "update":

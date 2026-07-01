@@ -123,7 +123,6 @@ class JobConfBase(BaseModel):
     @property
     def job_id(self) -> str:
         """Computed job_id from step, topic, and item."""
-
         return get_job_id(step=self.step, topic=self.topic, item=self.item)
 
     options: TOptions

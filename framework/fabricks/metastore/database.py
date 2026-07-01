@@ -49,7 +49,6 @@ class Database:
     def exists(self) -> bool:
         try:
             self.spark.sql(f"show tables in {self.name}")
-
             return True
 
         # database not found

@@ -22,6 +22,8 @@ def run(
     data: dict | None = None,
     **kwargs,
 ) -> None: ...
+
+
 @overload
 def run(
     step: str,
@@ -36,6 +38,8 @@ def run(
     data: dict | None = None,
     **kwargs,
 ) -> None: ...
+
+
 @overload
 def run(
     *,
@@ -48,6 +52,8 @@ def run(
     data: dict | None = None,
     **kwargs,
 ) -> None: ...
+
+
 def run(
     step: str | None = None,
     topic: str | None = None,

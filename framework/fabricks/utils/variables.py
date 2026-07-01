@@ -70,7 +70,6 @@ def substitute_value(value: Any, lookup: dict[str, Any], strict: bool = False) -
 
             if var_name not in lookup:
                 missing_vars.append(var_name)
-
                 return var_name
 
             return str(lookup[var_name])

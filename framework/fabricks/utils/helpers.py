@@ -27,7 +27,6 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
 
 def md5(s: Any) -> str:
     hash_obj = hashlib_md5(str(s).encode())
-
     return hash_obj.hexdigest()
 
 

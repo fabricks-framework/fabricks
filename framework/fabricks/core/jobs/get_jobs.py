@@ -53,7 +53,6 @@ def get_jobs_internal_df() -> DataFrame:
 
             if df:
                 df = df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))
-
                 return df
 
         dfs = run_in_parallel(_read_yaml, list(PATHS_RUNTIME.values()))
@@ -67,8 +66,12 @@ def get_jobs_internal_df() -> DataFrame:
 
 @overload
 def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[True]) -> List[BaseJob]: ...
+
+
 @overload
 def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[False]) -> DataFrame: ...
+
+
 def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) -> Union[List[BaseJob], DataFrame]:
     """
     Retrieves a list of jobs or a DataFrame containing job information.

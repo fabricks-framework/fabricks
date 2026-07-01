@@ -27,6 +27,8 @@ def read_stream(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
+
+
 @overload
 def read_stream(
     src: Union[FileSharePath, str],
@@ -36,6 +38,8 @@ def read_stream(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
+
+
 @overload
 def read_stream(
     src: Union[FileSharePath, str],
@@ -44,6 +48,8 @@ def read_stream(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
+
+
 def read_stream(
     src: Union[FileSharePath, str],
     file_format: str,
@@ -72,6 +78,8 @@ def read_batch(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
+
+
 @overload
 def read_batch(
     src: Union[FileSharePath, str],
@@ -80,6 +88,8 @@ def read_batch(
     options: Optional[dict[str, str | bool | int]] = None,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
+
+
 def read_batch(
     src: Union[FileSharePath, str],
     file_format: str,
@@ -107,7 +117,6 @@ def _read_batch(
 
     if file_format == "table":
         assert isinstance(src, str)
-
         return spark.read.table(src)
     else:
         path_glob_filter = file_format
@@ -152,7 +161,6 @@ def _read_stream(
 
     if file_format == "table":
         assert isinstance(src, str)
-
         return spark.readStream.table(src)
     else:
         file_format = "binaryFile" if file_format == "pdf" else file_format
@@ -212,6 +220,8 @@ def read(
     metadata: Optional[bool] = False,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
+
+
 @overload
 def read(
     stream: bool,
@@ -221,6 +231,8 @@ def read(
     metadata: Optional[bool] = False,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
+
+
 @overload
 def read(
     stream: bool,
@@ -232,6 +244,8 @@ def read(
     metadata: Optional[bool] = True,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
+
+
 @overload
 def read(
     stream: bool,
@@ -243,6 +257,8 @@ def read(
     metadata: Optional[bool] = True,
     spark: Optional[SparkSession] = None,
 ) -> DataFrame: ...
+
+
 def read(
     stream: bool,
     table: Optional[str] = None,

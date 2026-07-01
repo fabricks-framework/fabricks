@@ -29,7 +29,6 @@ def get_tables(schema: str) -> DataFrame:
 def get_views(schema: str) -> DataFrame:
     try:
         view_df = SPARK.sql(f"show views in {schema}")
-
         return SPARK.sql(
             """
                 select

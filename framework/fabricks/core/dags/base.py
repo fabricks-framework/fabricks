@@ -107,5 +107,4 @@ class BaseDags:
 
     def remove_invalid_characters(self, s: str) -> str:
         out = re.sub("[^a-zA-Z0-9]", "", s)
-
         return out

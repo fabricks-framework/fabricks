@@ -24,7 +24,6 @@ def get_extender(name: str) -> Callable:
 def extender(name: str):
     def decorator(fn: Callable):
         EXTENDERS[name] = fn
-
         return fn
 
     return decorator

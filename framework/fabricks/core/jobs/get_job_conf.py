@@ -32,8 +32,12 @@ def get_job_conf_internal(step: str, row: Union[Row, dict]) -> JobConf:
 
 @overload
 def get_job_conf(step: str, *, job_id: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
+
+
 @overload
 def get_job_conf(step: str, *, topic: str, item: str, row: Optional[Union[Row, dict]] = None) -> JobConf: ...
+
+
 def get_job_conf(
     step: str,
     job_id: Optional[str] = None,

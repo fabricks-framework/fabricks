@@ -23,7 +23,6 @@ class BasePath(ABC):
 
     def __json__(self):
         """Return the JSON representation of the path."""
-
         return self.string
 
     @classmethod
@@ -44,18 +43,15 @@ class BasePath(ABC):
     @property
     def string(self) -> str:
         """Get the string representation of the path."""
-
         return self.path
 
     @property
     def pathlibpath(self) -> PathlibPath:
         """Get the pathlib representation of the path."""
-
         return PathlibPath(self.string)
 
     def get_file_name(self) -> str:
         """Get the file name from the path."""
-
         return self.pathlibpath.name
 
     def get_sql(self) -> str:
@@ -72,7 +68,6 @@ class BasePath(ABC):
 
     def is_sql(self) -> bool:
         """Check if the path points to a SQL file."""
-
         return self.string.endswith(".sql")
 
     def joinpath(self, *other) -> Self:

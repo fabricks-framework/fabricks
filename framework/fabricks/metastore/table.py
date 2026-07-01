@@ -49,7 +49,6 @@ class Table(DbObject):
     @property
     def dataframe(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
-
         return self.spark.table(self.qualified_name)
 
     @property
@@ -62,7 +61,6 @@ class Table(DbObject):
     @property
     def rows(self) -> int:
         assert self.registered, f"{self} not registered"
-
         return self.spark.sql(f"select count(*) from {self}").collect()[0][0]
 
     @property
@@ -76,43 +74,36 @@ class Table(DbObject):
     @cached_property
     def identity_enabled(self) -> bool:
         """Immutable, safe to cache."""
-
         return self.get_property_cached("delta.feature.identityColumns") == "supported"
 
     @cached_property
     def generated_columns_enabled(self) -> bool:
         """Immutable, safe to cache."""
-
         return self.get_property_cached("delta.feature.generatedColumns") == "supported"
 
     @cached_property
     def liquid_clustering_enabled(self) -> bool:
         """Immutable, safe to cache."""
-
         return self.get_property_cached("delta.feature.clustering") == "supported"
 
     @property
     def type_widening_enabled(self) -> bool:
         """Mutable, must query fresh."""
-
         return self.get_property("delta.enableTypeWidening") == "true"
 
     @property
     def auto_liquid_clustering_enabled(self) -> bool:
         """Mutable, must query fresh."""
-
         return self.get_property("delta.clusterByAuto") == "true"
 
     @property
     def vorder_enabled(self) -> bool:
         """Mutable, must query fresh."""
-
         return self.get_property("delta.parquet.vorder.enabled") == "true"
 
     @property
     def change_data_feed_enabled(self) -> bool:
         """Mutable, must query fresh."""
-
         return self.get_property("delta.enableChangeDataFeed") == "true"
 
     def drop(self):
@@ -139,6 +130,7 @@ class Table(DbObject):
         generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ): ...
+
     @overload
     def create(
         self,
@@ -156,6 +148,7 @@ class Table(DbObject):
         generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
     ): ...
+
     def create(
         self,
         df: DataFrame | None = None,
@@ -241,7 +234,6 @@ class Table(DbObject):
     ):
         if self.registered:
             DEFAULT_LOGGER.debug("table already exists, skipping creation", extra={"label": self})
-
             return
 
         DEFAULT_LOGGER.info("create table", extra={"label": self})
@@ -357,7 +349,6 @@ class Table(DbObject):
     @property
     def column_mapping_enabled(self) -> bool:
         assert self.registered, f"{self} not registered"
-
         return self.get_property("delta.columnMapping.mode") == "name"
 
     def exists(self) -> bool:
@@ -662,12 +653,10 @@ class Table(DbObject):
 
     def get_column_data_type(self, name: str) -> str:
         data_type = self.get_description().where(f"col_name == '{name}'").select("data_type").collect()[0][0]
-
         return data_type
 
     def get_details(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
-
         return self.spark.sql(f"describe detail {self.qualified_name}")
 
     def get_partitions(self) -> list[str]:
@@ -680,12 +669,10 @@ class Table(DbObject):
 
     def get_properties(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
-
         return self.spark.sql(f"show tblproperties {self.qualified_name}")
 
     def get_description(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
-
         return self.spark.sql(f"describe extended {self.qualified_name}")
 
     def get_history(self, limit: int | None = None) -> DataFrame:
@@ -701,7 +688,6 @@ class Table(DbObject):
 
     def get_last_version(self) -> int:
         assert self.registered, f"{self} not registered"
-
         return self.get_history(limit=1).select("version").collect()[0][0]
 
     def get_last_merge(self) -> int | None:
@@ -716,7 +702,6 @@ class Table(DbObject):
     @lru_cache(maxsize=128)
     def get_property_cached(self, key: str) -> str | None:
         """Get a table property value from the cache. Returns None if the property is not set."""
-
         return self.get_property(key)
 
     def get_property(self, key: str) -> str | None:
@@ -871,22 +856,18 @@ class Table(DbObject):
 
     def show_properties(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
-
         return self.spark.sql(f"show tblproperties {self.qualified_name}")
 
     def describe_detail(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
-
         return self.spark.sql(f"describe detail {self.qualified_name}")
 
     def describe_extended(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
-
         return self.spark.sql(f"describe extended {self.qualified_name}")
 
     def describe_history(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
-
         return self.spark.sql(f"describe history {self.qualified_name}")
 
     def enable_liquid_clustering(self, columns: str | list[str] | None = None, auto: bool | None = False):

@@ -82,7 +82,6 @@ class AzureQueue:
 
         if msg:
             self.queue_client.delete_message(msg)
-
             # print("receiving ->", msg.content)
             return msg.content
 

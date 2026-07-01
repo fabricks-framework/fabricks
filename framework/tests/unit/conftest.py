@@ -35,7 +35,6 @@ mock_spark()
 @pytest.fixture
 def minimal_runtime_config() -> dict[str, Any]:
     """Minimal valid RuntimeConf configuration for testing."""
-
     return {
         "name": "test",
         "options": {
