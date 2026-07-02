@@ -5,7 +5,7 @@ import pytest
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs import get_job
-from tests.integration.compare import compare_silver_to_expected
+from tests.integration.compare import compare_to_expected
 
 DEFAULT_LOGGER.setLevel(ERROR)
 
@@ -13,49 +13,49 @@ DEFAULT_LOGGER.setLevel(ERROR)
 @pytest.mark.order(211)
 def test_silver_monarch_scd2():
     job = get_job(step="silver", topic="monarch", item="scd2")
-    compare_silver_to_expected(job=job, cdc="scd2", iter=2)
+    compare_to_expected(job, "scd2", 2)
 
 
 @pytest.mark.order(212)
 def test_silver_monarch_scd1():
     job = get_job(step="silver", topic="monarch", item="scd1")
-    compare_silver_to_expected(job=job, cdc="scd1", iter=2)
+    compare_to_expected(job, "scd1", 2)
 
 
 @pytest.mark.order(211)
 def test_silver_regent_scd2():
     job = get_job(step="silver", topic="regent", item="scd2")
-    compare_silver_to_expected(job=job, cdc="scd2", iter=2)
+    compare_to_expected(job, "scd2", 2)
 
 
 @pytest.mark.order(212)
 def test_silver_regent_scd1():
     job = get_job(step="silver", topic="regent", item="scd1")
-    compare_silver_to_expected(job=job, cdc="scd1", iter=2)
+    compare_to_expected(job, "scd1", 2)
 
 
 @pytest.mark.order(213)
 def test_silver_memory_scd2():
     job = get_job(step="silver", topic="memory", item="scd2")
-    compare_silver_to_expected(job=job, cdc="scd2", iter=2)
+    compare_to_expected(job, "scd2", 2)
 
 
 @pytest.mark.order(214)
 def test_silver_memory_scd1():
     job = get_job(step="silver", topic="memory", item="scd1")
-    compare_silver_to_expected(job=job, cdc="scd1", iter=2)
+    compare_to_expected(job, "scd1", 2)
 
 
 @pytest.mark.order(215)
 def test_silver_king_and_queen_scd2():
     job = get_job(step="silver", topic="king_and_queen", item="scd2")
-    compare_silver_to_expected(job=job, cdc="scd2", iter=2)
+    compare_to_expected(job, "scd2", 2)
 
 
 @pytest.mark.order(216)
 def test_silver_king_and_queen_scd1():
     job = get_job(step="silver", topic="king_and_queen", item="scd1")
-    compare_silver_to_expected(job=job, cdc="scd1", iter=2)
+    compare_to_expected(job, "scd1", 2)
 
 
 @pytest.mark.order(219)

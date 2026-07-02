@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 
 from pandas.testing import assert_frame_equal
 from pyspark.sql import DataFrame
@@ -14,12 +14,20 @@ __COLUMNS = ["__is_current", "__is_deleted", "__valid_from", "__valid_to", "__so
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = True):
     cols = df_expected.columns
     cols = [c for c in cols if not c.startswith("__") or c in __COLUMNS]
+    scd2 = "__valid_from" in cols and "__valid_to" in cols
 
     if not soft_delete:
-        df_expected = df_expected.where("__is_current")
-        cols = [c for c in cols if c not in ["__is_deleted", "__is_current"]]
+        if scd2:
+            cols = [c for c in cols if c not in ["__is_deleted"]]  # __is_current is always present in SCD2
+        else:
+            df_expected = df_expected.where("__is_current")
+            cols = [c for c in cols if c not in ["__is_deleted", "__is_current"]]
 
-    priority = ["id", "__valid_from", "__valid_to"]
+    priority = ["id"]
+
+    if scd2:
+        priority += ["__valid_from", "__valid_to"]
+
     sort_cols = [c for c in priority if c in cols] + [c for c in cols if c not in priority]
     order_by = f"concat_ws('|', {', '.join(sort_cols)})"
 
@@ -43,7 +51,27 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = 
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
 
 
-def compare_silver_to_expected(job: BaseJob, cdc: str, iter: int):
+def compare_to_expected(
+    job: BaseJob,
+    expected: Literal["scd0", "scd1", "scd2", "latest", "append"],
+    iter: int,
+    reloaded: bool = False,
+):
+    expand = job.expand
+    expected_df = SPARK.sql(f"select * from expected.{expand}_{expected}_job{iter}")
+    df = SPARK.sql(f"select * from {job}")
+
+    if expand in ["bronze", "silver"]:
+        if job.topic in ["monarch", "memory", "regent"]:
+            expected_df = expected_df.drop("__source")
+    else:
+        if job.change_data_capture == "scd1" and (job.mode == "complete" or reloaded):
+            expected_df = expected_df.where("__is_current")
+
+    assert_dfs_equal(df, expected_df)
+
+
+def compare_silver_to_expected(job: BaseJob, cdc: Literal["scd1", "scd2"], iter: int):
     if job.mode == "memory":
         df = SPARK.sql(f"select * from {job}")
     else:
@@ -57,7 +85,7 @@ def compare_silver_to_expected(job: BaseJob, cdc: str, iter: int):
     assert_dfs_equal(df, expected_df)
 
 
-def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: Optional[str] = None):
+def compare_gold_to_expected(job: BaseJob, cdc: Literal["scd1", "scd2"], iter: int, where: Optional[str] = None):
     if job.mode == "memory":
         df = SPARK.sql(f"select * from {job}")
     else:

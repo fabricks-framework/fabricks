@@ -6,7 +6,7 @@ from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs import get_job
 from fabricks.metastore.table import Table
-from tests.integration.compare import compare_gold_to_expected
+from tests.integration.compare import compare_to_expected
 
 DEFAULT_LOGGER.setLevel(ERROR)
 
@@ -14,37 +14,37 @@ DEFAULT_LOGGER.setLevel(ERROR)
 @pytest.mark.order(121)
 def test_gold_scd1_complete():
     j = get_job(step="gold", topic="scd1", item="complete")
-    compare_gold_to_expected(j, "scd1", 1, where="__is_current")
+    compare_to_expected(j, "scd1", 1, reloaded=True)
 
 
 @pytest.mark.order(122)
 def test_gold_scd1_update():
     j = get_job(step="gold", topic="scd1", item="update")
-    compare_gold_to_expected(j, "scd1", 1, where="__is_current")
+    compare_to_expected(j, "scd1", 1)
 
 
 @pytest.mark.order(123)
 def test_gold_scd1_identity():
     j = get_job(step="gold", topic="scd1", item="identity")
-    compare_gold_to_expected(j, "scd1", 1, where="__is_current")
+    compare_to_expected(j, "scd1", 1)
 
 
 @pytest.mark.order(123)
 def test_gold_scd2_complete():
     j = get_job(step="gold", topic="scd2", item="complete")
-    compare_gold_to_expected(j, "scd2", 1)
+    compare_to_expected(j, "scd2", 1)
 
 
 @pytest.mark.order(124)
 def test_gold_scd2_update():
     j = get_job(step="gold", topic="scd2", item="update")
-    compare_gold_to_expected(j, "scd2", 1)
+    compare_to_expected(j, "scd2", 1)
 
 
 @pytest.mark.order(125)
 def test_gold_scd0_update():
     j = get_job(step="gold", topic="scd0", item="update")
-    compare_gold_to_expected(j, "scd0", 1)
+    compare_to_expected(j, "scd0", 1)
 
 
 @pytest.mark.order(125)

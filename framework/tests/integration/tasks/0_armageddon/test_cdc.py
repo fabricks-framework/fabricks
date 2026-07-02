@@ -19,24 +19,25 @@ def test_cdc_isolated(
     topic: Literal["monarch", "king_and_queen", "prince", "princesses", "duke"],
     cdc: Literal["scd1", "scd2", "nocdc"],
     iter: int | list[int] = 1,
-    type: Literal["latest", "append", "update", "overwrite"] = "update",
+    mode: Literal["latest", "append", "update", "overwrite"] = "update",
+    soft_delete: bool = False,
 ):
-    if type == "latest":
+    if mode == "latest":
         assert cdc == "nocdc"  # mandatory for latest
         assert topic == "duke"  # mandatory for latest as duke force reload in __operation
-    elif type == "append":
+    elif mode == "append":
         assert cdc == "nocdc"  # mandatory for append
 
     if isinstance(iter, int):
         iter = [iter]
 
-    if type == "append":
+    if mode == "append":
         # append relies on non-cumulative batch tables, so gaps must be filled to not lose data
         iter = list(range(min(iter), max(iter) + 1))
 
-    context = CdcContext(keys=["id"], schema_drift=True)
+    context = CdcContext(keys=["id"], schema_drift=True, soft_delete=soft_delete)
 
-    if type == "latest":
+    if mode == "latest":
         context.slice = "latest"
     elif cdc == "scd2":
         context.correct_valid_from = True
@@ -45,9 +46,9 @@ def test_cdc_isolated(
     last_iter = iter[-1]
     tgt = CDC[cdc]("test", f"{topic}_{cdc}_{'_'.join(iter_str)}")
 
-    if type == "latest":
+    if mode == "latest":
         expected = f"select * from expected.silver_latest_job{last_iter}"
-    elif type == "append":
+    elif mode == "append":
         expected = f"select * from input.{topic}_job{last_iter}"
     else:
         expected = f"select * from expected.silver_{cdc}_job{last_iter}"
@@ -60,7 +61,7 @@ def test_cdc_isolated(
             view_1 = f"input.king_job{i}"
             view_2 = f"input.queen_job{i}"
 
-            if type == "append":
+            if mode == "append":
                 view_1 = view_1 + "_batch"
                 view_2 = view_2 + "_batch"
 
@@ -68,7 +69,7 @@ def test_cdc_isolated(
         else:
             view = f"input.{topic}_job{i}"
 
-            if type == "append":
+            if mode == "append":
                 view = view + "_batch"
 
             query = f"select * from {view}"
@@ -77,15 +78,19 @@ def test_cdc_isolated(
             tgt.drop()
             tgt.create_table(query, context=context)
 
-        if type == "append":
+        if mode == "append":
             tgt.append(query, context=context)
-        elif type == "overwrite":
+        elif mode == "overwrite":
             tgt.overwrite(query, context=context)
         else:
             tgt.update(query, context=context)
 
         x += 1
 
-    expected_df = SPARK.sql(expected).drop("__source")
-    df = tgt.table.dataframe.drop("__source")
-    assert_dfs_equal(df, expected_df, soft_delete=False)
+    expected_df = SPARK.sql(expected)
+    df = tgt.table.dataframe
+
+    if topic not in ["king_and_queen"]:
+        expected_df = expected_df.drop("__source")
+
+    assert_dfs_equal(df, expected_df, soft_delete=soft_delete)
