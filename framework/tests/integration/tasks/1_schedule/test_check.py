@@ -77,21 +77,3 @@ def test_gold_check_skip():
     error = _get_last_error(j.job_id, status="skipped")
     assert error == "I want you to skip this !"
     assert j.table.rows == 0, "table should be empty"
-
-
-# @pytest.mark.order(166)
-# def test_gold_check_no_dependency_fail():
-#     j = get_job(step="gold", topic="check", item="no_dependency_fail")
-#     error = _get_last_error(j.job_id)
-#     assert error == "no dependency fail check failed (gold.check_fail)"
-#     assert j.table.rows == 0, "table should be empty"
-# @pytest.mark.order(167)
-# def test_gold_check_duplicate_key():
-#     j = get_job(step="gold", topic="check", item="duplicate_key")
-#     error = _get_last_error(j.job_id)
-#     assert error == "duplicate key"
-# @pytest.mark.order(168)
-# def test_gold_check_duplicate_identity():
-#     j = get_job(step="gold", topic="check", item="duplicate_identity")
-#     error = _get_last_error(j.job_id)
-#     assert error == "duplicate identity"

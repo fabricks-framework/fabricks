@@ -30,7 +30,7 @@ expected_skips_as_str = ", ".join(f'"{f}"' for f in expected_skips)
 
 
 @pytest.mark.order(102)
-def test_schedule_run_1():
+def test_run_1():
     t = Table("silver", "princess", "drop")
     t.drop()
 
@@ -42,7 +42,7 @@ def test_schedule_run_1():
 
 
 @pytest.mark.order(103)
-def test_no_unforced_failure():
+def test_run_1_no_unforced_failure():
     df = SPARK.sql(
         f"""
         select
@@ -59,7 +59,7 @@ def test_no_unforced_failure():
 
 
 @pytest.mark.order(103)
-def test_forced_failures():
+def test_run_1_forced_failures():
     df = SPARK.sql(
         f"""
         select
@@ -76,7 +76,7 @@ def test_forced_failures():
 
 
 @pytest.mark.order(104)
-def test_no_unforced_skip():
+def test_run_1_no_unforced_skip():
     df = SPARK.sql(
         f"""
         select
@@ -93,7 +93,7 @@ def test_no_unforced_skip():
 
 
 @pytest.mark.order(104)
-def test_forced_skips():
+def test_run_1_forced_skips():
     df = SPARK.sql(
         f"""
         select

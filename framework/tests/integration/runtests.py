@@ -20,8 +20,7 @@ assert IS_TESTMODE
 
 # COMMAND ----------
 
-Tests = ["job0", "job1", "job2", "job3", "job4", "job5"]
-Booleans = ["True", "False"]
+Tests = ["0_armageddon", "1_schedule", "2_schedule", "3_run", "4_reload", "5_extra"]
 
 # COMMAND ----------
 
@@ -38,16 +37,10 @@ _ = send_message_to_channel(
 
 # COMMAND ----------
 
-dbutils.widgets.dropdown("initialize", "True", Booleans)
-dbutils.widgets.dropdown("armageddon", "True", Booleans)
-dbutils.widgets.dropdown("reset", "False", Booleans)
 dbutils.widgets.multiselect("tests", "*", ["*"] + Tests)
 
 # COMMAND ----------
 
-armageddon = dbutils.widgets.get("armageddon").lower() == "true"
-initialize = dbutils.widgets.get("initialize").lower() == "true"
-reset = dbutils.widgets.get("reset").lower() == "true"
 tests = [t for t in dbutils.widgets.get("tests").split(",")]
 if "*" in tests:
     tests = Tests
@@ -64,19 +57,11 @@ print(root)
 
 # COMMAND ----------
 
-if initialize:
-    run_notebook(
-        root.joinpath("initialize"),
-        expected="True",
-        i=1,
-    )
-
-# COMMAND ----------
-
-if armageddon:
-    run_notebook(root.joinpath("armageddon"))
-elif reset:
-    run_notebook(root.joinpath("reset"))
+run_notebook(
+    root.joinpath("initialize"),
+    expected="True",
+    i=1,
+)
 
 # COMMAND ----------
 
@@ -94,7 +79,7 @@ k = " or ".join(tests)
 
 res = pytest.main(
     [
-        "jobs",
+        "tasks",
         "-v",
         "-p",
         "no:cacheprovider",

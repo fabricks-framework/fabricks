@@ -10,7 +10,7 @@ DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(401)
-def test_run():
+def test_reload():
     jobs = ["gold.scd1_complete", "gold.scd1_update", "gold.scd1_identity", "gold.scd2_complete", "gold.scd2_update"]
 
     def _reload(j: str):

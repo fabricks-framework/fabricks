@@ -84,7 +84,7 @@ def test_gold_fact_dependency_notebook():
         )
         parents = set(sorted([row.parent for row in dep_df.select("parent").collect()]))
         assert parents == expected_parents, f"{', '.join(parents)} <> {', '.join(expected_parents)}"
-        # check specific ids to ensure hashing is correct
+        # check specific ids to ensure hashing remains consistent
         row = dep_df.filter("parent = 'gold.dim_time'").collect()[0]
         assert row.job_id == "c576b41222d104dbbc0e0b84cda29ff5", (
             f"job_id {row.job_id} <> c576b41222d104dbbc0e0b84cda29ff5"
@@ -95,3 +95,27 @@ def test_gold_fact_dependency_notebook():
         assert row.dependency_id == "dd6782bc6d6b6504e66c437d9ac79b55", (
             f"dependency_id {row.dependency_id} <> dd6782bc6d6b6504e66c437d9ac79b55"
         )
+
+
+@pytest.mark.order(153)
+def test_transf_fact_wait_for():
+    j = get_job(step="transf", topic="fact", item="wait_for")
+    depedencies = [d.parent for d in j.get_dependencies()]
+    expected_dependencies = {
+        "silver.monarch_scd1",
+        "transf.fact_memory",
+    }
+    assert len(depedencies) == 2, f"{len(depedencies)} <> 2"
+    assert set(depedencies) == expected_dependencies, f"{set(depedencies)} <> {expected_dependencies}"
+    df = SPARK.sql("""
+        select
+            max(if(job = 'transf.fact_memory', end_time, null)) as last_memory,
+            max(if(job = 'transf.fact_wait_for', start_time, null)) as first_wait_for,
+            first_wait_for > last_memory as check
+        from
+            fabricks.last_schedule
+        where
+            job in ('transf.fact_memory', 'transf.fact_wait_for')
+    """)
+    check = df.toPandas().to_dict(orient="records")[0]["check"]
+    assert check, "transf.fact_wait_for started before transf.fact_memory ended"

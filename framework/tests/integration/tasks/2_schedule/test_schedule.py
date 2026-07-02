@@ -10,7 +10,7 @@ DEFAULT_LOGGER.setLevel(ERROR)
 
 
 @pytest.mark.order(201)
-def test_schedule_run_2():
+def test_run_2():
     try:
         run_notebook(PATH_NOTEBOOKS.joinpath("standalone"), schedule="run_2")
         assert True  # schedule should not fail
