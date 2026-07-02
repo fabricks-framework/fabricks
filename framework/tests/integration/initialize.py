@@ -25,7 +25,7 @@ DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 
-dbutils.widgets.dropdown("extra", "True", ["True", "False"]) # should remain stable between runs
+dbutils.widgets.dropdown("extra", "True", ["True", "False"])  # should remain stable between runs
 dbutils.widgets.dropdown("rm", "True", ["True", "False"])
 dbutils.widgets.dropdown("i", "1", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"])
 

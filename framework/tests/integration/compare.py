@@ -16,6 +16,7 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = 
     cols = [c for c in cols if not c.startswith("__") or c in __COLUMNS]
 
     if not soft_delete:
+        df_expected = df_expected.where("__is_current")
         cols = [c for c in cols if c not in ["__is_deleted", "__is_current"]]
 
     priority = ["id", "__valid_from", "__valid_to"]

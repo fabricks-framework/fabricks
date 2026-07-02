@@ -13,13 +13,13 @@ CDC = {"scd1": SCD1, "scd2": SCD2, "nocdc": NoCDC}
 
 @pytest.mark.integration
 @pytest.mark.parametrize("topic", ["monarch", "king_and_queen", "prince", "princesses", "duke"])
-@pytest.mark.parametrize("cdc", ["scd1", "scd2"])
+@pytest.mark.parametrize("cdc", ["scd1", "scd2", "nocdc"])
 @pytest.mark.parametrize("iter", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 def test_cdc_isolated(
     topic: Literal["monarch", "king_and_queen", "prince", "princesses", "duke"],
     cdc: Literal["scd1", "scd2", "nocdc"],
     iter: int | list[int] = 1,
-    type: Literal["latest", "append"] | None = None,
+    type: Literal["latest", "append", "update", "overwrite"] = "update",
 ):
     if type == "latest":
         assert cdc == "nocdc"  # mandatory for latest
@@ -79,6 +79,8 @@ def test_cdc_isolated(
 
         if type == "append":
             tgt.append(query, context=context)
+        elif type == "overwrite":
+            tgt.overwrite(query, context=context)
         else:
             tgt.update(query, context=context)
 
