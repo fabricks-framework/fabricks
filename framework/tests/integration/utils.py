@@ -9,12 +9,18 @@ from pyspark.sql.functions import expr, lit
 
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.utils.helpers import concat_dfs
+from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import FileSharePath, GitPath
 from tests.integration._types import paths
 
 _DATES = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
-_TOPIC_SOURCES = {t: ["king", "queen", "king__deletelog", "queen__deletelog"] for t in ["monarch", "regent", "duke"]}
+_TOPIC_SOURCES = {
+    "king": ["king", "king__deletelog"],
+    "queen": ["queen", "queen__deletelog"],
+    "prince": ["prince"],
+    "princess": ["princess"],
+    **{t: ["king", "queen", "king__deletelog", "queen__deletelog"] for t in ["monarch", "regent", "duke"]},
+}
 _TOPIC_OPERATIONS = {"duke": "reload"}
 
 
@@ -160,74 +166,85 @@ def create_input_tables(topics: List[str] | None = None):
     DEFAULT_LOGGER.info("input - creating tables")
 
     if topics is None:
-        topics = ["monarch", "prince", "princess"]
+        topics = ["monarch", "prince", "princess", "king", "queen", "duke", "regent"]
 
     spark.sql("create schema if not exists input")
     data_dir = paths.tests.joinpath("data")
     job_dirs = sorted(data_dir.pathlibpath.glob("job*"), key=lambda p: int(p.name[3:]))
 
-    for topic in topics:
+    def _write_table(rows: List[Any], topic: str, table: str):
+        p_df = pd.concat(rows, ignore_index=True)
+        df = spark.createDataFrame(p_df)
+
+        if topic in ["duke"]:
+            df = _force_operation(df, topic)
+        elif "__operation" not in df.columns:
+            if "BEL_IsFullLoad" in df.columns:
+                df = df.withColumn(
+                    "__operation",
+                    expr(
+                        "if(BEL_DeleteDateUtc is not null, 'delete', if(BEL_IsFullLoad=='true', 'reload', 'upsert'))"
+                    ),
+                )
+            else:
+                df = df.withColumn("__operation", expr("if(__file_path like '%deletelog%', 'delete', 'upsert')"))
+
+        df: DataFrame = _add_timestamp(df)
+        cols = [c for c in df.columns if c.startswith("BEL_")]
+
+        if cols:
+            df = df.drop(*cols)
+            df = _drop_extra__columns(df)
+
+        (
+            df.write.mode("overwrite")
+            .option("overwriteSchema", "True")
+            .option("delta.columnMapping.mode", "name")
+            .option("delta.minReaderVersion", "2")
+            .option("delta.minWriterVersion", "5")
+            .saveAsTable(table)
+        )
+
+    def _create_tables(topic: str):
         accumulated: List[Any] = []
 
         for job_dir in job_dirs:
             DEFAULT_LOGGER.debug(f"creating table input.{topic}_{job_dir.name}")
-            topic_dir = job_dir / topic
-            scan_dirs = [topic_dir] if topic_dir.exists() else [job_dir / s for s in _TOPIC_SOURCES.get(topic, [])]
+            scan_dirs = [job_dir / s for s in _TOPIC_SOURCES.get(topic, [topic])]
+            batch: List[Any] = []
 
             for scan_dir in scan_dirs:
-                if scan_dir.exists():
-                    for json_file in sorted(scan_dir.rglob("*.json")):
-                        p_df = pd.read_json(str(json_file), orient="records", convert_dates=cast(Any, _DATES))
-                        p_df["__file_path"] = str(json_file).replace("\\", "/")
-                        p_df["__file_name"] = json_file.name
-                        accumulated.append(p_df)
+                for json_file in sorted(scan_dir.rglob("*.json")):
+                    p_df = pd.read_json(str(json_file), orient="records", convert_dates=cast(Any, _DATES))
+                    p_df["__file_path"] = str(json_file).replace("\\", "/")
+                    p_df["__file_name"] = json_file.name
+                    batch.append(p_df)
+
+            accumulated.extend(batch)
 
             if not accumulated:
                 continue
 
-            p_df = pd.concat(accumulated, ignore_index=True)
-            df = spark.createDataFrame(p_df)
+            _write_table(accumulated, topic, f"input.{topic}_{job_dir.name}")
 
-            if topic in ["duke"]:
-                df = _force_operation(df, topic)
-            elif "__operation" not in df.columns:
-                if "BEL_IsFullLoad" in df.columns:
-                    df = df.withColumn(
-                        "__operation",
-                        expr(
-                            "if(BEL_DeleteDateUtc is not null, 'delete', if(BEL_IsFullLoad=='true', 'reload', 'upsert'))"
-                        ),
-                    )
-                else:
-                    df = df.withColumn("__operation", expr("if(__file_path like '%deletelog%', 'delete', 'upsert')"))
+            if batch:
+                _write_table(batch, topic, f"input.{topic}_{job_dir.name}_batch")
 
-            df: DataFrame = _add_timestamp(df)
-            cols = [c for c in df.columns if c.startswith("BEL_")]
-
-            if cols:
-                df = df.drop(*cols)
-
-            (
-                df.write.mode("overwrite")
-                .option("overwriteSchema", "True")
-                .option("delta.columnMapping.mode", "name")
-                .option("delta.minReaderVersion", "2")
-                .option("delta.minWriterVersion", "5")
-                .saveAsTable(f"input.{topic}_{job_dir.name}")
-            )
+    run_in_parallel(_create_tables, topics)
 
 
 def create_expected_views():
     DEFAULT_LOGGER.info("expected - creating views")
 
     def _create_views(step: str, cdc: str):
+        DEFAULT_LOGGER.debug(f"creating expected views for {step} - {cdc}")
         views = paths.tests.joinpath("expected", step, cdc)
 
         for v in sorted(views.walk()):
-            DEFAULT_LOGGER.debug(f"creating view {v}")
             spark.sql(GitPath(v).get_sql())
 
     def _create_latest_views(step: str):
+        DEFAULT_LOGGER.debug(f"creating expected latest views for {step}")
         views = paths.tests.joinpath("expected", step, "scd2")
 
         for v in sorted(views.walk()):
@@ -246,6 +263,7 @@ def create_expected_views():
             )
 
     def _create_append_views(step: str):
+        DEFAULT_LOGGER.debug(f"creating expected append views for {step}")
         views = paths.tests.joinpath("expected", step, "scd2")
 
         for v in sorted(views.walk()):

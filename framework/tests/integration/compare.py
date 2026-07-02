@@ -18,13 +18,9 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = 
     if not soft_delete:
         cols = [c for c in cols if c not in ["__is_deleted", "__is_current"]]
 
-    print(cols)
-    order_by = "id" if "id" in df.columns else "id"
-
-    if "__valid_from" in df.columns:
-        order_by = f"concat_ws('|', {order_by}, __valid_from, __valid_to)"
-    elif "valid_from" in df.columns:
-        order_by = f"concat_ws('|', {order_by}, valid_from, valid_to)"
+    priority = ["id", "__valid_from", "__valid_to"]
+    sort_cols = [c for c in priority if c in cols] + [c for c in cols if c not in priority]
+    order_by = f"concat_ws('|', {', '.join(sort_cols)})"
 
     def _transform(df_: DataFrame):
         df_ = df_.withColumn("order_by", expr(order_by)).orderBy("order_by").select(cols)
