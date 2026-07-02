@@ -48,7 +48,7 @@ def test_cdc_isolated(
     if type == "latest":
         expected = f"select * from expected.silver_latest_job{last_iter}"
     elif type == "append":
-        expected = f"select * from expected.silver_append_job{last_iter}"
+        expected = f"select * from input.{topic}_job{last_iter}"
     else:
         expected = f"select * from expected.silver_{cdc}_job{last_iter}"
 
@@ -85,10 +85,5 @@ def test_cdc_isolated(
         x += 1
 
     expected_df = SPARK.sql(expected).drop("__source")
-
-    if type == "append":
-        df = tgt.table.dataframe.distinct()
-    else:
-        df = tgt.table.dataframe
-
-    assert_dfs_equal(df.drop("__source"), expected_df, soft_delete=False)
+    df = tgt.table.dataframe.drop("__source")
+    assert_dfs_equal(df, expected_df, soft_delete=False)
