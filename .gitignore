@@ -171,3 +171,4 @@ cython_debug/
 .audits/
 .plans
 .issues/
+.memory/
