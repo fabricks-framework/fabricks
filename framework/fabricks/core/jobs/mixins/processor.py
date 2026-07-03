@@ -38,26 +38,38 @@ class ProcessorMixin(JobProtocol):
             DEFAULT_LOGGER.debug(f"batch {batch}", extra={"label": self})
 
         df = self.base_transform(df)
-        diffs = self.get_schema_differences(df)
+        # Cache before the actions below (schema diff, reload probe, CDC merge) each scan
+        # this same lazy plan. Uncached, Spark recomputes it per action — wasted work, and
+        # any non-deterministic expression (uuid(), current_timestamp()) re-evaluates.
+        df = df.cache()
 
-        if diffs:
-            if self.schema_drift or kwargs.get("reload", False):
-                DEFAULT_LOGGER.warning("schema drifted", extra={"label": self, "diffs": diffs})
-                self.update_schema(df=df)
-            else:
-                only_type_widening_compatible = all(d.type_widening_compatible for d in diffs if d.status == "changed")
+        try:
+            diffs = self.get_schema_differences(df)
 
-                if only_type_widening_compatible and self.table.type_widening_enabled and IS_TYPE_WIDENING:
-                    self.update_schema(df=df, widen_types=True)
+            if diffs:
+                if self.schema_drift or kwargs.get("reload", False):
+                    DEFAULT_LOGGER.warning("schema drifted", extra={"label": self, "diffs": diffs})
+                    self.update_schema(df=df)
                 else:
-                    raise SchemaDriftException.from_diffs(str(self), diffs)
+                    only_type_widening_compatible = all(
+                        d.type_widening_compatible for d in diffs if d.status == "changed"
+                    )
 
-        self.for_each_batch(df, batch, **kwargs)
+                    if only_type_widening_compatible and self.table.type_widening_enabled and IS_TYPE_WIDENING:
+                        self.update_schema(df=df, widen_types=True)
+                    else:
+                        raise SchemaDriftException.from_diffs(str(self), diffs)
 
-        if batch is not None:
-            self.table.set_property("fabricks.last_batch", batch)
+            self.for_each_batch(df, batch, **kwargs)
 
-        self.table.create_restore_point()
+            if batch is not None:
+                self.table.set_property("fabricks.last_batch", batch)
+
+            self.table.create_restore_point()
+
+        finally:
+            df.unpersist()
+
         DEFAULT_LOGGER.debug("end (for each batch)", extra={"label": self})
 
     def for_each_run(self, **kwargs):

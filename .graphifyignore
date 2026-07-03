@@ -1,0 +1,36 @@
+# Only graph framework/fabricks. Two graphify quirks force this shape:
+#  1. negation (!) can't re-include a pruned path, so no whitelist idiom.
+#  2. `*` matches across `/`, so any glob (even /*.md) would recurse into
+#     fabricks — every entry below is an exact dir or file, no globs.
+
+# graphify's own output + tooling dirs
+/graphify-out/
+/.github/
+/.claude/
+/.vscode/
+
+# framework siblings of fabricks
+/framework/tests/
+/framework/docs/
+/framework/__pycache__/
+
+# framework root files (live above fabricks, not in it)
+/framework/standardize.py
+/framework/pyproject.toml
+/framework/README.md
+/framework/format.sh
+/framework/mkdocs.sh
+/framework/mkdocs.yml
+/framework/databricks.yml
+/framework/uv.lock
+
+# repo-root docs + schemas
+/AGENTS.md
+/CLAUDE.md
+/LLM.md
+/README.md
+/.mcp.json
+/job-schema.json
+/job-schema-bronze.json
+/job-schema-gold.json
+/job-schema-silver.json

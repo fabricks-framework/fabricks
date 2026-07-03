@@ -558,6 +558,7 @@ class Table(DbObject):
             self.create_restore_point()
             retention_hours = retention_days * 24
             self.delta_table.vacuum(retention_hours)
+
         finally:
             # finally
             pass

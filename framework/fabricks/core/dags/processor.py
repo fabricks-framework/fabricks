@@ -139,6 +139,7 @@ class DagProcessor(BaseDags):
 
                     except Exception:
                         LOGGER.warning("fail", extra={"label": j.get("Job")})
+
                     finally:
                         j["Status"] = "ok"
                         azure_table.upsert(j)

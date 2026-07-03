@@ -112,6 +112,11 @@ def _mark(stmts: list, before: set[int], after: set[int], after_clause: set[int]
             if i < last:
                 after.add(stmt.end_lineno)
 
+        if isinstance(stmt, ast.Try) and stmt.finalbody:
+            # Isolate `finally`: blank before it so cleanup stands out in dense code.
+            pre = stmt.orelse or (stmt.handlers[-1].body if stmt.handlers else stmt.body)
+            after_clause.add(pre[-1].end_lineno)
+
         # Isolate a `return`: blank after (so guard clauses separate; skipped before else/EOF in
         # rebuild) and blank before whenever it has a sibling above.
         if isinstance(stmt, ast.Return):

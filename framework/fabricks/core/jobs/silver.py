@@ -337,7 +337,7 @@ class Silver(BaseJob):
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
         context = self.get_cdc_context(df)
-        # if dataframe, reference is passed (BUG)
+        # df is cached upstream in _for_each_batch, so this reference is a pinned snapshot
         name = f"{self.step}_{self.topic}_{self.item}"
 
         if batch is not None:

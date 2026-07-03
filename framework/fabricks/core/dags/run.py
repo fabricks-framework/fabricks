@@ -154,5 +154,6 @@ def run(
     except Exception as e:
         LOGGER.exception("failed", extra=extra)
         raise e
+
     finally:
         TABLE_LOG_HANDLER.flush()

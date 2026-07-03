@@ -360,7 +360,7 @@ class Gold(BaseJob):
         assert self.persist, f"{self.mode} not allowed"
         reload = kwargs.get("reload")
         context = self.get_cdc_context(df=df, reload=reload)
-        # if dataframe, reference is passed (BUG)
+        # df is cached upstream in _for_each_batch, so this reference is a pinned snapshot
         name = f"{self.step}_{self.topic}_{self.item}"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
