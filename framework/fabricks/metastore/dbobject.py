@@ -3,6 +3,7 @@ from typing import Optional
 from pyspark.sql import SparkSession
 from pyspark.sql.catalog import Column, Table
 
+from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 
@@ -85,4 +86,7 @@ class DbObject:
                 DEFAULT_LOGGER.debug("object not found in metastore, skipping drop", extra={"label": self})
 
     def __str__(self):
+        if CATALOG is not None:
+            return f"{CATALOG}.{self.qualified_name}"
+
         return self.qualified_name

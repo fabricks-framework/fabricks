@@ -4,7 +4,7 @@ from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, Row, SparkSession
 from typing_extensions import deprecated
 
-from fabricks.context import PATHS_STORAGE, SPARK
+from fabricks.context import CATALOG, PATHS_STORAGE, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.utils import get_tables, get_views
 from fabricks.utils.helpers import run_in_parallel
@@ -73,6 +73,9 @@ class Database:
             return False
 
     def __str__(self):
+        if CATALOG is not None:
+            return f"{CATALOG}.{self.name}"
+
         return self.name
 
     def get_tables(self) -> DataFrame:
