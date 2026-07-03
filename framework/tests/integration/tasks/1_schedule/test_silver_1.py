@@ -5,7 +5,7 @@ import pytest
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs import get_job
 from fabricks.metastore.table import Table
-from tests.integration.compare import compare_to_expected
+from tests.integration.compare import compare_job_to_expected
 
 DEFAULT_LOGGER.setLevel(ERROR)
 
@@ -13,55 +13,55 @@ DEFAULT_LOGGER.setLevel(ERROR)
 @pytest.mark.order(111)
 def test_silver_monarch_scd2():
     job = get_job(step="silver", topic="monarch", item="scd2")
-    compare_to_expected(job, "scd2", 1)
+    compare_job_to_expected(job, "scd2", 1)
 
 
 @pytest.mark.order(112)
 def test_silver_monarch_scd1():
     job = get_job(step="silver", topic="monarch", item="scd1")
-    compare_to_expected(job, "scd1", 1)
+    compare_job_to_expected(job, "scd1", 1)
 
 
 @pytest.mark.order(111)
 def test_silver_regent_scd2():
     job = get_job(step="silver", topic="regent", item="scd2")
-    compare_to_expected(job, "scd2", 1)
+    compare_job_to_expected(job, "scd2", 1)
 
 
 @pytest.mark.order(112)
 def test_silver_regent_scd1():
     job = get_job(step="silver", topic="regent", item="scd1")
-    compare_to_expected(job, "scd1", 1)
+    compare_job_to_expected(job, "scd1", 1)
 
 
 @pytest.mark.order(113)
 def test_silver_memory_scd2():
     job = get_job(step="silver", topic="memory", item="scd2")
-    compare_to_expected(job, "scd2", 1)
+    compare_job_to_expected(job, "scd2", 1)
 
 
 @pytest.mark.order(114)
 def test_silver_memory_scd1():
     job = get_job(step="silver", topic="memory", item="scd1")
-    compare_to_expected(job, "scd1", 1)
+    compare_job_to_expected(job, "scd1", 1)
 
 
 @pytest.mark.order(115)
 def test_silver_king_and_queen_scd2():
     job = get_job(step="silver", topic="king_and_queen", item="scd2")
-    compare_to_expected(job, "scd2", 1)
+    compare_job_to_expected(job, "scd2", 1)
 
 
 @pytest.mark.order(116)
 def test_silver_king_and_queen_scd1():
     job = get_job(step="silver", topic="king_and_queen", item="scd1")
-    compare_to_expected(job, "scd1", 1)
+    compare_job_to_expected(job, "scd1", 1)
 
 
 @pytest.mark.order(119)
 def test_silver_monarch_delta():
     job = get_job(step="silver", topic="monarch", item="delta")
-    compare_to_expected(job, "scd2", 1)
+    compare_job_to_expected(job, "scd2", 1)
     data_type = job.table.get_column_data_type("decimalField")
     assert data_type == "double", "decimalField is not double"
     cols = Table("silver", "monarch", "delta").columns
@@ -71,13 +71,13 @@ def test_silver_monarch_delta():
 @pytest.mark.order(119)
 def test_silver_princess_append():
     job = get_job(step="silver", topic="princess", item="append")
-    compare_to_expected(job, "append", 1)
+    compare_job_to_expected(job, "append", 1)
 
 
 @pytest.mark.order(119)
 def test_silver_princess_latest():
     job = get_job(step="silver", topic="princess", item="latest")
-    compare_to_expected(job, "latest", 1)
+    compare_job_to_expected(job, "latest", 1)
 
 
 @pytest.mark.order(119)
