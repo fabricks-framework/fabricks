@@ -1,7 +1,7 @@
 - schedule:
-    name: test
+    name: run_1
     options:
-      tag: test
+      tag: run_1
       steps:
         - bronze
         - silver
@@ -11,3 +11,11 @@
       variables:
         var1: 1
         var2: 2
+- schedule:
+    name: run_2
+    options:
+      tag: run_2
+      steps:
+        - bronze
+        - silver
+        - gold
