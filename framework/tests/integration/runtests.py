@@ -20,7 +20,7 @@ assert IS_TESTMODE
 
 # COMMAND ----------
 
-Tests = ["0_armageddon", "1_schedule", "2_schedule", "3_run", "4_reload", "5_extra"]
+Tasks = ["0_armageddon", "1_schedule", "2_schedule", "3_run", "4_reload", "5_extra"]
 
 # COMMAND ----------
 
@@ -37,13 +37,13 @@ _ = send_message_to_channel(
 
 # COMMAND ----------
 
-dbutils.widgets.multiselect("tests", "*", ["*"] + Tests)
+dbutils.widgets.multiselect("tasks", "*", ["*"] + Tasks)
 
 # COMMAND ----------
 
-tests = [t for t in dbutils.widgets.get("tests").split(",")]
-if "*" in tests:
-    tests = Tests
+tasks = [t for t in dbutils.widgets.get("tasks").split(",")]
+if "*" in tasks:
+    tasks = Tasks
 
 # COMMAND ----------
 
@@ -73,7 +73,7 @@ DEFAULT_LOGGER.setLevel(ERROR)
 
 # COMMAND ----------
 
-k = " or ".join(tests)
+k = " or ".join(tasks)
 
 # COMMAND ----------
 

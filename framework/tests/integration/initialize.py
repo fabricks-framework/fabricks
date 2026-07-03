@@ -25,14 +25,12 @@ DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 
-dbutils.widgets.dropdown("extra", "True", ["True", "False"])  # should remain stable between runs
-dbutils.widgets.dropdown("rm", "True", ["True", "False"])
+dbutils.widgets.dropdown("init", "False", ["True", "False"])
 dbutils.widgets.dropdown("i", "1", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"])
 
 # COMMAND ----------
 
-extra = dbutils.widgets.get("extra").lower() == "true"
-rm = dbutils.widgets.get("rm").lower() == "true"
+init = dbutils.widgets.get("init").lower() == "true"
 i = dbutils.widgets.get("i")
 i = list(range(1, int(i) + 1))
 
@@ -49,18 +47,17 @@ if CATALOG:
 
 # COMMAND ----------
 
-if rm:
+if init:
     paths.landing.rm()
-    paths.raw.rm()
-    paths.out.rm()
 
 # COMMAND ----------
 
-create_random_tables()
+paths.raw.rm()
+paths.out.rm()
 
 # COMMAND ----------
 
-if rm:
+if init:
     git_to_landing()
 
 # COMMAND ----------
@@ -70,15 +67,28 @@ if i:
 
 # COMMAND ----------
 
-if extra:
     for d in ["expected", "input", "test"]:
         db = Database(d)
-        db.drop()
-        db.create()
+        tables = db.get_tables()
+        for t in tables.collect():
+            if t["table"] is not None:
+                spark.sql("drop table if exists " + t["table"])
+
+# COMMAND ----------
+
+# DBTITLE 1,Cell 11
+if init:    
+    for d in ["expected", "input", "test"]:
+        db = Database(d)
+        tables = db.get_tables()
+        for t in tables:
+            print(t)
+
+    create_random_tables()
 
     create_expected_views()
     create_input_tables()
 
-# COMMAND ---------
+# COMMAND ----------
 
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
