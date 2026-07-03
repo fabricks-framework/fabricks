@@ -1,12 +1,13 @@
 from typing import Optional
 
 from pyspark.errors.exceptions.base import AnalysisException
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import DataFrame, Row, SparkSession
 from typing_extensions import deprecated
 
 from fabricks.context import PATHS_STORAGE, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.utils import get_tables, get_views
+from fabricks.utils.helpers import run_in_parallel
 from fabricks.utils.path import FileSharePath
 
 
@@ -36,7 +37,10 @@ class Database:
         DEFAULT_LOGGER.info("create database", extra={"label": self})
         self.spark.sql(f"create database if not exists {self.name};")
 
-    def drop(self, rm: Optional[bool] = True):
+    def drop(self, rm: Optional[bool] = True, one_by_one: Optional[bool] = True):
+        if one_by_one:
+            self.drop_one_by_one()
+
         if self.exists():
             DEFAULT_LOGGER.warning("drop database", extra={"label": self})
             self.spark.sql(f"drop database if exists {self.name} cascade;")
@@ -45,6 +49,19 @@ class Database:
             if self.delta_path.exists():
                 DEFAULT_LOGGER.debug("remove delta files", extra={"label": self})
                 self.delta_path.rm()
+
+    def drop_one_by_one(self):
+        tables = self.get_tables()
+        views = self.get_views()
+
+        def _drop_view(row: Row):
+            self.spark.sql(f"drop view if exists {row['view']};")
+
+        def _drop_table(row: Row):
+            self.spark.sql(f"drop table if exists {row['table']};")
+
+        run_in_parallel(_drop_table, tables)
+        run_in_parallel(_drop_view, views)
 
     def exists(self) -> bool:
         try:

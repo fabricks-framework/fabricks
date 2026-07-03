@@ -5,7 +5,7 @@
 
 from logging import DEBUG
 
-from databricks.sdk.runtime import dbutils, spark
+from databricks.sdk.runtime import dbutils
 
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
@@ -26,24 +26,10 @@ DEFAULT_LOGGER.setLevel(DEBUG)
 # COMMAND ----------
 
 dbutils.widgets.dropdown("init", "False", ["True", "False"])
-dbutils.widgets.dropdown("i", "1", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"])
 
 # COMMAND ----------
 
 init = dbutils.widgets.get("init").lower() == "true"
-i = dbutils.widgets.get("i")
-i = list(range(1, int(i) + 1))
-
-# COMMAND ----------
-
-if CATALOG:
-    try:
-        spark.sql(f"use catalog {CATALOG}")
-        spark.sql("drop schema if exists bronze cascade")
-        spark.sql("drop table if exists transf.fact_register")
-
-    except Exception:
-        pass
 
 # COMMAND ----------
 
@@ -57,35 +43,27 @@ paths.out.rm()
 
 # COMMAND ----------
 
+for d in ["bronze", "silver", "transf", "gold", "semantic"]:
+    db = Database(f"{CATALOG}.{d}")
+    db.drop()
+
+# COMMAND ----------
+
 if init:
     git_to_landing()
 
 # COMMAND ----------
 
-if i:
-    landing_to_raw(iter=i)
+landing_to_raw(iter=[1])
 
 # COMMAND ----------
 
+if init:
     for d in ["expected", "input", "test"]:
         db = Database(d)
-        tables = db.get_tables()
-        for t in tables.collect():
-            if t["table"] is not None:
-                spark.sql("drop table if exists " + t["table"])
-
-# COMMAND ----------
-
-# DBTITLE 1,Cell 11
-if init:    
-    for d in ["expected", "input", "test"]:
-        db = Database(d)
-        tables = db.get_tables()
-        for t in tables:
-            print(t)
+        db.drop()
 
     create_random_tables()
-
     create_expected_views()
     create_input_tables()
 
