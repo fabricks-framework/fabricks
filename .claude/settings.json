@@ -1,4 +1,8 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"/Users/francois.poskin/.claude/plugins/cache/ponytail/ponytail/4.8.3/hooks/ponytail-statusline.sh\""
+  },
   "permissions": {
     "allow": [
       "Bash(./framework/format.sh:*)",
