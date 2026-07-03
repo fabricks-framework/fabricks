@@ -1,14 +1,13 @@
 import pytest
 
 from fabricks.context import SPARK
-from fabricks.deploy import Deploy
-from tests.integration._types import steps
+from fabricks.utils.helpers import run_notebook
+from tests.integration._types import PATHS
 
 
 @pytest.mark.order(1)
 def test_armageddon():
-    with pytest.raises(Exception):
-        Deploy.armageddon(steps=steps, nowait=True, mode="parallel", deploy_notebooks=False)  # why wait ?
+    run_notebook(PATHS.root.joinpath("armageddon"))
 
 
 @pytest.mark.order(2)

@@ -11,7 +11,7 @@ from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import FileSharePath, GitPath
-from tests.integration._types import paths
+from tests.integration._types import PATHS
 
 _DATES = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
 _TOPIC_SOURCES = {
@@ -27,7 +27,7 @@ _TOPIC_OPERATIONS = {"duke": "reload"}
 def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
     for i in range(1, 4):
         dfs = []
-        root = paths.raw
+        root = PATHS.raw
 
         if i > 1:
             root = root.joinpath(str(i))
@@ -124,8 +124,8 @@ def git_to_landing():
     for i in range(1, 12):
         job = f"job{i}"
         DEFAULT_LOGGER.debug(f"copying json from git to landing ({job})")
-        from_dir = paths.tests.joinpath("data", job)
-        to_dir = paths.landing.joinpath(job)
+        from_dir = PATHS.root.joinpath("data", job)
+        to_dir = PATHS.landing.joinpath(job)
         _convert_json_to_parquet(from_dir, to_dir)
 
 
@@ -138,7 +138,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
     for i in iter:
         job = f"job{i}"
         DEFAULT_LOGGER.debug(f"copying parquet from landing to raw ({job})")
-        landing = paths.landing.joinpath(job)
+        landing = PATHS.landing.joinpath(job)
 
         for f in landing.walk():
             if str(f).endswith("parquet"):
@@ -169,7 +169,7 @@ def create_input_tables(topics: List[str] | None = None):
         topics = ["monarch", "prince", "princess", "king", "queen", "duke", "regent"]
 
     spark.sql("create schema if not exists input")
-    data_dir = paths.tests.joinpath("data")
+    data_dir = PATHS.root.joinpath("data")
     job_dirs = sorted(data_dir.pathlibpath.glob("job*"), key=lambda p: int(p.name[3:]))
 
     def _write_table(rows: List[Any], topic: str, table: str):
@@ -238,14 +238,14 @@ def create_expected_views():
 
     def _create_views(step: str, cdc: str):
         DEFAULT_LOGGER.debug(f"creating expected views for {step} - {cdc}")
-        views = paths.tests.joinpath("expected", step, cdc)
+        views = PATHS.root.joinpath("expected", step, cdc)
 
         for v in sorted(views.walk()):
             spark.sql(GitPath(v).get_sql())
 
     def _create_latest_views(step: str):
         DEFAULT_LOGGER.debug(f"creating expected latest views for {step}")
-        views = paths.tests.joinpath("expected", step, "scd2")
+        views = PATHS.root.joinpath("expected", step, "scd2")
 
         for v in sorted(views.walk()):
             job_n = int(str(v).split("job")[-1].split(".")[0])
@@ -264,7 +264,7 @@ def create_expected_views():
 
     def _create_append_views(step: str):
         DEFAULT_LOGGER.debug(f"creating expected append views for {step}")
-        views = paths.tests.joinpath("expected", step, "scd2")
+        views = PATHS.root.joinpath("expected", step, "scd2")
 
         for v in sorted(views.walk()):
             job_n = int(str(v).split("job")[-1].split(".")[0])
@@ -297,5 +297,5 @@ def create_random_tables():
         spark.sql(f"use catalog {CATALOG}")
 
     spark.sql("create schema if not exists bronze")
-    uri = f"{paths.raw}/delta/no_column"
+    uri = f"{PATHS.raw}/delta/no_column"
     spark.sql(f"create table if not exists bronze.princess_no_column using delta location '{uri}'")

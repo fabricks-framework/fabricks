@@ -9,7 +9,7 @@ from databricks.sdk.runtime import dbutils
 
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
-from tests.integration._types import paths
+from tests.integration._types import PATHS
 from tests.integration.utils import (
     create_expected_views,
     create_input_tables,
@@ -33,7 +33,7 @@ init = dbutils.widgets.get("init").lower() == "true"
 # COMMAND ----------
 
 if init:
-    paths.landing.rm()
+    PATHS.landing.rm()
 
 # COMMAND ----------
 
@@ -43,8 +43,8 @@ for d in ["bronze", "silver", "transf", "gold", "semantic", "fabricks"]:
 
 # COMMAND ----------
 
-paths.raw.rm()
-paths.out.rm()
+PATHS.raw.rm()
+PATHS.out.rm()
 
 # COMMAND ----------
 

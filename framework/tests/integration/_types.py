@@ -7,19 +7,19 @@ from fabricks.utils.path import FileSharePath, GitPath
 
 @dataclass(frozen=True)
 class Paths:
-    tests: GitPath
+    root: GitPath
     landing: FileSharePath
     raw: FileSharePath
     out: FileSharePath
 
     def __str__(self) -> str:
-        return f"{self.tests} {self.landing} {self.raw} {self.out}"
+        return f"{self.root} {self.landing} {self.raw} {self.out}"
 
 
-paths: Final[Paths] = Paths(
-    tests=PATH_RUNTIME.parent().parent().joinpath("integration"),
+PATHS: Final[Paths] = Paths(
+    root=PATH_RUNTIME.parent().parent().joinpath("integration"),
     landing=FABRICKS_STORAGE.joinpath("landing"),
     raw=FABRICKS_STORAGE.joinpath("raw"),
     out=FABRICKS_STORAGE.joinpath("out"),
 )
-steps = ["bronze", "silver", "transf", "gold", "semantic"]
+STEPS: Final[list[str]] = ["bronze", "silver", "transf", "gold", "semantic"]
