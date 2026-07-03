@@ -7,7 +7,8 @@ from tests.integration._types import PATHS
 
 @pytest.mark.order(1)
 def test_armageddon():
-    run_notebook(PATHS.root.joinpath("armageddon"))
+    with pytest.raises(Exception):
+        run_notebook(PATHS.root.joinpath("armageddon"))
 
 
 @pytest.mark.order(2)

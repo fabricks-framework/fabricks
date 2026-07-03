@@ -9,10 +9,11 @@ from logging import ERROR, INFO
 import pytest
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context import IS_TESTMODE, PATH_RUNTIME
+from fabricks.context import IS_TESTMODE
 from fabricks.context.log import DEFAULT_LOGGER, send_message_to_channel
 from fabricks.utils.helpers import run_notebook
 from fabricks.utils.pip import pip_list
+from tests.integration._types import PATHS
 
 # COMMAND ----------
 
@@ -52,13 +53,12 @@ print(packages)
 
 # COMMAND ----------
 
-root = PATH_RUNTIME.parent().parent().joinpath("integration")
-print(root)
+print(PATHS.root)
 
 # COMMAND ----------
 
 run_notebook(
-    root.joinpath("initialize"),
+    PATHS.root.joinpath("initialize"),
     expected="True",
     i=1,
 )
