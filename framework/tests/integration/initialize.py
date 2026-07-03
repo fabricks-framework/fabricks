@@ -44,7 +44,7 @@ paths.out.rm()
 # COMMAND ----------
 
 for d in ["bronze", "silver", "transf", "gold", "semantic", "fabricks"]:
-    db = Database(f"{CATALOG}.{d}")
+    db = Database(d)
     db.drop()
 
 # COMMAND ----------
@@ -62,6 +62,7 @@ if init:
     for d in ["expected", "input", "test"]:
         db = Database(d)
         db.drop()
+        db.create()
 
     create_random_tables()
     create_expected_views()
