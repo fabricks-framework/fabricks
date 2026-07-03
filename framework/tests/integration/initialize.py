@@ -43,7 +43,7 @@ paths.out.rm()
 
 # COMMAND ----------
 
-for d in ["bronze", "silver", "transf", "gold", "semantic"]:
+for d in ["bronze", "silver", "transf", "gold", "semantic", "fabricks"]:
     db = Database(f"{CATALOG}.{d}")
     db.drop()
 
