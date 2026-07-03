@@ -113,6 +113,7 @@ DEP002 = [
 ]
 
 [tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
 python_files = ["test_*.py"]
 markers = [
     "unit: marks tests as unit tests (no spark dependencies)",
