@@ -110,7 +110,7 @@ class Table(DbObject):
         super().drop()
 
         if self.delta_path.exists():
-            DEFAULT_LOGGER.debug("delete delta folder", extra={"label": self})
+            DEFAULT_LOGGER.debug("delete delta folder", extra={"label": self.label})
             self.delta_path.rm()
 
     @overload
@@ -233,10 +233,10 @@ class Table(DbObject):
         comments: dict[str, str] | None = None,
     ):
         if self.registered:
-            DEFAULT_LOGGER.debug("table already exists, skipping creation", extra={"label": self})
+            DEFAULT_LOGGER.debug("table already exists, skipping creation", extra={"label": self.label})
             return
 
-        DEFAULT_LOGGER.info("create table", extra={"label": self})
+        DEFAULT_LOGGER.info("create table", extra={"label": self.label})
 
         if not df:
             assert schema is not None
@@ -333,7 +333,7 @@ class Table(DbObject):
         except Exception:
             pass
 
-        DEFAULT_LOGGER.debug("ddl", extra={"label": self, "sql": sql})
+        DEFAULT_LOGGER.debug("ddl", extra={"label": self.label, "sql": sql})
         self.spark.sql(sql)
 
     @property
@@ -355,17 +355,17 @@ class Table(DbObject):
         return self.is_deltatable and self.registered
 
     def register(self):
-        DEFAULT_LOGGER.debug("register table", extra={"label": self})
+        DEFAULT_LOGGER.debug("register table", extra={"label": self.label})
         self.spark.sql(f"create table if not exists {self.qualified_name} using delta location '{self.delta_path}'")
 
     def restore_to_version(self, version: int):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.info(f"restore table to version {version}", extra={"label": self})
+        DEFAULT_LOGGER.info(f"restore table to version {version}", extra={"label": self.label})
         self.spark.sql(f"restore table {self.qualified_name} to version as of {version}")
 
     def truncate(self):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.warning("truncate table", extra={"label": self})
+        DEFAULT_LOGGER.warning("truncate table", extra={"label": self.label})
         self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
@@ -391,7 +391,7 @@ class Table(DbObject):
         exclude_columns: list[str] | None = None,
     ) -> Sequence[SchemaDiff]:
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug("get schema differences", extra={"label": self, "df": df})
+        DEFAULT_LOGGER.debug("get schema differences", extra={"label": self.label, "df": df})
         df1 = self.dataframe
 
         if self.identity_enabled:
@@ -435,11 +435,11 @@ class Table(DbObject):
                 )
 
         if len(diffs) > 0:
-            DEFAULT_LOGGER.warning("difference(s) with delta table", extra={"label": self, "df": df})
+            DEFAULT_LOGGER.warning("difference(s) with delta table", extra={"label": self.label, "df": df})
 
             for d in diffs:
                 DEFAULT_LOGGER.debug(
-                    f"{d.status} column {d.column} ({d.data_type} -> {d.new_data_type})", extra={"label": self}
+                    f"{d.status} column {d.column} ({d.data_type} -> {d.new_data_type})", extra={"label": self.label}
                 )
 
         return diffs
@@ -474,7 +474,7 @@ class Table(DbObject):
             msg = "update schema"
 
         if diffs:
-            DEFAULT_LOGGER.info(msg, extra={"label": self, "df": diffs})
+            DEFAULT_LOGGER.info(msg, extra={"label": self.label, "df": diffs})
 
             for row in diffs:
                 if row.status == "changed":
@@ -484,7 +484,7 @@ class Table(DbObject):
 
                 DEFAULT_LOGGER.debug(
                     f"{row.status.replace('ed', 'ing')} {row.column} ({data_type})",
-                    extra={"label": self},
+                    extra={"label": self.label},
                 )
 
                 try:
@@ -530,7 +530,7 @@ class Table(DbObject):
             diffs = self.get_schema_differences(df)
 
             if diffs:
-                DEFAULT_LOGGER.warning("overwrite schema", extra={"label": self, "df": diffs})
+                DEFAULT_LOGGER.warning("overwrite schema", extra={"label": self.label, "df": diffs})
 
                 for row in diffs:
                     if row.status == "added":
@@ -549,7 +549,9 @@ class Table(DbObject):
 
     def vacuum(self, retention_days: int = 7):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug(f"vacuum table (removing files older than {retention_days} days)", extra={"label": self})
+        DEFAULT_LOGGER.debug(
+            f"vacuum table (removing files older than {retention_days} days)", extra={"label": self.label}
+        )
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
 
         try:
@@ -564,7 +566,7 @@ class Table(DbObject):
 
     def optimize(self, columns: str | list[str] | None = None):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.info("optimize", extra={"label": self})
+        DEFAULT_LOGGER.info("optimize", extra={"label": self.label})
         # Cache property access for performance (accessed up to 6 times)
         qualified_name = self.qualified_name
 
@@ -574,7 +576,7 @@ class Table(DbObject):
             self.spark.sql(f"optimize {qualified_name}")
         elif columns is None:
             if self.vorder_enabled:
-                DEFAULT_LOGGER.debug("vorder", extra={"label": self})
+                DEFAULT_LOGGER.debug("vorder", extra={"label": self.label})
                 self.spark.sql(f"optimize {qualified_name} vorder")
             else:
                 self.spark.sql(f"optimize {qualified_name}")
@@ -586,21 +588,21 @@ class Table(DbObject):
             cols = ", ".join(columns)
 
             if self.vorder_enabled:
-                DEFAULT_LOGGER.debug(f"zorder by {cols} vorder", extra={"label": self})
+                DEFAULT_LOGGER.debug(f"zorder by {cols} vorder", extra={"label": self.label})
                 self.spark.sql(f"optimize {qualified_name} zorder by ({cols}) vorder")
             else:
-                DEFAULT_LOGGER.debug(f"zorder by {cols}", extra={"label": self})
+                DEFAULT_LOGGER.debug(f"zorder by {cols}", extra={"label": self.label})
                 self.spark.sql(f"optimize {qualified_name} zorder by ({cols})")
 
     def analyze(self):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug("analyze", extra={"label": self})
+        DEFAULT_LOGGER.debug("analyze", extra={"label": self.label})
         self.compute_statistics()
         self.compute_delta_statistics()
 
     def compute_statistics(self):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug("compute statistics", extra={"label": self})
+        DEFAULT_LOGGER.debug("compute statistics", extra={"label": self.label})
         cols = [
             f"`{name}`"
             for name, dtype in self.dataframe.dtypes
@@ -615,13 +617,13 @@ class Table(DbObject):
 
     def compute_delta_statistics(self):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug("compute delta statistics", extra={"label": self})
+        DEFAULT_LOGGER.debug("compute delta statistics", extra={"label": self.label})
         self.spark.sql(f"analyze table {self.qualified_name} compute delta statistics")
 
     def drop_column(self, name: str):
         assert self.registered, f"{self} not registered"
         assert self.column_mapping_enabled, "column mapping not enabled"
-        DEFAULT_LOGGER.warning(f"drop column {name}", extra={"label": self})
+        DEFAULT_LOGGER.warning(f"drop column {name}", extra={"label": self.label})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -632,7 +634,7 @@ class Table(DbObject):
     def change_column(self, name: str, type: str):
         assert self.registered, f"{self} not registered"
         assert self.column_mapping_enabled, "column mapping not enabled"
-        DEFAULT_LOGGER.info(f"change column {name} ({type})", extra={"label": self})
+        DEFAULT_LOGGER.info(f"change column {name} ({type})", extra={"label": self.label})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -643,7 +645,7 @@ class Table(DbObject):
     def rename_column(self, old: str, new: str):
         assert self.registered, f"{self} not registered"
         assert self.column_mapping_enabled, "column mapping not enabled"
-        DEFAULT_LOGGER.info(f"rename column {old} -> {new}", extra={"label": self})
+        DEFAULT_LOGGER.info(f"rename column {old} -> {new}", extra={"label": self.label})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -719,12 +721,12 @@ class Table(DbObject):
             return None
 
     def enable_change_data_feed(self):
-        DEFAULT_LOGGER.info("enable change data feed", extra={"label": self})
+        DEFAULT_LOGGER.info("enable change data feed", extra={"label": self.label})
         self.set_property("delta.enableChangeDataFeed", "true")
 
     def enable_column_mapping(self):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.info("enable column mapping", extra={"label": self})
+        DEFAULT_LOGGER.info("enable column mapping", extra={"label": self.label})
 
         try:
             self.spark.sql(
@@ -734,7 +736,7 @@ class Table(DbObject):
                 """
             )
         except Exception:
-            DEFAULT_LOGGER.debug("update reader and writer version", extra={"label": self})
+            DEFAULT_LOGGER.debug("update reader and writer version", extra={"label": self.label})
             self.spark.sql(
                 f"""
                 alter table {self.qualified_name} 
@@ -748,7 +750,7 @@ class Table(DbObject):
 
     def set_property(self, key: str | int, value: str | int):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug(f"set property {key} = {value}", extra={"label": self})
+        DEFAULT_LOGGER.debug(f"set property {key} = {value}", extra={"label": self.label})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -758,7 +760,7 @@ class Table(DbObject):
 
     def add_constraint(self, name: str, expr: str):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug(f"add constraint ({name} check ({expr}))", extra={"label": self})
+        DEFAULT_LOGGER.debug(f"add constraint ({name} check ({expr}))", extra={"label": self.label})
         self.spark.sql(
             f"""
             alter table {self.qualified_name}
@@ -774,7 +776,7 @@ class Table(DbObject):
 
     def drop_table_comment(self):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug("drop table comment", extra={"label": self})
+        DEFAULT_LOGGER.debug("drop table comment", extra={"label": self.label})
         self.spark.sql(
             f"""
             comment on table {self.qualified_name}
@@ -784,7 +786,7 @@ class Table(DbObject):
 
     def drop_column_comment(self, column: str):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug(f"drop comment from column {column}", extra={"label": self})
+        DEFAULT_LOGGER.debug(f"drop comment from column {column}", extra={"label": self.label})
         self.spark.sql(
             f"""
             comment on column {self.qualified_name}.`{column}`
@@ -794,7 +796,7 @@ class Table(DbObject):
 
     def add_column_comment(self, column: str, comment: str):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug(f"add comment '{comment}' to column {column}", extra={"label": self})
+        DEFAULT_LOGGER.debug(f"add comment '{comment}' to column {column}", extra={"label": self.label})
         self.spark.sql(
             f"""
             comment on column {self.qualified_name}.`{column}`
@@ -804,7 +806,7 @@ class Table(DbObject):
 
     def add_table_comment(self, comment: str):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.debug(f"add comment '{comment}'", extra={"label": self})
+        DEFAULT_LOGGER.debug(f"add comment '{comment}'", extra={"label": self.label})
         self.spark.sql(
             f"""
             comment on table {self.qualified_name}
@@ -815,7 +817,7 @@ class Table(DbObject):
     def add_materialized_column(self, name: str, expr: str, type: str):
         assert self.registered, f"{self} not registered"
         assert self.column_mapping_enabled, "column mapping not enabled"
-        DEFAULT_LOGGER.info(f"add materialized column ({name} {type})", extra={"label": self})
+        DEFAULT_LOGGER.info(f"add materialized column ({name} {type})", extra={"label": self.label})
         self.spark.sql(
             f""""
             alter table {self.qualified_name}
@@ -825,7 +827,7 @@ class Table(DbObject):
 
     def add_column(self, name: str, type: str, after: str | None = None):
         assert self.registered, f"{self} not registered"
-        DEFAULT_LOGGER.info(f"add column {name} ({type})", extra={"label": self})
+        DEFAULT_LOGGER.info(f"add column {name} ({type})", extra={"label": self.label})
         ddl_after = "" if not after else f"after {after}"
         self.spark.sql(
             f"""
@@ -842,7 +844,7 @@ class Table(DbObject):
 
         columns = backticks(columns)
         cols = ", ".join(columns)
-        DEFAULT_LOGGER.info(f"bloomfilter by {cols}", extra={"label": self})
+        DEFAULT_LOGGER.info(f"bloomfilter by {cols}", extra={"label": self.label})
         self.spark.sql(
             f"""
             create bloomfilter index on table {self.qualified_name}
@@ -874,7 +876,7 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
 
         if auto:
-            DEFAULT_LOGGER.info("cluster by auto", extra={"label": self})
+            DEFAULT_LOGGER.info("cluster by auto", extra={"label": self.label})
             self.spark.sql(f"alter table {self.qualified_name} cluster by automatic")
         else:
             assert columns, "at least one clustering column must be specified"
@@ -884,7 +886,7 @@ class Table(DbObject):
 
             columns = backticks(columns)
             cols = ", ".join(columns)
-            DEFAULT_LOGGER.info(f"cluster by {cols}", extra={"label": self})
+            DEFAULT_LOGGER.info(f"cluster by {cols}", extra={"label": self.label})
             self.spark.sql(
                 f"""
                 alter table {self.qualified_name}

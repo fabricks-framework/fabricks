@@ -34,7 +34,7 @@ class Database:
         return self.storage.joinpath("delta")
 
     def create(self):
-        DEFAULT_LOGGER.info("create database", extra={"label": self})
+        DEFAULT_LOGGER.info("create database", extra={"label": self.label})
         self.spark.sql(f"create database if not exists {self.name};")
 
     def drop(self, rm: Optional[bool] = True, one_by_one: Optional[bool] = True):
@@ -42,12 +42,12 @@ class Database:
             self.drop_one_by_one()
 
         if self.exists():
-            DEFAULT_LOGGER.warning("drop database", extra={"label": self})
+            DEFAULT_LOGGER.warning("drop database", extra={"label": self.label})
             self.spark.sql(f"drop database if exists {self.name} cascade;")
 
         if rm:
             if self.delta_path.exists():
-                DEFAULT_LOGGER.debug("remove delta files", extra={"label": self})
+                DEFAULT_LOGGER.debug("remove delta files", extra={"label": self.label})
                 self.delta_path.rm()
 
     def drop_one_by_one(self):
@@ -73,6 +73,10 @@ class Database:
             return False
 
     def __str__(self):
+        return self.name
+
+    @property
+    def label(self) -> str:
         if CATALOG is not None:
             return f"{CATALOG}.{self.name}"
 
