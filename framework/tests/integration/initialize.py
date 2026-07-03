@@ -37,14 +37,14 @@ if init:
 
 # COMMAND ----------
 
-paths.raw.rm()
-paths.out.rm()
-
-# COMMAND ----------
-
 for d in ["bronze", "silver", "transf", "gold", "semantic", "fabricks"]:
     db = Database(d)
     db.drop()
+
+# COMMAND ----------
+
+paths.raw.rm()
+paths.out.rm()
 
 # COMMAND ----------
 
