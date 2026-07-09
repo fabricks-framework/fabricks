@@ -141,7 +141,9 @@ def test_variable_substitution_with_dollar_escape(fixtures_dir: Path) -> None:
     assert runtime.options.secret_scope == "test_scope"
 
     # Main storage path: $storage_account substituted, $$Change escaped to $Change
-    assert runtime.path_options.storage == "abfss://raw@teststorageaccount.dfs.core.windows.net/$Change_Log_Data/fabricks"
+    assert (
+        runtime.path_options.storage == "abfss://raw@teststorageaccount.dfs.core.windows.net/$Change_Log_Data/fabricks"
+    )
 
     # Parsers path: $$G_L escaped to $G_L
     assert runtime.path_options.parsers == "fabricks/parsers/$G_L_Parsers"
@@ -153,7 +155,10 @@ def test_variable_substitution_with_dollar_escape(fixtures_dir: Path) -> None:
     # Test first bronze: variable substituted, $$Change escaped to $Change
     bc_change_log = runtime.bronze[0]
     assert bc_change_log.name == "bc_change_log"
-    assert bc_change_log.path_options.storage == "abfss://raw@teststorageaccount.dfs.core.windows.net/bc/$Change Log Entry"
+    assert (
+        bc_change_log.path_options.storage
+        == "abfss://raw@teststorageaccount.dfs.core.windows.net/bc/$Change Log Entry"
+    )
 
     # Test second bronze: variable substituted, $$G_L escaped to $G_L
     bc_gl_entry = runtime.bronze[1]
@@ -163,7 +168,9 @@ def test_variable_substitution_with_dollar_escape(fixtures_dir: Path) -> None:
     # Test third bronze: variable substituted, multiple escapes ($$Item and $$Purchase)
     mixed_test = runtime.bronze[2]
     assert mixed_test.name == "mixed_escape_test"
-    assert mixed_test.path_options.storage == "abfss://raw@teststorageaccount.dfs.core.windows.net/$Item/$Purchase/data"
+    assert (
+        mixed_test.path_options.storage == "abfss://raw@teststorageaccount.dfs.core.windows.net/$Item/$Purchase/data"
+    )
 
     # Verify that variables dict still contains the collision names
     assert runtime.variables is not None
