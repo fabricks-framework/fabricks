@@ -16,7 +16,7 @@ CDC = {"scd1": SCD1, "scd2": SCD2, "nocdc": NoCDC}
 __COLUMNS = ["__is_current", "__is_deleted", "__valid_from", "__valid_to", "__source"]
 
 
-def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = True):
+def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = True, keep_source: bool = True):
     cols = df_expected.columns
     cols = [c for c in cols if not c.startswith("__") or c in __COLUMNS]
     scd2 = "__valid_from" in cols and "__valid_to" in cols
@@ -27,6 +27,9 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = 
         else:
             df_expected = df_expected.where("__is_current")
             cols = [c for c in cols if c not in ["__is_deleted", "__is_current"]]
+
+    if not keep_source:
+        cols = [c for c in cols if c != "__source"]
 
     priority = ["id"]
 
@@ -63,16 +66,12 @@ class ExpectedSpec:
     iter: int
     job: BaseJob | None = None
     obj: str | None = None
-    reloaded: bool = False
+    reloaded: bool = False # if table is reloaded, history is not rebuilt
     topic: str | None = None
     # cdc comparisons drop __source on their own rule (see compare_cdc_to_expected), not derivable from job/obj
-    drop_source: bool | None = None
 
     @property
     def _drop_source(self) -> bool:
-        if self.drop_source is not None:
-            return self.drop_source
-
         if self.job is not None:
             return self.job.topic in ["monarch", "memory", "regent"]
 
@@ -174,7 +173,7 @@ def compare_cdc_to_expected(
                 view_1 = view_1 + "_batch"
                 view_2 = view_2 + "_batch"
 
-            query = f"select *, 'king' as __source from {view_1} union all select *, 'queen' as __source from {view_2}"
+            query = f"select * from {view_1} union all select * from {view_2}"
         else:
             view = f"input.{topic}_job{i}"
 
@@ -202,7 +201,6 @@ def compare_cdc_to_expected(
         expand="silver",
         variant=variant,
         iter=last_iter,
-        drop_source=topic != "king_and_queen",
         topic=topic if mode == "append" else None,
     )
     expected_df = spec.get_expected_dataframe()
