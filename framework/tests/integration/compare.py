@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Literal
 
 from pandas.testing import assert_frame_equal
@@ -55,6 +56,56 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = 
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
 
 
+@dataclass
+class ExpectedSpec:
+    expand: str  # bronze | silver | gold -- selects expected.{expand}_{variant}_job{iter}
+    variant: str  # scd0 | scd1 | scd2 | latest | append | nocdc -- selects expected.{expand}_{variant}_job{iter}
+    iter: int
+    job: BaseJob | None = None
+    obj: str | None = None
+    reloaded: bool = False
+    topic: str | None = None
+    # cdc comparisons drop __source on their own rule (see compare_cdc_to_expected), not derivable from job/obj
+    drop_source: bool | None = None
+
+    @property
+    def _drop_source(self) -> bool:
+        if self.drop_source is not None:
+            return self.drop_source
+
+        if self.job is not None:
+            return self.job.topic in ["monarch", "memory", "regent"]
+
+        if self.obj is not None:
+            return any(topic in self.obj for topic in ["monarch", "memory", "regent"])
+
+        return False
+
+    @property
+    def _where_current(self) -> bool:
+        if self.job is not None:
+            return self.job.change_data_capture == "scd1" and (self.job.mode == "complete" or self.reloaded)
+
+        return self.variant == "scd1" and self.reloaded
+
+    def get_expected_dataframe(self) -> DataFrame:
+        if self.topic is not None:
+            # append relies on non-cumulative batch tables, so the raw cumulative input *is* the expectation
+            query = f"select * from input.{self.topic}_job{self.iter}"
+        else:
+            query = f"select * from expected.{self.expand}_{self.variant}_job{self.iter}"
+
+        expected_df = SPARK.sql(query)
+
+        if self.expand in ["bronze", "silver"]:
+            if self._drop_source:
+                expected_df = expected_df.drop("__source")
+        elif self._where_current:
+            expected_df = expected_df.where("__is_current")
+
+        return expected_df
+
+
 def compare_object_to_expected(
     expand: Literal["bronze", "silver", "gold"],
     obj: str,
@@ -62,16 +113,9 @@ def compare_object_to_expected(
     iter: int,
     reloaded: bool = False,
 ):
-    expected_df = SPARK.sql(f"select * from expected.{expand}_{expected}_job{iter}")
+    spec = ExpectedSpec(expand=expand, variant=expected, iter=iter, obj=obj, reloaded=reloaded)
+    expected_df = spec.get_expected_dataframe()
     df = SPARK.sql(f"select * from {obj}")
-
-    if expand in ["bronze", "silver"]:
-        if any(topic in obj for topic in ["monarch", "memory", "regent"]):
-            expected_df = expected_df.drop("__source")
-    else:
-        if expected in ["scd1"] and reloaded:
-            expected_df = expected_df.where("__is_current")
-
     assert_dfs_equal(df, expected_df)
 
 
@@ -81,17 +125,9 @@ def compare_job_to_expected(
     iter: int,
     reloaded: bool = False,
 ):
-    expand = job.expand
-    expected_df = SPARK.sql(f"select * from expected.{expand}_{expected}_job{iter}")
+    spec = ExpectedSpec(expand=job.expand, variant=expected, iter=iter, job=job, reloaded=reloaded)
+    expected_df = spec.get_expected_dataframe()
     df = SPARK.sql(f"select * from {job}")
-
-    if expand in ["bronze", "silver"]:
-        if job.topic in ["monarch", "memory", "regent"]:
-            expected_df = expected_df.drop("__source")
-    else:
-        if job.change_data_capture == "scd1" and (job.mode == "complete" or reloaded):
-            expected_df = expected_df.where("__is_current")
-
     assert_dfs_equal(df, expected_df)
 
 
@@ -125,15 +161,8 @@ def compare_cdc_to_expected(
     iter_str = [str(i) for i in iter]
     last_iter = iter[-1]
     tgt = CDC[cdc]("test", f"{topic}_{cdc}_{'_'.join(iter_str)}")
-
-    if mode == "latest":
-        expected = f"select * from expected.silver_latest_job{last_iter}"
-    elif mode == "append":
-        expected = f"select * from input.{topic}_job{last_iter}"
-    else:
-        expected = f"select * from expected.silver_{cdc}_job{last_iter}"
-
-    DEFAULT_LOGGER.info(f"comparing to {expected}")
+    variant = "latest" if mode == "latest" else "append" if mode == "append" else cdc
+    DEFAULT_LOGGER.info(f"comparing to {variant} job {last_iter}")
     x = 0
 
     for i in iter_str:
@@ -167,10 +196,15 @@ def compare_cdc_to_expected(
 
         x += 1
 
-    expected_df = SPARK.sql(expected)
+    # king_and_queen is the only topic whose query adds a literal __source column (see `query` above);
+    # every other topic's output table has no __source column to compare against.
+    spec = ExpectedSpec(
+        expand="silver",
+        variant=variant,
+        iter=last_iter,
+        drop_source=topic != "king_and_queen",
+        topic=topic if mode == "append" else None,
+    )
+    expected_df = spec.get_expected_dataframe()
     df = tgt.table.dataframe
-
-    if topic not in ["king_and_queen"]:
-        expected_df = expected_df.drop("__source")
-
     assert_dfs_equal(df, expected_df, soft_delete=soft_delete)
