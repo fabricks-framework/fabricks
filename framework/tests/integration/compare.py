@@ -16,6 +16,45 @@ CDC = {"scd1": SCD1, "scd2": SCD2, "nocdc": NoCDC}
 __COLUMNS = ["__is_current", "__is_deleted", "__valid_from", "__valid_to", "__source"]
 
 
+@dataclass
+class ExpectedSpec:
+    expand: str  # bronze | silver | gold -- selects expected.{expand}_{variant}_job{iter}
+    variant: str  # scd0 | scd1 | scd2 | latest | append | nocdc -- selects expected.{expand}_{variant}_job{iter}
+    iter: int
+    job: BaseJob | None = None
+    obj: str | None = None
+    reloaded: bool = False  # if table is reloaded, history is not rebuilt
+    topic: str | None = None  # real topic name, e.g. "king_and_queen" -- drives source-relevance
+    expected_query: str | None = None  # overrides the default `expected.{expand}_{variant}_job{iter}` lookup
+
+    @property
+    def _keep_source(self) -> bool:
+        # __source only reflects real data when merging multiple topics -- currently only king_and_queen
+        if self.job is not None:
+            return self.job.topic == "king_and_queen"
+
+        if self.obj is not None:
+            return "king_and_queen" in self.obj
+
+        return self.topic == "king_and_queen"
+
+    @property
+    def _where_current(self) -> bool:
+        if self.job is not None:
+            return self.job.change_data_capture == "scd1" and (self.job.mode == "complete" or self.reloaded)
+
+        return self.variant == "scd1" and self.reloaded
+
+    def assert_equal(self, df: DataFrame, soft_delete: bool = True):
+        query = self.expected_query or f"select * from expected.{self.expand}_{self.variant}_job{self.iter}"
+        expected_df = SPARK.sql(query)
+
+        if self.expand == "gold" and self._where_current:
+            expected_df = expected_df.where("__is_current")
+
+        assert_dfs_equal(df, expected_df, soft_delete=soft_delete, keep_source=self._keep_source)
+
+
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = True, keep_source: bool = True):
     cols = df_expected.columns
     cols = [c for c in cols if not c.startswith("__") or c in __COLUMNS]
@@ -59,52 +98,6 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = 
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
 
 
-@dataclass
-class ExpectedSpec:
-    expand: str  # bronze | silver | gold -- selects expected.{expand}_{variant}_job{iter}
-    variant: str  # scd0 | scd1 | scd2 | latest | append | nocdc -- selects expected.{expand}_{variant}_job{iter}
-    iter: int
-    job: BaseJob | None = None
-    obj: str | None = None
-    reloaded: bool = False # if table is reloaded, history is not rebuilt
-    topic: str | None = None
-    # cdc comparisons drop __source on their own rule (see compare_cdc_to_expected), not derivable from job/obj
-
-    @property
-    def _drop_source(self) -> bool:
-        if self.job is not None:
-            return self.job.topic in ["monarch", "memory", "regent"]
-
-        if self.obj is not None:
-            return any(topic in self.obj for topic in ["monarch", "memory", "regent"])
-
-        return False
-
-    @property
-    def _where_current(self) -> bool:
-        if self.job is not None:
-            return self.job.change_data_capture == "scd1" and (self.job.mode == "complete" or self.reloaded)
-
-        return self.variant == "scd1" and self.reloaded
-
-    def get_expected_dataframe(self) -> DataFrame:
-        if self.topic is not None:
-            # append relies on non-cumulative batch tables, so the raw cumulative input *is* the expectation
-            query = f"select * from input.{self.topic}_job{self.iter}"
-        else:
-            query = f"select * from expected.{self.expand}_{self.variant}_job{self.iter}"
-
-        expected_df = SPARK.sql(query)
-
-        if self.expand in ["bronze", "silver"]:
-            if self._drop_source:
-                expected_df = expected_df.drop("__source")
-        elif self._where_current:
-            expected_df = expected_df.where("__is_current")
-
-        return expected_df
-
-
 def compare_object_to_expected(
     expand: Literal["bronze", "silver", "gold"],
     obj: str,
@@ -113,9 +106,8 @@ def compare_object_to_expected(
     reloaded: bool = False,
 ):
     spec = ExpectedSpec(expand=expand, variant=expected, iter=iter, obj=obj, reloaded=reloaded)
-    expected_df = spec.get_expected_dataframe()
     df = SPARK.sql(f"select * from {obj}")
-    assert_dfs_equal(df, expected_df)
+    spec.assert_equal(df)
 
 
 def compare_job_to_expected(
@@ -125,9 +117,8 @@ def compare_job_to_expected(
     reloaded: bool = False,
 ):
     spec = ExpectedSpec(expand=job.expand, variant=expected, iter=iter, job=job, reloaded=reloaded)
-    expected_df = spec.get_expected_dataframe()
     df = SPARK.sql(f"select * from {job}")
-    assert_dfs_equal(df, expected_df)
+    spec.assert_equal(df)
 
 
 def compare_cdc_to_expected(
@@ -173,7 +164,7 @@ def compare_cdc_to_expected(
                 view_1 = view_1 + "_batch"
                 view_2 = view_2 + "_batch"
 
-            query = f"select * from {view_1} union all select * from {view_2}"
+            query = f"select *, 'king' as __source from {view_1} union all select *, 'queen' as __source from {view_2}"
         else:
             view = f"input.{topic}_job{i}"
 
@@ -195,14 +186,13 @@ def compare_cdc_to_expected(
 
         x += 1
 
-    # king_and_queen is the only topic whose query adds a literal __source column (see `query` above);
-    # every other topic's output table has no __source column to compare against.
     spec = ExpectedSpec(
         expand="silver",
         variant=variant,
         iter=last_iter,
-        topic=topic if mode == "append" else None,
+        topic=topic,
+        # append relies on non-cumulative batch tables, so the raw cumulative input *is* the expectation
+        expected_query=f"select * from input.{topic}_job{last_iter}" if mode == "append" else None,
     )
-    expected_df = spec.get_expected_dataframe()
     df = tgt.table.dataframe
-    assert_dfs_equal(df, expected_df, soft_delete=soft_delete)
+    spec.assert_equal(df, soft_delete=soft_delete)
