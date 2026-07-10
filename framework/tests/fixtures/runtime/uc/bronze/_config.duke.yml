@@ -9,3 +9,12 @@
       mode: register
       uri: abfss://test@$datahub/raw/3/delta/duke
       keys: [id]
+- job:
+    step: bronze
+    topic: duke
+    item: append
+    tags: [run_1]
+    options:
+      mode: register
+      uri: abfss://test@$datahub/raw/4/delta/duke
+      keys: [id]

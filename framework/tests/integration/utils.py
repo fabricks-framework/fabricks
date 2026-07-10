@@ -25,7 +25,7 @@ _TOPIC_OPERATIONS = {"duke": "reload"}
 
 
 def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
-    for i in range(1, 4):
+    for i in range(1, 5):
         dfs = []
         root = PATHS.raw
 

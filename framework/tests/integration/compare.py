@@ -55,6 +55,26 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = 
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
 
 
+def compare_object_to_expected(
+    expand: Literal["bronze", "silver", "gold"],
+    obj: str,
+    expected: Literal["scd0", "scd1", "scd2", "latest", "append"],
+    iter: int,
+    reloaded: bool = False,
+):
+    expected_df = SPARK.sql(f"select * from expected.{expand}_{expected}_job{iter}")
+    df = SPARK.sql(f"select * from {obj}")
+
+    if expand in ["bronze", "silver"]:
+        if any(topic in obj for topic in ["monarch", "memory", "regent"]):
+            expected_df = expected_df.drop("__source")
+    else:
+        if expected in ["scd1"] and reloaded:
+            expected_df = expected_df.where("__is_current")
+
+    assert_dfs_equal(df, expected_df)
+
+
 def compare_job_to_expected(
     job: BaseJob,
     expected: Literal["scd0", "scd1", "scd2", "latest", "append"],

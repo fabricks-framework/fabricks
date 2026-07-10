@@ -7,3 +7,13 @@
       mode: register
       uri: abfss://fabricks@$datahub/raw/delta/duke
       keys: [id]
+- job:
+    step: bronze
+    topic: duke
+    item: append
+    tags: [run_1]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/delta/1/duke
+      parser: parquet
+      keys: [id]

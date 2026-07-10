@@ -44,28 +44,6 @@
 - job:
     step: bronze
     topic: princess
-    item: latest
-    tags: [run_1]
-    options:
-      mode: memory
-      uri: abfss://fabricks@$datahub/raw/princess
-      parser: parquet
-      keys: [id]
-    extender_options:
-      - extender: force_reload
-- job:
-    step: bronze
-    topic: princess
-    item: append
-    tags: [run_1]
-    options:
-      mode: memory
-      uri: abfss://fabricks@$datahub/raw/princess
-      parser: parquet
-      keys: [id]
-- job:
-    step: bronze
-    topic: princess
     item: schema_drift
     tags: [run_1]
     options:

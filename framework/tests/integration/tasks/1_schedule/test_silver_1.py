@@ -5,7 +5,7 @@ import pytest
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs import get_job
 from fabricks.metastore.table import Table
-from tests.integration.compare import compare_job_to_expected
+from tests.integration.compare import compare_job_to_expected, compare_object_to_expected
 
 DEFAULT_LOGGER.setLevel(ERROR)
 
@@ -69,15 +69,13 @@ def test_silver_monarch_delta():
 
 
 @pytest.mark.order(119)
-def test_silver_princess_append():
-    job = get_job(step="silver", topic="princess", item="append")
-    compare_job_to_expected(job, "append", 1)
+def test_silver_duke_append():
+    compare_object_to_expected(expand="silver", obj="silver.duke_append", iter=1, expected="append")
 
 
 @pytest.mark.order(119)
-def test_silver_princess_latest():
-    job = get_job(step="silver", topic="princess", item="latest")
-    compare_job_to_expected(job, "latest", 1)
+def test_silver_duke_latest():
+    compare_object_to_expected(expand="silver", obj="silver.duke_latest", iter=1, expected="latest")
 
 
 @pytest.mark.order(119)
