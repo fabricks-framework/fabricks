@@ -177,6 +177,7 @@ def create_input_tables(topics: List[str] | None = None):
         df = spark.createDataFrame(p_df)
 
         if topic in ["duke"]:
+            df = df.where("not __file_path like '%deletelog%'") # we don't want the deletes
             df = _force_operation(df, topic)
         elif "__operation" not in df.columns:
             if "BEL_IsFullLoad" in df.columns:
