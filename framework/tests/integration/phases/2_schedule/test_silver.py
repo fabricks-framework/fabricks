@@ -5,7 +5,7 @@ import pytest
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs import get_job
-from tests.integration.compare import compare_job_to_expected
+from tests.integration.helpers.compare import compare_job_to_expected
 
 DEFAULT_LOGGER.setLevel(ERROR)
 
@@ -35,14 +35,14 @@ def test_silver_regent_scd1():
 
 
 @pytest.mark.order(213)
-def test_silver_memory_scd2():
-    job = get_job(step="silver", topic="memory", item="scd2")
+def test_silver_monarch_scd2_memory():
+    job = get_job(step="silver", topic="monarch", item="scd2_memory")
     compare_job_to_expected(job, "scd2", 2)
 
 
 @pytest.mark.order(214)
-def test_silver_memory_scd1():
-    job = get_job(step="silver", topic="memory", item="scd1")
+def test_silver_monarch_scd1_memory():
+    job = get_job(step="silver", topic="monarch", item="scd1_memory")
     compare_job_to_expected(job, "scd1", 2)
 
 

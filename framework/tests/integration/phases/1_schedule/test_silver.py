@@ -5,7 +5,7 @@ import pytest
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs import get_job
 from fabricks.metastore.table import Table
-from tests.integration.compare import compare_job_to_expected, compare_object_to_expected
+from tests.integration.helpers.compare import compare_job_to_expected, compare_object_to_expected
 
 DEFAULT_LOGGER.setLevel(ERROR)
 
@@ -35,14 +35,14 @@ def test_silver_regent_scd1():
 
 
 @pytest.mark.order(113)
-def test_silver_memory_scd2():
-    job = get_job(step="silver", topic="memory", item="scd2")
+def test_silver_monarch_scd2_memory():
+    job = get_job(step="silver", topic="monarch", item="scd2_memory")
     compare_job_to_expected(job, "scd2", 1)
 
 
 @pytest.mark.order(114)
-def test_silver_memory_scd1():
-    job = get_job(step="silver", topic="memory", item="scd1")
+def test_silver_monarch_scd1_memory():
+    job = get_job(step="silver", topic="monarch", item="scd1_memory")
     compare_job_to_expected(job, "scd1", 1)
 
 
@@ -69,13 +69,13 @@ def test_silver_monarch_delta():
 
 
 @pytest.mark.order(119)
-def test_silver_duke_append():
-    compare_object_to_expected(expand="silver", obj="silver.duke_append", iter=1, expected="append")
+def test_silver_royal_append():
+    compare_object_to_expected(expand="silver", obj="silver.royal_append", iter=1, expected="append")
 
 
 @pytest.mark.order(119)
-def test_silver_duke_latest():
-    compare_object_to_expected(expand="silver", obj="silver.duke_latest", iter=1, expected="latest")
+def test_silver_royal_latest():
+    compare_object_to_expected(expand="silver", obj="silver.royal_latest", iter=1, expected="latest")
 
 
 @pytest.mark.order(119)

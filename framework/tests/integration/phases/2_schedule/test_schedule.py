@@ -5,7 +5,7 @@ import pytest
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import run_notebook
-from tests.integration.utils import landing_to_raw
+from tests.integration.helpers.seed import landing_to_raw
 
 DEFAULT_LOGGER.setLevel(ERROR)
 

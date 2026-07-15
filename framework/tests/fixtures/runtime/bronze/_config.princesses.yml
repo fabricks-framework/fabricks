@@ -106,7 +106,7 @@
     item: too_many_columns
     options:
       mode: memory
-      parser: parquet
       uri: abfss://fabricks@$datahub/raw/too_many_columns
+      parser: parquet
     extender_options:
       - extender: force_reload

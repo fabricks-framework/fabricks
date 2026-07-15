@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=../../../../../job-schema-silver.json
 - job:
     step: silver
@@ -26,8 +27,16 @@
 - job:
     step: silver
     topic: monarch
-    item: memory
-    tags: [run_1]
+    item: scd1_memory
+    tags: [run_1, run_2]
     options:
       mode: memory
-      change_data_capture: nocdc
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: monarch
+    item: scd2_memory
+    tags: [run_1, run_2]
+    options:
+      mode: memory
+      change_data_capture: scd2

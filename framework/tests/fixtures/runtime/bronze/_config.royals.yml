@@ -1,22 +1,23 @@
+---
 - job:
     step: bronze
-    topic: duke
+    topic: royal
     item: latest
     tags: [run_1]
     options:
       mode: register
-      uri: abfss://fabricks@$datahub/raw/delta/duke
+      uri: abfss://fabricks@$datahub/raw/delta/royal
       keys: [id]
     extender_options:
-      - extender: duke
+      - extender: royal
 - job:
     step: bronze
-    topic: duke
+    topic: royal
     item: append
     tags: [run_1]
     options:
       mode: register
-      uri: abfss://fabricks@$datahub/raw/delta/1/duke
+      uri: abfss://fabricks@$datahub/raw/delta/1/royal
       keys: [id]
     extender_options:
-      - extender: duke
+      - extender: royal

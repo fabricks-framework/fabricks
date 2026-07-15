@@ -11,7 +11,7 @@ from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import FileSharePath, GitPath
-from tests.integration._types import PATHS
+from tests.integration.helpers.const import LANDING, RAW, ROOT
 
 _DATES = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
 _TOPIC_SOURCES = {
@@ -19,15 +19,17 @@ _TOPIC_SOURCES = {
     "queen": ["queen", "queen__deletelog"],
     "prince": ["prince"],
     "princess": ["princess"],
-    **{t: ["king", "queen", "king__deletelog", "queen__deletelog"] for t in ["monarch", "regent", "duke"]},
+    **{t: ["king", "queen", "king__deletelog", "queen__deletelog"] for t in ["monarch", "regent", "royal"]},
 }
-_TOPIC_OPERATIONS = {"duke": "reload"}
+_TOPIC_OPERATIONS = {"royal": "reload"}
+# job4's single file: single-source, not aliased into the merged monarch/regent/royal topics
+_NO_ALIAS_MARKER = "2022/04/01/0001"
 
 
 def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
     for i in range(1, 5):
         dfs = []
-        root = PATHS.raw
+        root = RAW
 
         if i > 1:
             root = root.joinpath(str(i))
@@ -57,7 +59,7 @@ def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
         df = _add_timestamp(df)
         df = _drop_extra__columns(df)
 
-        if topic in ["duke"]:
+        if topic in ["royal"]:
             df = _force_operation(df, topic)
 
         writer = df.write.mode("append").option("mergeSchema", "True").format("delta")
@@ -97,7 +99,7 @@ def _drop_extra__columns(df: DataFrame) -> DataFrame:
 def _alias_paths(path: str) -> list[str]:
     for source in ("king", "queen"):
         if source in path:
-            return [path.replace(source, t) for t in ["monarch", "regent", "duke"]]
+            return [path.replace(source, t) for t in ["monarch", "regent", "royal"]]
 
     return []
 
@@ -113,20 +115,24 @@ def _convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
         to_folder = folder.replace("\\", "/").replace(from_dir.string, to_dir.string)
         df.coalesce(2).write.format("parquet").mode("overwrite").save(to_folder)
 
-        if "2022/04/01/0001" not in str(f):
+        if _NO_ALIAS_MARKER not in str(f):
             for to_folder_ in _alias_paths(to_folder):
                 df.coalesce(1).write.format("parquet").mode("append").save(to_folder_)
 
 
+def _seed_job_dirs():
+    # single source of truth: derived from the seed dir, so a new job dir is never silently skipped
+    return sorted(ROOT.joinpath("seed").pathlibpath.glob("job*"), key=lambda p: int(p.name[3:]))
+
+
 def git_to_landing():
     DEFAULT_LOGGER.info("moving data from git to landing")
+    seed_dir = ROOT.joinpath("seed")
 
-    for i in range(1, 12):
-        job = f"job{i}"
+    for job_dir in _seed_job_dirs():
+        job = job_dir.name
         DEFAULT_LOGGER.debug(f"copying json from git to landing ({job})")
-        from_dir = PATHS.root.joinpath("data", job)
-        to_dir = PATHS.landing.joinpath(job)
-        _convert_json_to_parquet(from_dir, to_dir)
+        _convert_json_to_parquet(seed_dir.joinpath(job), LANDING.joinpath(job))
 
 
 def landing_to_raw(iter: Union[int, List[int]]):
@@ -138,7 +144,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
     for i in iter:
         job = f"job{i}"
         DEFAULT_LOGGER.debug(f"copying parquet from landing to raw ({job})")
-        landing = PATHS.landing.joinpath(job)
+        landing = LANDING.joinpath(job)
 
         for f in landing.walk():
             if str(f).endswith("parquet"):
@@ -152,31 +158,30 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
                     dbutils.fs.cp(path.string, FileSharePath(to_path).string)
 
-                    if "2022/04/01/0001" not in str(f):
+                    if _NO_ALIAS_MARKER not in str(f):
                         for to_path_ in _alias_paths(to_path):
                             dbutils.fs.cp(path.string, FileSharePath(to_path_).string)
 
     _convert_parquet_to_delta("regent")
     _convert_parquet_to_delta("monarch")
     _convert_parquet_to_delta("prince", deletelog=False)
-    _convert_parquet_to_delta("duke", deletelog=False)
+    _convert_parquet_to_delta("royal", deletelog=False)
 
 
 def create_input_tables(topics: List[str] | None = None):
     DEFAULT_LOGGER.info("input - creating tables")
 
     if topics is None:
-        topics = ["monarch", "prince", "princess", "king", "queen", "duke", "regent"]
+        topics = ["monarch", "prince", "princess", "king", "queen", "royal", "regent"]
 
     spark.sql("create schema if not exists input")
-    data_dir = PATHS.root.joinpath("data")
-    job_dirs = sorted(data_dir.pathlibpath.glob("job*"), key=lambda p: int(p.name[3:]))
+    job_dirs = _seed_job_dirs()
 
     def _write_table(rows: List[Any], topic: str, table: str):
         p_df = pd.concat(rows, ignore_index=True)
         df = spark.createDataFrame(p_df)
 
-        if topic in ["duke"]:
+        if topic in ["royal"]:
             df = _force_operation(df, topic)
         elif "__operation" not in df.columns:
             if "BEL_IsFullLoad" in df.columns:
@@ -238,44 +243,25 @@ def create_expected_views():
 
     def _create_views(step: str, cdc: str):
         DEFAULT_LOGGER.debug(f"creating expected views for {step} - {cdc}")
-        views = PATHS.root.joinpath("expected", step, cdc)
+        views = ROOT.joinpath("expected", step, cdc)
 
         for v in sorted(views.walk()):
             spark.sql(GitPath(v).get_sql())
 
-    def _create_latest_views(step: str):
-        DEFAULT_LOGGER.debug(f"creating expected latest views for {step}")
-        views = PATHS.root.joinpath("expected", step, "scd2")
+    # latest and append both derive from the scd2 views, dropping the history columns;
+    # latest additionally keeps only the last version.
+    except_cols = "except(__valid_from, __valid_to, __is_current, __is_deleted)"
+
+    def _create_derived_views(step: str, suffix: str):
+        DEFAULT_LOGGER.debug(f"creating expected {suffix} views for {step}")
+        views = ROOT.joinpath("expected", step, "scd2")
 
         for v in sorted(views.walk()):
             job_n = int(str(v).split("job")[-1].split(".")[0])
             source = f"expected.{step}_scd2_job{job_n}"
-            latest = f"expected.{step}_latest_job{job_n}"
-            spark.sql(
-                f"""
-                create or replace view {latest} as 
-                select 
-                  * 
-                  except(__valid_from, __valid_to, __is_current, __is_deleted) 
-                from 
-                  {source} 
-                where __valid_from = (select max(__valid_from) from {source})"""
-            )
-
-    def _create_append_views(step: str):
-        DEFAULT_LOGGER.debug(f"creating expected append views for {step}")
-        views = PATHS.root.joinpath("expected", step, "scd2")
-
-        for v in sorted(views.walk()):
-            job_n = int(str(v).split("job")[-1].split(".")[0])
-            source = f"expected.{step}_scd2_job{job_n}"
-            spark.sql(f"""
-            create or replace view expected.{step}_append_job{job_n} as 
-            select 
-              *
-                except(__valid_from, __valid_to, __is_current, __is_deleted) 
-            from {source}
-            """)
+            target = f"expected.{step}_{suffix}_job{job_n}"
+            where = f" where __valid_from = (select max(__valid_from) from {source})" if suffix == "latest" else ""
+            spark.sql(f"create or replace view {target} as select * {except_cols} from {source}{where}")
 
     # silver
     _create_views("silver", "scd2")
@@ -285,11 +271,11 @@ def create_expected_views():
     _create_views("gold", "scd1")
     _create_views("gold", "scd0")
     # latest
-    _create_latest_views("silver")
-    _create_latest_views("gold")
+    _create_derived_views("silver", "latest")
+    _create_derived_views("gold", "latest")
     # append
-    _create_append_views("silver")
-    _create_append_views("gold")
+    _create_derived_views("silver", "append")
+    _create_derived_views("gold", "append")
 
 
 def create_random_tables():
@@ -297,5 +283,5 @@ def create_random_tables():
         spark.sql(f"use catalog {CATALOG}")
 
     spark.sql("create schema if not exists bronze")
-    uri = f"{PATHS.raw}/delta/no_column"
+    uri = f"{RAW}/delta/no_column"
     spark.sql(f"create table if not exists bronze.princess_no_column using delta location '{uri}'")

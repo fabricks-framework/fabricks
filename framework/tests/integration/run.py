@@ -10,7 +10,7 @@ from databricks.sdk.runtime import dbutils
 from fabricks.context.log import DEFAULT_LOGGER, LOGLEVEL
 from fabricks.core.jobs import get_job
 from fabricks.utils.helpers import run_in_parallel
-from tests.integration.utils import landing_to_raw
+from tests.integration.helpers.seed import landing_to_raw
 
 # COMMAND ----------
 
@@ -28,8 +28,8 @@ bronze = [
     # {"step": "bronze", "topic": "monarch", "item": "scd2"},
     {"step": "bronze", "topic": "king", "item": "scd1"},
     {"step": "bronze", "topic": "king", "item": "scd2"},
-    {"step": "bronze", "topic": "memory", "item": "scd1"},
-    {"step": "bronze", "topic": "memory", "item": "scd2"},
+    {"step": "bronze", "topic": "monarch", "item": "scd1_memory"},
+    {"step": "bronze", "topic": "monarch", "item": "scd2_memory"},
     {"step": "bronze", "topic": "queen", "item": "scd1"},
     {"step": "bronze", "topic": "queen", "item": "scd2"},
 ]
@@ -39,8 +39,8 @@ silver = [
     {"step": "silver", "topic": "regent", "item": "scd2"},
     {"step": "silver", "topic": "monarch", "item": "scd1"},
     {"step": "silver", "topic": "monarch", "item": "scd2"},
-    {"step": "silver", "topic": "memory", "item": "scd1"},
-    {"step": "silver", "topic": "memory", "item": "scd2"},
+    {"step": "silver", "topic": "monarch", "item": "scd1_memory"},
+    {"step": "silver", "topic": "monarch", "item": "scd2_memory"},
     {"step": "silver", "topic": "king_and_queen", "item": "scd1"},
     {"step": "silver", "topic": "king_and_queen", "item": "scd2"},
 ]

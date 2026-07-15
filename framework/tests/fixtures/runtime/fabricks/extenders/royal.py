@@ -4,8 +4,8 @@ from pyspark.sql.functions import expr, lit
 from fabricks.core.extenders import extender
 
 
-@extender(name="duke")
-def duke(df: DataFrame, **kwargs) -> DataFrame:
+@extender(name="royal")
+def royal(df: DataFrame, **kwargs) -> DataFrame:
     df = df.withColumn(
         "__operation",
         expr("if(BEL_DeleteDateUtc is not null, 'delete', if(BEL_IsFullLoad=='true', 'reload', 'upsert'))"),

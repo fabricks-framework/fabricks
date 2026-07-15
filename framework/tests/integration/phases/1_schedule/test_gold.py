@@ -6,7 +6,7 @@ from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs import get_job
 from fabricks.metastore.table import Table
-from tests.integration.compare import compare_job_to_expected
+from tests.integration.helpers.compare import compare_job_to_expected
 
 DEFAULT_LOGGER.setLevel(ERROR)
 

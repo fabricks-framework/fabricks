@@ -45,3 +45,23 @@
       mode: register
       uri: abfss://fabricks@$datahub/raw/delta/monarch
       keys: [id]
+- job:
+    step: bronze
+    topic: monarch
+    item: scd1_memory
+    tags: [run_1, run_2]
+    options:
+      mode: append
+      uri: abfss://fabricks@$datahub/raw/monarch
+      parser: monarch
+      keys: [id]
+- job:
+    step: bronze
+    topic: monarch
+    item: scd2_memory
+    tags: [run_1, run_2]
+    options:
+      mode: append
+      uri: abfss://fabricks@$datahub/raw/monarch
+      parser: monarch
+      keys: [id]

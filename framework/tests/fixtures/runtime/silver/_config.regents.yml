@@ -1,3 +1,4 @@
+---
 # yaml-language-server: $schema=../../../../../job-schema-silver.json
 - job:
     step: silver

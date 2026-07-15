@@ -13,7 +13,8 @@ from fabricks.models.cdc import CdcContext
 from fabricks.utils.dataframe import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
 
 CDC = {"scd1": SCD1, "scd2": SCD2, "nocdc": NoCDC}
-__COLUMNS = ["__is_current", "__is_deleted", "__valid_from", "__valid_to", "__source"]
+_COLUMNS = ["__is_current", "__is_deleted", "__valid_from", "__valid_to", "__source"]
+_MULTI_SOURCE_TOPIC = "king_and_queen"  # only topic whose __source reflects a real multi-parent merge
 
 
 @dataclass
@@ -31,12 +32,12 @@ class ExpectedSpec:
     def _keep_source(self) -> bool:
         # __source only reflects real data when merging multiple topics -- currently only king_and_queen
         if self.job is not None:
-            return self.job.topic == "king_and_queen"
+            return self.job.topic == _MULTI_SOURCE_TOPIC
 
         if self.obj is not None:
-            return "king_and_queen" in self.obj
+            return _MULTI_SOURCE_TOPIC in self.obj
 
-        return self.topic == "king_and_queen"
+        return self.topic == _MULTI_SOURCE_TOPIC
 
     @property
     def _where_current(self) -> bool:
@@ -57,7 +58,7 @@ class ExpectedSpec:
 
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = True, keep_source: bool = True):
     cols = df_expected.columns
-    cols = [c for c in cols if not c.startswith("__") or c in __COLUMNS]
+    cols = [c for c in cols if not c.startswith("__") or c in _COLUMNS]
     scd2 = "__valid_from" in cols and "__valid_to" in cols
 
     if not soft_delete:
@@ -87,15 +88,20 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame, soft_delete: bool = 
 
         return df_
 
-    print("<-- df -->\n")
     df = _transform(df)
-    df.show()
-    p_df = df.toPandas()
-    print("<-- expected -->\n")
     df_expected = _transform(df_expected)
-    df_expected.show()
+    p_df = df.toPandas()
     p_df_expected = df_expected.toPandas()
-    assert_frame_equal(p_df, p_df_expected, check_dtype=False)
+
+    try:
+        assert_frame_equal(p_df, p_df_expected, check_dtype=False)
+    except AssertionError:
+        # only materialize the debug dumps when the comparison actually fails
+        print("<-- df -->\n")
+        df.show()
+        print("<-- expected -->\n")
+        df_expected.show()
+        raise
 
 
 def compare_object_to_expected(
@@ -122,7 +128,7 @@ def compare_job_to_expected(
 
 
 def compare_cdc_to_expected(
-    topic: Literal["monarch", "king_and_queen", "prince", "princesses", "duke"],
+    topic: Literal["monarch", "king_and_queen", "prince", "princesses", "royal"],
     cdc: Literal["scd1", "scd2", "nocdc"],
     iter: int | list[int] = 1,
     mode: Literal["latest", "append", "update", "overwrite"] = "update",
@@ -130,7 +136,7 @@ def compare_cdc_to_expected(
 ):
     if mode == "latest":
         assert cdc == "nocdc"  # mandatory for latest
-        assert topic == "duke"  # mandatory for latest as duke force reload in __operation
+        assert topic == "royal"  # mandatory for latest as royal force reload in __operation
     elif mode == "append":
         assert cdc == "nocdc"  # mandatory for append
 
@@ -153,10 +159,9 @@ def compare_cdc_to_expected(
     tgt = CDC[cdc]("test", f"{topic}_{cdc}_{'_'.join(iter_str)}")
     variant = "latest" if mode == "latest" else "append" if mode == "append" else cdc
     DEFAULT_LOGGER.info(f"comparing to {variant} job {last_iter}")
-    x = 0
 
-    for i in iter_str:
-        if topic == "king_and_queen":
+    for x, i in enumerate(iter_str):
+        if topic == _MULTI_SOURCE_TOPIC:
             view_1 = f"input.king_job{i}"
             view_2 = f"input.queen_job{i}"
 
@@ -183,8 +188,6 @@ def compare_cdc_to_expected(
             tgt.overwrite(query, context=context)
         else:
             tgt.update(query, context=context)
-
-        x += 1
 
     spec = ExpectedSpec(
         expand="silver",

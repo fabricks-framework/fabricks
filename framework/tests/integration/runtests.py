@@ -13,7 +13,7 @@ from fabricks.context import IS_TESTMODE
 from fabricks.context.log import DEFAULT_LOGGER, send_message_to_channel
 from fabricks.utils.helpers import run_notebook
 from fabricks.utils.pip import pip_list
-from tests.integration._types import PATHS
+from tests.integration.helpers.const import PHASES, ROOT
 
 # COMMAND ----------
 
@@ -21,7 +21,7 @@ assert IS_TESTMODE
 
 # COMMAND ----------
 
-Tasks = ["0_armageddon", "1_schedule", "2_schedule", "3_run", "4_reload", "5_extra"]
+Phases = sorted(p.name for p in PHASES.pathlibpath.glob("[0-9]_*") if p.is_dir())
 
 # COMMAND ----------
 
@@ -38,13 +38,13 @@ _ = send_message_to_channel(
 
 # COMMAND ----------
 
-dbutils.widgets.multiselect("tasks", "*", ["*"] + Tasks)
+dbutils.widgets.multiselect("phases", "*", ["*"] + Phases)
 
 # COMMAND ----------
 
-tasks = [t for t in dbutils.widgets.get("tasks").split(",")]
-if "*" in tasks:
-    tasks = Tasks
+phases = [t for t in dbutils.widgets.get("phases").split(",")]
+if "*" in phases:
+    phases = Phases
 
 # COMMAND ----------
 
@@ -53,12 +53,12 @@ print(packages)
 
 # COMMAND ----------
 
-print(PATHS.root)
+print(ROOT)
 
 # COMMAND ----------
 
 run_notebook(
-    PATHS.root.joinpath("initialize"),
+    ROOT.joinpath("initialize"),
     expected="True",
     i=1,
 )
@@ -73,13 +73,13 @@ DEFAULT_LOGGER.setLevel(ERROR)
 
 # COMMAND ----------
 
-k = " or ".join(tasks)
+k = " or ".join(phases)
 
 # COMMAND ----------
 
 res = pytest.main(
     [
-        "tasks",
+        "phases",
         "-v",
         "-p",
         "no:cacheprovider",

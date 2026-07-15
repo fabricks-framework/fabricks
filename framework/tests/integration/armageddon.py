@@ -5,7 +5,7 @@
 
 
 from fabricks.deploy import Deploy
-from tests.integration._types import STEPS
+from tests.integration.helpers.const import STEPS
 
 # COMMAND ----------
 

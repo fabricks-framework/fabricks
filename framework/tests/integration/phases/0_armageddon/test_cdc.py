@@ -1,11 +1,11 @@
 import pytest
 
-from tests.integration.compare import compare_cdc_to_expected
+from tests.integration.helpers.compare import compare_cdc_to_expected
 
 ITERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 
-@pytest.mark.parametrize("topic", ["monarch", "king_and_queen", "prince", "princesses", "duke"])
+@pytest.mark.parametrize("topic", ["monarch", "king_and_queen", "prince", "princesses", "royal"])
 @pytest.mark.parametrize("cdc", ["scd1", "scd2"])
 @pytest.mark.parametrize("iter", ITERS)
 def test_cdc_scd1_scd2(topic, cdc, iter):
@@ -20,4 +20,4 @@ def test_nocdc_overwrite_append(iter, mode):
 
 @pytest.mark.parametrize("iter", ITERS)
 def test_nocdc_overwrite_latest(iter):
-    compare_cdc_to_expected("duke", "nocdc", iter, mode="latest", soft_delete=False)
+    compare_cdc_to_expected("royal", "nocdc", iter, mode="latest", soft_delete=False)
