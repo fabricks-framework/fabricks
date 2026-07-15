@@ -31,10 +31,11 @@ def _convert_parquet_to_delta(topic: str, deletelog: bool = False):
             ]
         )
         assert df is not None
-
         writer = df.write.mode("append").option("mergeSchema", "True").format("delta")
+
         if any(not re.match(r"^[a-zA-Z0-9_]+$", c) for c in df.columns):
             writer = writer.option("delta.columnMapping.mode", "name")
+
         writer.save(f"{root}/delta/{topic}")
 
 
@@ -109,10 +110,10 @@ def create_input_tables(topics: List[str] | None = None):
         for job_dir in job_dirs:
             DEFAULT_LOGGER.debug(f"creating table input.{topic}_{job_dir.name}")
             batch: List[Any] = []
-
             # topic folder + its deletelog; prince keeps its deletelog as a standalone fixture
             scan_dirs = [job_dir / topic]
             deletelog = job_dir / f"{topic}__deletelog"
+
             if topic != "prince" and deletelog.exists():
                 scan_dirs.append(deletelog)
 

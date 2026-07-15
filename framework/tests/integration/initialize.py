@@ -10,7 +10,6 @@ from databricks.sdk.runtime import dbutils
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 from tests.integration.helpers.const import LANDING, OUT, RAW
-from tests.integration.helpers.generate_data import generate
 from tests.integration.helpers.seed import (
     create_expected_views,
     create_input_tables,

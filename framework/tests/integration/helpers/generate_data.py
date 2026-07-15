@@ -13,7 +13,6 @@ _ALIAS_TARGETS = ["monarch", "regent"]  # king/queen are aliased into these
 _ROYAL_SOURCES = ["king", "queen", "king__deletelog", "queen__deletelog"]
 _NO_ALIAS_MARKER = "2022/04/01/0001"  # job4's single file: not aliased/merged
 _DECIMAL_TOPICS = {"monarch", "regent", "royal", "prince"}
-
 SEED = Path(__file__).resolve().parent.parent / "seed"
 OUT = Path(__file__).resolve().parent.parent / "raw"
 
@@ -27,7 +26,9 @@ def _operation(record: dict, rel: str) -> str:
     if "BEL_IsFullLoad" in record:
         if record.get("BEL_DeleteDateUtc") is not None:
             return "delete"
+
         return "reload" if record.get("BEL_IsFullLoad") else "upsert"
+
     return "delete" if "deletelog" in rel else "upsert"
 
 
@@ -37,17 +38,21 @@ def _no_bel(record: dict) -> dict:
 
 def _transform(record: dict, topic: str, rel: str) -> dict:
     out = _no_bel(record)
+
     if topic.split("__")[0] in _DECIMAL_TOPICS:
         out["decimalField"] = 10.5
+
     return {**out, "__operation": _operation(record, rel), "__timestamp": _timestamp(rel)}
 
 
 def _royal_snapshot(job_dir: Path, state: dict) -> str | None:
     """Replay the job's king/queen (up)serts & deletes into `state`; return its latest ts."""
     ops = []
+
     for src in _ROYAL_SOURCES:
         for jf in sorted((job_dir / src).rglob("*.json")):
             rel = jf.relative_to(job_dir).as_posix()
+
             if _NO_ALIAS_MARKER not in rel:
                 ts = _timestamp(rel)
                 ops += [(ts, "deletelog" in rel, r["id"], r) for r in json.loads(jf.read_text())]
@@ -57,6 +62,7 @@ def _royal_snapshot(job_dir: Path, state: dict) -> str | None:
             state.pop(id_, None)
         else:
             state[id_] = r
+
     return max((o[0] for o in ops), default=None)
 
 
@@ -83,14 +89,20 @@ def generate():
 
                 if _NO_ALIAS_MARKER in rel:
                     continue
+
                 source = next((s for s in ("king", "queen") if rel.startswith(s)), None)
-                for t in _ALIAS_TARGETS if source else []:
-                    target = rel.replace(source, t)
-                    if t == "regent":  # regent folds its deletelog into one folder
-                        target = target.replace("__deletelog", "")
-                    add(records, rel, target)
+
+                if source:
+                    for t in _ALIAS_TARGETS:
+                        target = rel.replace(source, t)
+
+                        if t == "regent":  # regent folds its deletelog into one folder
+                            target = target.replace("__deletelog", "")
+
+                        add(records, rel, target)
 
         royal_ts = _royal_snapshot(job_dir, royal) or royal_ts
+
         if royal and royal_ts:  # one reload load => all rows share the batch folder timestamp
             files[f"royal/{_royal_path(royal_ts)}"] = [
                 {**_no_bel(royal[i]), "decimalField": 10.5, "__operation": "reload", "__timestamp": royal_ts}
@@ -101,6 +113,7 @@ def generate():
             dest = OUT / job_dir.name / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(json.dumps(records, indent=2))
+
         print(f"{job_dir.name}: {len(files)} files")
 
 
