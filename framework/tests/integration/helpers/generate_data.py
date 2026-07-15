@@ -12,7 +12,7 @@ from pathlib import Path
 _ALIAS_TARGETS = ["monarch", "regent"]  # king/queen are aliased into these
 _ROYAL_SOURCES = ["king", "queen", "king__deletelog", "queen__deletelog"]
 _NO_ALIAS_MARKER = "2022/04/01/0001"  # job4's single file: not aliased/merged
-_DECIMAL_TOPICS = {"monarch", "regent", "royal", "prince"}
+_ADD_DECIMAL_TOPICS = {"monarch", "regent", "royal", "prince"}
 SEED = Path(__file__).resolve().parent.parent / "seed"
 OUT = Path(__file__).resolve().parent.parent / "raw"
 
@@ -39,7 +39,7 @@ def _no_bel(record: dict) -> dict:
 def _transform(record: dict, topic: str, rel: str) -> dict:
     out = _no_bel(record)
 
-    if topic.split("__")[0] in _DECIMAL_TOPICS:
+    if topic.split("__")[0] in _ADD_DECIMAL_TOPICS:
         out["decimalField"] = 10.5
 
     return {**out, "__operation": _operation(record, rel), "__timestamp": _timestamp(rel)}
