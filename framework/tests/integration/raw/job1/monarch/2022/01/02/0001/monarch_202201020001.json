@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Leopold I",
+    "doubleField": 0.19000101,
+    "decimalField": 10.5,
+    "__operation": "upsert",
+    "__timestamp": "2022-01-02 00:01:00"
+  },
+  {
+    "id": 2,
+    "name": "Leopold II",
+    "doubleField": 0.20220102,
+    "decimalField": 10.5,
+    "__operation": "upsert",
+    "__timestamp": "2022-01-02 00:01:00"
+  },
+  {
+    "id": 201,
+    "name": "Marie-Henriette",
+    "doubleField": 0.20220102,
+    "decimalField": 10.5,
+    "__operation": "upsert",
+    "__timestamp": "2022-01-02 00:01:00"
+  }
+]

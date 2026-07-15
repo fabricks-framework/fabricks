@@ -1,138 +1,55 @@
 import os
 import re
-from typing import Any, List, Union, cast
+from typing import Any, List, Union
 
 import pandas as pd
 from databricks.sdk.runtime import dbutils, spark
-from pyspark.sql import DataFrame
-from pyspark.sql.functions import expr, lit
 
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import FileSharePath, GitPath
-from tests.integration.helpers.const import LANDING, RAW, ROOT
-
-_DATES = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
-_TOPIC_SOURCES = {
-    "king": ["king", "king__deletelog"],
-    "queen": ["queen", "queen__deletelog"],
-    "prince": ["prince"],
-    "princess": ["princess"],
-    **{t: ["king", "queen", "king__deletelog", "queen__deletelog"] for t in ["monarch", "regent", "royal"]},
-}
-_TOPIC_OPERATIONS = {"royal": "reload"}
-# job4's single file: single-source, not aliased into the merged monarch/regent/royal topics
-_NO_ALIAS_MARKER = "2022/04/01/0001"
+from tests.integration.helpers.const import LANDING, RAW, RAW_DATA, ROOT
 
 
-def _convert_parquet_to_delta(topic: str, deletelog: bool = True):
+def _data_job_dirs():
+    return sorted(RAW_DATA.pathlibpath.glob("job*"), key=lambda p: int(p.name[3:]))
+
+
+def _convert_parquet_to_delta(topic: str, deletelog: bool = False):
+    paths = [topic] + ([f"{topic}__deletelog"] if deletelog else [])
+
     for i in range(1, 5):
-        dfs = []
-        root = RAW
-
-        if i > 1:
-            root = root.joinpath(str(i))
-
-        _paths = [topic]
-
-        if deletelog:
-            _paths.append(f"{topic}__deletelog")
-
-        for p in _paths:
-            df = (
+        root = RAW if i == 1 else RAW.joinpath(str(i))
+        df = concat_dfs(
+            [
                 spark.read.option("pathGlobFilter", "*.parquet")
                 .option("recursiveFileLookup", "True")
                 .option("mergeSchema", "True")
                 .parquet(f"{root}/{p}")
-            )
-            df = df.selectExpr(
-                "*",
-                "cast(10.52 as decimal (10,1)) as decimalField",
-                "_metadata.file_path as __file_path",
-                "_metadata.file_name as __file_name",
-            )
-            dfs.append(df)
-
-        df = concat_dfs(dfs)
+                for p in paths
+            ]
+        )
         assert df is not None
-        df = _add_timestamp(df)
-        df = _drop_extra__columns(df)
-
-        if topic in ["royal"]:
-            df = _force_operation(df, topic)
 
         writer = df.write.mode("append").option("mergeSchema", "True").format("delta")
-
         if any(not re.match(r"^[a-zA-Z0-9_]+$", c) for c in df.columns):
             writer = writer.option("delta.columnMapping.mode", "name")
-
         writer.save(f"{root}/delta/{topic}")
 
 
-def _force_operation(df: DataFrame, topic: str) -> DataFrame:
-    operation = _TOPIC_OPERATIONS.get(topic)
-
-    if operation:
-        df = df.withColumn("__operation", lit(operation))
-
-    return df
-
-
-def _add_timestamp(df: DataFrame) -> DataFrame:
-    df = df.withColumn("__split", expr("split(replace(__file_path, __file_name), '/')"))
-    df = df.withColumn("__split_size", expr("size(__split)"))
-    df = df.withColumn("__timestamp", expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"))
-    df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
-
-    return df
-
-
-def _drop_extra__columns(df: DataFrame) -> DataFrame:
-    for c in ["__file_path", "__file_name", "__split", "__split_size"]:
-        if c in df.columns:
-            df = df.drop(c)
-
-    return df
-
-
-def _alias_paths(path: str) -> list[str]:
-    for source in ("king", "queen"):
-        if source in path:
-            return [path.replace(source, t) for t in ["monarch", "regent", "royal"]]
-
-    return []
-
-
 def _convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
-    DEFAULT_LOGGER.debug(f"converting json to parquet - {to_dir}")
-    files = from_dir.walk()
-
-    for f in files:
-        p_df = pd.read_json(f, orient="records", convert_dates=cast(Any, _DATES))
-        df = spark.createDataFrame(p_df)
-        folder = os.path.dirname(f)
-        to_folder = folder.replace("\\", "/").replace(from_dir.string, to_dir.string)
+    for f in from_dir.walk():
+        df = spark.createDataFrame(pd.read_json(f, orient="records", convert_dates=False))
+        to_folder = os.path.dirname(f).replace("\\", "/").replace(from_dir.string, to_dir.string)
         df.coalesce(2).write.format("parquet").mode("overwrite").save(to_folder)
-
-        if _NO_ALIAS_MARKER not in str(f):
-            for to_folder_ in _alias_paths(to_folder):
-                df.coalesce(1).write.format("parquet").mode("append").save(to_folder_)
-
-
-def _seed_job_dirs():
-    # single source of truth: derived from the seed dir, so a new job dir is never silently skipped
-    return sorted(ROOT.joinpath("seed").pathlibpath.glob("job*"), key=lambda p: int(p.name[3:]))
 
 
 def git_to_landing():
-    DEFAULT_LOGGER.info("moving data from git to landing")
-    seed_dir = ROOT.joinpath("seed")
+    DEFAULT_LOGGER.info("moving raw fixtures to landing")
 
-    for job_dir in _seed_job_dirs():
-        job = job_dir.name
-        DEFAULT_LOGGER.debug(f"copying json from git to landing ({job})")
-        _convert_json_to_parquet(seed_dir.joinpath(job), LANDING.joinpath(job))
+    for job_dir in _data_job_dirs():
+        _convert_json_to_parquet(RAW_DATA.joinpath(job_dir.name), LANDING.joinpath(job_dir.name))
 
 
 def landing_to_raw(iter: Union[int, List[int]]):
@@ -158,14 +75,12 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
                     dbutils.fs.cp(path.string, FileSharePath(to_path).string)
 
-                    if _NO_ALIAS_MARKER not in str(f):
-                        for to_path_ in _alias_paths(to_path):
-                            dbutils.fs.cp(path.string, FileSharePath(to_path_).string)
-
+    # monarch alone keeps a separate deletelog folder to merge in (regent/royal merged it
+    # already; prince's deletelog is a standalone fixture, excluded from its delta)
+    _convert_parquet_to_delta("monarch", deletelog=True)
     _convert_parquet_to_delta("regent")
-    _convert_parquet_to_delta("monarch")
-    _convert_parquet_to_delta("prince", deletelog=False)
-    _convert_parquet_to_delta("royal", deletelog=False)
+    _convert_parquet_to_delta("prince")
+    _convert_parquet_to_delta("royal")
 
 
 def create_input_tables(topics: List[str] | None = None):
@@ -175,32 +90,10 @@ def create_input_tables(topics: List[str] | None = None):
         topics = ["monarch", "prince", "princess", "king", "queen", "royal", "regent"]
 
     spark.sql("create schema if not exists input")
-    job_dirs = _seed_job_dirs()
+    job_dirs = _data_job_dirs()
 
-    def _write_table(rows: List[Any], topic: str, table: str):
-        p_df = pd.concat(rows, ignore_index=True)
-        df = spark.createDataFrame(p_df)
-
-        if topic in ["royal"]:
-            df = _force_operation(df, topic)
-        elif "__operation" not in df.columns:
-            if "BEL_IsFullLoad" in df.columns:
-                df = df.withColumn(
-                    "__operation",
-                    expr(
-                        "if(BEL_DeleteDateUtc is not null, 'delete', if(BEL_IsFullLoad=='true', 'reload', 'upsert'))"
-                    ),
-                )
-            else:
-                df = df.withColumn("__operation", expr("if(__file_path like '%deletelog%', 'delete', 'upsert')"))
-
-        df: DataFrame = _add_timestamp(df)
-        cols = [c for c in df.columns if c.startswith("BEL_")]
-
-        if cols:
-            df = df.drop(*cols)
-            df = _drop_extra__columns(df)
-
+    def _write_table(rows: List[Any], table: str):
+        df = spark.createDataFrame(pd.concat(rows, ignore_index=True))
         (
             df.write.mode("overwrite")
             .option("overwriteSchema", "True")
@@ -215,25 +108,27 @@ def create_input_tables(topics: List[str] | None = None):
 
         for job_dir in job_dirs:
             DEFAULT_LOGGER.debug(f"creating table input.{topic}_{job_dir.name}")
-            scan_dirs = [job_dir / s for s in _TOPIC_SOURCES.get(topic, [topic])]
             batch: List[Any] = []
+
+            # topic folder + its deletelog; prince keeps its deletelog as a standalone fixture
+            scan_dirs = [job_dir / topic]
+            deletelog = job_dir / f"{topic}__deletelog"
+            if topic != "prince" and deletelog.exists():
+                scan_dirs.append(deletelog)
 
             for scan_dir in scan_dirs:
                 for json_file in sorted(scan_dir.rglob("*.json")):
-                    p_df = pd.read_json(str(json_file), orient="records", convert_dates=cast(Any, _DATES))
-                    p_df["__file_path"] = str(json_file).replace("\\", "/")
-                    p_df["__file_name"] = json_file.name
-                    batch.append(p_df)
+                    batch.append(pd.read_json(str(json_file), orient="records", convert_dates=False))
 
             accumulated.extend(batch)
 
             if not accumulated:
                 continue
 
-            _write_table(accumulated, topic, f"input.{topic}_{job_dir.name}")
+            _write_table(accumulated, f"input.{topic}_{job_dir.name}")
 
             if batch:
-                _write_table(batch, topic, f"input.{topic}_{job_dir.name}_batch")
+                _write_table(batch, f"input.{topic}_{job_dir.name}_batch")
 
     run_in_parallel(_create_tables, topics)
 

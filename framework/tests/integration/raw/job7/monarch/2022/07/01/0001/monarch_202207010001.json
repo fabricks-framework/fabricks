@@ -1,0 +1,38 @@
+[
+  {
+    "id": 6,
+    "name": "Albert II",
+    "doubleField": 0.20220501,
+    "newField": false,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-07-01 00:01:00"
+  },
+  {
+    "id": 7,
+    "name": "Philippe",
+    "doubleField": 0.20220701,
+    "newField": false,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-07-01 00:01:00"
+  },
+  {
+    "id": 601,
+    "name": "Paola",
+    "doubleField": 0.20220501,
+    "newField": false,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-07-01 00:01:00"
+  },
+  {
+    "id": 701,
+    "name": "Mathilde",
+    "doubleField": 0.20220701,
+    "newField": false,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-07-01 00:01:00"
+  }
+]

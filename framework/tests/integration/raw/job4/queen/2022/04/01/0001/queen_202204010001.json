@@ -1,0 +1,10 @@
+[
+  {
+    "id": 501,
+    "name": "Fabiola",
+    "doubleField": 0.20220401,
+    "newField": true,
+    "__operation": "reload",
+    "__timestamp": "2022-04-01 00:01:00"
+  }
+]

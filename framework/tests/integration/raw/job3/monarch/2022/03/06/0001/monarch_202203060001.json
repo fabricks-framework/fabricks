@@ -1,0 +1,11 @@
+[
+  {
+    "id": 401,
+    "name": "Astrid",
+    "doubleField": 0.20220305,
+    "newField": true,
+    "decimalField": 10.5,
+    "__operation": "upsert",
+    "__timestamp": "2022-03-06 00:01:00"
+  }
+]

@@ -15,16 +15,41 @@ integration/
   armageddon.py          notebook: full teardown
   add_missing_modules.py notebook: add repo/fabricks/tests to sys.path on the cluster
   helpers/
-    const.py             paths & constants: ROOT, PHASES, LANDING, RAW, OUT, STEPS
-    seed.py              build test data: git -> landing -> raw -> delta, input tables, expected views
+    const.py             paths & constants: ROOT, RAW_DATA, PHASES, LANDING, RAW, OUT, STEPS
+    generate_data.py     seed/ -> raw/ : apply every transform once (pure stdlib, no Spark)
+    seed.py              load raw/ into landing -> raw storage -> delta, input tables, expected views
     compare.py           ExpectedSpec + compare_{job,object,cdc}_to_expected assertions
   phases/                the test phases, run in order (see below)
-  seed/                  source JSON fixtures (job1..job11 / <topic> / <date>)
+  seed/                  original source JSON fixtures (job1..job11 / <topic> / <date>) — git origin
+  raw/                   transformed fixtures generated from seed/ — what the tests actually load
   expected/              expected-output SQL views (silver|gold, per scdN)
 ```
 
 Fixture topic names (`king`, `queen`, `monarch`, ...) map to scenarios in
 [`../fixtures/README.md`](../fixtures/README.md).
+
+## Fixture data: `seed/` → `raw/`
+
+`seed/` holds the **original, git-versioned** JSON (with `BEL_*` change-tracking columns
+and one folder per source). `helpers/generate_data.py` transforms it **once** into `raw/`
+(named to mirror the bronze `raw/<topic>` uris in the yml configs), and everything at
+runtime (`seed.py`: landing/raw storage/delta + input tables) reads `raw/`
+**as-is — no further transformation**.
+
+What `generate_data.py` bakes into `raw/`:
+
+- adds `__operation` (from `BEL_*` / deletelog) and `__timestamp` (from the date folder),
+  then drops the `BEL_*` columns;
+- derives `monarch`/`regent` by aliasing `king`/`queen` (regent merges its deletelog into
+  one folder; monarch keeps a separate `__deletelog` folder);
+- builds `royal` as a `reload` snapshot: the cumulative **current** state (latest per id,
+  deletes applied by omission), one load per job sharing the batch's folder timestamp — so
+  it lines up with the other topics' current rows;
+- passes non-topic folders (`too_many_columns`, `prince__deletelog`, ...) through unchanged.
+
+Regenerate after editing `seed/`: `python helpers/generate_data.py` (commit `raw/`).
+The only value `seed.py` still synthesises is `decimalField` (a decimal→double
+type-conversion fixture asserted by `test_silver`), which is pipeline artifact, not data.
 
 ## Phases
 

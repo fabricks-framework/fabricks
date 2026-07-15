@@ -1,0 +1,18 @@
+[
+  {
+    "@Id": 6003,
+    "N\u00c3\u00a4\u00c3\u00a0me": "Laurent",
+    "double Field!": 0.19000101,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-01-01 00:01:00"
+  },
+  {
+    "@Id": 6004,
+    "N\u00c3\u00a4\u00c3\u00a0me": "Gabriel",
+    "double Field!": 0.19000102,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-01-01 00:01:00"
+  }
+]

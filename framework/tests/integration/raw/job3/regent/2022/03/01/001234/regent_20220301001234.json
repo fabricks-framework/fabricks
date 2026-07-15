@@ -1,0 +1,17 @@
+[
+  {
+    "id": 4,
+    "name": "Leopold III",
+    "doubleField": 0.20220305,
+    "newField": true,
+    "decimalField": 10.5,
+    "__operation": "upsert",
+    "__timestamp": "2022-03-01 00:12:00"
+  },
+  {
+    "id": 4,
+    "decimalField": 10.5,
+    "__operation": "delete",
+    "__timestamp": "2022-03-01 00:12:00"
+  }
+]

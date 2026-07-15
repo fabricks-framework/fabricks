@@ -1,0 +1,12 @@
+[
+  {
+    "id": 101,
+    "__operation": "delete",
+    "__timestamp": "2022-01-04 00:01:00"
+  },
+  {
+    "id": 201,
+    "__operation": "delete",
+    "__timestamp": "2022-01-04 00:01:00"
+  }
+]

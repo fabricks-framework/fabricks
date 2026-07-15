@@ -1,0 +1,9 @@
+[
+  {
+    "id": 201,
+    "name": "Marie-Henriette",
+    "doubleField": 0.20220102,
+    "__operation": "upsert",
+    "__timestamp": "2022-01-02 00:01:00"
+  }
+]
