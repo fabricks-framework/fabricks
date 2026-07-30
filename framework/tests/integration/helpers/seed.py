@@ -11,6 +11,8 @@ from fabricks.utils.helpers import concat_dfs, run_in_parallel
 from fabricks.utils.path import FileSharePath, GitPath
 from tests.integration.helpers.const import LANDING, RAW, RAW_DATA, ROOT
 
+RAW_ITERATIONS = range(1, 5)
+
 
 def _data_job_dirs():
     return sorted(RAW_DATA.pathlibpath.glob("job*"), key=lambda p: int(p.name[3:]))
@@ -19,7 +21,7 @@ def _data_job_dirs():
 def _convert_parquet_to_delta(topic: str, deletelog: bool = False):
     paths = [topic] + ([f"{topic}__deletelog"] if deletelog else [])
 
-    for i in range(1, 5):
+    for i in RAW_ITERATIONS:
         root = RAW if i == 1 else RAW.joinpath(str(i))
         df = concat_dfs(
             [
@@ -68,7 +70,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
             if str(f).endswith("parquet"):
                 path = FileSharePath(f)
 
-                for j in range(1, 4):
+                for j in RAW_ITERATIONS:
                     to_path = f.replace(f"landing/{job}/", "raw/")
 
                     if j > 1:  # needed for unity catalog (cannot use same delta table more than once)
