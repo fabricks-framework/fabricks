@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from typing import Any, List, Union
@@ -23,6 +24,13 @@ def _convert_parquet_to_delta(topic: str, deletelog: bool = False):
 
     for i in RAW_ITERATIONS:
         root = RAW if i == 1 else RAW.joinpath(str(i))
+
+        def _exists(p: str) -> bool:  # ponytail: dbutils.fs.ls throws on missing path
+            try:
+                return len(list(dbutils.fs.ls(f"{root}/{p}"))) > 0
+            except Exception:
+                return False
+
         df = concat_dfs(
             [
                 spark.read.option("pathGlobFilter", "*.parquet")
@@ -30,6 +38,7 @@ def _convert_parquet_to_delta(topic: str, deletelog: bool = False):
                 .option("mergeSchema", "True")
                 .parquet(f"{root}/{p}")
                 for p in paths
+                if _exists(p)
             ]
         )
         assert df is not None
@@ -78,6 +87,12 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
                     dbutils.fs.cp(path.string, FileSharePath(to_path).string)
 
+    for topic in ["monarch", "regent", "prince", "royal"]:
+        try:
+            dbutils.fs.ls(f"{RAW}/{topic}")
+        except Exception as e:
+            raise FileNotFoundError(f"landing_to_raw: {topic} missing in {RAW}") from e
+
     # monarch alone keeps a separate deletelog folder to merge in (regent/royal merged it
     # already; prince's deletelog is a standalone fixture, excluded from its delta)
     _convert_parquet_to_delta("monarch", deletelog=True)
@@ -95,8 +110,7 @@ def create_input_tables(topics: List[str] | None = None):
     spark.sql("create schema if not exists input")
     job_dirs = _data_job_dirs()
 
-    def _write_table(rows: List[Any], table: str):
-        df = spark.createDataFrame(pd.concat(rows, ignore_index=True))
+    def _write_table(df, table: str):
         (
             df.write.mode("overwrite")
             .option("overwriteSchema", "True")
@@ -112,7 +126,6 @@ def create_input_tables(topics: List[str] | None = None):
         for job_dir in job_dirs:
             DEFAULT_LOGGER.debug(f"creating table input.{topic}_{job_dir.name}")
             batch: List[Any] = []
-            # topic folder + its deletelog; prince keeps its deletelog as a standalone fixture
             scan_dirs = [job_dir / topic]
             deletelog = job_dir / f"{topic}__deletelog"
 
@@ -121,17 +134,18 @@ def create_input_tables(topics: List[str] | None = None):
 
             for scan_dir in scan_dirs:
                 for json_file in sorted(scan_dir.rglob("*.json")):
-                    batch.append(pd.read_json(str(json_file), orient="records", convert_dates=False))
+                    with open(json_file) as f:
+                        batch.extend(json.load(f))
 
             accumulated.extend(batch)
 
             if not accumulated:
                 continue
 
-            _write_table(accumulated, f"input.{topic}_{job_dir.name}")
+            _write_table(spark.createDataFrame(accumulated), f"input.{topic}_{job_dir.name}")
 
             if batch:
-                _write_table(batch, f"input.{topic}_{job_dir.name}_batch")
+                _write_table(spark.createDataFrame(batch), f"input.{topic}_{job_dir.name}_batch")
 
     run_in_parallel(_create_tables, topics)
 
