@@ -59,6 +59,18 @@ class CheckerMixin(JobProtocol):
                 elif position == "post_run":
                     raise PostRunCheckWarning(rows[-1]["__message"], dataframe=df)
 
+    def _check_batch_has_data(self, sql: str) -> bool:
+        min_rows = self.check_options.min_rows if self.check_options else None
+        if min_rows == 0:
+            DEFAULT_LOGGER.debug("check min rows is 0, skipping check", extra={"label": self})
+            return True
+
+        if self.spark.sql(sql).isEmpty():
+            DEFAULT_LOGGER.warning("no data", extra={"label": self})
+            return False
+
+        return True
+
     def check_post_run_extra(self):
         min_rows = self.check_options.min_rows if self.check_options else None
         max_rows = self.check_options.max_rows if self.check_options else None

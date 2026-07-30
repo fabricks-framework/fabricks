@@ -99,3 +99,55 @@ def test_variable_substitution_fabricks_variable_env_overrides_inline(fixtures_d
         conf_data = yaml.safe_load(f)
     runtime = RuntimeConf.model_validate(conf_data)
     assert runtime.options.workers == 12
+
+
+def test_variable_substitution_with_dollar_escape(fixtures_dir: Path) -> None:
+    """Test that $$ escape prevents variable substitution in paths."""
+    conf_file = fixtures_dir / "escape_variables.yml"
+
+    with open(conf_file, encoding="utf-8") as f:
+        conf_data = yaml.safe_load(f)
+
+    runtime = RuntimeConf.model_validate(conf_data)
+
+    # Verify regular variables were substituted
+    assert runtime.options.catalog == "stg_dev_dwh"
+    assert runtime.options.workers == 16
+    assert runtime.options.secret_scope == "test_scope"
+
+    # Main storage path: $storage_account substituted, $$Change escaped to $Change
+    assert (
+        runtime.path_options.storage == "abfss://raw@teststorageaccount.dfs.core.windows.net/$Change_Log_Data/fabricks"
+    )
+
+    # Parsers path: $$G_L escaped to $G_L
+    assert runtime.path_options.parsers == "fabricks/parsers/$G_L_Parsers"
+
+    # Verify bronze configurations exist
+    assert runtime.bronze is not None
+    assert len(runtime.bronze) == 3
+
+    # Test first bronze: variable substituted, $$Change escaped to $Change
+    bc_change_log = runtime.bronze[0]
+    assert bc_change_log.name == "bc_change_log"
+    assert (
+        bc_change_log.path_options.storage
+        == "abfss://raw@teststorageaccount.dfs.core.windows.net/bc/$Change Log Entry"
+    )
+
+    # Test second bronze: variable substituted, $$G_L escaped to $G_L
+    bc_gl_entry = runtime.bronze[1]
+    assert bc_gl_entry.name == "bc_gl_entry"
+    assert bc_gl_entry.path_options.storage == "abfss://raw@teststorageaccount.dfs.core.windows.net/bc/$G_L Entry"
+
+    # Test third bronze: variable substituted, multiple escapes ($$Item and $$Purchase)
+    mixed_test = runtime.bronze[2]
+    assert mixed_test.name == "mixed_escape_test"
+    assert (
+        mixed_test.path_options.storage == "abfss://raw@teststorageaccount.dfs.core.windows.net/$Item/$Purchase/data"
+    )
+
+    # Verify that variables dict still contains the collision names
+    assert runtime.variables is not None
+    for var_name in ["$Change", "$G_L", "$Item", "$Purchase"]:
+        assert runtime.variables[var_name] == "SHOULD_NOT_BE_USED"

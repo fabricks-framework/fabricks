@@ -1,0 +1,49 @@
+---
+# Test fixture for $$ escape mechanism with literal $ characters in paths
+name: test_escape_variables
+options:
+  secret_scope: $secret_scope
+  workers: $workers
+  catalog: $catalog
+  retention_days: 14
+  timeouts:
+    step: 3600
+    job: 3600
+    pre_run: 3600
+    post_run: 3600
+path_options:
+  storage: abfss://raw@$storage_account/$$Change_Log_Data/fabricks
+  udfs: fabricks/udfs
+  parsers: fabricks/parsers/$$G_L_Parsers
+  schedules: fabricks/schedules
+  views: fabricks/views
+  requirements: fabricks/requirements
+bronze:
+  - name: bc_change_log
+    options:
+      order: 1
+    path_options:
+      storage: abfss://raw@$storage_account/bc/$$Change Log Entry
+      runtime: bronze/bc_change_log
+  - name: bc_gl_entry
+    options:
+      order: 2
+    path_options:
+      storage: abfss://raw@$storage_account/bc/$$G_L Entry
+      runtime: bronze/bc_gl_entry
+  - name: mixed_escape_test
+    options:
+      order: 3
+    path_options:
+      storage: abfss://raw@$storage_account/$$Item/$$Purchase/data
+      runtime: bronze/mixed
+variables:
+  $workers: '16'
+  $catalog: stg_dev_dwh
+  $storage_account: teststorageaccount.dfs.core.windows.net
+  $secret_scope: test_scope
+  # These exist but should NOT substitute when escaped with $$
+  $Change: SHOULD_NOT_BE_USED
+  $G_L: SHOULD_NOT_BE_USED
+  $Item: SHOULD_NOT_BE_USED
+  $Purchase: SHOULD_NOT_BE_USED

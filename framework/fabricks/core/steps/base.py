@@ -474,10 +474,12 @@ class BaseStep:
 
 def _log_and_raise_errors(errors: List[JobResult], action: str) -> None:
     if errors:
+        logs = []
         for e in errors:
             DEFAULT_LOGGER.warning(f"fail to {action}", extra={"label": e.job})
+            logs.append(f"  {e.job}: {type(e.error).__name__}: {str(e.error).splitlines()[0]}")
 
-        raise ValueError(f"fail to {action} - {len(errors)} failure(s), check logs for details")
+        raise ValueError(f"fail to {action} - {len(errors)} failure(s)"  + "\n".join(logs))
 
 
 # to avoid AttributeError: can't pickle local object

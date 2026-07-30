@@ -15,7 +15,7 @@
       "Bash(cat:*)",
       "Read",
       "Grep",
-      "Glob"
+      "Glob",
     ]
   },
   "hooks": {
