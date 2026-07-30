@@ -1,5 +1,6 @@
 from abc import ABC
 from typing import Callable, Optional, final
+from warnings import deprecated
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, expr, from_json, lit
@@ -9,6 +10,8 @@ from fabricks.legacy.streaming.read import read
 from fabricks.models import ParserOptions
 from fabricks.utils.dataframe import clean
 from fabricks.utils.path import FileSharePath
+
+deprecated("use pre-run invoker notebook instead")
 
 
 class BaseParser(ABC):

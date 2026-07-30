@@ -198,7 +198,7 @@ class Bronze(BaseJob):
             if should_clean:
                 df = clean(df)
         else:
-            from fabricks.legacy.streaming.parsers import get_parser
+            from fabricks.legacy.parsers import get_parser
 
             if options is not None and options.clean is not None:
                 # if parser options provided and clean set, use parser clean
