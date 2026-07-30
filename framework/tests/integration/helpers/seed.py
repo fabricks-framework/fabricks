@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from typing import Any, List, Union
+from typing import Any, List, Literal, Union
 
 import pandas as pd
 from databricks.sdk.runtime import dbutils, spark
@@ -64,6 +64,23 @@ def git_to_landing():
         _convert_json_to_parquet(RAW_DATA.joinpath(job_dir.name), LANDING.joinpath(job_dir.name))
 
 
+def _check_topic_exist(where: Literal["landing", "raw"], i: int | None = None):
+    if where == "landing":
+        root = LANDING
+    elif where == "raw":
+        root = RAW
+
+    for topic in ["monarch", "regent", "prince", "royal"]:
+        path = root
+        if i:
+            path = path.joinpath(f"job{i}")
+        path = path.joinpath(topic)
+        try:
+            dbutils.fs.ls(str(path))
+        except Exception as e:
+            raise FileNotFoundError(f"{path} not found in {where}") from e
+
+
 def landing_to_raw(iter: Union[int, List[int]]):
     DEFAULT_LOGGER.info("moving data from landing to raw")
 
@@ -71,6 +88,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
         iter = [iter]
 
     for i in iter:
+        _check_topic_exist("landing", i=i)
         job = f"job{i}"
         DEFAULT_LOGGER.debug(f"copying parquet from landing to raw ({job})")
         landing = LANDING.joinpath(job)
@@ -87,12 +105,7 @@ def landing_to_raw(iter: Union[int, List[int]]):
 
                     dbutils.fs.cp(path.string, FileSharePath(to_path).string)
 
-    for topic in ["monarch", "regent", "prince", "royal"]:
-        try:
-            dbutils.fs.ls(f"{RAW}/{topic}")
-        except Exception as e:
-            raise FileNotFoundError(f"landing_to_raw: {topic} missing in {RAW}") from e
-
+    _check_topic_exist("raw")
     # monarch alone keeps a separate deletelog folder to merge in (regent/royal merged it
     # already; prince's deletelog is a standalone fixture, excluded from its delta)
     _convert_parquet_to_delta("monarch", deletelog=True)
@@ -110,7 +123,8 @@ def create_input_tables(topics: List[str] | None = None):
     spark.sql("create schema if not exists input")
     job_dirs = _data_job_dirs()
 
-    def _write_table(df, table: str):
+    def _write_table(data: List[Any], table: str):
+        df = spark.createDataFrame(data)
         (
             df.write.mode("overwrite")
             .option("overwriteSchema", "True")
@@ -142,10 +156,10 @@ def create_input_tables(topics: List[str] | None = None):
             if not accumulated:
                 continue
 
-            _write_table(spark.createDataFrame(accumulated), f"input.{topic}_{job_dir.name}")
+            _write_table(accumulated, f"input.{topic}_{job_dir.name}")
 
             if batch:
-                _write_table(spark.createDataFrame(batch), f"input.{topic}_{job_dir.name}_batch")
+                _write_table(batch, f"input.{topic}_{job_dir.name}_batch")
 
     run_in_parallel(_create_tables, topics)
 
