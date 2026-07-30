@@ -1,10 +1,10 @@
 from abc import ABC
 from typing import Callable, Optional, final
-from warnings import deprecated
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, expr, from_json, lit
 from pyspark.sql.types import MapType, StringType
+from typing_extensions import deprecated
 
 from fabricks.legacy.streaming.read import read
 from fabricks.models import ParserOptions

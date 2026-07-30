@@ -1,5 +1,6 @@
 from typing import Callable, Optional
-from warnings import deprecated
+
+from typing_extensions import deprecated
 
 from fabricks.legacy.parsers.base import PARSERS, BaseParser
 from fabricks.models import ParserOptions
