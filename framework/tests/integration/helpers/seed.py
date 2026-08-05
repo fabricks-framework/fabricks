@@ -125,6 +125,8 @@ def create_input_tables(topics: List[str] | None = None):
 
     def _write_table(data: List[Any], table: str):
         df = spark.createDataFrame(data)
+        if "__timestamp" in df.columns:
+            df = df.withColumn("__timestamp", df["__timestamp"].cast("timestamp"))
         (
             df.write.mode("overwrite")
             .option("overwriteSchema", "True")
