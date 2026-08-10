@@ -42,6 +42,8 @@ def _convert_parquet_to_delta(topic: str, deletelog: bool = False):
             ]
         )
         assert df is not None
+        if "__timestamp" in df.columns:  # register-mode bronze asserts TimestampType
+            df = df.withColumn("__timestamp", df["__timestamp"].cast("timestamp"))
         writer = df.write.mode("append").option("mergeSchema", "True").format("delta")
 
         if any(not re.match(r"^[a-zA-Z0-9_]+$", c) for c in df.columns):
