@@ -84,7 +84,7 @@ class ProcessorMixin(JobProtocol):
             partial(self._for_each_batch, **kwargs)
 
             if self.stream:
-                from fabricks.legacy.streaming.write import write_stream
+                from fabricks.utils.legacy.streaming.write import write_stream
 
                 DEFAULT_LOGGER.debug("use streaming", extra={"label": self})
                 write_stream(

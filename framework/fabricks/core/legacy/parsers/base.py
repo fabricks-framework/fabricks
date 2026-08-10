@@ -6,9 +6,9 @@ from pyspark.sql.functions import col, expr, from_json, lit
 from pyspark.sql.types import MapType, StringType
 from typing_extensions import deprecated
 
-from fabricks.legacy.streaming.read import read
 from fabricks.models import ParserOptions
 from fabricks.utils.dataframe import clean
+from fabricks.utils.legacy.streaming.read import read
 from fabricks.utils.path import FileSharePath
 
 deprecated("use pre-run invoker notebook instead")

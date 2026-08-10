@@ -6,11 +6,11 @@ from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import expr, lit, when
 
-from fabricks.api.parsers import BaseParser, parser
-from fabricks.legacy.streaming.read import read
-from fabricks.models.job import ParserOptions
+from fabricks.core.parsers import BaseParser, parser
+from fabricks.models import ParserOptions
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import FileSharePath
+from fabricks.utils.read import read
 
 
 class DeleteLogBaseParser(BaseParser):

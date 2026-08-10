@@ -9,11 +9,11 @@ from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base import BaseJob
 from fabricks.core.jobs.bronze import Bronze
-from fabricks.legacy.streaming.read import read
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobSilverOptions, StepSilverConf, StepSilverOptions
 from fabricks.models.cdc import CdcContext
 from fabricks.utils.helpers import concat_dfs
+from fabricks.utils.legacy.streaming.read import read
 from fabricks.utils.sqlglot import fix as fix_sql
 
 

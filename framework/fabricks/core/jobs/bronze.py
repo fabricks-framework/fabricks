@@ -176,7 +176,7 @@ class Bronze(BaseJob):
 
         if self.mode == "register":
             if stream:
-                from fabricks.legacy.streaming.read import read
+                from fabricks.utils.legacy.streaming.read import read
 
                 df = read(
                     stream=stream,
@@ -198,7 +198,7 @@ class Bronze(BaseJob):
             if should_clean:
                 df = clean(df)
         else:
-            from fabricks.legacy.parsers import get_parser
+            from fabricks.core.parsers import get_parser
 
             if options is not None and options.clean is not None:
                 # if parser options provided and clean set, use parser clean

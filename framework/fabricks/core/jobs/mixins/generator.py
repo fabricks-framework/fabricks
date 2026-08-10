@@ -408,7 +408,7 @@ class GeneratorMixin(JobProtocol):
 
             if df:
                 if self.stream:
-                    from fabricks.legacy.streaming.read import read_stream_once
+                    from fabricks.utils.legacy.streaming.read import read_stream_once
 
                     read_stream_once(
                         df,
@@ -455,7 +455,7 @@ class GeneratorMixin(JobProtocol):
                 df = self.base_transform(df)
 
                 if self.stream:
-                    from fabricks.legacy.streaming.read import read_stream_once
+                    from fabricks.utils.legacy.streaming.read import read_stream_once
 
                     read_stream_once(
                         df,
