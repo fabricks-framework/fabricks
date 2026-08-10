@@ -18,17 +18,14 @@ def get_job_conf_internal(step: str, row: Union[Row, dict]) -> JobConf:
         from fabricks.models import JobConfBronze
 
         return JobConfBronze.model_validate(row)
-
     elif step in Silvers:
         from fabricks.models import JobConfSilver
 
         return JobConfSilver.model_validate(row)
-
     elif step in Golds:
         from fabricks.models import JobConfGold
 
         return JobConfGold.model_validate(row)
-
     else:
         raise ValueError(f"{step} not found")
 
@@ -55,6 +52,7 @@ def get_job_conf(
         from fabricks.core.steps import get_step
 
         s = get_step(step=step)
+
         if topic:
             iter = s.get_jobs_iter(topic=topic)
         else:
@@ -69,21 +67,21 @@ def get_job_conf(
                 ),
                 None,
             )
+
             if not conf:
                 raise ValueError(f"job not found ({step}, {job_id})")
 
             return get_job_conf_internal(step=step, row=conf)
-
         elif topic and item:
             conf = next(
                 (i for i in iter if i.get("topic") == topic and i.get("item") == item),
                 None,
             )
+
             if not conf:
                 raise ValueError(f"job not found ({step}, {topic}, {item})")
 
             return get_job_conf_internal(step=step, row=conf)
-
     else:
         df = SPARK.sql(f"select * from fabricks.{step}_jobs")
 

@@ -1,0 +1,20 @@
+[
+  {
+    "id": 6002,
+    "name": "Astrid",
+    "order_by": 1,
+    "integerField": 1,
+    "floatField": 1.1,
+    "__operation": "upsert",
+    "__timestamp": "2022-01-01 00:01:00"
+  },
+  {
+    "id": 6002,
+    "name": "Astrid",
+    "order_by": 2,
+    "integerField": 1,
+    "floatField": 1.1,
+    "__operation": "upsert",
+    "__timestamp": "2022-01-01 00:01:00"
+  }
+]

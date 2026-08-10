@@ -64,5 +64,14 @@ dependencies = [
 > [!WARNING]
 > The `sqlglot[c]` extra (C-based parser with Cython optimizations) cannot be used with Fabricks.
 
+## Development with Claude 🤖
+
+When developing Fabricks with [Claude Code](https://claude.com/claude-code), two tools are **mandatory**:
+
+- **graphify** — the repo ships a knowledge graph in `graphify-out/`. Before exploring code, query it (`graphify query "<question>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concept>"`) instead of grepping blindly. Run `graphify update .` after changing code to keep it current (AST-only, no API cost). Scope is pinned to `framework/fabricks` via `.graphifyignore`.
+- **ponytail** — the laziest solution that works. Question whether code needs to exist (YAGNI), reuse what's already here, reach for stdlib/native before dependencies, and keep diffs minimal. Deletion over addition.
+
+Both are enforced for every code change; see `CLAUDE.md` for the full agent instructions.
+
 ## Related Projects 🔗
 - We use [odbc2deltalake](https://github.com/bmsuisse/odbc2deltalake) for extensive SQL Server data ingestion in a pre_run notebook. 🔌🏊‍♂️

@@ -1,0 +1,22 @@
+[
+  {
+    "id": 201,
+    "name": "Marie-Henriette",
+    "doubleField": 0.20220404,
+    "decimalField": 10.5,
+    "__operation": "upsert",
+    "__timestamp": "2022-01-04 00:01:00"
+  },
+  {
+    "id": 101,
+    "decimalField": 10.5,
+    "__operation": "delete",
+    "__timestamp": "2022-01-04 00:01:00"
+  },
+  {
+    "id": 201,
+    "decimalField": 10.5,
+    "__operation": "delete",
+    "__timestamp": "2022-01-04 00:01:00"
+  }
+]

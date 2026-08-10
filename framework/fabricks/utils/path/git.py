@@ -9,6 +9,7 @@ class GitPath(BasePath):
 
     def exists(self) -> bool:
         """Check if the path exists in the local/git file system."""
+
         try:
             return self.pathlibpath.exists()
         except Exception:
@@ -17,6 +18,7 @@ class GitPath(BasePath):
     def get_notebook_path(self) -> str:
         """Get the notebook path for Databricks workspace."""
         path = self.path
+
         if path.endswith(".ipynb"):
             path = path[: -len(".ipynb")]
         elif path.endswith(".py"):
@@ -47,13 +49,13 @@ class GitPath(BasePath):
 
     def _yield(self, path: str | PathlibPath):
         """Recursively yield all file paths in the git/local file system."""
+
         if isinstance(path, str):
             path = PathlibPath(path)
 
         for child in path.glob(r"*"):
             if child.is_dir():
                 yield from self._yield(child)
-
             else:
                 yield str(child)
 
@@ -77,10 +79,12 @@ def resolve_git_path(
     Returns:
         Resolved GitPath object
     """
+
     if isinstance(base, str):
         base = GitPath(base)
 
     resolved_value = path or default
+
     if resolved_value is None:
         raise ValueError("path and default cannot both be None")
 

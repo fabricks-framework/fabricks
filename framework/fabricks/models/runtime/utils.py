@@ -4,17 +4,19 @@ from pathlib import Path
 from typing import Any
 
 from fabricks.utils.path import FileSharePath, GitPath, resolve_fileshare_path, resolve_git_path
-from fabricks.utils.read.read_yaml import _read_yaml_cached
+from fabricks.utils.read_yaml import _read_yaml_cached
 from fabricks.utils.variables import build_variable_lookup, substitute_value
 
 
 def _as_variables(data: Any, source: str) -> dict[str, Any]:
     """Extract variables dictionary from various data structures."""
+
     if data is None:
         return {}
 
     if isinstance(data, dict):
         variables = data.get("variables", data)
+
         if not isinstance(variables, dict):
             raise ValueError(f"variables in {source} must be a mapping")
 
@@ -37,10 +39,12 @@ def _resolve_variables_path(
 ) -> Path | None:
     """Resolve the path to a variables file from config data."""
     variables_file = external_variables_file or conf_data.get("variables_file")
+
     if not variables_file or str(variables_file).lower() == "none":
         return None
 
     path = Path(str(variables_file))
+
     if path.is_absolute():
         return path
 
@@ -71,6 +75,7 @@ def load_variables(
 
     if variables_path:
         file_path = Path(variables_path)
+
         if not file_path.is_absolute():
             file_path = config_path.parent / file_path
 
@@ -102,11 +107,13 @@ def perform_variable_substitution(
     Returns:
         Config dictionary with variables substituted
     """
+
     if not variables:
         return data
 
     prepared = dict(data)
     prepared["variables"] = variables
+
     return substitute_value(prepared, build_variable_lookup(variables), strict=True)
 
 
@@ -150,6 +157,7 @@ def resolve_runtime_paths(
 
     # Collect runtime paths
     runtime_paths: dict[str, GitPath] = {}
+
     for objects in [bronze, silver, gold]:
         if objects:
             for obj in objects:

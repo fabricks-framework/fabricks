@@ -1,6 +1,8 @@
 """Fabricks models module - All Pydantic models for jobs, steps, and runtime configuration."""
 
 # Common types and aliases
+# CDC
+from fabricks.models.cdc import CdcContext, QueryContext
 from fabricks.models.common import (
     AllowedChangeDataCaptures,
     AllowedConstraintOptions,
@@ -25,11 +27,18 @@ from fabricks.models.dependency import JobDependency, SchemaDependencies
 
 # Job models
 from fabricks.models.job import BronzeOptions as JobBronzeOptions
-from fabricks.models.job import CheckOptions
+from fabricks.models.job import (
+    CheckOptions,
+    JobConf,
+    JobConfBase,
+    JobConfBronze,
+    JobConfGold,
+    JobConfSilver,
+    ParserOptions,
+    TOptions,
+)
 from fabricks.models.job import GoldOptions as JobGoldOptions
-from fabricks.models.job import JobConf, JobConfBase, JobConfBronze, JobConfGold, JobConfSilver, ParserOptions
 from fabricks.models.job import SilverOptions as JobSilverOptions
-from fabricks.models.job import TOptions
 from fabricks.models.path import Paths
 
 # Runtime models
@@ -43,10 +52,9 @@ from fabricks.models.step import BronzeConf as StepBronzeConf
 from fabricks.models.step import BronzeOptions as StepBronzeOptions
 from fabricks.models.step import GoldConf as StepGoldConf
 from fabricks.models.step import GoldOptions as StepGoldOptions
-from fabricks.models.step import PowerBI
+from fabricks.models.step import PowerBI, Step, StepOptions, StepPathOptions, StepTimeoutOptions
 from fabricks.models.step import SilverConf as StepSilverConf
 from fabricks.models.step import SilverOptions as StepSilverOptions
-from fabricks.models.step import Step, StepOptions, StepPathOptions, StepTimeoutOptions
 
 # Table models
 from fabricks.models.table import (
@@ -126,4 +134,7 @@ __all__ = [
     # Utility functions
     "get_dependency_id",
     "get_job_id",
+    # CDC
+    "CdcContext",
+    "QueryContext",
 ]

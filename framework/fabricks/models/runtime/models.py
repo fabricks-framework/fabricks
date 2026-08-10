@@ -18,7 +18,6 @@ class RuntimePathOptions(BaseModel):
     """Path configuration for runtime components."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     storage: str
     udfs: str
     parsers: str
@@ -45,7 +44,6 @@ class RuntimeResolvedPathOptions(BaseModel):
     """Resolved path objects for runtime components."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True, arbitrary_types_allowed=True)
-
     storage: FileSharePath
     udfs: GitPath
     parsers: GitPath
@@ -54,7 +52,6 @@ class RuntimeResolvedPathOptions(BaseModel):
     requirements: GitPath
     extenders: GitPath
     masks: GitPath
-
     storages: dict[str, FileSharePath]
     runtimes: dict[str, GitPath]
 
@@ -63,7 +60,6 @@ class RuntimeTimeoutOptions(BaseModel):
     """Timeout settings for runtime operations."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     step: int = 3600
     job: int = 3600
     pre_run: int = 3600
@@ -74,7 +70,6 @@ class RuntimeOptions(BaseModel):
     """Main runtime configuration options."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     secret_scope: str
     encryption_key: str | None = None
     unity_catalog: bool | None = None
@@ -94,7 +89,6 @@ class RuntimeConf(BaseModel):
     """
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True, arbitrary_types_allowed=True)
-
     name: str
     options: RuntimeOptions
     path_options: RuntimePathOptions
@@ -109,7 +103,6 @@ class RuntimeConf(BaseModel):
     databases: list[Database] | None = None
     variables: dict[str, str] | None = None
     credentials: dict[str, str] | None = None
-
     config: ClassVar[ConfigOptions] = config
 
     @model_validator(mode="before")
@@ -120,6 +113,7 @@ class RuntimeConf(BaseModel):
         Loads variables from path_options.variables if defined, otherwise uses
         inline variables dict. Uses config.path_to_config to resolve relative paths.
         """
+
         if not isinstance(data, dict):
             return data
 

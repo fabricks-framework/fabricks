@@ -1,0 +1,26 @@
+---
+# yaml-language-server: $schema=../../../../../job-schema-silver.json
+- job:
+    step: silver
+    topic: prince
+    item: special_char
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: prince
+    item: deletelog
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: prince
+    item: scd2
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd2

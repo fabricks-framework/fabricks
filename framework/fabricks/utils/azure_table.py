@@ -28,7 +28,6 @@ class AzureTable:
             self.access_key = access_key
             self.credential = credential
             self.storage_account = storage_account
-
             connection_string = (
                 f"DefaultEndpointsProtocol=https;AccountName={self.storage_account};AccountKey={self.access_key};EndpointSuffix=core.windows.net"
                 if access_key
@@ -37,7 +36,6 @@ class AzureTable:
 
         assert connection_string
         self.connection_string = connection_string
-
         self._table_client = None
 
     @property
@@ -48,7 +46,9 @@ class AzureTable:
                     endpoint=f"https://{self.storage_account}.table.core.windows.net",
                     credential=self.credential,
                 )
+
             self._table_client = TableServiceClient.from_connection_string(self.connection_string)
+
         return self._table_client
 
     @property
@@ -109,16 +109,19 @@ class AzureTable:
 
     def submit(self, operations: List):
         partitions = set()
+
         for d in operations:
             partitions.add(d[1]["PartitionKey"])
 
         for p in partitions:
             _operations = [d for d in operations if d[1].get("PartitionKey") == p]
             t = 50
+
             if len(_operations) < t:
                 self._submit_with_retry(_operations)
             else:
                 transactions = [_operations[i : i + t] for i in range(0, len(_operations), t)]
+
                 for transaction in transactions:
                     self._submit_with_retry(transaction)
 
@@ -150,6 +153,8 @@ class AzureTable:
 
     def list_all_partitions(self) -> List:
         partitions = set()
+
         for d in self.list_all():
             partitions.add(d["PartitionKey"])
+
         return sorted(list(partitions))

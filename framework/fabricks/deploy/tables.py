@@ -4,11 +4,11 @@ from fabricks.cdc import NoCDC
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
+from fabricks.models.cdc import CdcContext
 
 
 def deploy_tables(drop: bool = False, update: bool = False):
     DEFAULT_LOGGER.info("create or replace fabricks (default) tables", extra={"label": "fabricks"})
-
     create_table_log(drop=drop, update=update)
     create_table_dummy(drop=drop, update=update)
     create_table_step(drop=drop, update=update)
@@ -95,6 +95,6 @@ def create_table_dummy(drop: bool = False, update: bool = False):
         cdc.drop()
 
     if not cdc.table.exists():
-        cdc.overwrite(df)
+        cdc.overwrite(df, context=CdcContext())
     elif update:
-        cdc.overwrite_schema(df)
+        cdc.overwrite_schema(df, context=CdcContext())

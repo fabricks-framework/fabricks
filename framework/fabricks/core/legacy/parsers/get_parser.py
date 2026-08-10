@@ -1,0 +1,21 @@
+from typing import Callable, Optional
+
+from typing_extensions import deprecated
+
+from fabricks.context import PATH_PARSERS
+from fabricks.core.legacy.parsers.base import PARSERS, BaseParser
+from fabricks.models import ParserOptions
+from fabricks.utils.helpers import load_module_from_path
+
+
+@deprecated("use pre-run invoker notebook instead")
+def get_parser(name: str, parser_options: Optional[ParserOptions] = None) -> Callable:
+    if name not in ["json", "parquet", "avro", "csv", "tsv", "delta", "table"]:
+        path = PATH_PARSERS.joinpath(name).append(".py")
+        assert path.exists(), f"parser not found ({path})"
+        load_module_from_path(name, path)
+        parser = PARSERS[name](parser_options)
+    else:
+        parser = BaseParser(parser_options, name)
+
+    return parser.get_data

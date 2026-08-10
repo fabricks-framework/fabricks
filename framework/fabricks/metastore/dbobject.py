@@ -3,6 +3,7 @@ from typing import Optional
 from pyspark.sql import SparkSession
 from pyspark.sql.catalog import Column, Table
 
+from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
 
@@ -45,11 +46,11 @@ class DbObject:
     def is_view(self) -> bool:
         try:
             table = self.get_spark_table()
+
             if table.tableType == "VIEW":
                 return True
 
             return False
-
         except Exception:
             return False
 
@@ -57,33 +58,39 @@ class DbObject:
     def is_table(self) -> bool:
         try:
             table = self.get_spark_table()
+
             if table.tableType == "VIEW":
                 return False
 
             return True
-
         except Exception:
             return False
 
     def drop(self):
         if self.is_view:
-            DEFAULT_LOGGER.warning("drop view from metastore", extra={"label": self})
+            DEFAULT_LOGGER.warning("drop view from metastore", extra={"label": self.label})
             self.spark.sql(f"drop view if exists {self}")
-
         elif self.is_table:
-            DEFAULT_LOGGER.warning("drop table from metastore", extra={"label": self})
+            DEFAULT_LOGGER.warning("drop table from metastore", extra={"label": self.label})
             self.spark.sql(f"drop table if exists {self}")
-
         else:
             try:
                 df = self.spark.sql(f"show tables in {self.database.name} like '{self.name}'")
+
                 if not df.isEmpty():
-                    DEFAULT_LOGGER.warning("drop object from metastore", extra={"label": self})
+                    DEFAULT_LOGGER.warning("drop object from metastore", extra={"label": self.label})
                     self.spark.sql(f"drop table if exists {self}")
                     self.spark.sql(f"drop view if exists {self}")
 
             except Exception:
-                DEFAULT_LOGGER.debug("object not found in metastore, skipping drop", extra={"label": self})
+                DEFAULT_LOGGER.debug("object not found in metastore, skipping drop", extra={"label": self.label})
 
     def __str__(self):
         return self.qualified_name
+
+    @property
+    def label(self) -> str:
+        if CATALOG is not None:
+            return f"{CATALOG}.{self.qualified_name}"
+
+        return f"{self.qualified_name}"

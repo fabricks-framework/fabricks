@@ -1,0 +1,21 @@
+- schedule:
+    name: run_1
+    options:
+      tag: run_1
+      steps:
+        - bronze
+        - silver
+        - transf
+        - gold
+        - semantic
+      variables:
+        var1: 1
+        var2: 2
+- schedule:
+    name: run_2
+    options:
+      tag: run_2
+      steps:
+        - bronze
+        - silver
+        - gold

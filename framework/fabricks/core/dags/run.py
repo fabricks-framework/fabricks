@@ -6,7 +6,7 @@ from pyspark.errors.exceptions.base import IllegalArgumentException
 
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 from fabricks.core.jobs import Bronze, Gold, Silver, get_job
-from fabricks.core.jobs.base.exception import CheckWarning, SkipWarning
+from fabricks.core.jobs.mixins._exception import CheckWarning, SkipWarning
 
 
 @overload
@@ -98,7 +98,6 @@ def run(
     assert job is not None
     assert schedule_id is not None
     assert schedule is not None
-
     extra = {
         "partition_key": schedule_id,
         "schedule_id": schedule_id,
@@ -107,8 +106,10 @@ def run(
         "job": str(job),
         "target": "buffer",
     }
+
     if data is not None:
         extra["json"] = data
+
     if notebook_id is not None:
         extra["notebook_id"] = notebook_id
 
@@ -130,7 +131,6 @@ def run(
         vacuum = kwargs.get("vacuum")
         optimize = kwargs.get("optimize")
         compute_statistics = kwargs.get("compute_statistics")
-
         job.run(
             schedule=schedule,
             schedule_id=schedule_id,
@@ -149,10 +149,8 @@ def run(
 
     except SkipWarning:
         LOGGER.exception("skipped", extra=extra)
-
     except CheckWarning:
         LOGGER.exception("warned", extra=extra)
-
     except Exception as e:
         LOGGER.exception("failed", extra=extra)
         raise e

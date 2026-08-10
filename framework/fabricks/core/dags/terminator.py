@@ -11,7 +11,6 @@ class DagTerminator(BaseDags):
     def terminate(self):
         logs_df = self.get_logs()
         self.write_logs(logs_df)
-
         not_done_df = SPARK.sql(
             """
             with base as (
@@ -32,13 +31,12 @@ class DagTerminator(BaseDags):
             """,
             logs=logs_df,
         )
-
         rows = not_done_df.collect()
+
         for row in rows:
             LOGGER.error(f"{row['job']} failed")
 
         TABLE_LOG_HANDLER.table.truncate_partition(self.schedule_id)
-
         table = self.get_table()
         table.drop()
 

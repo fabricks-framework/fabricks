@@ -1,0 +1,42 @@
+---
+# yaml-language-server: $schema=../../../../../job-schema-silver.json
+- job:
+    step: silver
+    topic: monarch
+    item: scd1
+    tags: [run_1, run_2]
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: monarch
+    item: scd2
+    tags: [run_1, run_2]
+    options:
+      mode: update
+      change_data_capture: scd2
+- job:
+    step: silver
+    topic: monarch
+    item: delta
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd2
+- job:
+    step: silver
+    topic: monarch
+    item: scd1_memory
+    tags: [run_1, run_2]
+    options:
+      mode: memory
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: monarch
+    item: scd2_memory
+    tags: [run_1, run_2]
+    options:
+      mode: memory
+      change_data_capture: scd2

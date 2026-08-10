@@ -22,7 +22,6 @@ def get_tables(schema: str) -> DataFrame:
             tables=table_df,
             views=view_df,
         )
-
     except AnalysisException:
         return SPARK.sql("select null::string as database, null::string as table")
 
@@ -30,7 +29,6 @@ def get_tables(schema: str) -> DataFrame:
 def get_views(schema: str) -> DataFrame:
     try:
         view_df = SPARK.sql(f"show views in {schema}")
-
         return SPARK.sql(
             """
                 select
@@ -44,6 +42,5 @@ def get_views(schema: str) -> DataFrame:
                 """,
             views=view_df,
         )
-
     except AnalysisException:
         return SPARK.sql("select null::string as database, null::string as view")

@@ -26,6 +26,7 @@ class BaseDags:
     def get_connection_info(self) -> dict:
         if not self._connection_info:
             self._connection_info = get_connection_info(self.storage_account)
+
         return self._connection_info
 
     @retry(
@@ -53,6 +54,7 @@ class BaseDags:
 
     def get_logs(self, step: Optional[str] = None) -> DataFrame:
         q = f"PartitionKey eq '{self.schedule_id}'"
+
         if step:
             q += f" and Step eq '{step}'"
 

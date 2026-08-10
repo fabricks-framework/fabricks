@@ -1,0 +1,45 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema-gold.json
+- job:
+    step: gold
+    topic: scd2
+    item: update
+    tags: [run_1, run_2]
+    options:
+      change_data_capture: scd2
+      mode: update
+      last_updated: True
+- job:
+    step: gold
+    topic: scd2
+    item: last_timestamp
+    tags: [run_1]
+    options:
+      change_data_capture: scd2
+      mode: update
+      persist_last_timestamp: True
+- job:
+    step: gold
+    topic: scd2
+    item: complete
+    tags: [run_1, run_2]
+    options:
+      change_data_capture: scd2
+      mode: complete
+- job:
+    step: gold
+    topic: scd2
+    item: memory
+    tags: [run_1, run_2]
+    options:
+      change_data_capture: scd2
+      mode: memory
+- job:
+    step: gold
+    topic: scd2
+    item: correct_valid_from
+    tags: [run_1]
+    options:
+      change_data_capture: scd2
+      mode: memory
+      correct_valid_from: false

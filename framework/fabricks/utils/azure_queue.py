@@ -19,6 +19,7 @@ class AzureQueue:
     ):
         self.name = name
         self.storage_account = storage_account
+
         if connection_string is None:
             assert storage_account
             assert access_key or credential, "Either access_key or credential must be provided"
@@ -49,6 +50,7 @@ class AzureQueue:
                     queue_name=self.name,
                     credential=self.access_key if self.access_key else self.credential,
                 )
+
         return self._queue_client
 
     def create_if_not_exists(self):
@@ -67,6 +69,7 @@ class AzureQueue:
     def send(self, message: Union[str, dict]):
         if isinstance(message, dict):
             message = json.dumps(message)
+
         # print("sending ->", message)
         self.queue_client.send_message(message)
 
@@ -76,10 +79,12 @@ class AzureQueue:
 
     def receive(self):
         msg = self.queue_client.receive_message()
+
         if msg:
             self.queue_client.delete_message(msg)
             # print("receiving ->", msg.content)
             return msg.content
+
         return None
 
     def delete(self):

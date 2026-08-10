@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=../../../../../../job-schema-bronze.json
+- job:
+    step: bronze
+    topic: royal
+    item: latest
+    tags: [run_1]
+    options:
+      mode: register
+      uri: abfss://test@$datahub/raw/3/delta/royal
+      keys: [id]
+- job:
+    step: bronze
+    topic: royal
+    item: append
+    tags: [run_1]
+    options:
+      mode: register
+      uri: abfss://test@$datahub/raw/4/delta/royal
+      keys: [id]

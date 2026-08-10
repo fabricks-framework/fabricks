@@ -1,0 +1,20 @@
+[
+  {
+    "id": 3,
+    "name": "Albert I",
+    "doubleField": 0.20220205,
+    "newField": true,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-02-05 00:01:00"
+  },
+  {
+    "id": 301,
+    "name": "Elisabeth",
+    "doubleField": 0.20220205,
+    "newField": true,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-02-05 00:01:00"
+  }
+]

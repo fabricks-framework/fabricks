@@ -12,7 +12,6 @@ class JobDependency(BaseModel):
     """Job dependency tracking."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     origin: AllowedOrigins
     job_id: str
     parent: str

@@ -15,11 +15,13 @@ class FileSharePath(BasePath):
 
     def exists(self) -> bool:
         """Check if the path exists in the distributed file system."""
+
         try:
             from fabricks.utils.spark import dbutils
 
             assert dbutils is not None, "dbutils not found"
             dbutils.fs.ls(self.string)
+
             return True
         except Exception:
             return False
@@ -27,22 +29,22 @@ class FileSharePath(BasePath):
     def get_container(self) -> str:
         """Get the container name from an ABFSS path."""
         assert self.string.startswith("abfss://")
-
         m = _ABFSS_CONTAINER_PATTERN.findall(self.string)[0]
+
         return m
 
     def get_storage_account(self) -> str:
         """Get the storage account name from an ABFSS path."""
         assert self.string.startswith("abfss://")
-
         m = _ABFSS_ACCOUNT_PATTERN.findall(self.string)[0]
+
         return m
 
     def get_file_system(self) -> str:
         """Get the file system from an ABFSS path."""
         assert self.string.startswith("abfss://")
-
         m = _ABFSS_FS_PATTERN.findall(self.string)[0]
+
         return m
 
     def get_dbfs_mnt_path(self) -> str:
@@ -59,6 +61,7 @@ class FileSharePath(BasePath):
         file_format: str | None = None,
     ) -> list:
         out = []
+
         if self.exists():
             if self.pathlibpath.is_file():
                 out = [self.string]
@@ -103,6 +106,7 @@ class FileSharePath(BasePath):
         else:
             i = 1
             children = []
+
             while True:
                 if i == depth:
                     break
@@ -123,7 +127,6 @@ class FileSharePath(BasePath):
         for child in dbutils.fs.ls(path):
             if child.isDir():  # type: ignore
                 yield from self._yield_file_info(child.path)
-
             else:
                 yield child
 
@@ -173,10 +176,12 @@ def resolve_fileshare_path(
     Returns:
         Resolved FileSharePath object
     """
+
     if isinstance(base, str):
         base = FileSharePath(base)
 
     resolved_value = path or default
+
     if resolved_value is None:
         raise ValueError("path and default cannot both be None")
 

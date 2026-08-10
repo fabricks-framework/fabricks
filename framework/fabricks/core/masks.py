@@ -13,10 +13,11 @@ def register_all_masks(overwrite=False):
     """
     Register all masks.
     """
-
     DEFAULT_LOGGER.info("register masks", extra={"label": "fabricks"})
+
     for mask in get_masks():
         split = mask.split(".")
+
         try:
             register_mask(mask=split[0], overwrite=overwrite)
         except Exception as e:
@@ -30,8 +31,8 @@ def get_masks() -> list[str]:
 def is_registered(mask: str, spark: SparkSession | None = None) -> bool:
     if spark is None:
         spark = SPARK
-    assert spark is not None
 
+    assert spark is not None
     df = spark.sql(f"show user functions in {MASK_SCHEMA}")
 
     if CATALOG:
@@ -45,6 +46,7 @@ def is_registered(mask: str, spark: SparkSession | None = None) -> bool:
 def register_mask(mask: str, overwrite: bool = False, spark: SparkSession | None = None):
     if spark is None:
         spark = SPARK
+
     assert spark is not None
 
     if not is_registered(mask, spark) or overwrite:

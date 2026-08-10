@@ -5,13 +5,18 @@
 
 from logging import DEBUG
 
-from databricks.sdk.runtime import dbutils, spark
+from databricks.sdk.runtime import dbutils
 
-from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.database import Database
-from tests.integration._types import paths
-from tests.integration.utils import create_expected_views, create_random_tables, git_to_landing, landing_to_raw
+from tests.integration.helpers.const import LANDING, OUT, RAW
+from tests.integration.helpers.seed import (
+    create_expected_views,
+    create_input_tables,
+    create_random_tables,
+    git_to_landing,
+    landing_to_raw,
+)
 
 # COMMAND ----------
 
@@ -19,57 +24,48 @@ DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 
-dbutils.widgets.dropdown("expected", "True", ["True", "False"])
-dbutils.widgets.dropdown("rm", "True", ["True", "False"])
-dbutils.widgets.dropdown("i", "1", ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"])
+dbutils.widgets.dropdown("init", "False", ["True", "False"])
 
 # COMMAND ----------
 
-expected = dbutils.widgets.get("expected").lower() == "true"
-rm = dbutils.widgets.get("rm").lower() == "true"
-i = dbutils.widgets.get("i")
-i = list(range(1, int(i) + 1))
+init = dbutils.widgets.get("init").lower() == "true"
 
 # COMMAND ----------
 
-if CATALOG:
-    try:
-        spark.sql(f"use catalog {CATALOG}")
-        spark.sql("drop schema if exists bronze cascade")
-        spark.sql("drop table if exists transf.fact_register")
-
-    except Exception:
-        pass
+if init:
+    LANDING.rm()
 
 # COMMAND ----------
 
-if rm:
-    paths.landing.rm()
-    paths.raw.rm()
-    paths.out.rm()
+for d in ["bronze", "silver", "transf", "gold", "semantic", "fabricks"]:
+    db = Database(d)
+    db.drop()
 
 # COMMAND ----------
 
-create_random_tables()
+RAW.rm()
+OUT.rm()
 
 # COMMAND ----------
 
-if rm:
+if init:
     git_to_landing()
 
 # COMMAND ----------
 
-if i:
-    landing_to_raw(iter=i)
+landing_to_raw(iter=[1])
 
 # COMMAND ----------
 
-if expected:
-    db = Database("expected")
-    db.drop()
-    db.create()
+if init:
+    for d in ["test", "expected", "input"]:
+        db = Database(d)
+        db.drop()
+        db.create()
 
+    create_random_tables()
     create_expected_views()
+    create_input_tables()
 
 # COMMAND ----------
 

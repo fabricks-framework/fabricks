@@ -1,0 +1,10 @@
+[
+  {
+    "id": 7,
+    "name": "Philippe",
+    "doubleField": 0.20220901,
+    "newField": false,
+    "__operation": "upsert",
+    "__timestamp": "2022-09-01 00:01:00"
+  }
+]

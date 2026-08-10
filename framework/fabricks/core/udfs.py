@@ -9,7 +9,6 @@ from fabricks.context import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, PATH_UDFS,
 from fabricks.context.log import DEFAULT_LOGGER
 
 UDFS: dict[str, Callable] = {}
-
 UDF_SCHEMA = CONF_RUNTIME.udf_options.schema_name or "default" if CONF_RUNTIME.udf_options else "default"
 UDF_PREFIX = CONF_RUNTIME.udf_options.prefix or "udf_" if CONF_RUNTIME.udf_options else "udf_"
 
@@ -22,6 +21,7 @@ def register_all_udfs(extension: str | None = None, overwrite=False):
 
     for udf in get_udfs(extension=extension):
         split = udf.split(".")
+
         try:
             register_udf(udf=split[0], extension=split[1], overwrite=overwrite)
         except Exception as e:
@@ -31,14 +31,17 @@ def register_all_udfs(extension: str | None = None, overwrite=False):
 def get_udfs(extension: str | None = None) -> list[str]:
     files = [os.path.basename(f) for f in PATH_UDFS.walk()]
     udfs = [f for f in files if not str(f).endswith("__init__.py") and not str(f).endswith(".requirements.txt")]
+
     if extension:
         udfs = [f for f in udfs if f.endswith(f".{extension}")]
+
     return udfs
 
 
 def get_extension(udf: str) -> str:
     for u in get_udfs():
         r = re.compile(rf"{udf}(\.py|\.sql)")
+
         if re.match(r, u):
             return u.split(".")[1]
 
@@ -48,8 +51,8 @@ def get_extension(udf: str) -> str:
 def is_registered(udf: str, spark: SparkSession | None = None) -> bool:
     if spark is None:
         spark = SPARK
-    assert spark is not None
 
+    assert spark is not None
     df = spark.sql(f"show user functions in {UDF_SCHEMA}")
 
     if CATALOG:
@@ -69,8 +72,10 @@ def register_udf(
     """
     Register a user-defined function (UDF).
     """
+
     if spark is None:
         spark = SPARK
+
     assert spark is not None
 
     if not is_registered(udf, spark) or overwrite:
@@ -83,12 +88,10 @@ def register_udf(
             extension = get_extension(udf)
 
         assert extension
-
         path = PATH_UDFS.joinpath(f"{udf}.{extension}")
 
         if extension == "sql":
             spark.sql(path.get_sql())
-
         elif extension == "py":
             if not IS_UNITY_CATALOG:
                 assert path.exists(), f"udf not found ({path.string})"
@@ -96,13 +99,10 @@ def register_udf(
             spec = importlib.util.spec_from_file_location(udf, path.string)
             assert spec, f"no valid udf found ({path.string})"
             assert spec.loader is not None
-
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
-
             u = UDFS[udf]
             u(spark)
-
         else:
             raise ValueError(f"{udf} not found")
 

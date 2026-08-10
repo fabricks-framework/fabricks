@@ -1,0 +1,29 @@
+[
+  {
+    "id": 3,
+    "name": "Albert I",
+    "doubleField": 0.20220205,
+    "newField": true,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-04-01 00:01:00"
+  },
+  {
+    "id": 5,
+    "name": "Baudouin",
+    "doubleField": 0.20220401,
+    "newField": true,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-04-01 00:01:00"
+  },
+  {
+    "id": 501,
+    "name": "Fabiola",
+    "doubleField": 0.20220401,
+    "newField": true,
+    "decimalField": 10.5,
+    "__operation": "reload",
+    "__timestamp": "2022-04-01 00:01:00"
+  }
+]

@@ -8,7 +8,6 @@ class formatter:
     URL = "\33[4m"
     BLINK = "\33[5m"
     SELECTED = "\33[7m"
-
     BLINK2 = "\33[6m"
 
 
@@ -23,7 +22,6 @@ class colors:
     WHITE = "\33[37m"
     GREY = "\33[90m"
     ORANGE = "\33[33m"
-
     RED2 = "\33[91m"
     GREEN2 = "\33[92m"
     YELLOW2 = "\33[93m"
@@ -31,7 +29,6 @@ class colors:
     VIOLET2 = "\33[95m"
     BEIGE2 = "\33[96m"
     WHITE2 = "\33[97m"
-
     RED3 = "\33[1;31m"
 
 
@@ -41,10 +38,10 @@ def progress_bar(progress: int = 0, width: int = 40, msg: Optional[str] = None):
 
     left = width * progress // 100
     right = width - left
-
     tags = "#" * left
     spaces = " " * right
     pct = f" {progress}%"
+
     if msg:
         pct = f"{pct} ({msg})"
 

@@ -51,32 +51,27 @@ def get_job(
         ValueError: If the required parameters are not provided.
 
     """
+
     if row:
         if "step" in row and "topic" in row and "item" in row:
             j = get_job_internal(step=row.step, topic=row.topic, item=row.item)
-
         elif "step" in row and "job_id" in row:
             j = get_job(step=row.step, job_id=row.job_id)
-
         elif "job" in row:
             parts = row.job.split(".")
             s = parts[0]
             job_id = get_job_id(job=row.job)
             j = get_job_internal(step=s, job_id=job_id)
-
         else:
             raise ValueError("step, topic, item or step, job_id or job mandatory")
-
     elif job:
         parts = job.split(".")
         s = parts[0]
         job_id = get_job_id(job=job)
         j = get_job_internal(step=s, job_id=job_id)
-
     elif job_id:
         assert step, "step mandatory"
         j = get_job_internal(step=step, job_id=job_id)
-
     else:
         assert step, "step mandatory"
         assert topic, "topic mandatory"
@@ -92,37 +87,28 @@ def get_job_internal(
     item: Optional[str] = None,
     job_id: Optional[str] = None,
     conf: Optional[Union[dict, Row]] = None,
-):
+) -> Bronze | Gold | Silver:
     if step in Bronzes:
-        from fabricks.core.jobs.bronze import Bronze
-
         if job_id is not None:
             job = Bronze.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
             assert topic
             assert item
             job = Bronze.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
-
     elif step in Silvers:
-        from fabricks.core.jobs.silver import Silver
-
         if job_id is not None:
             job = Silver.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
             assert topic
             assert item
             job = Silver.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
-
     elif step in Golds:
-        from fabricks.core.jobs.gold import Gold
-
         if job_id is not None:
             job = Gold.from_job_id(step=step, job_id=job_id, conf=conf)
         else:
             assert topic
             assert item
             job = Gold.from_step_topic_item(step=step, topic=topic, item=item, conf=conf)
-
     else:
         raise ValueError(f"{step} not found")
 

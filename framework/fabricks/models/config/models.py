@@ -21,7 +21,6 @@ class ResolvedPathOptions(BaseModel):
     """Resolved path objects for main configuration."""
 
     model_config = ConfigDict(extra="allow", frozen=True, arbitrary_types_allowed=True)
-
     base: GitPath
     config: GitPath
     runtime: GitPath
@@ -33,7 +32,6 @@ class ConfigOptions(BaseSettings):
     """Main configuration options for Fabricks framework."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-
     base: str = Field(
         validation_alias=AliasChoices("FABRICKS_BASE", "base"),
         default="none",
@@ -99,11 +97,13 @@ class ConfigOptions(BaseSettings):
 
         Non-string inputs or strings not matching the above values are returned unchanged.
         """
+
         if isinstance(v, bool):
             return v
 
         if isinstance(v, str):
             v_lower = str(v).lower()
+
             if v_lower in ("true", "1", "yes"):
                 return True
             elif v_lower in ("false", "0", "no"):
@@ -115,6 +115,7 @@ class ConfigOptions(BaseSettings):
     @classmethod
     def validate_loglevel(cls, v):
         """Validate log level."""
+
         if isinstance(v, str):
             levels = {
                 "DEBUG": logging.DEBUG,
@@ -124,6 +125,7 @@ class ConfigOptions(BaseSettings):
                 "CRITICAL": logging.CRITICAL,
             }
             v_upper = v.upper()
+
             if v_upper in levels:
                 return levels[v_upper]
 
@@ -135,6 +137,7 @@ class ConfigOptions(BaseSettings):
     @classmethod
     def validate_notebooks(cls, v):
         """Set default notebooks path if not provided."""
+
         if not v or v.lower() == "none":
             return "runtime/notebooks"
 

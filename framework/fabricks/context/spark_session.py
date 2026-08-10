@@ -21,6 +21,7 @@ def add_credentials_to_spark(spark: Optional[SparkSession] = None):
         spark = get_spark()
 
     credentials = CONF_RUNTIME.credentials or {}
+
     for uri, secret in credentials.items():
         s = get_secret_from_secret_scope(secret_scope=SECRET_SCOPE, name=secret)
         add_secret_to_spark(secret=s, uri=uri, spark=spark)
@@ -33,18 +34,19 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
     # delta default options
     spark.sql("set spark.databricks.delta.schema.autoMerge.enabled = True;")
     spark.sql("set spark.databricks.delta.resolveMergeUpdateStructsByName.enabled = True;")
-
     # timezone configuration
     spark.conf.set("spark.sql.session.timeZone", CONF_RUNTIME.options.timezone)
-
     # runtime options
     spark_options = CONF_RUNTIME.spark_options
+
     if spark_options:
         sql_options = spark_options.sql or {}
+
         for key, value in sql_options.items():
             spark.sql(f"set {key} = {value};")
 
         conf_options = spark_options.conf or {}
+
         for key, value in conf_options.items():
             spark.conf.set(key, value)
 
@@ -56,7 +58,6 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
     if spark is not None:
         _spark = spark
         _spark.builder.appName(app_name)
-
     else:
         _spark = (
             SparkSession.builder.appName(app_name)
@@ -66,6 +67,7 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
         )
 
     add_catalog_to_spark(spark=_spark)
+
     if not IS_UNITY_CATALOG:
         add_credentials_to_spark(spark=_spark)
 

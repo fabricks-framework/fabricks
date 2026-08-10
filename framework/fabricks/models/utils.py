@@ -35,4 +35,5 @@ def md5(s: Any) -> str:
     from hashlib import md5
 
     hash_obj = md5(str(s).encode())
+
     return hash_obj.hexdigest()

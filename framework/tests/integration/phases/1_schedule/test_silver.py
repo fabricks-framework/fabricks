@@ -1,0 +1,125 @@
+from logging import ERROR
+
+import pytest
+
+from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.jobs import get_job
+from fabricks.metastore.table import Table
+from tests.integration.helpers.compare import compare_job_to_expected, compare_object_to_expected
+
+DEFAULT_LOGGER.setLevel(ERROR)
+
+
+@pytest.mark.order(111)
+def test_silver_monarch_scd2():
+    job = get_job(step="silver", topic="monarch", item="scd2")
+    compare_job_to_expected(job, "scd2", 1)
+
+
+@pytest.mark.order(112)
+def test_silver_monarch_scd1():
+    job = get_job(step="silver", topic="monarch", item="scd1")
+    compare_job_to_expected(job, "scd1", 1)
+
+
+@pytest.mark.order(111)
+def test_silver_regent_scd2():
+    job = get_job(step="silver", topic="regent", item="scd2")
+    compare_job_to_expected(job, "scd2", 1)
+
+
+@pytest.mark.order(112)
+def test_silver_regent_scd1():
+    job = get_job(step="silver", topic="regent", item="scd1")
+    compare_job_to_expected(job, "scd1", 1)
+
+
+@pytest.mark.order(113)
+def test_silver_monarch_scd2_memory():
+    job = get_job(step="silver", topic="monarch", item="scd2_memory")
+    compare_job_to_expected(job, "scd2", 1)
+
+
+@pytest.mark.order(114)
+def test_silver_monarch_scd1_memory():
+    job = get_job(step="silver", topic="monarch", item="scd1_memory")
+    compare_job_to_expected(job, "scd1", 1)
+
+
+@pytest.mark.order(115)
+def test_silver_king_and_queen_scd2():
+    job = get_job(step="silver", topic="king_and_queen", item="scd2")
+    compare_job_to_expected(job, "scd2", 1)
+
+
+@pytest.mark.order(116)
+def test_silver_king_and_queen_scd1():
+    job = get_job(step="silver", topic="king_and_queen", item="scd1")
+    compare_job_to_expected(job, "scd1", 1)
+
+
+@pytest.mark.order(119)
+def test_silver_monarch_delta():
+    job = get_job(step="silver", topic="monarch", item="delta")
+    compare_job_to_expected(job, "scd2", 1)
+    data_type = job.table.get_column_data_type("decimalField")
+    assert data_type == "double", "decimalField is not double"
+    cols = Table("silver", "monarch", "delta").columns
+    assert "country" in cols, "country not found"
+
+
+@pytest.mark.order(119)
+def test_silver_royal_append():
+    compare_object_to_expected(expand="silver", obj="silver.royal_append", iter=1, expected="append")
+
+
+@pytest.mark.order(119)
+def test_silver_royal_latest():
+    compare_object_to_expected(expand="silver", obj="silver.royal_latest", iter=1, expected="latest")
+
+
+@pytest.mark.order(119)
+def test_silver_prince_special_char():
+    cols = Table("silver", "prince", "special_char").columns
+    assert "@Id" in cols, "@Id not found"
+    assert "Näàme" in cols, "Näàme not found"
+    assert "double Field!" in cols, "double Field! not found"
+
+
+@pytest.mark.order(119)
+def test_silver_princess_extend():
+    cols = Table("silver", "princess", "extend").columns
+    assert "country" in cols, "country not found"
+
+
+@pytest.mark.order(119)
+def test_silver_princess_order_duplicate():
+    order_by = Table("silver", "princess", "order_duplicate").dataframe.select("order_by").collect()[0][0]
+    assert order_by == 2, f"order by {order_by} <> 2"
+
+
+@pytest.mark.order(119)
+def test_silver_princess_calculated_column():
+    order_by = Table("silver", "princess", "calculated_column").dataframe.select("order_by").collect()[0][0]
+    assert order_by == 2, f"order by {order_by} <> 2"
+
+
+@pytest.mark.order(119)
+def test_silver_timeout():
+    job = get_job(step="silver", topic="princess", item="calculated_column")
+    assert job.timeout == 3600, f"timeout {job.timeout} <> 3600"
+
+
+@pytest.mark.order(119)
+def test_hashing():
+    job = get_job(step="silver", topic="monarch", item="scd2")
+    df = job.table.dataframe
+    assert "__hash" in df.columns, "__hash column not found"
+    assert "__key" in df.columns, "__key column not found"
+    df = df.where("name == 'Louise'")
+    assert df.select("__key").collect()[0][0] == "38b3eff8baf56627478ec76a704e9b52", (
+        "__key value does not match expected value"
+    )
+    assert df.select("__hash").collect()[0][0] == "1f79253f5abeefea99fa779f5715a26d", (
+        "__hash value does not match expected value"
+    )

@@ -1,0 +1,8 @@
+[
+  {
+    "@Id": 6003,
+    "decimalField": 10.5,
+    "__operation": "delete",
+    "__timestamp": "2022-02-01 00:01:00"
+  }
+]

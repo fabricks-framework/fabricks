@@ -2,6 +2,7 @@ import posixpath
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path as PathlibPath
+from typing import Self
 
 
 class BasePath(ABC):
@@ -9,10 +10,12 @@ class BasePath(ABC):
 
     def __init__(self, path: str | PathlibPath):
         """Initialize the path."""
+
         if isinstance(path, PathlibPath):
             path = path.as_posix()
 
         new_path = str(path)
+
         if new_path.startswith("abfss:/") and not new_path.startswith("abfss://"):
             new_path = new_path.replace("abfss:/", "abfss://")
 
@@ -30,6 +33,7 @@ class BasePath(ABC):
     ):
         """Create a path from a URI with optional regex substitution."""
         uri = uri.strip()
+
         if regex:
             for key, value in regex.items():
                 uri = re.sub(rf"{key}", value, uri)
@@ -53,6 +57,7 @@ class BasePath(ABC):
     def get_sql(self) -> str:
         """Read and return SQL content from a .sql file."""
         p = self.string
+
         if not p.endswith(".sql"):
             p += ".sql"
 
@@ -65,24 +70,25 @@ class BasePath(ABC):
         """Check if the path points to a SQL file."""
         return self.string.endswith(".sql")
 
-    def joinpath(self, *other):
+    def joinpath(self, *other) -> Self:
         """Join this path with other path segments."""
         parts = [str(o) for o in other]
         base = self.string
-
         joined = posixpath.join(base, *parts)
         new = posixpath.normpath(joined)
 
         return self.__class__(path=new)
 
-    def append(self, other: str):
+    def append(self, other: str) -> Self:
         """Append a string to the path."""
         new_path = self.string + other
+
         return self.__class__(path=new_path)
 
-    def parent(self):
+    def parent(self) -> Self:
         """Get the parent directory of the path."""
         new_path = self.pathlibpath.parent
+
         return self.__class__(path=new_path)
 
     @abstractmethod

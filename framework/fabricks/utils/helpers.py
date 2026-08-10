@@ -31,14 +31,15 @@ def md5(s: Any) -> str:
 
 
 def add_hash(column: str, df: DataFrame, fields: Union[str, List[str]]):
-
     return df.withColumn(f"{column}", F.md5(F.expr(concat_ws(fields))))
 
 
 def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
     dfs = [df for df in dfs if df is not None]
+
     if len(dfs) == 0:
         return None
+
     return reduce(lambda x, y: x.unionByName(y, allowMissingColumns=True), dfs)
 
 
@@ -62,7 +63,6 @@ def run_in_parallel(
 
     current_loglevel = logger.getEffectiveLevel()
     logger.setLevel(loglevel)
-
     items = list(iterable.collect() if isinstance(iterable, DataFrameLike) else iterable)
 
     def _collect(mapped):
@@ -79,12 +79,12 @@ def run_in_parallel(
 
             with Pool(processes=workers) as p:
                 return _collect(p.imap(func, items))
-
         else:
             from concurrent.futures import ThreadPoolExecutor
 
             with ThreadPoolExecutor(max_workers=workers) as exe:
                 return _collect(exe.map(func, items))
+
     finally:
         logger.setLevel(current_loglevel)
 
@@ -118,7 +118,6 @@ def load_module_from_path(name: str, path: GitPath):
     spec = spec_from_file_location(name, path.string)
     assert spec, f"no valid module found in {path.string}"
     assert spec.loader is not None
-
     textwrap_module = module_from_spec(spec)
     spec.loader.exec_module(textwrap_module)
 
@@ -146,6 +145,7 @@ def find_upward(
         >>> # Search from a specific location
         >>> config = find_upward(".env", root="/path/to/start")
     """
+
     if root is None:
         current = Path.cwd()
     else:
@@ -156,10 +156,12 @@ def find_upward(
 
     while True:
         candidate = current / filename
+
         if candidate.exists():
             return GitPath(candidate)
 
         parent = current.parent
+
         if parent == current:  # Reached filesystem root
             return None
 

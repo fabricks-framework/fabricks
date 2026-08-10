@@ -23,6 +23,7 @@ def fix(sql: str, keep_comments: bool = True):
         comments=keep_comments,
     )
     sql = ";\n".join(parts)
+
     return sql
 
 

@@ -34,10 +34,12 @@ _scopes_cache: list[str] | None = None
 def _get_scopes() -> list[str]:
     """Get list of available secret scopes. Cached at module level."""
     global _scopes_cache
+
     if _scopes_cache is None:
         from databricks.sdk.runtime import dbutils
 
         _scopes_cache = [s.name for s in dbutils.secrets.listScopes()]
+
     return _scopes_cache
 
 
@@ -47,6 +49,7 @@ def _get_secret_from_secret_scope_cached(secret_scope: str, name: str) -> str:
     from databricks.sdk.runtime import dbutils
 
     scopes = _get_scopes()
+
     if secret_scope not in scopes:
         # Refresh scopes cache and retry
         global _scopes_cache
@@ -72,10 +75,8 @@ def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
             application_id=s.get("application_id"),
             directory_id=s.get("directory_id"),
         )
-
     elif name.endswith("access-key"):
         return AccessKey(key=secret)
-
     else:
         raise ValueError(f"{name} is not valid")
 
@@ -108,9 +109,7 @@ def add_secret_to_spark(secret: Secret, uri: str, spark: Optional[SparkSession] 
             f"https://login.microsoftonline.com/{secret.directory_id}/oauth2/token",
             spark=spark,
         )
-
     elif isinstance(secret, AccessKey):
         _add_secret_to_spark(f"fs.azure.account.key.{uri}", secret.key, spark=spark)
-
     else:
         raise ValueError("secret is not valid")

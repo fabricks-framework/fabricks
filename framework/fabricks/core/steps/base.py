@@ -1,12 +1,11 @@
 import logging
 from functools import cached_property
-from typing import Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import Iterable, List, Literal, Optional, Tuple, Union, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, md5
 from pyspark.sql.types import Row
 from sparkdantic import create_spark_schema
-from typing_extensions import deprecated
 
 from fabricks.cdc import NoCDC
 from fabricks.context import (
@@ -21,13 +20,15 @@ from fabricks.context import (
     Silvers,
 )
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.get_job import get_job, get_job_internal
+from fabricks.core.jobs.get_job import get_job_internal
+from fabricks.core.jobs.get_jobs import get_jobs_sorted
 from fabricks.core.read import read_yaml
-from fabricks.core.steps._types import Timeouts
+from fabricks.core.steps._types import JobResult, Modes, Timeouts
 from fabricks.core.steps.get_step_conf import get_step_conf
 from fabricks.metastore.database import Database
 from fabricks.metastore.table import Table
 from fabricks.models import SchemaDependencies
+from fabricks.models.cdc import CdcContext
 from fabricks.utils.helpers import run_in_parallel
 
 
@@ -41,7 +42,6 @@ class BaseStep:
             self.expand = "silver"
         elif self.name in Golds:
             self.expand = "gold"
-
         else:
             raise ValueError(self.name, "does not expand a default step")
 
@@ -49,7 +49,6 @@ class BaseStep:
         assert _storage
         _runtime = PATHS_RUNTIME.get(self.name)
         assert _runtime
-
         self.spark = SPARK
         self.storage = _storage
         self.runtime = _runtime
@@ -58,16 +57,22 @@ class BaseStep:
     @cached_property
     def workers(self):
         w = self.options.workers
+
         if w is None:
             w = CONF_RUNTIME.options.workers
+
         assert w is not None
+
         return cast(int, w)
 
     def _get_timeout(self, what: str) -> int:
         t = getattr(self.options.timeouts, what, None)
+
         if t is None:
             t = getattr(CONF_RUNTIME.options.timeouts, what)
+
         assert t is not None
+
         return int(t)
 
     @cached_property
@@ -87,26 +92,28 @@ class BaseStep:
 
     def drop(self):
         DEFAULT_LOGGER.warning("drop", extra={"label": self})
-
         fs = self.database.storage
         assert fs
-
         tmp = fs.joinpath("tmp")
+
         if tmp.exists():
             DEFAULT_LOGGER.debug("clean tmp folder", extra={"label": self})
             tmp.rm()
 
         checkpoint = fs.joinpath("checkpoints")
+
         if checkpoint.exists():
             DEFAULT_LOGGER.debug("clean checkpoint folder", extra={"label": self})
             checkpoint.rm()
 
         schema = fs.joinpath("schemas")
+
         if schema.exists():
             DEFAULT_LOGGER.debug("clean schema folder", extra={"label": self})
             schema.rm()
 
         DEFAULT_LOGGER.debug("clean fabricks", extra={"label": self})
+
         for t in ["jobs", "tables", "dependencies", "views"]:
             tbl = Table("fabricks", self.name, t)
             tbl.drop()
@@ -118,19 +125,21 @@ class BaseStep:
 
         self.database.drop()
 
-    def create(self):
+    def create(self, mode: Optional[Modes] = "parallel", max_retries: Optional[int] = 2):
         DEFAULT_LOGGER.info("create", extra={"label": self})
 
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
         else:
-            self.update()
+            self.update(mode=mode, max_retries=max_retries)
 
     def update(
         self,
+        mode: Optional[Modes] = "parallel",
         update_dependencies: Optional[bool] = True,
         progress_bar: Optional[bool] = False,
         incremental: Optional[bool] = False,
+        max_retries: Optional[int] = 2,
     ):
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
@@ -140,38 +149,23 @@ class BaseStep:
             self.database.create()
 
         self.update_configurations()
+        self.create_db_objects(mode=mode, incremental=incremental, update_lists=False, max_retries=max_retries)
 
-        all_errors = []
-
-        # Collect errors from create_db_objects
-        _, create_errors = self._create_db_objects_internal(incremental=incremental, update_lists=False)
-        all_errors.extend(create_errors)
-
-        # Collect errors from update_dependencies
         if update_dependencies:
-            _, dep_errors = self._update_dependencies_internal(progress_bar=progress_bar)
-            all_errors.extend(dep_errors)
+            self.update_dependencies(progress_bar=progress_bar)
 
         self.update_tables_list()
         self.update_views_list()
         self.update_steps_list()
 
-        if all_errors:
-            _log_and_raise_errors(all_errors, "update step")
-
-    # ========== Internal Methods ==========
-    # Private methods that return (result, errors) tuples for flexible error handling
-
-    def _get_dependencies_internal(
+    def _get_dependencies(
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> Tuple[DataFrame, List[Dict]]:
-        """Private version that returns (df, errors) instead of raising."""
+    ) -> Tuple[DataFrame, List[JobResult]]:
         DEFAULT_LOGGER.debug("get dependencies", extra={"label": self})
-
         df = self.get_jobs()
 
         if not include_manual:
@@ -185,7 +179,7 @@ class BaseStep:
             DEFAULT_LOGGER.debug(f"where topic in {where}", extra={"label": self})
             df = df.where(f"topic in ({where})")
 
-        if not df:
+        if df.isEmpty():
             raise ValueError("no jobs found")
 
         results = run_in_parallel(
@@ -196,89 +190,187 @@ class BaseStep:
             logger=DEFAULT_LOGGER,
             loglevel=logging.CRITICAL,
         )
-
         errors = []
         dependencies = []
 
         for res in results:
-            if res.get("error"):
+            if res.error:
                 errors.append(res)
-            elif res.get("dependencies"):
-                dependencies.extend(res.get("dependencies"))
+            elif res.dependencies:
+                dependencies.extend(res.dependencies)
 
         df = SPARK.createDataFrame([d.model_dump() for d in dependencies], SchemaDependencies)
+
         return df, errors
 
-    def _create_db_objects_internal(
-        self,
-        retry: Optional[bool] = True,
-        update_lists: Optional[bool] = True,
-        incremental: Optional[bool] = False,
-    ) -> Tuple[Optional[DataFrame], List[Dict]]:
-        """Private version that returns (df, errors) instead of raising."""
+    def _dispatch(self, mode: Optional[Modes], df: DataFrame) -> List[JobResult]:
+        if mode == "parallel":
+            return self._create_in_parallel(df)
 
-        def _create_db_objects(df: DataFrame) -> List[Dict]:
-            DEFAULT_LOGGER.info("create db objects", extra={"label": self})
-            results = run_in_parallel(
-                _create_db_object,
-                df,
-                workers=16,
-                progress_bar=True,
-                logger=DEFAULT_LOGGER,
-                loglevel=logging.CRITICAL,
-            )
-            errors = [res for res in results if res.get("error")]
-            DEFAULT_LOGGER.debug(
-                f"{len(results) - len(errors)} db objects created, {len(errors)} errors",
+        return self._create_sequentially(df)
+
+    def _create_in_parallel(self, df: DataFrame) -> List[JobResult]:
+        return run_in_parallel(
+            _create_db_object,
+            df,
+            workers=16,
+            progress_bar=True,
+            logger=DEFAULT_LOGGER,
+            loglevel=logging.CRITICAL,
+        )
+
+    def _create_sequentially(self, df: DataFrame) -> List[JobResult]:
+        try:
+            deps_df, dep_errors = self._get_dependencies(loglevel=logging.CRITICAL)
+
+            if dep_errors:
+                DEFAULT_LOGGER.warning(
+                    f"could not get some dependencies for sorting ({len(dep_errors)} error(s))",
+                    extra={"label": self},
+                )
+
+            sorted_df = get_jobs_sorted(df, deps_df)
+        except Exception as e:
+            DEFAULT_LOGGER.warning(
+                f"could not sort jobs by dependencies due to error: {e}",
                 extra={"label": self},
             )
-            return errors
+            sorted_df = df
 
-        df = self.get_jobs()
+        result = []
 
-        if incremental:
-            table_df = self.database.get_tables()
-            view_df = self.database.get_views()
+        for row in sorted_df.collect():
+            res = _create_db_object(row)
+            result.append(res)
 
-            df = df.join(table_df, "job_id", how="left_anti")
-            df = df.join(view_df, "job_id", how="left_anti")
+        return result
 
-        errors = []
-        if df:
-            errors = _create_db_objects(df)
+    def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:
+        """Yield job configurations from YAML files with variable substitution."""
+        return read_yaml(self.runtime, root="job", preferred_file_name=topic)
 
-        if update_lists:
-            self.update_tables_list()
-            self.update_views_list()
+    def get_jobs(self, topic: Optional[str] = None) -> DataFrame:
+        DEFAULT_LOGGER.debug("get jobs", extra={"label": self})
 
-        if errors and retry:
-            DEFAULT_LOGGER.warning("retry enabled", extra={"label": self})
-            errors_ids = [e["job_id"] for e in errors if e.get("job_id")]
+        try:
+            conf = get_step_conf(self.name)
+            schema = create_spark_schema(conf)
+            jobs = self.get_jobs_iter(topic=topic)
+            df = SPARK.createDataFrame(jobs, schema=schema)
+            df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
 
-            errors_df = df.where(df["job_id"].isin(errors_ids))
-            if errors_df:
-                errors = _create_db_objects(errors_df)
+            df.cache()
 
-        return df, errors
+            if df.isEmpty():
+                raise ValueError("no jobs found")
 
-    def _update_dependencies_internal(
+            duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")
+            rows = duplicated_df.collect()
+
+            if rows:
+                duplicates = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in rows)
+                raise AssertionError(f"duplicated job(s) ({duplicates})")
+
+            not_expected_step = df.where(f"step != '{self.name}'")
+            rows = not_expected_step.collect()
+
+            if rows:
+                unexpected = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in rows)
+                raise AssertionError(f"unexpected step(s) ({unexpected})")
+
+            return df
+        except AssertionError as e:
+            DEFAULT_LOGGER.exception("fail to get jobs", extra={"label": self})
+            raise e
+
+    def get_dependencies(
         self,
         progress_bar: Optional[bool] = False,
         topic: Optional[Union[str, List[str]]] = None,
         include_manual: Optional[bool] = False,
         loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> Tuple[DataFrame, List[Dict]]:
-        """Private version that returns (df, errors) instead of raising."""
-        df, errors = self._get_dependencies_internal(
+    ) -> DataFrame:
+        df, errors = self._get_dependencies(
             progress_bar=progress_bar,
             topic=topic,
             include_manual=include_manual,
             loglevel=loglevel,
         )
+        _log_and_raise_errors(errors, "get dependencies")
+
+        return df
+
+    def create_db_objects(
+        self,
+        mode: Optional[Modes] = "parallel",
+        max_retries: Optional[int] = 2,
+        update_lists: Optional[bool] = True,
+        incremental: Optional[bool] = False,
+    ) -> None:
+        df = self.get_jobs()
+
+        if incremental:
+            table_df = self.database.get_tables()
+            view_df = self.database.get_views()
+            df = df.join(table_df, "job_id", how="left_anti")
+            df = df.join(view_df, "job_id", how="left_anti")
+
+        results = self._dispatch(mode, df)
+        errors = [res for res in results if res.error]
+        error_count: int = len(errors)
+        attempt = 0
+        DEFAULT_LOGGER.debug(
+            f"{len(results) - error_count} db objects created, {error_count} error(s) remaining",
+            extra={"label": self},
+        )
+
+        while errors and max_retries and attempt < max_retries:
+            attempt += 1
+            DEFAULT_LOGGER.warning(
+                f"retrying failed db objects, {max_retries - attempt + 1} retries left",
+                extra={"label": self},
+            )
+            failed_job_ids = [e.job_id for e in errors]
+            errors_df = df.where(df["job_id"].isin(failed_job_ids))
+            results = self._dispatch(mode, errors_df)
+            errors = [res for res in results if res.error]
+
+            if len(errors) == error_count:
+                DEFAULT_LOGGER.warning(
+                    "no improvement in errors after retry, stop retries",
+                    extra={"label": self},
+                )
+                break
+            else:
+                error_count = len(errors)
+                DEFAULT_LOGGER.debug(
+                    f"{error_count} db objects still not created, retrying...",
+                    extra={"label": self},
+                )
+
+        if update_lists:
+            self.update_tables_list()
+            self.update_views_list()
+
+        _log_and_raise_errors(errors, "create db objects")
+
+    def update_dependencies(
+        self,
+        progress_bar: Optional[bool] = False,
+        topic: Optional[Union[str, List[str]]] = None,
+        include_manual: Optional[bool] = False,
+        loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
+    ) -> None:
+        df, errors = self._get_dependencies(
+            progress_bar=progress_bar,
+            topic=topic,
+            include_manual=include_manual,
+            loglevel=loglevel,
+        )
+
         df.cache()
 
         DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
-
         update_where = None
 
         if topic is None:
@@ -292,16 +384,15 @@ class BaseStep:
 
             NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
-                keys=["dependency_id"],
-                update_where=update_where,
+                context=CdcContext(keys=["dependency_id"], update_where=update_where),
             )
-
         else:
             if isinstance(topic, str):
                 topic = [topic]
 
             where_topic = f"""topic in ('{"', '".join(topic)}')"""
             where_not_manual = "-- manual job(s) included"
+
             if not include_manual:
                 where_not_manual = "and not options.type <=> 'manual'"
 
@@ -309,92 +400,12 @@ class BaseStep:
                 f"""job_id in (select job_id from fabricks.{self.name}_jobs where {where_topic} {where_not_manual})"""
             )
             DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"label": self})
-
             NoCDC("fabricks", self.name, "dependencies").delete_missing(
                 df,
-                keys=["dependency_id"],
-                update_where=update_where,
-                uuid=True,
+                context=CdcContext(keys=["dependency_id"], update_where=update_where, uuid=True),
             )
 
-        return df, errors
-
-    # ========== Public API Methods ==========
-
-    def get_jobs_iter(self, topic: Optional[str] = None) -> Iterable[dict]:
-        """Yield job configurations from YAML files with variable substitution."""
-        return read_yaml(self.runtime, root="job", preferred_file_name=topic)
-
-    def get_jobs(self, topic: Optional[str] = None) -> DataFrame:
-        DEFAULT_LOGGER.debug("get jobs", extra={"label": self})
-
-        try:
-            conf = get_step_conf(self.name)
-            schema = create_spark_schema(conf)
-            jobs = self.get_jobs_iter(topic=topic)
-
-            df = SPARK.createDataFrame(jobs, schema=schema)
-            df = df.withColumn("job_id", md5(expr("concat(step, '.' ,topic, '_', item)")))
-
-            # Collect once to avoid double scan
-            duplicated_df = df.groupBy("job_id", "step", "topic", "item").count().where("count > 1")
-            rows = duplicated_df.collect()
-            if rows:
-                duplicates = ",".join(f"{row.step}.{row.topic}_{row.item}" for row in rows)
-                raise AssertionError(f"duplicated job(s) ({duplicates})")
-
-            if not df:
-                raise ValueError("no jobs found")
-
-            return df
-
-        except AssertionError as e:
-            DEFAULT_LOGGER.exception("fail to get jobs", extra={"label": self})
-            raise e
-
-    def get_dependencies(
-        self,
-        progress_bar: Optional[bool] = False,
-        topic: Optional[Union[str, List[str]]] = None,
-        include_manual: Optional[bool] = False,
-        loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> DataFrame:
-        df, errors = self._get_dependencies_internal(
-            progress_bar=progress_bar,
-            topic=topic,
-            include_manual=include_manual,
-            loglevel=loglevel,
-        )
-        _log_and_raise_errors(errors, "get dependencies", "jobs")
-        return df
-
-    def create_db_objects(
-        self,
-        retry: Optional[bool] = True,
-        update_lists: Optional[bool] = True,
-        incremental: Optional[bool] = False,
-    ) -> None:
-        _, errors = self._create_db_objects_internal(
-            retry=retry,
-            update_lists=update_lists,
-            incremental=incremental,
-        )
-        _log_and_raise_errors(errors, "create db objects", "objects")
-
-    def update_dependencies(
-        self,
-        progress_bar: Optional[bool] = False,
-        topic: Optional[Union[str, List[str]]] = None,
-        include_manual: Optional[bool] = False,
-        loglevel: Optional[Literal[10, 20, 30, 40, 50]] = None,
-    ) -> None:
-        _, errors = self._update_dependencies_internal(
-            progress_bar=progress_bar,
-            topic=topic,
-            include_manual=include_manual,
-            loglevel=loglevel,
-        )
-        _log_and_raise_errors(errors, "update dependencies", "jobs")
+        _log_and_raise_errors(errors, "update dependencies")
 
     def register(self, update: Optional[bool] = False, drop: Optional[bool] = False):
         if drop:
@@ -405,12 +416,14 @@ class BaseStep:
             self.update_configurations()
 
         df = self.get_jobs()
-        if df:
+
+        if not df.isEmpty():
             table_df = self.database.get_tables()
-            if table_df:
+
+            if not table_df.isEmpty():
                 df = df.join(table_df, "job_id", how="left_anti")
 
-        if df:
+        if not df.isEmpty():
             DEFAULT_LOGGER.setLevel(logging.CRITICAL)
             run_in_parallel(_register, df, workers=16, progress_bar=True, run_as="Pool")
             DEFAULT_LOGGER.setLevel(LOGLEVEL)
@@ -418,97 +431,90 @@ class BaseStep:
     def update_steps_list(self):
         order = self.options.order or 0
         df = SPARK.sql(f"select '{self.expand}' as expand, '{self.name}' as step, '{order}' :: int as `order`")
-
-        NoCDC("fabricks", "steps").delete_missing(df, keys=["step"], update_where=f"step = '{self.name}'")
+        NoCDC("fabricks", "steps").delete_missing(
+            df, context=CdcContext(keys=["step"], update_where=f"step = '{self.name}'")
+        )
 
     def update_views_list(self):
         df = self.database.get_views()
         df = df.withColumn("job_id", expr("md5(view)"))
-
         DEFAULT_LOGGER.info("update views list", extra={"label": self})
-        NoCDC("fabricks", self.name, "views").delete_missing(df, keys=["job_id"])
+        NoCDC("fabricks", self.name, "views").delete_missing(df, context=CdcContext(keys=["job_id"]))
 
     def update_tables_list(self):
         df = self.database.get_tables()
         df = df.withColumn("job_id", expr("md5(table)"))
-
         DEFAULT_LOGGER.info("update tables list", extra={"label": self})
-        NoCDC("fabricks", self.name, "tables").delete_missing(df, keys=["job_id"])
+        NoCDC("fabricks", self.name, "tables").delete_missing(df, context=CdcContext(keys=["job_id"]))
+
+    def update_lists(self):
+        self.update_tables_list()
+        self.update_views_list()
+        self.update_steps_list()
 
     def update_configurations(self, drop: Optional[bool] = False):
         df = self.get_jobs()
-
         DEFAULT_LOGGER.info("update configurations", extra={"label": self})
-
         cdc = NoCDC("fabricks", self.name, "jobs")
 
         if drop:
             cdc.table.drop()
         elif cdc.table.exists():
-            df_diffs = cdc.get_differences_with_deltatable(df)
+            df_diffs = cdc.get_differences_with_deltatable(df, context=CdcContext())
+
             if not df_diffs.isEmpty():
                 DEFAULT_LOGGER.warning("schema drift detected", extra={"label": self})
                 cdc.table.overwrite_schema(df=df)
 
-        cdc.delete_missing(df, keys=["job_id"])
-
-    # ========== Deprecated Methods ==========
-
-    @deprecated("use create_db_objects instead")
-    def create_jobs(self, retry: Optional[bool] = True) -> None:
-        return self.create_db_objects(retry=retry)
-
-    @deprecated("use update_configurations instead")
-    def update_jobs(self, drop: Optional[bool] = False):
-        return self.update_configurations(drop=drop)
-
-    @deprecated("use update_tables_list instead")
-    def update_tables(self):
-        return self.update_tables_list()
-
-    @deprecated("use update_views_list instead")
-    def update_views(self):
-        return self.update_views_list()
+        cdc.delete_missing(df, context=CdcContext(keys=["job_id"]))
 
     def __str__(self):
         return self.name
 
 
-def _log_and_raise_errors(errors: List[Dict], action: str, object_type: str = "operations") -> None:
+def _log_and_raise_errors(errors: List[JobResult], action: str) -> None:
     if errors:
         logs = []
         for e in errors:
-            DEFAULT_LOGGER.exception(f"fail to {action}", extra={"label": e["job"]}, exc_info=e["error"])
-            logs.append(f"  {e['job']}: {type(e['error']).__name__}: {str(e['error']).splitlines()[0]}")
+            DEFAULT_LOGGER.warning(f"fail to {action}", extra={"label": e.job})
+            logs.append(f"  {e.job}: {type(e.error).__name__}: {str(e.error).splitlines()[0]}")
 
-        raise ValueError(f"could not {action} - {len(errors)} {object_type} failed:\n" + "\n".join(logs))
+        raise ValueError(f"fail to {action} - {len(errors)} failure(s)" + "\n\t - " + "\n\t - ".join(logs))
 
 
 # to avoid AttributeError: can't pickle local object
-def _get_dependencies(row: Row):
-    job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
+def _get_dependencies(row: Row) -> JobResult:
+    j = f"{row['step']}.{row['topic']}_{row['item']}"
+
     try:
-        return {"job": str(job), "dependencies": job.get_dependencies()}
+        job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
+        return JobResult(job=j, dependencies=job.get_dependencies())
     except Exception as e:
-        DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
-        return {"job": str(job), "error": e}
+        DEFAULT_LOGGER.warning("fail to get dependencies", extra={"label": j})
+        return JobResult(job=j, error=e)
 
 
-def _create_db_object(row: Row):
-    job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
+def _create_db_object(row: Row) -> JobResult:
+    j = f"{row['step']}.{row['topic']}_{row['item']}"
+
     try:
+        job = get_job_internal(step=row["step"], job_id=row["job_id"], conf=row)
         job.create()
-        return {"job": str(job), "job_id": row["job_id"]}
+
+        return JobResult(job=j, job_id=row["job_id"])
     except Exception as e:  # noqa E722
-        DEFAULT_LOGGER.exception("fail to create db object", extra={"label": job})
-        return {"job": str(job), "job_id": row["job_id"], "error": e}
+        DEFAULT_LOGGER.warning("fail to create db object", extra={"label": j})
+        return JobResult(job=j, job_id=row["job_id"], error=e)
 
 
-def _register(row: Row):
-    job = get_job(step=row["step"], topic=row["topic"], item=row["item"])
+def _register(row: Row) -> JobResult:
+    j = f"{row['step']}.{row['topic']}_{row['item']}"
+
     try:
+        job = get_job_internal(step=row["step"], topic=row["topic"], item=row["item"])
         job.register()
-        return {"job": str(job)}
+
+        return JobResult(job=j)
     except Exception as e:
-        DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
-        return {"job": str(job), "error": e}
+        DEFAULT_LOGGER.warning("fail to register job", extra={"label": j})
+        return JobResult(job=j, error=e)

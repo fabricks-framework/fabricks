@@ -1,4 +1,4 @@
-from fabricks.core.jobs.base.exception import (
+from fabricks.core.jobs.mixins._exception import (
     CheckException,
     CheckWarning,
     PostRunCheckException,

@@ -9,14 +9,13 @@ from pyspark.sql.types import Row, TimestampType
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.job import BaseJob
-from fabricks.core.parsers.get_parser import get_parser
-from fabricks.core.parsers.utils import clean
+from fabricks.core.jobs.base import BaseJob
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobBronzeOptions, JobDependency, ParserOptions, StepBronzeConf, StepBronzeOptions
+from fabricks.models.cdc import CdcContext
+from fabricks.utils.dataframe import clean
 from fabricks.utils.helpers import add_hash, backticks
 from fabricks.utils.path import FileSharePath
-from fabricks.utils.read import read
 
 
 class Bronze(BaseJob):
@@ -81,17 +80,19 @@ class Bronze(BaseJob):
         uri = self.options.uri
         assert uri is not None, "no uri provided in options"
         path = FileSharePath.from_uri(uri, regex=VARIABLES)
+
         return path
 
     def get_dependencies(self, *s) -> Sequence[JobDependency]:
         dependencies = []
-
         parents = self.options.parents or []
+
         if parents:
             for p in parents:
                 dependencies.append(JobDependency.from_parts(self.job_id, p, "parent"))
 
         wait_for = self.options.wait_for or []
+
         if wait_for:
             for w in wait_for:
                 dependencies.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
@@ -100,6 +101,7 @@ class Bronze(BaseJob):
 
     def register_external_table(self):
         options = self.conf.parser_options  # type: ignore
+
         if options and options.file_format:
             file_format = options.file_format
         else:
@@ -109,8 +111,8 @@ class Bronze(BaseJob):
 
         try:
             df = self.spark.sql(f"select * from {file_format}.`{self.data_path}`")
-
             assert len(df.columns) > 1, "external table must have at least one column"
+
             if "__timestamp" in df.columns:
                 assert isinstance(df.schema["__timestamp"].dataType, TimestampType), (
                     "__timestamp must be of type timestamp"
@@ -130,10 +132,12 @@ class Bronze(BaseJob):
         from delta import DeltaTable
 
         DEFAULT_LOGGER.debug("vacuum (external table)", extra={"label": self})
+
         try:
             dt = DeltaTable.forPath(self.spark, self.data_path.string)
             self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
             dt.vacuum(retention_hours)
+
         finally:
             self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
 
@@ -143,6 +147,7 @@ class Bronze(BaseJob):
         compute_statistics: Optional[bool] = True,
     ):
         DEFAULT_LOGGER.debug("maintain (external table)", extra={"label": self})
+
         if vacuum:
             self.vacuum_external_table()
 
@@ -154,6 +159,7 @@ class Bronze(BaseJob):
         assert self.mode not in ["register"], f"{self.mode} not allowed"
         parser = self.options.parser
         assert parser is not None, "parser not found"
+
         return parser
 
     def parse(self, stream: bool = False) -> DataFrame:
@@ -170,6 +176,8 @@ class Bronze(BaseJob):
 
         if self.mode == "register":
             if stream:
+                from fabricks.utils.legacy.streaming.read import read
+
                 df = read(
                     stream=stream,
                     path=self.data_path,
@@ -181,6 +189,7 @@ class Bronze(BaseJob):
 
             # cleaning should be done by parser but for delta we do it here
             should_clean = True
+
             if options is not None and options.clean is not None:
                 should_clean = options.clean
             elif self.step_options.clean is not None:
@@ -188,12 +197,12 @@ class Bronze(BaseJob):
 
             if should_clean:
                 df = clean(df)
-
         else:
+            from fabricks.core.parsers import get_parser
+
             if options is not None and options.clean is not None:
                 # if parser options provided and clean set, use parser clean
                 pass
-
             elif self.step_options.clean is not None:
                 if options and options.clean is None:
                     # if parser options provided but clean not set, use step clean
@@ -203,7 +212,6 @@ class Bronze(BaseJob):
                     options = ParserOptions(clean=self.step_options.clean)
 
             parse = get_parser(self.parser, options)
-
             df = parse(
                 stream=stream,
                 data_path=self.data_path,
@@ -215,6 +223,7 @@ class Bronze(BaseJob):
 
     def encrypt(self, df: DataFrame) -> DataFrame:
         encrypted_columns = self.options.encrypted_columns or []
+
         if encrypted_columns:
             if self.runtime_options.encryption_key is not None:
                 from databricks.sdk.runtime import dbutils
@@ -223,12 +232,12 @@ class Bronze(BaseJob):
                     scope=self.runtime_options.secret_scope,
                     key=self.runtime_options.encryption_key,
                 )
+
                 if self.runtime_options.unity_catalog:
                     DEFAULT_LOGGER.warning(
                         "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead",
                         extra={"label": self},
                     )
-
             else:
                 key = os.environ.get("FABRICKS_ENCRYPTION_KEY")
 
@@ -272,6 +281,7 @@ class Bronze(BaseJob):
     def add_key(self, df: DataFrame) -> DataFrame:
         if "__key" not in df.columns:
             fields = self.options.keys or []
+
             if fields:
                 DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"label": self})
 
@@ -301,6 +311,7 @@ class Bronze(BaseJob):
     def add_source(self, df: DataFrame) -> DataFrame:
         if "__source" not in df.columns:
             source = self.options.source
+
             if source:
                 DEFAULT_LOGGER.debug(f"add source ({source})", extra={"label": self})
                 df = df.withColumn("__source", lit(source))
@@ -310,10 +321,10 @@ class Bronze(BaseJob):
     def add_operation(self, df: DataFrame) -> DataFrame:
         if "__operation" not in df.columns:
             operation = self.options.operation
+
             if operation:
                 DEFAULT_LOGGER.debug(f"add operation ({operation})", extra={"label": self})
                 df = df.withColumn("__operation", lit(operation))
-
             else:
                 df = df.withColumn("__operation", lit("upsert"))
 
@@ -339,7 +350,6 @@ class Bronze(BaseJob):
                         """
                     ),
                 )
-
             else:
                 df = df.withColumn(
                     "__metadata",
@@ -375,15 +385,13 @@ class Bronze(BaseJob):
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("schema overwrite not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
-        return {}
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> CdcContext:
+        return CdcContext()
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
-
         context = self.get_cdc_context(df)
-
-        # if dataframe, reference is passed (BUG)
+        # df is cached upstream in _for_each_batch, so this reference is a pinned snapshot
         name = f"{self.step}_{self.topic}_{self.item}__{batch}"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
@@ -392,50 +400,43 @@ class Bronze(BaseJob):
             return
 
         assert isinstance(self.cdc, NoCDC)
+
         if self.mode == "append":
-            self.cdc.append(sql, **context)
+            self.cdc.append(sql, context)
 
     def for_each_run(self, **kwargs):
         if self.mode == "register":
             DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})
-
         elif self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no run)", extra={"label": self})
-
         else:
             super().for_each_run(**kwargs)
 
     def create(self):
         if self.mode == "register":
             self.register_external_table()
-
         elif self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
-
         else:
             super().create()
 
     def register(self):
         if self.mode == "register":
             self.register_external_table()
-
         elif self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
-
         else:
             super().register()
 
     def truncate(self):
         if self.mode == "register":
             DEFAULT_LOGGER.info("register (no truncate)", extra={"label": self})
-
         else:
             super().truncate()
 
     def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
         if self.mode == "register":
             DEFAULT_LOGGER.info("register (no restore)", extra={"label": self})
-
         else:
             super().restore()
 
@@ -453,17 +454,14 @@ class Bronze(BaseJob):
     ):
         if self.mode == "register":
             self.maintain_external_table(vacuum=vacuum, compute_statistics=compute_statistics)
-
         else:
             super().maintain(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
 
     def vacuum(self):
         if self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no vacuum)", extra={"label": self})
-
         elif self.mode == "register":
             self.vacuum_external_table()
-
         else:
             super().vacuum()
 

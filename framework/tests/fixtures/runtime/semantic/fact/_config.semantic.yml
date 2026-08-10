@@ -1,0 +1,67 @@
+---
+# yaml-language-server: $schema=../../../../../../job-schema-gold.json
+- job:
+    step: semantic
+    topic: fact
+    item: zstd
+    tags: [run_1]
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: step_option
+    tags: [run_1]
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: job_option
+    tags: [run_1]
+    options:
+      mode: complete
+    table_options:
+      properties: 
+          delta.minReaderVersion: 2
+          delta.minWriterVersion: 5
+          delta.columnMapping.mode: none
+- job:
+    step: semantic
+    topic: fact
+    item: schema_drift
+    tags: [run_1]
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: powerbi
+    tags: [run_1]
+    options:
+      mode: complete
+    table_options:
+      powerbi: true
+      partition_by: [Monarch]
+- job:
+    step: semantic
+    topic: fact
+    item: table
+    tags: [run_1]
+    options:
+      mode: complete
+      table: gold.fact_overwrite
+- job:
+    step: semantic
+    topic: fact
+    item: clustering
+    tags: [run_1]
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact    
+    item: partitioning
+    tags: [run_1]
+    options:
+      mode: complete

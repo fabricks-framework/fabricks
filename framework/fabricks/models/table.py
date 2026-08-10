@@ -10,7 +10,6 @@ class ForeignKeyOptions(BaseModel):
     """Options for foreign key constraints."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     foreign_key: AllowedForeignKeyOptions | None = None
     constraint: AllowedConstraintOptions | None = None
 
@@ -19,7 +18,6 @@ class PrimaryKeyOptions(BaseModel):
     """Options for primary key constraints."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     constraint: AllowedConstraintOptions | None = None
 
 
@@ -27,7 +25,6 @@ class ForeignKey(BaseModel):
     """Foreign key constraint definition."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     keys: list[str]
     reference: str
     options: ForeignKeyOptions | None = None
@@ -37,7 +34,6 @@ class PrimaryKey(BaseModel):
     """Primary key constraint definition."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     keys: list[str]
     options: PrimaryKeyOptions | None = None
 
@@ -46,7 +42,6 @@ class TableOptions(BaseModel):
     """Comprehensive table configuration options for jobs."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     identity: bool | None = None
     liquid_clustering: bool | None = None
     partition_by: list[str] | None = None
@@ -71,7 +66,6 @@ class StepTableOptions(BaseModel):
     """Simplified table options for step-level configuration."""
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True)
-
     powerbi: bool | None = None
     liquid_clustering: bool | None = None
     properties: dict[str, str | bool | int] | None = None

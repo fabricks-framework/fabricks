@@ -3,9 +3,7 @@ from pyspark.sql import DataFrame
 
 def get_mermaid_diagram(df: DataFrame) -> str:
     dependencies = df.select("parent_id", "parent", "job_id", "job").collect()
-
     out = "flowchart TD\n"
-
     unique_nodes = set()
 
     for row in dependencies:

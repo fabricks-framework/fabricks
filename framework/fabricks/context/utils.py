@@ -8,7 +8,6 @@ def pprint_runtime(extended: bool = True) -> None:
     print("=" * 60)
     print("FABRICKS RUNTIME CONFIGURATION")
     print("=" * 60)
-
     # Core Paths Section
     print("\n📁 CONFIG:")
     print(f"    • Runtime: {c.PATH_RUNTIME.string}")
@@ -17,7 +16,6 @@ def pprint_runtime(extended: bool = True) -> None:
     print(f"    • Log Level: {logging.getLevelName(c.LOGLEVEL)}")
     print(f"    • Debug Mode: {'✅' if c.IS_DEBUGMODE else '❌'}")
     print(f"    • Job Config from YAML: {'✅' if c.IS_JOB_CONFIG_FROM_YAML else '❌'}")
-
     print("\n⚙️ STEPS:")
 
     def _print_steps(
@@ -25,8 +23,10 @@ def pprint_runtime(extended: bool = True) -> None:
     ):
         if steps:
             print(f"   {icon} {layer}:")
+
             for step in steps.values():
                 print(f"      • {step.name}")
+
                 if extended:
                     print(f"         - 📖 {r.PATHS_RUNTIME.get(step.name)}")
                     print(f"         - 💾 {r.PATHS_STORAGE.get(step.name)}")
@@ -36,15 +36,14 @@ def pprint_runtime(extended: bool = True) -> None:
     _print_steps(r.BRONZE, "Bronze", "🥉")
     _print_steps(r.SILVER, "Silver", "🥈")
     _print_steps(r.GOLD, "Gold", "🥇")
-
     # Storage Configuration Section
     print("\n💾 FABRICKS STORAGE:")
     print(f"    • Storage URI: {r.FABRICKS_STORAGE.string}")
     print(f"    • Storage Credential: {r.FABRICKS_STORAGE_CREDENTIAL or 'Not configured'}")
-
     # Unity Catalog Section
     print("\n🏛️ UNITY CATALOG:")
     print(f"    • Enabled:  {'✅' if r.IS_UNITY_CATALOG else '❌'}")
+
     if r.IS_UNITY_CATALOG and r.CATALOG:
         print(f"    • Catalog: {r.CATALOG}")
 

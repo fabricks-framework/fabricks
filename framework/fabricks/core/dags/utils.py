@@ -9,6 +9,7 @@ def _get_access_key_from_secret_scope(storage_account: str) -> str:
     from fabricks.context.secret import AccessKey, get_secret_from_secret_scope
 
     secret = get_secret_from_secret_scope(SECRET_SCOPE, f"{storage_account}-access-key")
+
     return cast(AccessKey, secret).key
 
 
@@ -21,9 +22,9 @@ def get_connection_info(storage_account: str) -> dict:
 
     if not IS_UNITY_CATALOG:
         access_key = _get_access_key_from_secret_scope(storage_account)
-
     else:
         access_key = _get_access_key_from_os()
+
         if not access_key:
             access_key = _get_access_key_from_secret_scope(storage_account)
 
@@ -42,7 +43,6 @@ def get_connection_info(storage_account: str) -> dict:
 
 def get_table():
     storage_account = FABRICKS_STORAGE.get_storage_account()
-
     cx = get_connection_info(storage_account)
 
     return AzureTable(

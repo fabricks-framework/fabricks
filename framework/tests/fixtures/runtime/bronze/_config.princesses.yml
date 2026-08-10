@@ -1,0 +1,112 @@
+---
+# yaml-language-server: $schema=../../../../../job-schema-bronze.json
+- job:
+    step: bronze
+    topic: princess
+    item: extend
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: manual
+    tags: [run_1]
+    options:
+      type: manual
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: drop
+    tags: [run_1]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: encrypt
+    tags: [run_1]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+      encrypted_columns: [name]
+- job:
+    step: bronze
+    topic: princess
+    item: schema_drift
+    tags: [run_1]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: type_widening
+    tags: [run_1]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: order_duplicate
+    tags: [run_1]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: calculated_column
+    tags: [run_1]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+      calculated_columns:
+        order_by: order_by * 2
+- job:
+    step: bronze
+    topic: princess
+    item: check
+    tags: [run_1]
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/princess
+      parser: parquet
+      keys: [id]
+- job:
+    step: bronze
+    topic: princess
+    item: no_column
+    options:
+      mode: register
+      uri: abfss://fabricks@$datahub/raw/delta/no_column
+- job:
+    step: bronze
+    topic: princess
+    item: too_many_columns
+    options:
+      mode: memory
+      uri: abfss://fabricks@$datahub/raw/too_many_columns
+      parser: parquet
+    extender_options:
+      - extender: force_reload

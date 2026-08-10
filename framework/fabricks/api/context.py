@@ -18,8 +18,6 @@ BRONZES = Bronzes
 SILVERS = Silvers
 GOLDS = Golds
 STEPS = Steps
-
-
 __all__ = [
     "BRONZE",
     "Bronzes",

@@ -3,26 +3,10 @@
 
 # COMMAND ----------
 
-from logging import DEBUG
 
-from databricks.sdk.runtime import dbutils
-
-from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.deploy import Deploy
-from tests.integration._types import steps
+from tests.integration.helpers.const import STEPS
 
 # COMMAND ----------
 
-DEFAULT_LOGGER.setLevel(DEBUG)
-
-# COMMAND ----------
-
-try:
-    Deploy.armageddon(steps=steps, nowait=True)  # why wait ?
-    assert False, "armageddon should have failed"
-except Exception as e:
-    assert True, f"armageddon failed as expected: {e}"
-
-# COMMAND ----------
-
-dbutils.notebook.exit(value="exit (0)")  # type: ignore
+Deploy.armageddon(steps=STEPS, nowait=True, mode="parallel", deploy_notebooks=False)  # why wait ?

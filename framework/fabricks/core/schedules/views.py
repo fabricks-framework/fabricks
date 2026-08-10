@@ -9,7 +9,6 @@ def create_or_replace_view_internal(name: str, options: dict):
     step = "-- no step provided"
     tag = "-- no tag provided"
     view = "-- no view provided"
-
     assert isinstance(options, dict), "options must be a dict"
 
     if options.get("steps") is not None:
@@ -38,12 +37,12 @@ def create_or_replace_view_internal(name: str, options: dict):
     """
     sql = fix_sql(sql)
     DEFAULT_LOGGER.debug("create or replace (schedule) view", extra={"label": f"fabricks.{name}_schedule", "sql": sql})
-
     SPARK.sql(sql)
 
 
 def create_or_replace_view(name: str):
     sc = get_schedule(name=name)
+
     try:
         create_or_replace_view_internal(sc["name"], sc["options"])
     except Exception as e:
@@ -52,8 +51,8 @@ def create_or_replace_view(name: str):
 
 def create_or_replace_views():
     DEFAULT_LOGGER.info("create or replace (schedule) views")
-
     rows = get_schedules_df().collect()
+
     for row in rows:
         try:
             create_or_replace_view_internal(row.name, row.options.asDict())

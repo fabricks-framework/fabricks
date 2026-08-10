@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "Leopold I",
+    "doubleField": 0.19000101,
+    "__operation": "reload",
+    "__timestamp": "2022-01-01 00:01:00"
+  },
+  {
+    "id": 2,
+    "name": "Leopold II",
+    "doubleField": 0.19000101,
+    "__operation": "reload",
+    "__timestamp": "2022-01-01 00:01:00"
+  },
+  {
+    "id": 2,
+    "name": "Leopold II",
+    "doubleField": 0.19000101,
+    "__operation": "reload",
+    "__timestamp": "2022-01-01 00:01:00"
+  }
+]

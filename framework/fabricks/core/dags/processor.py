@@ -22,7 +22,6 @@ class DagProcessor(BaseDags):
         self.step = get_step(step=step)
         self.schedule = schedule
         self.notebook = notebook
-
         super().__init__(schedule_id=schedule_id)
 
     def get_azure_queue(self) -> AzureQueue:
@@ -79,15 +78,16 @@ class DagProcessor(BaseDags):
         with self.get_azure_queue() as queue, self.get_azure_table() as azure_table:
             while True:
                 scheduled = self.get_scheduled(azure_table=azure_table)
+
                 if len(scheduled) == 0:
                     for _ in range(self.step.workers):
                         queue.send_sentinel()
 
                     LOGGER.info("no more job to schedule", extra={"label": str(self.step)})
                     break
-
                 else:
                     sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
+
                     for s in sorted_scheduled:
                         dependencies = azure_table.query(
                             f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'"
@@ -105,13 +105,12 @@ class DagProcessor(BaseDags):
         with self.get_azure_queue() as queue, self.get_azure_table() as azure_table:
             while True:
                 response = queue.receive()
+
                 if response == queue.sentinel:
                     LOGGER.info("no more job to process", extra={"label": str(self.step)})
                     break
-
                 elif response:
                     j = json.loads(response)
-
                     j["Status"] = "starting"
                     azure_table.upsert(j)
                     LOGGER.info("start", extra=self.extra(j))
@@ -130,7 +129,6 @@ class DagProcessor(BaseDags):
                                     "job": j.get("Job"),
                                 },  # ty:ignore[unknown-argument]
                             )
-
                         else:
                             run(
                                 step=str(self.step),
@@ -145,7 +143,6 @@ class DagProcessor(BaseDags):
                     finally:
                         j["Status"] = "ok"
                         azure_table.upsert(j)
-
                         LOGGER.info("end", extra=self.extra(j))
                         TABLE_LOG_HANDLER.flush()
 
@@ -156,6 +153,7 @@ class DagProcessor(BaseDags):
 
     def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict]:
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
+
         if azure_table is not None:
             return azure_table.query(query)
 
@@ -172,8 +170,8 @@ class DagProcessor(BaseDags):
                 args=(),
             )
             sender.start()
-
             receivers = []
+
             for i in range(self.step.workers):
                 receiver = threading.Thread(
                     target=self.receive,
@@ -184,6 +182,7 @@ class DagProcessor(BaseDags):
                 receivers.append(receiver)
 
             sender.join()
+
             for receiver in receivers:
                 receiver.join()
 
@@ -192,7 +191,6 @@ class DagProcessor(BaseDags):
 
         if len(scheduled) > 0:
             LOGGER.info("start", extra={"label": str(self.step)})
-
             p = Process(target=self._process)
             p.start()
             p.join(timeout=self.step.timeouts.step)
@@ -208,13 +206,10 @@ class DagProcessor(BaseDags):
             if p.exitcode is None:
                 LOGGER.critical("timeout", extra={"label": str(self.step)})
                 raise ValueError(f"{self.step} timed out")
-
             else:
                 df = self.get_logs(str(self.step))
                 self.write_logs(df)
-
                 LOGGER.info("end", extra={"label": str(self.step)})
-
         else:
             LOGGER.info("no job to schedule", extra={"label": str(self.step)})
 

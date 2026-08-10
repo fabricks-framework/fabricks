@@ -1,0 +1,18 @@
+[
+  {
+    "id": 301,
+    "name": "Elisabeth",
+    "doubleField": 0.20220305,
+    "newField": true,
+    "__operation": "upsert",
+    "__timestamp": "2022-03-05 00:12:00"
+  },
+  {
+    "id": 401,
+    "name": "Astrid",
+    "doubleField": 0.20220305,
+    "newField": true,
+    "__operation": "upsert",
+    "__timestamp": "2022-03-05 00:12:00"
+  }
+]

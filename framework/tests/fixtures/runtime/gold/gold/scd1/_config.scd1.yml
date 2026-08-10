@@ -1,0 +1,86 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema-gold.json
+- job:
+    step: gold
+    topic: scd1
+    item: update
+    tags: [run_1, run_2]
+    options:
+      change_data_capture: scd1
+      mode: update
+- job:
+    step: gold
+    topic: scd1
+    item: last_timestamp
+    tags: [run_1]
+    options:
+      change_data_capture: scd1
+      mode: update
+      persist_last_timestamp: True
+- job:
+    step: gold
+    topic: scd1
+    item: complete
+    tags: [run_1, run_2]
+    options:
+      change_data_capture: scd1
+      mode: complete
+- job:
+    step: gold
+    topic: scd1
+    item: memory
+    tags: [run_1, run_2]
+    options:
+      change_data_capture: scd1
+      mode: memory
+- job:
+    step: gold
+    topic: scd1
+    item: identity
+    tags: [run_1, run_2]
+    options:
+      change_data_capture: scd1
+      mode: update
+      persist_last_updated_timestamp: True
+- job:
+    step: gold
+    topic: scd1
+    item: special_char
+    tags: [run_1]
+    options:
+      change_data_capture: scd1
+      mode: update
+      last_updated: True
+- job:
+    step: gold
+    topic: scd1
+    item: script
+    tags: [run_1]
+    options:
+      change_data_capture: scd1
+      mode: update
+      script: True
+      wait_for: ["silver.monarch_scd2"]
+- job:
+    step: gold
+    topic: scd1
+    item: generated_column
+    tags: [run_1]
+    options:
+      change_data_capture: scd1
+      mode: update
+    table_options:
+      generated_columns:
+        __generated_column: "string generated always as (concat_ws('*', monarch, cast(id as string)))"
+- job:
+    step: gold
+    topic: scd1
+    item: updated_column
+    tags: [run_1]
+    options:
+      change_data_capture: scd1
+      mode: update
+    updater_options:
+      columns:
+        __updated_extra_column: "udf_add_now(monarch)"
+        __updated_new_column: "(1+1)"

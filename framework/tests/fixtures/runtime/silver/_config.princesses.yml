@@ -1,0 +1,112 @@
+---
+# yaml-language-server: $schema=../../../../../job-schema-silver.json
+- job:
+    step: silver
+    topic: princess
+    item: extend
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd1
+    extender_options:
+      - extender: add_country
+        arguments:
+          country: Belgium
+- job:
+    step: silver
+    topic: princess
+    item: manual
+    options:
+      type: manual
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: princess
+    item: encrypt
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: princess
+    item: drop
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: princess
+    item: latest
+    tags: [run_1]
+    options:
+      mode: latest
+- job:
+    step: silver
+    topic: princess
+    item: append
+    tags: [run_1]
+    options:
+      mode: append
+- job:
+    step: silver
+    topic: princess
+    item: schema_drift
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: princess
+    item: type_widening
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: princess
+    item: order_duplicate
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd1
+      order_duplicate_by:
+        order_by: desc
+- job:
+    step: silver
+    topic: princess
+    item: calculated_column
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd1
+      order_duplicate_by:
+        order_by: asc
+- job:
+    step: silver
+    topic: princess
+    item: check
+    tags: [run_1]
+    options:
+      mode: update
+      change_data_capture: scd1
+    check_options:
+      max_rows: 2
+- job:
+    step: silver
+    topic: princess
+    item: combine
+    tags: [run_1]
+    options:
+      mode: combine
+      parents: [silver.princess_extend, silver.princess_calculated_column, silver.princess_append]
+- job:
+    step: silver
+    topic: princess
+    item: too_many_columns
+    tags: [run_1]
+    options:
+      mode: latest

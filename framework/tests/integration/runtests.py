@@ -20,7 +20,7 @@ assert IS_TESTMODE
 
 # COMMAND ----------
 
-Tests = ["job1", "job2", "job3", "job4", "job5"]
+Tests = ["job0", "job1", "job2", "job3", "job4", "job5"]
 Booleans = ["True", "False"]
 
 # COMMAND ----------
@@ -41,7 +41,6 @@ _ = send_message_to_channel(
 dbutils.widgets.dropdown("initialize", "True", Booleans)
 dbutils.widgets.dropdown("armageddon", "True", Booleans)
 dbutils.widgets.dropdown("reset", "False", Booleans)
-dbutils.widgets.dropdown("fix_notebooks", "True", Booleans)
 dbutils.widgets.multiselect("tests", "*", ["*"] + Tests)
 
 # COMMAND ----------
@@ -49,7 +48,6 @@ dbutils.widgets.multiselect("tests", "*", ["*"] + Tests)
 armageddon = dbutils.widgets.get("armageddon").lower() == "true"
 initialize = dbutils.widgets.get("initialize").lower() == "true"
 reset = dbutils.widgets.get("reset").lower() == "true"
-fix_notebooks = dbutils.widgets.get("fix_notebooks").lower() == "true"
 tests = [t for t in dbutils.widgets.get("tests").split(",")]
 if "*" in tests:
     tests = Tests
@@ -61,9 +59,14 @@ print(packages)
 
 # COMMAND ----------
 
+root = PATH_RUNTIME.parent().parent().joinpath("integration")
+print(root)
+
+# COMMAND ----------
+
 if initialize:
     run_notebook(
-        PATH_RUNTIME.parent().joinpath("initialize"),
+        root.joinpath("initialize"),
         expected="True",
         i=1,
     )
@@ -71,14 +74,9 @@ if initialize:
 # COMMAND ----------
 
 if armageddon:
-    run_notebook(PATH_RUNTIME.parent().joinpath("armageddon"))
+    run_notebook(root.joinpath("armageddon"))
 elif reset:
-    run_notebook(PATH_RUNTIME.parent().joinpath("reset"))
-
-# COMMAND ----------
-
-if fix_notebooks:
-    run_notebook(PATH_RUNTIME.parent().joinpath("fix_notebooks"))
+    run_notebook(root.joinpath("reset"))
 
 # COMMAND ----------
 
@@ -111,5 +109,3 @@ assert res.value == 0, "failed"  # type: ignore
 # COMMAND ----------
 
 dbutils.notebook.exit(value="exit (0)")  # type: ignore
-
-# COMMAND ----------

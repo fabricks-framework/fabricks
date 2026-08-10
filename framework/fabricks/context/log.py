@@ -16,7 +16,6 @@ logger, _ = get_logger(
     timezone=TIMEZONE,
 )
 logging.getLogger("SQLQueryContextLogger").setLevel(logging.CRITICAL)
-
 DEFAULT_LOGGER: Final[logging.Logger] = logger
 COLORS = {
     "DEBUG": "#00BCD4",
@@ -29,10 +28,13 @@ COLORS = {
 if IS_FUNMODE:
     # 🎄 Christmas Easter Egg 🎅
     _now = datetime.now()
+
     if _now.month == 12:
         _day = _now.day
+
         if _day <= 24:
             _days_until = 25 - _day
+
             if _days_until == 1:
                 DEFAULT_LOGGER.info("🎄 Ho ho ho! Only 1 day until Christmas! Happy data processing! 🎅")
             elif _days_until <= 7:
@@ -141,7 +143,6 @@ def send_message_to_channel(
     channel = channel.lower()
     channel = channel.replace(" ", "-")
     webhook_url = dbutils.secrets.get(scope=SECRET_SCOPE, key=f"{channel}-webhook-url")
-
     teams_message = {
         "@type": "MessageCard",
         "@context": "http://schema.org/extensions",
@@ -158,10 +159,9 @@ def send_message_to_channel(
         teams_message["themeColor"] = color
 
     teams_message["text"] = message
-
     teams_message_json = json.dumps(teams_message)
-
     response = requests.post(webhook_url, data=teams_message_json, headers={"Content-Type": "application/json"})
+
     if response.status_code == 200:
         return True
     else:

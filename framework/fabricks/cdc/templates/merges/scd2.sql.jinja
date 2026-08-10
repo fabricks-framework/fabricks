@@ -9,7 +9,7 @@
 {% else %}
   on
     {% for k in keys %}
-  t.{{ k }} <=> s.{{ k }} and
+  t.{{ k }} <=> s.{{ k }}{% if not loop.last %} and {%endif %}
     {% endfor %}
 {% endif %}
   and t.__is_current 

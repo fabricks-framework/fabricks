@@ -37,7 +37,6 @@ def standalone(schedule: str | None = None):
         )
 
     _ = run_in_parallel(_schedule, steps)
-
     terminate(schedule_id=schedule_id)
 
 
@@ -48,8 +47,10 @@ def terminate(schedule_id: str | None = None):
     Args:
         schedule_id (str): The ID of the schedule to terminate. If None, it will be retrieved from task values or widgets.
     """
+
     if schedule_id is None:
         DEFAULT_LOGGER.debug("schedule_id not provided, trying task value or widget", extra={"label": "scheduler"})
+
         try:
             schedule_id = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule_id")
         except (TypeError, IllegalArgumentException, ValueError):
@@ -57,7 +58,6 @@ def terminate(schedule_id: str | None = None):
 
     assert schedule_id is not None, "Schedule ID must be provided either as an argument, task value, or widget."
     DEFAULT_LOGGER.info(f"terminating schedule ({schedule_id})", extra={"label": "scheduler"})
-
     with DagTerminator(schedule_id=schedule_id) as t:
         t.terminate()
 
@@ -71,8 +71,10 @@ def process(step: str | None = None, schedule_id: str | None = None, schedule: s
         schedule (str | None): The schedule to process. If None, it will be retrieved from task values or widgets.
         step (str | None): The step to process. If None, it will be retrieved from widgets.
     """
+
     if schedule_id is None:
         DEFAULT_LOGGER.debug("schedule_id not provided, trying task value or widget", extra={"label": "scheduler"})
+
         try:
             schedule_id = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule_id")
         except (TypeError, IllegalArgumentException, ValueError):
@@ -82,6 +84,7 @@ def process(step: str | None = None, schedule_id: str | None = None, schedule: s
 
     if schedule is None:
         DEFAULT_LOGGER.debug("schedule not provided, trying task value or widget", extra={"label": "scheduler"})
+
         try:
             schedule = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule")
         except (TypeError, IllegalArgumentException, ValueError):
@@ -94,9 +97,7 @@ def process(step: str | None = None, schedule_id: str | None = None, schedule: s
         step = dbutils.widgets.get("step")
 
     assert step is not None, "step must be provided either as an argument or widget."
-
     DEFAULT_LOGGER.info(f"processing {step} in {schedule} ({schedule_id})", extra={"label": "scheduler"})
-
     with DagProcessor(schedule_id=schedule_id, schedule=schedule, step=step) as p:
         p.process()
 
@@ -111,14 +112,13 @@ def generate(schedule: str | None = None) -> Tuple[str, DataFrame, DataFrame]:
     Returns:
         Tuple[str, DataFrame, DataFrame]: A tuple containing the schedule ID, job dataframe, and dependency dataframe.
     """
+
     if schedule is None:
         schedule = dbutils.widgets.get("schedule")
-
         DEFAULT_LOGGER.info(f"generating {schedule}", extra={"label": "scheduler"})
 
     with DagGenerator(schedule) as g:
         schedule_id, job_df, dep_df = g.generate()
-
         DEFAULT_LOGGER.debug(f"generated {schedule} ({schedule_id})", extra={"label": "scheduler"})
 
         try:

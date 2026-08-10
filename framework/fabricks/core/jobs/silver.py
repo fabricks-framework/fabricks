@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import Any, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -7,12 +7,13 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.base import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobSilverOptions, StepSilverConf, StepSilverOptions
+from fabricks.models.cdc import CdcContext
 from fabricks.utils.helpers import concat_dfs
-from fabricks.utils.read.read import read
+from fabricks.utils.legacy.streaming.read import read
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
@@ -60,9 +61,12 @@ class Silver(BaseJob):
     @cached_property
     def stream(self) -> bool:
         _stream = self.options.stream
+
         if _stream is None:
             _stream = self.step_conf.options.stream
-        return _stream if _stream is not None else True
+
+        # streaming is opt-in (legacy); default to batch when neither job nor step sets it
+        return _stream if _stream is not None else False
 
     @property
     def schema_drift(self) -> bool:
@@ -80,12 +84,12 @@ class Silver(BaseJob):
     def parent_step(self) -> str:
         _parent_step = self.step_conf.options.parent
         assert _parent_step is not None
+
         return str(_parent_step)
 
     def update_metadata(self, df: DataFrame) -> DataFrame:
         if "__metadata" in df.columns:
             DEFAULT_LOGGER.debug("update metadata", extra={"label": self})
-
             df = df.withColumn(
                 "__metadata",
                 expr(
@@ -121,10 +125,8 @@ class Silver(BaseJob):
 
         if self.mode == "memory":
             assert len(lineage) == 1, f"more than 1 dependency not allowed ({lineage})"
-
             parent = lineage[0].parent
             df = self.spark.sql(f"select * from {parent}")
-
         elif self.mode == "combine":
             dfs = []
 
@@ -134,17 +136,16 @@ class Silver(BaseJob):
 
             df = concat_dfs(dfs)
             assert df is not None
-
         else:
             dfs = []
 
             for item in sorted(lineage, key=lambda x: x.parent_id):
                 try:
                     bronze = Bronze.from_job_id(step=self.parent_step, job_id=item.parent_id)
+
                     if bronze.mode in ["memory", "register"]:
                         # data already transformed if bronze is persisted
                         df = bronze.get_data(stream=stream, transform=True)
-
                     else:
                         df = read(
                             stream=stream,
@@ -169,6 +170,7 @@ class Silver(BaseJob):
 
         # transforms
         df = self.filter_where(df)
+
         if transform:
             df = self.base_transform(df)
 
@@ -179,17 +181,17 @@ class Silver(BaseJob):
 
     def get_dependencies(self) -> Sequence[JobDependency]:
         dependencies = []
-
         parents = self.options.parents or []
+
         if parents:
             for p in parents:
                 dependencies.append(JobDependency.from_parts(self.job_id, p, "parent"))
-
         else:
             p = f"{self.parent_step}.{self.topic}_{self.item}"
             dependencies.append(JobDependency.from_parts(self.job_id, p, "parser"))
 
         wait_for = self.options.wait_for or []
+
         if wait_for:
             for w in wait_for:
                 dependencies.append(JobDependency.from_parts(self.job_id, w, "wait_for"))
@@ -200,11 +202,11 @@ class Silver(BaseJob):
         dependencies = self.get_dependencies()
         dependencies = [d for d in dependencies if d.origin != "wait_for"]
         assert dependencies, "no dependency found"
+
         return dependencies
 
     def create_or_replace_view(self):
         assert self.mode in ["memory", "combine"], f"{self.mode} not allowed"
-
         lineage = self.get_dependencies_lineage()
 
         if self.mode == "combine":
@@ -220,31 +222,26 @@ class Silver(BaseJob):
 
             sql = f"create or replace view {self.qualified_name} as {' union all '.join(queries)}"
             sql = fix_sql(sql)
-
             DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
             self.spark.sql(sql)
-
         else:
             assert len(lineage) == 1, "only one dependency allowed"
-
             parent = lineage[0].parent
             sql = f"select * from {parent}"
             sql = fix_sql(sql)
             DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
-
             df = self.spark.sql(sql)
             cdc_options = self.get_cdc_context(df)
-            self.cdc.create_or_replace_view(sql, **cdc_options)
+            self.cdc.create_or_replace_view(sql, context=cdc_options)
 
     def create_or_replace_current_view(self):
         from py4j.protocol import Py4JJavaError
 
         try:
             DEFAULT_LOGGER.debug("create or replace current view", extra={"label": self})
-
             df = self.spark.sql(f"select * from {self.qualified_name}")
-
             where_clause = "-- no where clause"
+
             if "__is_current" in df.columns:
                 where_clause = "where __is_current"
 
@@ -259,7 +256,6 @@ class Silver(BaseJob):
             # sql = fix_sql(sql)
             # DEFAULT_LOGGER.debug("current view", extra={"label": self, "sql": sql})
             self.spark.sql(sql)
-
         except Py4JJavaError as e:
             DEFAULT_LOGGER.exception("fail to create nor replace view", extra={"label": self}, exc_info=e)
 
@@ -270,16 +266,15 @@ class Silver(BaseJob):
     def overwrite_schema(self, df: Optional[DataFrame] = None):
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> CdcContext:
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
-
         not_append = not self.mode == "append"
         nocdc = self.change_data_capture == "nocdc"
         order_duplicate_by = self.options.order_duplicate_by or {}
-
         rectify = False
+
         if not_append and not nocdc:
             if not self.stream and self.mode == "update" and self.table.exists():
                 timestamp = "__valid_from" if self.change_data_capture == "scd2" else "__timestamp"
@@ -288,7 +283,7 @@ class Silver(BaseJob):
                 extra_check = "-- no extra check"
 
             sql = f"""
-                select 
+                select
                   __operation
                 from
                   {global_temp_view}
@@ -296,18 +291,18 @@ class Silver(BaseJob):
                   true
                   and __operation == 'reload'
                   {extra_check}
-                limit 
+                limit
                   1
                 """
             sql = fix_sql(sql)
             DEFAULT_LOGGER.debug("check", extra={"label": self, "sql": sql})
-
             check_df = self.spark.sql(sql)
+
             if not check_df.isEmpty():
                 rectify = True
                 DEFAULT_LOGGER.debug("rectify enabled", extra={"label": self})
 
-        context: dict[str, Any] = {
+        updates: dict = {
             "soft_delete": self.slowly_changing_dimension,
             "deduplicate": self.options.deduplicate if self.options.deduplicate is not None else not_append,
             "rectify": rectify,
@@ -315,40 +310,39 @@ class Silver(BaseJob):
         }
 
         if self.mode == "memory":
-            context["mode"] = "complete"
+            updates["mode"] = "complete"
 
         if self.slowly_changing_dimension:
             if "__key" not in df.columns:
-                context["add_key"] = True
+                updates["add_key"] = True
 
         if nocdc and self.mode == "memory":
             if "__operation" not in df.columns:
-                context["add_operation"] = "upsert"
+                updates["add_operation"] = "upsert"
 
         if self.mode == "latest":
-            context["slice"] = "latest"
+            updates["slice"] = "latest"
+
         if not self.stream and self.mode == "update":
-            context["slice"] = "update"
+            updates["slice"] = "update"
 
         if self.change_data_capture == "scd2":
-            context["correct_valid_from"] = True
+            updates["correct_valid_from"] = True
 
-        if "__operation" in df.columns:
-            context["exclude"] = ["__operation"]
-        if nocdc:  # operation is passed from the bronze layer
-            context["exclude"] = ["__operation"]
+        if "__operation" in df.columns or nocdc:  # operation is passed from the bronze layer
+            updates["exclude"] = ["__operation"]
 
-        return context
+        return CdcContext(**updates)
 
     def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
         assert self.persist, f"{self.mode} not allowed"
-
         context = self.get_cdc_context(df)
-
-        # if dataframe, reference is passed (BUG)
+        # df is cached upstream in _for_each_batch, so this reference is a pinned snapshot
         name = f"{self.step}_{self.topic}_{self.item}"
+
         if batch is not None:
             name = f"{name}__{batch}"
+
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
 
@@ -357,17 +351,15 @@ class Silver(BaseJob):
 
         if self.mode == "update":
             assert not isinstance(self.cdc, NoCDC)
-            self.cdc.update(sql, **context)
-
+            self.cdc.update(sql, context)
         elif self.mode == "append":
             assert isinstance(self.cdc, NoCDC)
-            self.cdc.append(sql, **context)
-
+            self.cdc.append(sql, context)
         elif self.mode == "latest":
             assert isinstance(self.cdc, NoCDC)
             check_df = self.spark.sql(
                 f"""
-                select 
+                select
                   __operation
                 from
                   {global_temp_view}
@@ -380,8 +372,7 @@ class Silver(BaseJob):
             # Collect once to avoid double scan
             check_rows = check_df.collect()
             assert not check_rows, f"{check_rows[0][0]} not allowed"
-            self.cdc.complete(sql, **context)
-
+            self.cdc.complete(sql, context)
         else:
             raise ValueError(f"{self.mode} - not allowed")
 
@@ -402,17 +393,14 @@ class Silver(BaseJob):
         from fabricks.utils.helpers import add_hash
 
         df = self.spark.sql(f"select * from {self.qualified_name}")
-
         assert "__key" in df.columns
         DEFAULT_LOGGER.warning("rewrite __key", extra={"label": self})
-
         df = add_hash("__old_key", df, fields=old_keys)
         df = add_hash("__new_key", df, fields=new_keys)
-
         name = f"{self.step}_{self.topic}_{self.item}__rewrite__key"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
-
         extra = "-- no extra join"
+
         if "__valid_to" in df.columns:
             extra = "and t.__valid_to = s.__valid_to"
 

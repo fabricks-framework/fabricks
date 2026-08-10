@@ -1,0 +1,18 @@
+[
+  {
+    "id": 6,
+    "name": "Albert II",
+    "doubleField": 0.20220501,
+    "newField": false,
+    "__operation": "reload",
+    "__timestamp": "2022-07-01 00:01:00"
+  },
+  {
+    "id": 7,
+    "name": "Philippe",
+    "doubleField": 0.20220701,
+    "newField": false,
+    "__operation": "reload",
+    "__timestamp": "2022-07-01 00:01:00"
+  }
+]
