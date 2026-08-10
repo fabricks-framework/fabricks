@@ -58,7 +58,7 @@ landing_to_raw(iter=[1])
 # COMMAND ----------
 
 if init:
-    for d in ["expected", "input", "test"]:
+    for d in ["test", "expected", "input"]:
         db = Database(d)
         db.drop()
         db.create()

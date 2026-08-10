@@ -9,11 +9,10 @@ from logging import ERROR, INFO
 import pytest
 from databricks.sdk.runtime import dbutils
 
-from fabricks.context import IS_TESTMODE
+from fabricks.context import IS_TESTMODE, PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER, send_message_to_channel
 from fabricks.utils.helpers import run_notebook
 from fabricks.utils.pip import pip_list
-from tests.integration.helpers.const import PHASES, ROOT
 
 # COMMAND ----------
 
@@ -21,7 +20,8 @@ assert IS_TESTMODE
 
 # COMMAND ----------
 
-Phases = sorted(p.name for p in PHASES.pathlibpath.glob("[0-9]_*") if p.is_dir())
+Tests = ["job0", "job1", "job2", "job3", "job4", "job5"]
+Booleans = ["True", "False"]
 
 # COMMAND ----------
 
@@ -38,13 +38,19 @@ _ = send_message_to_channel(
 
 # COMMAND ----------
 
-dbutils.widgets.multiselect("phases", "*", ["*"] + Phases)
+dbutils.widgets.dropdown("initialize", "True", Booleans)
+dbutils.widgets.dropdown("armageddon", "True", Booleans)
+dbutils.widgets.dropdown("reset", "False", Booleans)
+dbutils.widgets.multiselect("tests", "*", ["*"] + Tests)
 
 # COMMAND ----------
 
-phases = [t for t in dbutils.widgets.get("phases").split(",")]
-if "*" in phases:
-    phases = Phases
+armageddon = dbutils.widgets.get("armageddon").lower() == "true"
+initialize = dbutils.widgets.get("initialize").lower() == "true"
+reset = dbutils.widgets.get("reset").lower() == "true"
+tests = [t for t in dbutils.widgets.get("tests").split(",")]
+if "*" in tests:
+    tests = Tests
 
 # COMMAND ----------
 
@@ -53,15 +59,24 @@ print(packages)
 
 # COMMAND ----------
 
-print(ROOT)
+root = PATH_RUNTIME.parent().parent().joinpath("integration")
+print(root)
 
 # COMMAND ----------
 
-run_notebook(
-    ROOT.joinpath("initialize"),
-    expected="True",
-    i=1,
-)
+if initialize:
+    run_notebook(
+        root.joinpath("initialize"),
+        expected="True",
+        i=1,
+    )
+
+# COMMAND ----------
+
+if armageddon:
+    run_notebook(root.joinpath("armageddon"))
+elif reset:
+    run_notebook(root.joinpath("reset"))
 
 # COMMAND ----------
 
@@ -73,13 +88,13 @@ DEFAULT_LOGGER.setLevel(ERROR)
 
 # COMMAND ----------
 
-k = " or ".join(phases)
+k = " or ".join(tests)
 
 # COMMAND ----------
 
 res = pytest.main(
     [
-        "phases",
+        "jobs",
         "-v",
         "-p",
         "no:cacheprovider",
