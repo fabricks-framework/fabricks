@@ -157,13 +157,12 @@ cython_debug/
 # Debug
 .debug
 
-# Claude
+# CodeGraph local index (per-machine, rebuilt via `codegraph init`)
+.codegraph/
+
+# Skills
 .claude/settings.local.json
 .claude/skills/*
-!.claude/skills/doc-coauthoring
-!.claude/skills/skill-creator
-!.claude/skills/fabricks
-!.claude/skills/python-performance-optimization
 
 # Reports
 .reports/

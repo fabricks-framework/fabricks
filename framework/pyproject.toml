@@ -55,10 +55,6 @@ dev = [
     "yamlfix >=1.14.0",
     "ty>=0.0.29",
 ]
-docs = [
-    "mkdocs-material>=9.6.18",
-    "mkdocs>=1.6.1",
-]
 
 [build-system]
 requires = ["hatchling"]

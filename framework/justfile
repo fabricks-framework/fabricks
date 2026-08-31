@@ -1,0 +1,17 @@
+# Run linter
+lint:
+    uv run ruff check fabricks/
+    uv run ruff check tests/
+    uv run ty check fabricks/
+    uv run ty check tests/
+
+# Format code
+format:
+    uv run ruff format fabricks/
+    uv run ruff format tests/
+    uv run sqlfmt fabricks/ tests/
+    uv run yamlfix fabricks/ tests/
+
+# Re-sync marketplace-sourced .claude/skills/ from the local plugin cache (per skills.json) -- requires the marketplace already installed locally.
+update-skills:
+    uv run python scripts/update_skills.py
