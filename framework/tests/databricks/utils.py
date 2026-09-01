@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import re
 from typing import Any, cast
@@ -5,12 +6,26 @@ from typing import Any, cast
 from databricks.sdk.runtime import dbutils, spark
 import pandas as pd
 from pyspark.sql.functions import expr
+from pyspark.sql.types import BooleanType, DoubleType, IntegerType, StringType, StructField, StructType, TimestampType
 
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.helpers import concat_dfs
 from fabricks.utils.path import FileSharePath, GitPath
 from tests.databricks._types import paths
+
+_EXPECTED_SCD2_SCHEMA = StructType(
+    [
+        StructField("__valid_from", TimestampType(), True),
+        StructField("__valid_to", TimestampType(), True),
+        StructField("id", IntegerType(), True),
+        StructField("name", StringType(), True),
+        StructField("doubleField", DoubleType(), True),
+        StructField("__is_current", BooleanType(), True),
+        StructField("__is_deleted", BooleanType(), True),
+        StructField("__source", StringType(), True),
+    ]
+)
 
 
 def create_random_tables():
@@ -102,7 +117,7 @@ def git_to_landing():
         job = f"job{i}"
         DEFAULT_LOGGER.debug(f"copy json from git to landing ({job})")
 
-        from_dir = paths.tests.joinpath("data", job)
+        from_dir = paths.tests.parent().joinpath("data", job)
         to_dir = paths.landing.joinpath(job)
 
         convert_json_to_parquet(from_dir, to_dir)
@@ -142,8 +157,28 @@ def create_expected_views():
     DEFAULT_LOGGER.info("expected - create views")
 
     def _create_views(step: str, cdc: str):
-        views = paths.tests.joinpath("expected", step, cdc)
-        for v in sorted(views.walk()):
+        views = paths.tests.parent().joinpath("expected", step, cdc)
+
+        if step == "silver" and cdc == "scd2":
+            # Only job1's file is hand-authored NDJSON data (see Task 3's
+            # Files note) — job2.sql onward are still real SQL, each unioning
+            # its OWN new VALUES rows with `select ... from
+            # expected.silver_scd2_job{N-1} where not __is_current` (verified:
+            # job3.sql references job2, job2.sql references job1 — a genuine
+            # sequential chain, not all pointing at job1). So this branch
+            # must create job1's NDJSON root *then fall through* to the SQL
+            # loop below for job2 onward, in ascending job-number order — an
+            # early `return` here would silently skip creating
+            # expected.silver_scd2_job{2..9} entirely, since nothing else in
+            # this function ever visits this directory's .sql files.
+            for v in sorted(views.walk(file_format="ndjson")):
+                DEFAULT_LOGGER.debug(f"create table {v}")
+                job_num = re.search(r"\d+", GitPath(v).get_file_name()).group()
+                rows = [json.loads(line) for line in GitPath(v).pathlibpath.read_text().splitlines()]
+                df = spark.createDataFrame(rows, schema=_EXPECTED_SCD2_SCHEMA)
+                df.write.mode("overwrite").saveAsTable(f"expected.silver_scd2_job{job_num}")
+
+        for v in sorted(views.walk(file_format="sql")):
             DEFAULT_LOGGER.debug(f"create view {v}")
             spark.sql(GitPath(v).get_sql())
 
