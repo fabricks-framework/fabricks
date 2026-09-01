@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+from typing import Any
 
 from pyspark.sql import DataFrame
 
@@ -14,27 +14,25 @@ from fabricks.utils.path import GitPath
 
 
 class Invoker(Checker):
-    def invoke(self, schedule: Optional[str] = None, **kwargs):
+    def invoke(self, schedule: str | None = None, **kwargs: Any) -> str | None:  # noqa: ANN401 - heterogeneous options bag forwarded to notebook invokers
         return self._invoke_job(
-            position="run",
-            schedule=schedule,
-            **kwargs,
+            position="run", schedule=schedule, **kwargs
         )  # kwargs and return needed for get_data in gold
 
-    def invoke_pre_run(self, schedule: Optional[str] = None):
+    def invoke_pre_run(self, schedule: str | None = None) -> None:
         self._invoke_job(position="pre_run", schedule=schedule)
         self._invoke_step(position="pre_run", schedule=schedule)
 
-    def invoke_post_run(self, schedule: Optional[str] = None):
+    def invoke_post_run(self, schedule: str | None = None) -> None:
         self._invoke_job(position="post_run", schedule=schedule)
         self._invoke_step(position="post_run", schedule=schedule)
 
     def _invoke_notebook(
         self,
         invoker: dict | BaseInvokerOptions,
-        schedule: Optional[str] = None,
-        **kwargs,
-    ):
+        schedule: str | None = None,
+        **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded to notebook invokers
+    ) -> str:
         path = kwargs.get("path")
         if path is None:
             notebook = invoker.get("notebook") if isinstance(invoker, dict) else invoker.notebook
@@ -51,14 +49,14 @@ class Invoker(Checker):
         if schema_only is not None:
             arguments["schema_only"] = schema_only
 
-        return self._run_notebook(
-            path=path,
-            arguments=arguments,
-            schedule=schedule,
-            timeout=timeout,
-        )
+        return self._run_notebook(path=path, arguments=arguments, schedule=schedule, timeout=timeout)
 
-    def _invoke_job(self, position: str, schedule: Optional[str] = None, **kwargs):
+    def _invoke_job(
+        self,
+        position: str,
+        schedule: str | None = None,
+        **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded to notebook invokers
+    ) -> str | None:
         invokers = getattr(self.invoker_options, position, None) or [] if self.invoker_options else []
         if position == "run":
             invokers = invokers if len(invokers) > 0 else [{}]  # run must work even without run invoker options
@@ -71,8 +69,7 @@ class Invoker(Checker):
                 try:
                     if len(invokers) == 1 and position == "run":
                         return self._invoke_notebook(invoker, schedule=schedule, **kwargs)
-                    else:
-                        self._invoke_notebook(invoker=invoker, schedule=schedule, **kwargs)
+                    self._invoke_notebook(invoker=invoker, schedule=schedule, **kwargs)
 
                 except Exception as e:
                     DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self})
@@ -86,8 +83,9 @@ class Invoker(Checker):
 
         if errors:
             raise Exception(errors)
+        return None
 
-    def _invoke_step(self, position: str, schedule: Optional[str] = None):
+    def _invoke_step(self, position: str, schedule: str | None = None) -> None:
         invokers = getattr(self.step_conf.invoker_options, position, []) if self.step_conf.invoker_options else []
 
         errors = []
@@ -112,18 +110,16 @@ class Invoker(Checker):
             raise Exception(errors)
 
     def _run_notebook(
-        self,
-        path: GitPath,
-        arguments: Optional[dict] = None,
-        timeout: Optional[int] = None,
-        schedule: Optional[str] = None,
-    ):
+        self, path: GitPath, arguments: dict | None = None, timeout: int | None = None, schedule: str | None = None
+    ) -> str:
         """
         Invokes a notebook job.
 
         Args:
-            path (Optional[GitPath]): The path to the notebook file. If not provided, it will be retrieved from the invoker options.
-            arguments (Optional[dict]): Additional arguments to pass to the notebook job. If not provided, it will be retrieved from the invoker options.
+            path (Optional[GitPath]): The path to the notebook file. If not provided, it will be
+                retrieved from the invoker options.
+            arguments (Optional[dict]): Additional arguments to pass to the notebook job. If not
+                provided, it will be retrieved from the invoker options.
             schedule (Optional[str]): The schedule for the job. If provided, schedule variables will be retrieved.
 
         Raises:
@@ -187,5 +183,4 @@ class Invoker(Checker):
 
     def extend(self, df: DataFrame) -> DataFrame:
         df = self.extend_job(df)
-        df = self.extend_step(df)
-        return df
+        return self.extend_step(df)

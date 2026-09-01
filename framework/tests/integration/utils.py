@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 import re
-from typing import Any, List, Union, cast
+from typing import Any, cast
 
-import pandas as pd
 from databricks.sdk.runtime import dbutils, spark
+import pandas as pd
 from pyspark.sql.functions import expr
 
 from fabricks.context import CATALOG
@@ -53,15 +53,9 @@ def convert_parquet_to_delta(topic: str, deletelog: bool = True):
         df = concat_dfs(dfs)
         assert df is not None
 
-        df = df.withColumn(
-            "__split",
-            expr("split(replace(__file_path, __file_name), '/')"),
-        )
+        df = df.withColumn("__split", expr("split(replace(__file_path, __file_name), '/')"))
         df = df.withColumn("__split_size", expr("size(__split)"))
-        df = df.withColumn(
-            "__timestamp",
-            expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"),
-        )
+        df = df.withColumn("__timestamp", expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"))
         df = df.withColumn("__timestamp", expr("to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
         df = df.drop("__split", "__split_size", "__file_path", "__file_name")
 
@@ -82,7 +76,7 @@ def convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
         p_df = pd.read_json(f, orient="records", convert_dates=cast(Any, dates))
         df = spark.createDataFrame(p_df)
 
-        folder = os.path.dirname(f)
+        folder = str(Path(f).parent)
         to_folder = folder.replace("\\", "/").replace(from_dir.string, to_dir.string)
 
         DEFAULT_LOGGER.debug(f"{folder} -> {to_folder}")
@@ -91,16 +85,15 @@ def convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
         # monarch and regent load
         # custom load for 2022/04/01/0001 as there is a reload for queen and no reload for king
         for t in ["monarch", "regent"]:
-            if "king" in to_folder or "queen" in to_folder:
-                if "2022/04/01/0001" not in str(f):
-                    to_folder_ = to_folder
-                    if "king" in to_folder:
-                        to_folder_ = to_folder_.replace("king", t)
-                    elif "queen" in to_folder:
-                        to_folder_ = to_folder_.replace("queen", t)
+            if ("king" in to_folder or "queen" in to_folder) and "2022/04/01/0001" not in str(f):
+                to_folder_ = to_folder
+                if "king" in to_folder:
+                    to_folder_ = to_folder_.replace("king", t)
+                elif "queen" in to_folder:
+                    to_folder_ = to_folder_.replace("queen", t)
 
-                    DEFAULT_LOGGER.debug(f"{folder} -> {to_folder_}")
-                    df.coalesce(1).write.format("parquet").mode("append").save(to_folder_)
+                DEFAULT_LOGGER.debug(f"{folder} -> {to_folder_}")
+                df.coalesce(1).write.format("parquet").mode("append").save(to_folder_)
 
 
 def git_to_landing():
@@ -115,7 +108,7 @@ def git_to_landing():
         convert_json_to_parquet(from_dir, to_dir)
 
 
-def landing_to_raw(iter: Union[int, List[int]]):
+def landing_to_raw(iter: int | list[int]):
     DEFAULT_LOGGER.info("landing to raw")
 
     if isinstance(iter, int):

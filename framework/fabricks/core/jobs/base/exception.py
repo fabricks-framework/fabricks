@@ -1,31 +1,31 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 from pyspark.sql import DataFrame
 
 from fabricks.metastore.table import SchemaDiff
 
 
-class CustomException(Exception):
+class CustomError(Exception):
     pass
 
 
-class CheckException(Exception):
-    def __init__(self, message: str, dataframe: DataFrame | None = None):
+class CheckError(Exception):
+    def __init__(self, message: str, dataframe: DataFrame | None = None) -> None:
         self.message = message
         self.dataframe = dataframe
 
         super().__init__(self.message)
 
 
-class CheckWarning(CheckException):
+class CheckWarning(CheckError):  # noqa: N818 - warning, not an error; kept as-is (widely used name, not part of this cleanup)
     pass
 
 
-class PreRunCheckException(CheckException):
+class PreRunCheckException(CheckError):  # noqa: N818 - widely used name across the codebase, not part of this cleanup
     pass
 
 
-class PostRunCheckException(CheckException):
+class PostRunCheckException(CheckError):  # noqa: N818 - widely used name across the codebase, not part of this cleanup
     pass
 
 
@@ -37,15 +37,15 @@ class PostRunCheckWarning(CheckWarning):
     pass
 
 
-class PreRunInvokeException(CustomException):
+class PreRunInvokeException(CustomError):  # noqa: N818 - widely used name across the codebase, not part of this cleanup
     pass
 
 
-class PostRunInvokeException(CustomException):
+class PostRunInvokeException(CustomError):  # noqa: N818 - widely used name across the codebase, not part of this cleanup
     pass
 
 
-class SkipWarning(CheckException):
+class SkipWarning(CheckError):  # noqa: N818 - warning, not an error; kept as-is (widely used name, not part of this cleanup)
     pass
 
 
@@ -57,9 +57,9 @@ class SkipRunTimeWarning(SkipWarning):
     pass
 
 
-class SchemaDriftException(Exception):
+class SchemaDriftError(Exception):
     @staticmethod
-    def from_diffs(table: str, diffs: Sequence[SchemaDiff]):
+    def from_diffs(_table: str, diffs: Sequence[SchemaDiff]) -> "SchemaDriftError":
         out = []
         type_widening_compatible = True
 
@@ -83,11 +83,10 @@ class SchemaDriftException(Exception):
         out = "\n".join(out)
 
         if type_widening_compatible:
-            return SchemaDriftException(f"type widening detected:\n {out}", diffs, type_widening_compatible)
-        else:
-            return SchemaDriftException(f"schema drift detected:\n {out}", diffs, type_widening_compatible)
+            return SchemaDriftError(f"type widening detected:\n {out}", diffs, type_widening_compatible)
+        return SchemaDriftError(f"schema drift detected:\n {out}", diffs, type_widening_compatible)
 
-    def __init__(self, message: str, diffs: Sequence[SchemaDiff], type_widening_compatible: bool = False):
+    def __init__(self, message: str, diffs: Sequence[SchemaDiff], type_widening_compatible: bool = False) -> None:
         super().__init__(message)
         self.diffs = diffs
         self.type_widening_compatible = type_widening_compatible

@@ -1,7 +1,4 @@
-from typing import Optional
-
-
-class formatter:
+class Formatter:
     END = "\33[0m"
     BOLD = "\33[1m"
     ITALIC = "\33[3m"
@@ -12,7 +9,7 @@ class formatter:
     BLINK2 = "\33[6m"
 
 
-class colors:
+class Colors:
     BLACK = "\33[30m"
     RED = "\33[31m"
     GREEN = "\33[32m"
@@ -35,7 +32,7 @@ class colors:
     RED3 = "\33[1;31m"
 
 
-def progress_bar(progress: int = 0, width: int = 40, msg: Optional[str] = None):
+def progress_bar(progress: int = 0, width: int = 40, msg: str | None = None) -> None:
     if not isinstance(progress, int):
         progress = int(progress)
 

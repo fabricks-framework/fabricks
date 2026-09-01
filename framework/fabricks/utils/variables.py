@@ -20,8 +20,8 @@ Dollar Escape ($$):
     - With $$: "Company$$G_L Entry" correctly becomes "Company$G_L Entry"
 """
 
-import re
 from functools import lru_cache
+import re
 from typing import Any
 
 _DOLLAR_VAR_PATTERN = re.compile(r"\$[A-Za-z0-9_-]+")
@@ -50,7 +50,11 @@ def build_variable_lookup(variables: dict[str, Any]) -> dict[str, Any]:
     return _build_variable_lookup_cached(items)
 
 
-def substitute_value(value: Any, lookup: dict[str, Any], strict: bool = False) -> Any:
+def substitute_value(
+    value: Any,  # noqa: ANN401 - recursive generic value substitution over arbitrary dict/list/scalar config data
+    lookup: dict[str, Any],
+    strict: bool = False,
+) -> Any:  # noqa: ANN401 - see `value` above
     """
     Recursively substitute variables in values.
 
@@ -91,7 +95,7 @@ def substitute_value(value: Any, lookup: dict[str, Any], strict: bool = False) -
     if strict:
         missing_vars = []
 
-        def _substitute(match):
+        def _substitute(match: re.Match[str]) -> str:
             var_name = match.group(0)
             if var_name not in lookup:
                 missing_vars.append(var_name)
@@ -103,10 +107,7 @@ def substitute_value(value: Any, lookup: dict[str, Any], strict: bool = False) -
         if missing_vars:
             raise ValueError(f"Variable(s) not found in lookup: {', '.join(missing_vars)}")
     else:
-        result = _DOLLAR_VAR_PATTERN.sub(
-            lambda match: str(lookup.get(match.group(0), match.group(0))),
-            working_value,
-        )
+        result = _DOLLAR_VAR_PATTERN.sub(lambda match: str(lookup.get(match.group(0), match.group(0))), working_value)
 
     # Restore escaped dollars
     return result.replace(_DOLLAR_PLACEHOLDER, "$")

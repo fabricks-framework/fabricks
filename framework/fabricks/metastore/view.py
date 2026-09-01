@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any
 from uuid import uuid4
 
 import pandas as pd
@@ -12,15 +12,12 @@ from fabricks.utils._types import DataFrameLike, SparkSessionLike
 class View(DbObject):
     @staticmethod
     def create_or_replace(
-        df: Union[DataFrameLike, pd.DataFrame],
-        *dependencies,
-        spark: Optional[SparkSessionLike] = None,
+        df: DataFrameLike | pd.DataFrame,
+        *dependencies: Any,  # noqa: ANN401 - classic/connect DataFrame union join overloads can't be typed precisely; see .limit()/.join() usage below
+        spark: SparkSessionLike | None = None,
     ) -> str:
         if spark is None:
-            if isinstance(df, DataFrameLike):
-                spark = df.sparkSession
-            else:
-                spark = SPARK
+            spark = df.sparkSession if isinstance(df, DataFrameLike) else SPARK
 
         assert spark is not None
 
@@ -37,11 +34,11 @@ class View(DbObject):
 def create_or_replace_global_temp_view(
     name: str,
     df: DataFrameLike,
-    uuid: Optional[bool] = False,
-    job: Optional[Any] = None,
+    uuid: bool | None = False,
+    job: Any | None = None,  # noqa: ANN401 - opaque logging label; callers pass unrelated job/processor classes
 ) -> str:
     if uuid:
-        name = f"{name}__{str(uuid4().hex)}"
+        name = f"{name}__{uuid4().hex!s}"
 
     if job is None:
         job = name.split("__")[0]

@@ -10,7 +10,7 @@ def identity(spark: SparkSession):
     returns bigint
     return
         cast(
-            case 
+            case
                 when bk is null then -1
                 when sk is null then -2
                 else xxhash64(sk)

@@ -1,4 +1,4 @@
-from typing import List, Optional, Union, get_args
+from typing import get_args
 
 from pyspark.sql import DataFrame
 
@@ -10,9 +10,9 @@ def write_delta(
     df: DataFrame,
     path: FileSharePath,
     mode: AllowedIOModes,
-    options: Optional[dict[str, str]] = None,
-    partition_by: Union[Optional[List[str]], str] = None,
-):
+    options: dict[str, str] | None = None,
+    partition_by: list[str] | None | str = None,
+) -> None:
     assert mode in list(get_args(AllowedIOModes))
 
     if isinstance(partition_by, str):
@@ -31,16 +31,16 @@ def write_delta(
 def append_delta(
     df: DataFrame,
     path: FileSharePath,
-    options: Optional[dict[str, str]] = None,
-    partition_by: Union[Optional[List[str]], str] = None,
-):
-    write_delta(df, path, "append", options=options)
+    options: dict[str, str] | None = None,
+    partition_by: list[str] | None | str = None,
+) -> None:
+    write_delta(df, path, "append", options=options, partition_by=partition_by)
 
 
 def overwrite_delta(
     df: DataFrame,
     path: FileSharePath,
-    options: Optional[dict[str, str]] = None,
-    partition_by: Union[Optional[List[str]], str] = None,
-):
-    write_delta(df, path, "overwrite", options=options)
+    options: dict[str, str] | None = None,
+    partition_by: list[str] | None | str = None,
+) -> None:
+    write_delta(df, path, "overwrite", options=options, partition_by=partition_by)

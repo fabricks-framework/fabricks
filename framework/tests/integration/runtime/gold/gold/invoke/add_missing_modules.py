@@ -1,7 +1,6 @@
 # Databricks notebook source
-import os
-import sys
 from pathlib import Path
+import sys
 
 # COMMAND ----------
 
@@ -9,7 +8,7 @@ from pathlib import Path
 
 # COMMAND ----------
 
-p = Path(os.getcwd())
+p = Path.cwd()
 while not (p / "pyproject.toml").exists():
     p = p.parent
 

@@ -1,5 +1,6 @@
 from abc import ABC
-from typing import Callable, Optional, final
+from collections.abc import Callable
+from typing import final
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, expr, from_json, lit
@@ -11,32 +12,20 @@ from fabricks.utils.path import FileSharePath
 from fabricks.utils.read.read import read
 
 
-class BaseParser(ABC):
-    def __init__(self, options: Optional[ParserOptions], file_format: str):
+class BaseParser(ABC):  # noqa: B024 - instantiated directly (see get_parser.py); ABC here just documents the parser extension point, not meant to force subclassing
+    def __init__(self, options: ParserOptions | None, file_format: str) -> None:
         self.options = options
         self.file_format = file_format
 
     def add_timestamp_from_file_path(self, df: DataFrame) -> DataFrame:
-        df = df.withColumn(
-            "__split",
-            expr("split(replace(__metadata.file_path, __metadata.file_name), '/')"),
-        )
+        df = df.withColumn("__split", expr("split(replace(__metadata.file_path, __metadata.file_name), '/')"))
         df = df.withColumn("__split_size", expr("size(__split)"))
-        df = df.withColumn(
-            "__timestamp",
-            expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"),
-        )
+        df = df.withColumn("__timestamp", expr("left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)"))
         df = df.withColumn("__timestamp", expr("try_to_timestamp(__timestamp, 'yyyyMMddHHmmss')"))
-        df = df.drop("__split", "__split_size")
-
-        return df
+        return df.drop("__split", "__split_size")
 
     def parse(
-        self,
-        data_path: FileSharePath,
-        schema_path: FileSharePath,
-        spark: SparkSession,
-        stream: bool,
+        self, data_path: FileSharePath, schema_path: FileSharePath, spark: SparkSession, stream: bool
     ) -> DataFrame:
         df = read(
             stream=stream,
@@ -54,11 +43,7 @@ class BaseParser(ABC):
 
     @final
     def get_data(
-        self,
-        data_path: FileSharePath,
-        schema_path: FileSharePath,
-        spark: SparkSession,
-        stream: bool,
+        self, data_path: FileSharePath, schema_path: FileSharePath, spark: SparkSession, stream: bool
     ) -> DataFrame:
         """
         Retrieves and processes data from the specified data path using the provided schema.
@@ -94,8 +79,8 @@ class BaseParser(ABC):
         assert df.select("__metadata.file_path"), "file_path mandatory in struct __metadata in dataframe"
         return df
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{type(self).__name__} ({self.file_format})"
 
 
-PARSERS: dict[str, Callable[[Optional[ParserOptions]], BaseParser]] = {}
+PARSERS: dict[str, Callable[[ParserOptions | None], BaseParser]] = {}

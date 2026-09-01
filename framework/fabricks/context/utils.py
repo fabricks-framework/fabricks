@@ -21,8 +21,10 @@ def pprint_runtime(extended: bool = True) -> None:
     print("\n⚙️ STEPS:")
 
     def _print_steps(
-        steps: dict[str, r.StepBronzeConf] | dict[str, r.StepSilverConf] | dict[str, r.StepGoldConf], layer, icon
-    ):
+        steps: dict[str, r.StepBronzeConf] | dict[str, r.StepSilverConf] | dict[str, r.StepGoldConf],
+        layer: str,
+        icon: str,
+    ) -> None:
         if steps:
             print(f"   {icon} {layer}:")
             for step in steps.values():

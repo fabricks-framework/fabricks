@@ -24,8 +24,6 @@ i = int(i)
 # COMMAND ----------
 
 bronze = [
-    # {"step": "bronze", "topic": "monarch", "item": "scd1"},
-    # {"step": "bronze", "topic": "monarch", "item": "scd2"},
     {"step": "bronze", "topic": "king", "item": "scd1"},
     {"step": "bronze", "topic": "king", "item": "scd2"},
     {"step": "bronze", "topic": "memory", "item": "scd1"},
@@ -59,11 +57,10 @@ gold = [
 # COMMAND ----------
 
 if i == 2:
-    bronze = bronze + [
-        {"step": "bronze", "topic": "princess", "item": "type_widening"},
-    ]
+    bronze = [*bronze, {"step": "bronze", "topic": "princess", "item": "type_widening"}]
 
-    silver = silver + [
+    silver = [
+        *silver,
         {"step": "silver", "topic": "prince", "item": "deletelog"},
         {"step": "silver", "topic": "princess", "item": "append"},
         {"step": "silver", "topic": "princess", "item": "latest"},
@@ -72,7 +69,8 @@ if i == 2:
         {"step": "silver", "topic": "princess", "item": "type_widening"},
     ]
 
-    gold = gold + [
+    gold = [
+        *gold,
         {"step": "gold", "topic": "type_widening", "item": "overwrite"},
         {"step": "gold", "topic": "type_widening", "item": "merge"},
         {"step": "semantic", "topic": "fact", "item": "schema_drift"},

@@ -3,11 +3,11 @@
 
 # COMMAND ----------
 
-import sys
 from logging import ERROR, INFO
+import sys
 
-import pytest
 from databricks.sdk.runtime import dbutils
+import pytest
 
 from fabricks.context import IS_TESTMODE
 from fabricks.context.log import DEFAULT_LOGGER
@@ -27,11 +27,11 @@ DEFAULT_LOGGER.setLevel(INFO)
 
 # COMMAND ----------
 
-dbutils.widgets.multiselect("tests", "*", ["*"] + Tests)
+dbutils.widgets.multiselect("tests", "*", ["*", *Tests])
 
 # COMMAND ----------
 
-tests = [t for t in dbutils.widgets.get("tests").split(",")]
+tests = list(dbutils.widgets.get("tests").split(","))
 if "*" in tests:
     tests = Tests
 
@@ -49,15 +49,7 @@ k = " or ".join(tests)
 
 # COMMAND ----------
 
-res = pytest.main(
-    [
-        ".",
-        "-v",
-        "-p",
-        "no:cacheprovider",
-        f"-k {k}",
-    ]
-)
+res = pytest.main([".", "-v", "-p", "no:cacheprovider", f"-k {k}"])
 
 # COMMAND ----------
 

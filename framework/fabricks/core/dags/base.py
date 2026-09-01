@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import Self
 
 from azure.core.exceptions import AzureError
 from pyspark.sql import DataFrame
@@ -14,7 +14,7 @@ from fabricks.utils.azure_table import AzureTable
 
 
 class BaseDags:
-    def __init__(self, schedule_id: str):
+    def __init__(self, schedule_id: str) -> None:
         self.schedule_id = schedule_id
         self._connection_info = None
         self._table = None
@@ -44,14 +44,14 @@ class BaseDags:
 
         return self._table
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *args, **kwargs):
+    def __exit__(self, *args: object, **kwargs: object) -> None:
         if self._table is not None:
             self._table.__exit__()
 
-    def get_logs(self, step: Optional[str] = None) -> DataFrame:
+    def get_logs(self, step: str | None = None) -> DataFrame:
         q = f"PartitionKey eq '{self.schedule_id}'"
         if step:
             q += f" and Step eq '{step}'"
@@ -63,7 +63,7 @@ class BaseDags:
             if column not in df.columns:
                 df = df.withColumn(column, expr("null"))
 
-        df = SPARK.sql(
+        return SPARK.sql(
             """
             select
               ScheduleId as schedule_id,
@@ -83,9 +83,7 @@ class BaseDags:
             df=df,
         )
 
-        return df
-
-    def write_logs(self, df: DataFrame):
+    def write_logs(self, df: DataFrame) -> None:
         try:
             (
                 df.write.format("delta")
@@ -104,5 +102,4 @@ class BaseDags:
             )
 
     def remove_invalid_characters(self, s: str) -> str:
-        out = re.sub("[^a-zA-Z0-9]", "", s)
-        return out
+        return re.sub("[^a-zA-Z0-9]", "", s)

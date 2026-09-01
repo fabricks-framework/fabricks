@@ -1,11 +1,12 @@
 import json
+from multiprocessing import Process
 import threading
 import time
-from multiprocessing import Process
-from typing import Any, List, Optional
+from typing import Self
 
 from azure.core.exceptions import AzureError
 from databricks.sdk.runtime import dbutils
+from pyspark.sql import DataFrame
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from fabricks.context import PATH_NOTEBOOKS
@@ -18,7 +19,7 @@ from fabricks.utils.azure_table import AzureTable
 
 
 class DagProcessor(BaseDags):
-    def __init__(self, schedule_id: str, schedule: str, step: str, notebook: bool = True):
+    def __init__(self, schedule_id: str, schedule: str, step: str, notebook: bool = True) -> None:
         self.step = get_step(step=step)
         self.schedule = schedule
         self.notebook = notebook
@@ -41,7 +42,7 @@ class DagProcessor(BaseDags):
         retry=retry_if_exception_type((Exception, AzureError)),
         reraise=True,
     )
-    def query(self, data: Any) -> List[dict]:
+    def query(self, data: str) -> list[dict]:
         with self.get_azure_table() as azure_table:
             return azure_table.query(data)
 
@@ -51,7 +52,7 @@ class DagProcessor(BaseDags):
         retry=retry_if_exception_type((Exception, AzureError)),
         reraise=True,
     )
-    def upsert(self, data: Any) -> None:
+    def upsert(self, data: list | DataFrame | dict) -> None:
         with self.get_azure_table() as azure_table:
             azure_table.upsert(data)
 
@@ -61,7 +62,7 @@ class DagProcessor(BaseDags):
         retry=retry_if_exception_type((Exception, AzureError)),
         reraise=True,
     )
-    def delete(self, data: Any) -> None:
+    def delete(self, data: list | DataFrame | dict) -> None:
         with self.get_azure_table() as azure_table:
             azure_table.delete(data)
 
@@ -75,7 +76,7 @@ class DagProcessor(BaseDags):
             "target": "table",
         }
 
-    def send(self):
+    def send(self) -> None:
         with self.get_azure_queue() as queue, self.get_azure_table() as azure_table:
             while True:
                 scheduled = self.get_scheduled(azure_table=azure_table)
@@ -86,22 +87,19 @@ class DagProcessor(BaseDags):
                     LOGGER.info("no more job to schedule", extra={"label": str(self.step)})
                     break
 
-                else:
-                    sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
-                    for s in sorted_scheduled:
-                        dependencies = azure_table.query(
-                            f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'"
-                        )
+                sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
+                for s in sorted_scheduled:
+                    dependencies = azure_table.query(f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'")
 
-                        if len(dependencies) == 0:
-                            s["Status"] = "waiting"
-                            LOGGER.debug("waiting", extra=self.extra(s))
-                            azure_table.upsert(s)
-                            queue.send(s)
+                    if len(dependencies) == 0:
+                        s["Status"] = "waiting"
+                        LOGGER.debug("waiting", extra=self.extra(s))
+                        azure_table.upsert(s)
+                        queue.send(s)
 
                 time.sleep(5)
 
-    def receive(self):
+    def receive(self) -> None:
         with self.get_azure_queue() as queue, self.get_azure_table() as azure_table:
             while True:
                 response = queue.receive()
@@ -109,7 +107,7 @@ class DagProcessor(BaseDags):
                     LOGGER.info("no more job to process", extra={"label": str(self.step)})
                     break
 
-                elif response:
+                if response:
                     j = json.loads(response)
 
                     j["Status"] = "starting"
@@ -154,7 +152,7 @@ class DagProcessor(BaseDags):
                     )
                     azure_table.delete(dependencies)
 
-    def get_scheduled(self, azure_table: Optional[AzureTable] = None) -> list[dict]:
+    def get_scheduled(self, azure_table: AzureTable | None = None) -> list[dict]:
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
         if azure_table is not None:
             return azure_table.query(query)
@@ -162,23 +160,17 @@ class DagProcessor(BaseDags):
         with self.get_azure_table() as at:
             return at.query(query)
 
-    def _process(self):
+    def _process(self) -> None:
         scheduled = self.get_scheduled()
 
         if len(scheduled) > 0:
-            sender = threading.Thread(
-                target=self.send,
-                name=f"{str(self.step).capitalize()}Sender",
-                args=(),
-            )
+            sender = threading.Thread(target=self.send, name=f"{str(self.step).capitalize()}Sender", args=())
             sender.start()
 
             receivers = []
             for i in range(self.step.workers):
                 receiver = threading.Thread(
-                    target=self.receive,
-                    name=f"{str(self.step).capitalize()}Receiver{i}",
-                    args=(),
+                    target=self.receive, name=f"{str(self.step).capitalize()}Receiver{i}", args=()
                 )
                 receiver.start()
                 receivers.append(receiver)
@@ -187,7 +179,7 @@ class DagProcessor(BaseDags):
             for receiver in receivers:
                 receiver.join()
 
-    def process(self):
+    def process(self) -> None:
         scheduled = self.get_scheduled()
 
         if len(scheduled) > 0:
@@ -209,21 +201,20 @@ class DagProcessor(BaseDags):
                 LOGGER.critical("timeout", extra={"label": str(self.step)})
                 raise ValueError(f"{self.step} timed out")
 
-            else:
-                df = self.get_logs(str(self.step))
-                self.write_logs(df)
+            df = self.get_logs(str(self.step))
+            self.write_logs(df)
 
-                LOGGER.info("end", extra={"label": str(self.step)})
+            LOGGER.info("end", extra={"label": str(self.step)})
 
         else:
             LOGGER.info("no job to schedule", extra={"label": str(self.step)})
 
     def __str__(self) -> str:
-        return f"{str(self.step)} ({self.schedule_id})"
+        return f"{self.step!s} ({self.schedule_id})"
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return super().__enter__()
 
-    def __exit__(self, *args, **kwargs):
+    def __exit__(self, *args: object, **kwargs: object) -> None:
         # Each thread manages its own queue/table lifecycle via context managers
         return super().__exit__(*args, **kwargs)

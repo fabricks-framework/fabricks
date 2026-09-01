@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pandas.testing import assert_frame_equal
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -11,7 +9,7 @@ from fabricks.core.parsers.utils import boolean_as_string, decimal_to_double, ti
 
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):
     cols = df_expected.columns
-    order_by = "id" if "id" in df.columns else "id"
+    order_by = "id"
     if "__valid_from" in df.columns:
         order_by = f"concat_ws('|', {order_by}, __valid_from, __valid_to)"
     elif "valid_from" in df.columns:
@@ -22,8 +20,7 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):
         df_ = df_.transform(decimal_to_double)
         df_ = df_.transform(timestamp_as_string)
         df_ = df_.transform(boolean_as_string)
-        df_ = df_.transform(value_to_none)
-        return df_
+        return df_.transform(value_to_none)
 
     print("<-- df -->\n")
     df = _transform(df)
@@ -39,10 +36,7 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):
 
 
 def compare_silver_to_expected(job: BaseJob, cdc: str, iter: int):
-    if job.mode == "memory":
-        df = SPARK.sql(f"select * from {job}")
-    else:
-        df = job.table.dataframe
+    df = SPARK.sql(f"select * from {job}") if job.mode == "memory" else job.table.dataframe
 
     expected_df = SPARK.read.table(f"expected.silver_{cdc}_job{iter}")
     if job.topic in ["monarch", "memory", "regent"]:
@@ -51,11 +45,8 @@ def compare_silver_to_expected(job: BaseJob, cdc: str, iter: int):
     assert_dfs_equal(df, expected_df)
 
 
-def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: Optional[str] = None):
-    if job.mode == "memory":
-        df = SPARK.sql(f"select * from {job}")
-    else:
-        df = job.table.dataframe
+def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: str | None = None):
+    df = SPARK.sql(f"select * from {job}") if job.mode == "memory" else job.table.dataframe
 
     if str(job) == "gold.scd1_memory":
         expected_df = SPARK.sql(
@@ -83,16 +74,16 @@ def get_last_error(job_id: str, status: str = "failed"):
     return (
         SPARK.sql(
             f"""
-            select 
-              l.exception.message as error, 
-              l.timestamp 
-            from 
-              fabricks.logs l 
-            where 
+            select
+              l.exception.message as error,
+              l.timestamp
+            from
+              fabricks.logs l
+            where
               true
-              and l.job_id = '{job_id}' 
-              and l.status = '{status}' 
-            order by timestamp desc 
+              and l.job_id = '{job_id}'
+              and l.status = '{status}'
+            order by timestamp desc
             limit 1
             """
         )
@@ -105,16 +96,16 @@ def get_last_status(job_id: str):
     return (
         SPARK.sql(
             f"""
-            select 
+            select
               l.status,
-              l.timestamp 
-            from 
-              fabricks.logs l 
-            where 
+              l.timestamp
+            from
+              fabricks.logs l
+            where
               true
-              and l.job_id = '{job_id}' 
+              and l.job_id = '{job_id}'
               and l.status in ('failed', 'done')
-            order by timestamp desc 
+            order by timestamp desc
             limit 1
             """
         )

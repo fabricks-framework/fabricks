@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Optional
+import json
 
 from pyspark.sql import SparkSession
 
@@ -68,19 +67,16 @@ def get_secret_from_secret_scope(secret_scope: str, name: str) -> Secret:
         assert s.get("directory_id"), f"no directory_id found in {name}"
 
         return ApplicationRegistration(
-            secret=s.get("secret"),
-            application_id=s.get("application_id"),
-            directory_id=s.get("directory_id"),
+            secret=s.get("secret"), application_id=s.get("application_id"), directory_id=s.get("directory_id")
         )
 
-    elif name.endswith("access-key"):
+    if name.endswith("access-key"):
         return AccessKey(key=secret)
 
-    else:
-        raise ValueError(f"{name} is not valid")
+    raise ValueError(f"{name} is not valid")
 
 
-def _add_secret_to_spark(key: str, value: str, spark: Optional[SparkSession] = None):
+def _add_secret_to_spark(key: str, value: str, spark: SparkSession | None = None) -> None:
     if spark is None:
         spark = _spark
 
@@ -90,7 +86,7 @@ def _add_secret_to_spark(key: str, value: str, spark: Optional[SparkSession] = N
         spark._jsc.hadoopConfiguration().set(key, value)  # type: ignore
 
 
-def add_secret_to_spark(secret: Secret, uri: str, spark: Optional[SparkSession] = None):
+def add_secret_to_spark(secret: Secret, uri: str, spark: SparkSession | None = None) -> None:
     if spark is None:
         spark = _spark
 

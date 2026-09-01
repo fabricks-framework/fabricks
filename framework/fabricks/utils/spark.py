@@ -1,5 +1,5 @@
 import os
-from typing import Final, Optional
+from typing import Final
 
 from databricks.sdk.dbutils import RemoteDbUtils
 from pyspark.sql import DataFrame, SparkSession
@@ -22,15 +22,13 @@ def get_spark() -> SparkSession:
         spark = DatabricksSession.builder.sdkConfig(c).getOrCreate()
 
     else:
-        pass
-
         spark = SparkSession.builder.getOrCreate()
 
     assert spark is not None
     return spark
 
 
-def display(df: DataFrame, limit: Optional[int] = None) -> None:
+def display(df: DataFrame, limit: int | None = None) -> None:
     """
     Display a Spark DataFrame in Databricks notebook or local environment.
     If running in local mode, it converts the DataFrame to a Pandas DataFrame for display.
@@ -52,7 +50,7 @@ def display(df: DataFrame, limit: Optional[int] = None) -> None:
         display(df)
 
 
-def get_dbutils(spark: Optional[SparkSession] = None) -> Optional[RemoteDbUtils]:
+def get_dbutils(spark: SparkSession | None = None) -> RemoteDbUtils | None:
     try:
         if DATABRICKS_LOCALMODE:
             from databricks.sdk import WorkspaceClient

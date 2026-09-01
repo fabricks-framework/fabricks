@@ -1,5 +1,5 @@
+from collections.abc import Callable
 import logging
-from typing import Callable, Optional, Union
 
 from fabricks.context import FABRICKS_STORAGE, Steps
 from fabricks.context.log import DEFAULT_LOGGER
@@ -18,39 +18,39 @@ from fabricks.metastore.database import Database
 
 class Deploy:
     @staticmethod
-    def tables(drop: bool = False, update: bool = False):
+    def tables(drop: bool = False, update: bool = False) -> None:
         deploy_tables(drop=drop, update=update)
 
     @staticmethod
-    def variables():
+    def variables() -> None:
         deploy_variables(deploy_runtime_first=True)
 
     @staticmethod
-    def runtime():
+    def runtime() -> None:
         deploy_runtime()
 
     @staticmethod
-    def views():
+    def views() -> None:
         deploy_views()
 
     @staticmethod
-    def udfs(overwrite=True):
+    def udfs(overwrite: bool = True) -> None:
         deploy_udfs(overwrite=overwrite)
 
     @staticmethod
-    def masks(overwrite=True):
+    def masks(overwrite: bool = True) -> None:
         deploy_masks(overwrite=overwrite)
 
     @staticmethod
-    def notebooks(overwrite=False):
+    def notebooks(overwrite: bool = False) -> None:
         deploy_notebooks(overwrite=overwrite)
 
     @staticmethod
-    def schedules():
+    def schedules() -> None:
         deploy_schedules()
 
     @staticmethod
-    def step(step: str):
+    def step(step: str) -> None:
         Deploy.tables()
         s = get_step(step)
         s.create()
@@ -59,20 +59,20 @@ class Deploy:
         Deploy.schedules()
 
     @staticmethod
-    def job(step: str):
+    def job(step: str) -> None:
         s = get_step(step)
         s.create()
 
     @staticmethod
-    def armageddon(steps: Optional[Union[str, list[str]]] = None, nowait: bool = False):
-        def _call(func: Callable, operation: str):
+    def armageddon(steps: str | list[str] | None = None, nowait: bool = False) -> None:
+        def _call(func: Callable, operation: str) -> None:
             try:
                 func()
             except Exception as e:
                 DEFAULT_LOGGER.exception(f"fail to deploy {operation}", extra={"label": "armageddon"})
                 errors.append({"operation": operation, "error": e})
 
-        DEFAULT_LOGGER.warning("(╯°□°）╯︵ ┻━┻", extra={"label": "armageddon"})
+        DEFAULT_LOGGER.warning("(╯°□°)╯︵ ┻━┻", extra={"label": "armageddon"})
         print_atomic_bomb(nowait=nowait)
 
         DEFAULT_LOGGER.setLevel(logging.INFO)
@@ -85,7 +85,7 @@ class Deploy:
         if isinstance(steps, str):
             steps = [steps]
         elif isinstance(steps, list):
-            steps = [s for s in steps]
+            steps = list(steps)
 
         fabricks = Database("fabricks")
         fabricks.drop()

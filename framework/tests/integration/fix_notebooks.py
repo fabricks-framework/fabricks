@@ -3,21 +3,15 @@
 
 # COMMAND ----------
 
-import os
+from pathlib import Path
 
 from fabricks.context import PATH_NOTEBOOKS
 
 # COMMAND ----------
 
-for n in [
-    "initialize",
-    "process",
-    "standalone",
-    "run",
-    "terminate",
-]:
-    path = os.path.join(str(PATH_NOTEBOOKS), f"{n}.py")
-    with open(path, "r") as f:
+for n in ["initialize", "process", "standalone", "run", "terminate"]:
+    path = Path(str(PATH_NOTEBOOKS)) / f"{n}.py"
+    with path.open() as f:
         content = f.read()
 
     if "# MAGIC %run ./add_missing_modules" not in content:
@@ -26,7 +20,7 @@ for n in [
             "# Databricks notebook source\n# MAGIC %run ./add_missing_modules\n# COMMAND ----------\n",
         )
 
-        with open(path, "w") as f:
+        with path.open("w") as f:
             f.write(content)
 
 # COMMAND ----------

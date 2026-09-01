@@ -1,10 +1,12 @@
+import contextlib
+
 from fabricks.context import PATH_VIEWS, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.path import GitPath
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-def create_or_replace_view_internal(path: GitPath):
+def create_or_replace_view_internal(path: GitPath) -> None:
     sql = path.get_sql()
     file_name = path.get_file_name().split(".")[0]
 
@@ -26,16 +28,14 @@ def create_or_replace_view_internal(path: GitPath):
         raise e
 
 
-def create_or_replace_view(name: str):
+def create_or_replace_view(name: str) -> None:
     p = PATH_VIEWS.joinpath(f"{name}.sql")
     create_or_replace_view_internal(p)
 
 
-def create_or_replace_views():
+def create_or_replace_views() -> None:
     DEFAULT_LOGGER.info("create or replace (custom) views")
 
     for p in PATH_VIEWS.walk(file_format="sql", convert=True):
-        try:
+        with contextlib.suppress(Exception):
             create_or_replace_view_internal(p)
-        except Exception:
-            pass

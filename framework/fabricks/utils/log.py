@@ -1,23 +1,23 @@
+from datetime import UTC, datetime
 import hashlib
 import json
 import logging
+from logging import LogRecord
 import sys
-from datetime import datetime
-from datetime import timezone as tz
-from typing import Tuple
+from typing import IO, ClassVar
 from zoneinfo import ZoneInfo
 
 from fabricks.utils.azure_table import AzureTable
 
 
 class LogFormatter(logging.Formatter):
-    def __init__(self, debugmode: bool | None = False, timezone: str | ZoneInfo | None = None):
+    def __init__(self, debugmode: bool | None = False, timezone: str | ZoneInfo | None = None) -> None:
         super().__init__(fmt="%(levelname)s%(prefix)s%(message)s [%(timestamp)s]%(extra)s")
 
         self.debugmode = False if debugmode is None else debugmode
-        self.timezone = ZoneInfo(timezone) if isinstance(timezone, str) else (timezone or tz.utc)
+        self.timezone = ZoneInfo(timezone) if isinstance(timezone, str) else (timezone or UTC)
 
-    COLORS = {
+    COLORS: ClassVar[dict[int, str]] = {
         logging.DEBUG: "\033[36m",
         logging.INFO: "\033[32m",
         logging.WARNING: "\033[33m",
@@ -28,7 +28,7 @@ class LogFormatter(logging.Formatter):
     RESET = "\033[0m"
     BRIGHT = "\033[1m"
 
-    PADDINGS = {
+    PADDINGS: ClassVar[dict[str, str]] = {
         "DEBUG": "   ",
         "INFO": "    ",
         "WARNING": " ",
@@ -36,12 +36,12 @@ class LogFormatter(logging.Formatter):
         "CRITICAL": "",
     }
 
-    def formatTime(self, record, datefmt: str | None = None) -> str:
-        ct = datetime.fromtimestamp(record.created, tz=tz.utc).astimezone(self.timezone)
+    def formatTime(self, record: LogRecord, datefmt: str | None = None) -> str:  # noqa: N802, ARG002 - overrides logging.Formatter.formatTime
+        ct = datetime.fromtimestamp(record.created, tz=UTC).astimezone(self.timezone)
         s = ct.strftime("%d/%m/%y %H:%M:%S")
         return f"{self.COLORS[logging.DEBUG]}{s}{self.RESET}"
 
-    def format(self, record):
+    def format(self, record: LogRecord) -> str:
         levelname = record.levelname
         padding = self.PADDINGS[levelname]
         levelname_formatted = f"{self.COLORS[record.levelno]}{levelname}:{padding}{self.RESET}"
@@ -56,9 +56,9 @@ class LogFormatter(logging.Formatter):
             prefix = f"{self.BRIGHT}{record.__dict__.get('step')}{self.RESET} - "
 
         extra = ""
-        if hasattr(record, "exc_info") and record.exc_info:
-            exc_info = record.__dict__.get("exc_info", None)
-            extra += f" [{self.COLORS[logging.ERROR]}{exc_info[0].__name__}{self.RESET}]"
+        if hasattr(record, "exc_info") and record.exc_info and record.exc_info[0] is not None:
+            exc_type = record.exc_info[0]
+            extra += f" [{self.COLORS[logging.ERROR]}{exc_type.__name__}{self.RESET}]"
 
         if hasattr(record, "json"):
             json_data = record.__dict__.get("json")
@@ -83,21 +83,22 @@ class LogFormatter(logging.Formatter):
 
 
 class AzureTableLogHandler(logging.Handler):
-    def __init__(self, table: AzureTable, debugmode: bool | None = False, timezone: str | ZoneInfo | None = None):
+    def __init__(
+        self, table: AzureTable, debugmode: bool | None = False, timezone: str | ZoneInfo | None = None
+    ) -> None:
         super().__init__()
 
         self.buffer = []
         self.table = table
 
         self.debugmode = False if debugmode is None else debugmode
-        self.timezone = ZoneInfo(timezone) if isinstance(timezone, str) else (timezone or tz.utc)
+        self.timezone = ZoneInfo(timezone) if isinstance(timezone, str) else (timezone or UTC)
 
-    def formatTime(self, record) -> str:
-        ct = datetime.fromtimestamp(record.created, tz=tz.utc).astimezone(self.timezone)
-        s = ct.strftime("%d/%m/%y %H:%M:%S")
-        return s
+    def format_time(self, record: LogRecord) -> str:
+        ct = datetime.fromtimestamp(record.created, tz=UTC).astimezone(self.timezone)
+        return ct.strftime("%d/%m/%y %H:%M:%S")
 
-    def emit(self, record):
+    def emit(self, record: LogRecord) -> None:
         if hasattr(record, "target"):
             target = record.__dict__.get("target")
 
@@ -116,7 +117,7 @@ class AzureTableLogHandler(logging.Handler):
                 level = "INFO"
 
             r = {
-                "Created": self.formatTime(record),  # timestamp not present when querying Azure Table
+                "Created": self.format_time(record),  # timestamp not present when querying Azure Table
                 "Level": level,
                 "Message": record.message,
             }
@@ -176,21 +177,21 @@ class AzureTableLogHandler(logging.Handler):
         else:
             pass
 
-    def flush(self):
+    def flush(self) -> None:
         self.table.upsert(self.buffer)
         self.buffer.clear()
 
-    def clear_buffer(self):
+    def clear_buffer(self) -> None:
         self.buffer = []
 
 
 class CustomConsoleHandler(logging.StreamHandler):
-    def __init__(self, stream=None, debugmode: bool | None = False):
+    def __init__(self, stream: IO[str] | None = None, debugmode: bool | None = False) -> None:
         super().__init__(stream or sys.stderr)
 
         self.debugmode = False if debugmode is None else debugmode
 
-    def emit(self, record):
+    def emit(self, record: LogRecord) -> None:
         if hasattr(record, "sql"):
             if self.debugmode:
                 super().emit(record)
@@ -204,7 +205,7 @@ def get_logger(
     table: AzureTable | None = None,
     debugmode: bool | None = False,
     timezone: str | ZoneInfo | None = None,
-) -> Tuple[logging.Logger, AzureTableLogHandler | None]:
+) -> tuple[logging.Logger, AzureTableLogHandler | None]:
     logger = logging.getLogger(name)
     if logger.hasHandlers():
         logger.handlers.clear()

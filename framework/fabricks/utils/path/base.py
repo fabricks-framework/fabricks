@@ -1,13 +1,15 @@
+from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from pathlib import Path as PathlibPath
 import posixpath
 import re
-from abc import ABC, abstractmethod
-from pathlib import Path as PathlibPath
+from typing import Self
 
 
 class BasePath(ABC):
     """Abstract base class for all path types."""
 
-    def __init__(self, path: str | PathlibPath):
+    def __init__(self, path: str | PathlibPath) -> None:
         """Initialize the path."""
         if isinstance(path, PathlibPath):
             path = path.as_posix()
@@ -18,16 +20,12 @@ class BasePath(ABC):
 
         self.path: str = new_path
 
-    def __json__(self):
+    def __json__(self) -> str:
         """Return the JSON representation of the path."""
         return self.string
 
     @classmethod
-    def from_uri(
-        cls,
-        uri: str,
-        regex: dict[str, str] | None = None,
-    ):
+    def from_uri(cls, uri: str, regex: dict[str, str] | None = None) -> Self:
         """Create a path from a URI with optional regex substitution."""
         uri = uri.strip()
         if regex:
@@ -56,16 +54,13 @@ class BasePath(ABC):
         if not p.endswith(".sql"):
             p += ".sql"
 
-        with open(p, "r") as f:
-            sql = f.read()
-
-        return sql
+        return PathlibPath(p).read_text()
 
     def is_sql(self) -> bool:
         """Check if the path points to a SQL file."""
         return self.string.endswith(".sql")
 
-    def joinpath(self, *other):
+    def joinpath(self, *other: str) -> Self:
         """Join this path with other path segments."""
         parts = [str(o) for o in other]
         base = self.string
@@ -75,12 +70,12 @@ class BasePath(ABC):
 
         return self.__class__(path=new)
 
-    def append(self, other: str):
+    def append(self, other: str) -> Self:
         """Append a string to the path."""
         new_path = self.string + other
         return self.__class__(path=new_path)
 
-    def parent(self):
+    def parent(self) -> Self:
         """Get the parent directory of the path."""
         new_path = self.pathlibpath.parent
         return self.__class__(path=new_path)
@@ -90,16 +85,11 @@ class BasePath(ABC):
         """Check if the path exists."""
 
     @abstractmethod
-    def walk(
-        self,
-        depth: int | None = None,
-        convert: bool | None = False,
-        file_format: str | None = None,
-    ) -> list:
+    def walk(self, depth: int | None = None, convert: bool | None = False, file_format: str | None = None) -> list:
         """Walk the path and return all files."""
 
     @abstractmethod
-    def _yield(self, path: str | PathlibPath):
+    def _yield(self, path: str | PathlibPath) -> Iterator[str]:
         """Recursively yield all file paths under the given path."""
 
     def __str__(self) -> str:

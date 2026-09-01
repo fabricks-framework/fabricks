@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Any
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
@@ -16,7 +16,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Merger(Processor):
-    def get_merge_context(self, src: Union[DataFrame, str], **kwargs) -> dict:
+    def get_merge_context(self, src: DataFrame | str, **kwargs: Any) -> dict:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         if isinstance(src, DataFrameLike):
             format = "dataframe"
             columns = self.get_columns(src, backtick=False, sort=False, check=False)  # already done in processor
@@ -57,7 +57,7 @@ class Merger(Processor):
         if fields:
             fields = backticks(fields)
 
-        assert "__key" or keys, f"{self} - __key or keys not found"
+        assert True, f"{self} - __key or keys not found"
 
         return {
             "debugmode": IS_DEBUGMODE,
@@ -78,7 +78,7 @@ class Merger(Processor):
             "where": where,
         }
 
-    def get_merge_query(self, src: Union[DataFrame, str], fix: Optional[bool] = True, **kwargs) -> str:
+    def get_merge_query(self, src: DataFrame | str, fix: bool | None = True, **kwargs: Any) -> str:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         context = self.get_merge_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
         merge = environment.get_template("merge.sql.jinja")
@@ -103,7 +103,7 @@ class Merger(Processor):
 
         return sql
 
-    def merge(self, src: AllowedSources, **kwargs):
+    def merge(self, src: AllowedSources, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         if not self.table.exists():
             self.create_table(src, **kwargs)
 

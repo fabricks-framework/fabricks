@@ -3,11 +3,11 @@
 
 # COMMAND ----------
 
-import sys
 from logging import ERROR, INFO
+import sys
 
-import pytest
 from databricks.sdk.runtime import dbutils
+import pytest
 
 from fabricks.context import IS_TESTMODE, PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER, send_message_to_channel
@@ -30,10 +30,7 @@ DEFAULT_LOGGER.setLevel(INFO)
 # COMMAND ----------
 
 _ = send_message_to_channel(
-    channel="IT DWH Notifications",
-    title="Test started",
-    message="Test started",
-    loglevel="DEBUG",
+    channel="IT DWH Notifications", title="Test started", message="Test started", loglevel="DEBUG"
 )
 
 # COMMAND ----------
@@ -42,7 +39,7 @@ dbutils.widgets.dropdown("initialize", "True", Booleans)
 dbutils.widgets.dropdown("armageddon", "True", Booleans)
 dbutils.widgets.dropdown("reset", "False", Booleans)
 dbutils.widgets.dropdown("fix_notebooks", "True", Booleans)
-dbutils.widgets.multiselect("tests", "*", ["*"] + Tests)
+dbutils.widgets.multiselect("tests", "*", ["*", *Tests])
 
 # COMMAND ----------
 
@@ -50,7 +47,7 @@ armageddon = dbutils.widgets.get("armageddon").lower() == "true"
 initialize = dbutils.widgets.get("initialize").lower() == "true"
 reset = dbutils.widgets.get("reset").lower() == "true"
 fix_notebooks = dbutils.widgets.get("fix_notebooks").lower() == "true"
-tests = [t for t in dbutils.widgets.get("tests").split(",")]
+tests = list(dbutils.widgets.get("tests").split(","))
 if "*" in tests:
     tests = Tests
 
@@ -62,11 +59,7 @@ print(packages)
 # COMMAND ----------
 
 if initialize:
-    run_notebook(
-        PATH_RUNTIME.parent().joinpath("initialize"),
-        expected="True",
-        i=1,
-    )
+    run_notebook(PATH_RUNTIME.parent().joinpath("initialize"), expected="True", i=1)
 
 # COMMAND ----------
 
@@ -94,15 +87,7 @@ k = " or ".join(tests)
 
 # COMMAND ----------
 
-res = pytest.main(
-    [
-        "jobs",
-        "-v",
-        "-p",
-        "no:cacheprovider",
-        f"-k {k}",
-    ]
-)
+res = pytest.main(["jobs", "-v", "-p", "no:cacheprovider", f"-k {k}"])
 
 # COMMAND ----------
 

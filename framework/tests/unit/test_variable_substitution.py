@@ -1,5 +1,5 @@
-import re
 from pathlib import Path
+import re
 
 import pytest
 import yaml
@@ -17,7 +17,7 @@ def test_variable_substitution_substitutes_all_fields(fixtures_dir: Path) -> Non
     """Test inline variables substitution."""
     conf_file = fixtures_dir / "inline_variables.yml"
 
-    with open(conf_file, encoding="utf-8") as f:
+    with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
     runtime = RuntimeConf.model_validate(conf_data)
@@ -37,7 +37,7 @@ def test_variable_substitution_loads_from_path_options_variables(fixtures_dir: P
     framework_dir = Path(__file__).parent.parent.parent
     monkeypatch.setattr("fabricks.models.runtime.models.config.path_to_config", str(framework_dir / "pyproject.toml"))
 
-    with open(conf_file, encoding="utf-8") as f:
+    with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
     runtime = RuntimeConf.model_validate(conf_data)
@@ -52,7 +52,7 @@ def test_variable_substitution_path_options_takes_precedence_over_inline(fixture
     conf_file = fixtures_dir / "inline_variables.yml"
     prd_variables_file = fixtures_dir / "variables.prd.yml"
 
-    with open(conf_file, encoding="utf-8") as f:
+    with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
     # Add path_options.variables pointing to prd file (absolute path)
@@ -68,7 +68,7 @@ def test_variable_substitution_raises_for_missing_variables_file(fixtures_dir: P
     """Test that missing variables file raises FileNotFoundError."""
     conf_file = fixtures_dir / "path_variables.yml"
 
-    with open(conf_file, encoding="utf-8") as f:
+    with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
     # Point to non-existent file
@@ -82,7 +82,7 @@ def test_variable_substitution_without_context_skips_substitution(fixtures_dir: 
     """Test that config without variables loads correctly."""
     conf_file = fixtures_dir / "no_variables.yml"
 
-    with open(conf_file, encoding="utf-8") as f:
+    with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
     runtime = RuntimeConf.model_validate(conf_data)
@@ -101,7 +101,7 @@ def test_variable_substitution_fabricks_variable_env_overrides_path_options(fixt
     # Mock config.variable to simulate FABRICKS_VARIABLE env var pointing to prd
     monkeypatch.setattr("fabricks.models.runtime.models.config.variable", str(prd_variables_file))
 
-    with open(conf_file, encoding="utf-8") as f:
+    with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
     runtime = RuntimeConf.model_validate(conf_data)
@@ -118,7 +118,7 @@ def test_variable_substitution_fabricks_variable_env_overrides_inline(fixtures_d
     # Mock config.variable to simulate FABRICKS_VARIABLE env var
     monkeypatch.setattr("fabricks.models.runtime.models.config.variable", str(prd_variables_file))
 
-    with open(conf_file, encoding="utf-8") as f:
+    with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
     runtime = RuntimeConf.model_validate(conf_data)
@@ -130,7 +130,7 @@ def test_variable_substitution_with_dollar_escape(fixtures_dir: Path) -> None:
     """Test that $$ escape prevents variable substitution in paths."""
     conf_file = fixtures_dir / "escape_variables.yml"
 
-    with open(conf_file, encoding="utf-8") as f:
+    with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
 
     runtime = RuntimeConf.model_validate(conf_data)

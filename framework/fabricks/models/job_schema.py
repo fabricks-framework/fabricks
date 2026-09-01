@@ -1,5 +1,4 @@
 import json
-from typing import List
 
 from pydantic import BaseModel, TypeAdapter
 
@@ -35,7 +34,7 @@ def get_job_schema(step: str | None = None) -> str:
         wrapper = JobWrapper
 
     # Use List[JobWrapper] to create the array schema
-    adapter = TypeAdapter(List[wrapper])
+    adapter = TypeAdapter(list[wrapper])
     sc = adapter.json_schema()
 
     # Remove properties that are not defined in YAML
@@ -45,7 +44,7 @@ def get_job_schema(step: str | None = None) -> str:
     for key, defi in defs.items():
         for ent, prop in removals:
             if key.startswith(ent) and prop in defi.get("properties", {}):
-                req: List[str] = defi.get("required", [])
+                req: list[str] = defi.get("required", [])
                 if prop in req:
                     req.remove(prop)  # not defined in yaml
 

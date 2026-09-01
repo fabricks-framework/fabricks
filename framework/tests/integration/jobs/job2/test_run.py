@@ -13,6 +13,6 @@ DEFAULT_LOGGER.setLevel(ERROR)
 def test_run():
     try:
         run_notebook(PATH_RUNTIME.parent().joinpath("run"), i=2)
-        assert False
+        raise AssertionError
     except Exception:
         assert True  # notebook should fail

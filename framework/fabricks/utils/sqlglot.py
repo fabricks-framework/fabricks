@@ -1,16 +1,15 @@
+from typing import ClassVar
+
 from sqlglot import exp, parse, parse_one, transpile
 from sqlglot.dialects.databricks import Databricks
 
 
 class Fabricks(Databricks):
     class Generator(Databricks.Generator):
-        EXPRESSIONS_WITHOUT_NESTED_CTES = {
-            exp.Insert,
-            exp.Union,
-        }
+        EXPRESSIONS_WITHOUT_NESTED_CTES: ClassVar = {exp.Insert, exp.Union}
 
 
-def fix(sql: str, keep_comments: bool = True):
+def fix(sql: str, keep_comments: bool = True) -> str:
     parts = transpile(
         sql,
         "fabricks",
@@ -22,8 +21,7 @@ def fix(sql: str, keep_comments: bool = True):
         max_text_width=119,
         comments=keep_comments,
     )
-    sql = ";\n".join(parts)
-    return sql
+    return ";\n".join(parts)
 
 
 def parse_one_fabricks(sql: str) -> exp.Expr:
@@ -41,9 +39,8 @@ def get_tables(sql: str, allowed_databases: list[str] | None = None) -> list[str
     for part in parts:
         for table in part.find_all(exp.Table):
             if len(table.db) > 0:  # exclude CTEs
-                if allowed_databases:
-                    if table.db not in allowed_databases:
-                        continue
+                if allowed_databases and table.db not in allowed_databases:
+                    continue
 
                 tables.append(f"{table.db}.{table.name}")
 
@@ -57,5 +54,4 @@ def parse_script(sql: str) -> list[str]:
 
 
 def parse_script_expressions(sql: str) -> list[exp.Expr]:
-    parts = [p for p in parse_fabricks(sql) if p is not None]
-    return parts
+    return [p for p in parse_fabricks(sql) if p is not None]

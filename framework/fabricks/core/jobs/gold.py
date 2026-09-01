@@ -1,8 +1,8 @@
-import re
-import sys
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Any, List, Literal, Optional, Union
+import re
+import sys
+from typing import Any, Literal, Self
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -22,26 +22,19 @@ class Gold(BaseJob):
     def __init__(
         self,
         step: str,
-        topic: Optional[str] = None,
-        item: Optional[str] = None,
-        job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
-    ):
-        super().__init__(
-            "gold",
-            step=step,
-            topic=topic,
-            item=item,
-            job_id=job_id,
-            conf=conf,
-        )
+        topic: str | None = None,
+        item: str | None = None,
+        job_id: str | None = None,
+        conf: dict | Row | None = None,
+    ) -> None:
+        super().__init__("gold", step=step, topic=topic, item=item, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_job_id(cls, step: str, job_id: str, *, conf: dict | Row | None = None) -> Self:  # noqa: ARG003 - `conf` kept to match Configurator.from_job_id, called with conf= by get_job.py
         return cls(step=step, job_id=job_id)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: dict | Row | None = None) -> Self:  # noqa: ARG003 - `conf` kept to match Configurator.from_step_topic_item, called with conf= by get_job.py
         return cls(step=step, topic=topic, item=item)
 
     @property
@@ -60,7 +53,7 @@ class Gold(BaseJob):
         return self.base_step_conf.options  # type: ignore
 
     @property
-    def register_options(self) -> Optional[RegisterOptions]:
+    def register_options(self) -> RegisterOptions | None:
         """Direct access to typed register options."""
         return self.conf.register_options  # type: ignore
 
@@ -102,39 +95,30 @@ class Gold(BaseJob):
     def get_sql(self) -> str:
         return self.sql
 
-    def get_udfs(self) -> Optional[list[str]]:
+    def get_udfs(self) -> list[str] | None:
         udfs = super().get_udfs()
 
         # udf not allowed in invoke or register
-        if self.mode in ["invoke", "register"]:
+        if self.mode in ["invoke", "register"] or self.options.notebook or self.options.table:
             return udfs
 
-        # udf not allowed in notebook
-        elif self.options.notebook:
-            return udfs
+        matches = self._match_udfs(self.sql) or []
+        if udfs:
+            matches += udfs
 
-        # udf not allowed in table
-        elif self.options.table:
-            return udfs
-
-        else:
-            matches = self._match_udfs(self.sql) or []
-            if udfs:
-                matches += udfs
-
-            if len(matches) > 0:
-                return list(set(matches))
+        if len(matches) > 0:
+            return list(set(matches))
+        return None
 
     def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extend)
-        return df
+        return df.transform(self.extend)
 
     def get_data(
         self,
-        stream: bool = False,
-        transform: Optional[bool] = False,
-        schema_only: Optional[bool] = False,
-        **kwargs,
+        stream: bool = False,  # noqa: ARG002 - kept to match Configurator.get_data, called with stream= by the base class
+        transform: bool | None = False,
+        schema_only: bool | None = False,
+        **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
     ) -> DataFrame:
         if self.options.requirements:
             sys.path.append("/dbfs/mnt/fabricks/site-packages")
@@ -189,7 +173,7 @@ class Gold(BaseJob):
 
         return df
 
-    def create_or_replace_view(self):
+    def create_or_replace_view(self) -> None:
         assert self.mode == "memory", f"{self.mode} not allowed"
 
         df = self.spark.sql(self.sql)
@@ -231,13 +215,13 @@ class Gold(BaseJob):
 
         return dependencies
 
-    def _get_sql_dependencies(self) -> List[str]:
+    def _get_sql_dependencies(self) -> list[str]:
         from fabricks.context import Steps
 
         steps = [str(s) for s in Steps]
         return get_tables(self.sql, allowed_databases=steps)
 
-    def _get_notebook_dependencies(self) -> List[str]:
+    def _get_notebook_dependencies(self) -> list[str]:
         from fabricks.context import CATALOG
 
         dependencies = []
@@ -256,7 +240,7 @@ class Gold(BaseJob):
 
         return dependencies
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:
         # assume no duplicate in gold (to improve performance)
         deduplicate = self.options.deduplicate
         # assume no reload in gold (to improve performance)
@@ -304,19 +288,18 @@ class Gold(BaseJob):
             if "__hash" not in df.columns:
                 context["add_hash"] = True
 
-        if self.slowly_changing_dimension:
-            if "__operation" not in df.columns:
-                # assume no duplicate hash
-                if deduplicate is None:
-                    context["deduplicate_hash"] = None
+        if self.slowly_changing_dimension and "__operation" not in df.columns:
+            # assume no duplicate hash
+            if deduplicate is None:
+                context["deduplicate_hash"] = None
 
-                if self.mode == "update":
-                    context["add_operation"] = "reload"
-                    if rectify is None:
-                        context["rectify"] = True
+            if self.mode == "update":
+                context["add_operation"] = "reload"
+                if rectify is None:
+                    context["rectify"] = True
 
-                else:
-                    context["add_operation"] = "upsert"
+            else:
+                context["add_operation"] = "upsert"
 
         # filter to get latest data
         if not reload:
@@ -340,20 +323,16 @@ class Gold(BaseJob):
 
         # add __timestamp
         if self.options.persist_last_timestamp:
-            if self.change_data_capture == "scd1":
-                if "__timestamp" not in df.columns:
-                    context["add_timestamp"] = True
-            if self.change_data_capture == "scd2":
-                if "__valid_from" not in df.columns:
-                    context["add_timestamp"] = True
+            if self.change_data_capture == "scd1" and "__timestamp" not in df.columns:
+                context["add_timestamp"] = True
+            if self.change_data_capture == "scd2" and "__valid_from" not in df.columns:
+                context["add_timestamp"] = True
 
         # add __updated
-        if self.options.persist_last_updated_timestamp:
-            if "__last_updated" not in df.columns:
-                context["add_last_updated"] = True
-        if self.options.last_updated:
-            if "__last_updated" not in df.columns:
-                context["add_last_updated"] = True
+        if self.options.persist_last_updated_timestamp and "__last_updated" not in df.columns:
+            context["add_last_updated"] = True
+        if self.options.last_updated and "__last_updated" not in df.columns:
+            context["add_last_updated"] = True
 
         if "__order_duplicate_by_asc" in df.columns:
             context["order_duplicate_by"] = {"__order_duplicate_by_asc": "asc"}
@@ -362,7 +341,7 @@ class Gold(BaseJob):
 
         return context
 
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
+    def for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs: Any) -> None:  # noqa: ARG002, ANN401 - `batch` kept to match Configurator.for_each_batch; heterogeneous options bag
         assert self.persist, f"{self.mode} not allowed"
 
         reload = kwargs.get("reload")
@@ -398,9 +377,9 @@ class Gold(BaseJob):
         self.check_duplicate_hash()
         self.check_duplicate_identity()
 
-    def for_each_run(self, **kwargs):
+    def for_each_run(self, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
         if self.mode == "invoke":
-            schedule = kwargs.get("schedule", None)
+            schedule = kwargs.get("schedule")
             self.invoke(schedule=schedule)
 
         elif self.mode == "register":
@@ -427,7 +406,7 @@ class Gold(BaseJob):
             if self.updater_options and self.updater_options.columns:
                 self._update_post_run(last_version=last_version)
 
-    def create(self):
+    def create(self) -> None:
         if self.mode == "invoke":
             DEFAULT_LOGGER.info("invoke (no table nor view)", extra={"label": self})
 
@@ -444,7 +423,7 @@ class Gold(BaseJob):
             if self.updater_options and self.updater_options.columns:
                 self._update__columns(drop=False)
 
-    def register_external_table(self):
+    def register_external_table(self) -> None:
         DEFAULT_LOGGER.info("register", extra={"label": self})
 
         assert self.register_options is not None, "register_options required for register mode"
@@ -455,7 +434,7 @@ class Gold(BaseJob):
 
         self._register_external_table(file_format=file_format, uri=uri)
 
-    def register(self):
+    def register(self) -> None:
         if self.options.persist_last_timestamp:
             self.cdc_last_timestamp.table.register()
 
@@ -468,7 +447,7 @@ class Gold(BaseJob):
         else:
             super().register()
 
-    def drop(self):
+    def drop(self) -> None:
         if self.options.persist_last_timestamp:
             self.cdc_last_timestamp.drop()
 
@@ -482,15 +461,14 @@ class Gold(BaseJob):
         assert self.mode == "update", "persist_last_timestamp only allowed in update"
         assert self.change_data_capture in ["scd1", "scd2"], "persist_last_timestamp only allowed in scd1 or scd2"
 
-        cdc = NoCDC(self.step, self.topic, f"{self.item}__last_timestamp")
-        return cdc
+        return NoCDC(self.step, self.topic, f"{self.item}__last_timestamp")
 
     def _persist_timestamp(
         self,
         field: Literal["__timestamp", "__last_updated"] = "__timestamp",
-        last_version: Optional[int] = None,
+        last_version: int | None = None,
         create: bool = False,
-    ):
+    ) -> None:
         df = self.spark.sql(f"select * from {self} limit 1")
 
         fields = []
@@ -519,12 +497,12 @@ class Gold(BaseJob):
         else:
             self.cdc_last_timestamp.overwrite(df)
 
-    def overwrite(self, schedule: Optional[str] = None, invoke: Optional[bool] = False):
+    def overwrite(self, schedule: str | None = None, invoke: bool | None = False) -> None:
         if self.mode == "invoke":
             DEFAULT_LOGGER.debug("invoke (no overwrite)", extra={"label": self})
             return
 
-        elif self.mode == "memory":
+        if self.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no overwrite)", extra={"label": self})
             self.create_or_replace_view()
             return
@@ -532,7 +510,7 @@ class Gold(BaseJob):
         self.overwrite_schema()
         self.run(reload=True, schedule=schedule, invoke=invoke)
 
-    def _update_post_run(self, last_version: Optional[int] = None):
+    def _update_post_run(self, last_version: int | None = None) -> None:
         if self.updater_options and self.updater_options.columns:
             DEFAULT_LOGGER.info("update post run", extra={"label": self})
 
@@ -576,18 +554,18 @@ class Gold(BaseJob):
 
             merge = f"""
             merge into {self} t using {global_temp_view} s
-              on t.__key = s.__key 
+              on t.__key = s.__key
               when
-                matched then update set {", ".join([f"t.{c} = s.{c}" for c in columns.keys()])}
+                matched then update set {", ".join([f"t.{c} = s.{c}" for c in columns])}
             """
             merge = fix(merge)
 
             DEFAULT_LOGGER.debug("exec merge", extra={"label": self, "sql": merge})
             self.spark.sql(merge)
 
-    def _update__columns(self, drop: bool = False):
+    def _update__columns(self, drop: bool = False) -> None:
         if self.updater_options and self.updater_options.columns:
-            columns = [c for c in self.updater_options.columns.keys() if c.startswith("__updated_")]
+            columns = [c for c in self.updater_options.columns if c.startswith("__updated_")]
 
             if drop:
                 # drop __columns (from the updater options) that are not in the table anymore
@@ -600,12 +578,12 @@ class Gold(BaseJob):
                 if c not in self.table.columns:
                     self.table.add_column(c, type="variant")
 
-    def overwrite_schema(self, df=None):
-        if not self.mode == "invoke":
+    def overwrite_schema(self, df: DataFrame | None = None) -> None:
+        if self.mode != "invoke":
             super().overwrite_schema(df)
             self._update__columns(drop=True)
 
-    def update_schema(self, df=None, widen_types=False):
-        if not self.mode == "invoke":
+    def update_schema(self, df: DataFrame | None = None, widen_types: bool | None = False) -> None:
+        if self.mode != "invoke":
             super().update_schema(df, widen_types)
             self._update__columns(drop=False)

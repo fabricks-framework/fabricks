@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from fabricks.context import PATH_PARSERS
 from fabricks.core.parsers.base import PARSERS, BaseParser
@@ -6,7 +6,7 @@ from fabricks.models import ParserOptions
 from fabricks.utils.helpers import load_module_from_path
 
 
-def get_parser(name: str, parser_options: Optional[ParserOptions] = None) -> Callable:
+def get_parser(name: str, parser_options: ParserOptions | None = None) -> Callable:
     if name not in ["json", "parquet", "avro", "csv", "tsv", "delta", "table"]:
         path = PATH_PARSERS.joinpath(name).append(".py")
         assert path.exists(), f"parser not found ({path})"

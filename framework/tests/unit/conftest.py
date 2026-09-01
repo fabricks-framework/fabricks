@@ -1,7 +1,7 @@
 """Conftest for unit tests - automatically applies unit marker."""
 
-import sys
 from pathlib import Path
+import sys
 from typing import Any
 from unittest.mock import MagicMock
 

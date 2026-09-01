@@ -30,16 +30,8 @@ def test_gold_fact_dependency_sql():
         )
         assert dep_df.count() == 3, f"dependency {dep_df.count()} <> 3"
 
-        expected_parents = set(
-            sorted(
-                [
-                    "gold.dim_time",
-                    "transf.fact_memory",
-                    "silver.king_and_queen_scd1",
-                ]
-            )
-        )
-        parents = set(sorted([row.parent for row in dep_df.select("parent").collect()]))
+        expected_parents = {"gold.dim_time", "transf.fact_memory", "silver.king_and_queen_scd1"}
+        parents = {row.parent for row in dep_df.select("parent").collect()}
         assert parents == expected_parents, f"{', '.join(parents)} <> {', '.join(expected_parents)}"
 
     check()
@@ -75,17 +67,8 @@ def test_gold_fact_dependency_notebook():
         )
         assert dep_df.count() == 4, f"dependency {dep_df.count()} <> 4"
 
-        expected_parents = set(
-            sorted(
-                [
-                    "gold.dim_time",
-                    "transf.fact_memory",
-                    "silver.king_and_queen_scd1",
-                    "silver.monarch_scd1",
-                ]
-            )
-        )
-        parents = set(sorted([row.parent for row in dep_df.select("parent").collect()]))
+        expected_parents = {"gold.dim_time", "transf.fact_memory", "silver.king_and_queen_scd1", "silver.monarch_scd1"}
+        parents = {row.parent for row in dep_df.select("parent").collect()}
         assert parents == expected_parents, f"{', '.join(parents)} <> {', '.join(expected_parents)}"
 
         # check specific ids to ensure hashing is correct

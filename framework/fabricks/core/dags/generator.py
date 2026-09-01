@@ -1,5 +1,4 @@
 import time
-from typing import Optional, Tuple
 from uuid import uuid4
 
 from pyspark.sql import DataFrame
@@ -12,7 +11,7 @@ from fabricks.utils.azure_queue import AzureQueue
 
 
 class DagGenerator(BaseDags):
-    def __init__(self, schedule: str):
+    def __init__(self, schedule: str) -> None:
         self.schedule = schedule
         schedule_id = str(uuid4().hex)
         super().__init__(schedule_id=schedule_id)
@@ -21,7 +20,7 @@ class DagGenerator(BaseDags):
         return SPARK.sql(
             f"""
             with logs as (
-              select 
+              select
                 l.job_id,
                 median(l.duration) as median_duration
               from
@@ -42,7 +41,7 @@ class DagGenerator(BaseDags):
               j.job_id as JobId,
               j.job as Job,
               'scheduled' as `Status`,
-              max(median_duration) as `MedianDuration`, 
+              max(median_duration) as `MedianDuration`,
               dense_rank() over (order by max(median_duration) desc) as Rank
             from
               fabricks.jobs j
@@ -52,14 +51,14 @@ class DagGenerator(BaseDags):
             """
         )
 
-    def get_dependencies(self, job_df: Optional[DataFrame] = None) -> DataFrame:
+    def get_dependencies(self, job_df: DataFrame | None = None) -> DataFrame:
         if job_df is None:
             job_df = self.get_jobs()
 
         df = SPARK.sql(
             """
             select
-              'dependencies' as PartitionKey, 
+              'dependencies' as PartitionKey,
               d.dependency_id :: string as RowKey,
               d.dependency_id as DependencyId,
               j.Step as Step,
@@ -78,11 +77,11 @@ class DagGenerator(BaseDags):
               and not d.job_id = d.parent_id
               and not exists (
                 select 1
-                from 
+                from
                   fabricks.dependencies_circular dc
                 where
-                  true 
-                  and d.job_id = dc.job_id 
+                  true
+                  and d.job_id = dc.job_id
                   and d.parent_id = dc.parent_id
 
               )
@@ -93,7 +92,7 @@ class DagGenerator(BaseDags):
         df = df.withColumn("ScheduleId", lit(self.schedule_id))
         return df.withColumn("Schedule", lit(self.schedule))
 
-    def get_steps(self, job_df: Optional[DataFrame] = None) -> DataFrame:
+    def get_steps(self, job_df: DataFrame | None = None) -> DataFrame:
         if job_df is None:
             job_df = self.get_jobs()
 
@@ -109,7 +108,7 @@ class DagGenerator(BaseDags):
             job=job_df,
         )
 
-    def generate(self) -> Tuple[str, DataFrame, DataFrame]:
+    def generate(self) -> tuple[str, DataFrame, DataFrame]:
         job_df = self.get_jobs()
         deps_df = self.get_dependencies(job_df)
         step_df = self.get_steps(job_df)
@@ -135,9 +134,11 @@ class DagGenerator(BaseDags):
               'INFO' as `Level`,
               `Status` as `Message`,
               from_json(null, 'type STRING, message STRING, traceback STRING') as Exception,
-              md5(array_join(array(ScheduleId, `Schedule`, Step, Job, JobId, Created,  `Level`, `Message`, '-1'), "*")) as RowKey
+              md5(
+                array_join(array(ScheduleId, `Schedule`, Step, Job, JobId, Created,  `Level`, `Message`, '-1'), "*")
+              ) as RowKey
             from
-              {df}        
+              {df}
             """,
             df=job_df,
         )

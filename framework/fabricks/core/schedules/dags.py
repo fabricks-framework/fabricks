@@ -1,5 +1,3 @@
-from typing import Any, Tuple
-
 from databricks.sdk.runtime import dbutils, spark
 from pyspark.errors.exceptions.base import IllegalArgumentException
 from pyspark.sql import DataFrame
@@ -11,7 +9,7 @@ from fabricks.core.dags import DagGenerator, DagProcessor, DagTerminator, run
 from fabricks.utils.helpers import run_in_parallel, run_notebook
 
 
-def standalone(schedule: str | None = None):
+def standalone(schedule: str | None = None) -> None:
     """
     Run a schedule in standalone mode based on the given schedule.
 
@@ -26,7 +24,7 @@ def standalone(schedule: str | None = None):
     schedule_id, job_df, _ = generate(schedule=schedule)
     steps = [row.step for row in spark.sql("select step from {df} group by step", df=job_df).collect()]
 
-    def _schedule(task: Any):
+    def _schedule(task: str) -> None:
         step = get_step(step=task)
         run_notebook(
             PATH_NOTEBOOKS.joinpath("process"),
@@ -41,12 +39,13 @@ def standalone(schedule: str | None = None):
     terminate(schedule_id=schedule_id)
 
 
-def terminate(schedule_id: str | None = None):
+def terminate(schedule_id: str | None = None) -> None:
     """
     Terminate a schedule based on the given schedule ID.
 
     Args:
-        schedule_id (str): The ID of the schedule to terminate. If None, it will be retrieved from task values or widgets.
+        schedule_id (str): The ID of the schedule to terminate. If None, it will be retrieved from
+            task values or widgets.
     """
     if schedule_id is None:
         DEFAULT_LOGGER.debug("schedule_id not provided, trying task value or widget", extra={"label": "scheduler"})
@@ -62,12 +61,13 @@ def terminate(schedule_id: str | None = None):
         t.terminate()
 
 
-def process(step: str | None = None, schedule_id: str | None = None, schedule: str | None = None):
+def process(step: str | None = None, schedule_id: str | None = None, schedule: str | None = None) -> None:
     """
     Process a schedule based on the given schedule ID, schedule, and step.
 
     Args:
-        schedule_id (str | None): The ID of the schedule to process. If None, it will be retrieved from task values or widgets.
+        schedule_id (str | None): The ID of the schedule to process. If None, it will be retrieved
+            from task values or widgets.
         schedule (str | None): The schedule to process. If None, it will be retrieved from task values or widgets.
         step (str | None): The step to process. If None, it will be retrieved from widgets.
     """
@@ -101,7 +101,7 @@ def process(step: str | None = None, schedule_id: str | None = None, schedule: s
         p.process()
 
 
-def generate(schedule: str | None = None) -> Tuple[str, DataFrame, DataFrame]:
+def generate(schedule: str | None = None) -> tuple[str, DataFrame, DataFrame]:
     """
     Generate a schedule, job dataframe, and dependency dataframe based on the given schedule.
 
@@ -124,7 +124,7 @@ def generate(schedule: str | None = None) -> Tuple[str, DataFrame, DataFrame]:
         try:
             dbutils.jobs.taskValues.set(key="schedule_id", value=schedule_id)
             dbutils.jobs.taskValues.set(key="schedule", value=schedule)
-        except Exception:  # noqa: E722
+        except Exception:
             DEFAULT_LOGGER.warning(
                 "could not set task values for schedule_id and schedule", extra={"label": "scheduler"}
             )
@@ -136,4 +136,4 @@ def generate(schedule: str | None = None) -> Tuple[str, DataFrame, DataFrame]:
         return schedule_id, job_df, dep_df
 
 
-__all__ = ["process", "generate", "run", "terminate", "standalone"]
+__all__ = ["generate", "process", "run", "standalone", "terminate"]

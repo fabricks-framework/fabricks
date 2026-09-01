@@ -68,10 +68,7 @@ def test_read_yaml_with_variables(fixtures_dir: Path, test_variables: dict[str, 
 def test_read_yaml_with_partial_variables(fixtures_dir: Path) -> None:
     """Test reading YAML with only some variables provided (strict=False)."""
     path = GitPath(str(fixtures_dir / "variables.yml"))
-    partial_vars = {
-        "$storage_account": "testaccount.dfs.core.windows.net",
-        "$container": "testcontainer",
-    }
+    partial_vars = {"$storage_account": "testaccount.dfs.core.windows.net", "$container": "testcontainer"}
 
     # Must use strict=False to allow partial variable substitution
     results = list(read_yaml(path, root="job", variables=partial_vars, strict=False))

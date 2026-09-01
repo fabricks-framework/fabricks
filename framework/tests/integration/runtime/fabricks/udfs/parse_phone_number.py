@@ -7,9 +7,11 @@ from fabricks.core.udfs import udf
 @udf(name="parse_phone_number")
 def parse_phone_number(spark: SparkSession):
     def _parse_phone_number(phone_number: str, country: str = "CH"):
-        from phonenumbers import PhoneNumberFormat  # type: ignore
-        from phonenumbers import PhoneNumberMatcher  # type: ignore
-        from phonenumbers import format_number  # type: ignore
+        from phonenumbers import (
+            PhoneNumberFormat,  # type: ignore
+            PhoneNumberMatcher,  # type: ignore
+            format_number,  # type: ignore
+        )
 
         number = None
         for match in PhoneNumberMatcher(phone_number, country):

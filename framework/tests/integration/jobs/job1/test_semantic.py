@@ -1,7 +1,7 @@
 from logging import ERROR
 
-import pytest
 from databricks.sdk.runtime import dbutils
+import pytest
 
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
@@ -57,7 +57,7 @@ def test_semantic_fact_job_option():
 @pytest.mark.order(139)
 def test_semantic_fact_zstd():
     j = get_job(step="semantic", topic="fact", item="zstd")
-    parquet = [f for f in dbutils.fs.ls(j.table.delta_path.string) if f.size > 0][0]
+    parquet = next(f for f in dbutils.fs.ls(j.table.delta_path.string) if f.size > 0)
     file_name = parquet.name
     assert "zstd" in file_name, "codec <> zstd"
 

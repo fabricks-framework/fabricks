@@ -5,11 +5,4 @@ from fabricks.core.jobs.get_jobs import get_jobs
 from fabricks.core.jobs.gold import Gold
 from fabricks.core.jobs.silver import Silver
 
-__all__ = [
-    "BaseJob",
-    "Bronze",
-    "get_job",
-    "get_jobs",
-    "Gold",
-    "Silver",
-]
+__all__ = ["BaseJob", "Bronze", "Gold", "Silver", "get_job", "get_jobs"]

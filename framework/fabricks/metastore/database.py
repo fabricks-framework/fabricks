@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import DataFrame, SparkSession
 from typing_extensions import deprecated
@@ -11,7 +9,7 @@ from fabricks.utils.path import FileSharePath
 
 
 class Database:
-    def __init__(self, name: str, spark: Optional[SparkSession] = None):
+    def __init__(self, name: str, spark: SparkSession | None = None) -> None:
         self.name = name
 
         storage = PATHS_STORAGE.get(self.name)
@@ -32,19 +30,18 @@ class Database:
     def delta_path(self) -> FileSharePath:
         return self.storage.joinpath("delta")
 
-    def create(self):
+    def create(self) -> None:
         DEFAULT_LOGGER.info("create database", extra={"label": self})
         self.spark.sql(f"create database if not exists {self.name};")
 
-    def drop(self, rm: Optional[bool] = True):
+    def drop(self, rm: bool | None = True) -> None:
         if self.exists():
             DEFAULT_LOGGER.warning("drop database", extra={"label": self})
             self.spark.sql(f"drop database if exists {self.name} cascade;")
 
-        if rm:
-            if self.delta_path.exists():
-                DEFAULT_LOGGER.debug("remove delta files", extra={"label": self})
-                self.delta_path.rm()
+        if rm and self.delta_path.exists():
+            DEFAULT_LOGGER.debug("remove delta files", extra={"label": self})
+            self.delta_path.rm()
 
     def exists(self) -> bool:
         try:
@@ -54,7 +51,7 @@ class Database:
         except AnalysisException:
             return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     def get_tables(self) -> DataFrame:

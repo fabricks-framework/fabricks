@@ -19,7 +19,7 @@ DEFAULT_LOGGER.setLevel(logging.DEBUG)
 
 # COMMAND ----------
 
-dbutils.widgets.dropdown("i", "1", [str(i) for i in list(range(0, 13))])
+dbutils.widgets.dropdown("i", "1", [str(i) for i in list(range(13))])
 dbutils.widgets.text("jobs", "---")
 dbutils.widgets.dropdown("drop", "True", ["True", "False"])
 dbutils.widgets.dropdown("move_files", "True", ["True", "False"])

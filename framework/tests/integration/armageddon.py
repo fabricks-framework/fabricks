@@ -6,6 +6,7 @@
 from logging import DEBUG
 
 from databricks.sdk.runtime import dbutils
+import pytest
 
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.deploy import Deploy
@@ -17,11 +18,10 @@ DEFAULT_LOGGER.setLevel(DEBUG)
 
 # COMMAND ----------
 
-try:
+with pytest.raises(Exception) as exc_info:  # noqa: PT011 -- any failure is expected here, not a specific one
     Deploy.armageddon(steps=steps, nowait=True)  # why wait ?
-    assert False, "armageddon should have failed"
-except Exception as e:
-    assert True, f"armageddon failed as expected: {e}"
+
+print(f"armageddon failed as expected: {exc_info.value}")
 
 # COMMAND ----------
 

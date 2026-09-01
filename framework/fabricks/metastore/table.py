@@ -1,6 +1,8 @@
+from collections.abc import Sequence
+import contextlib
+from functools import cached_property
 import re
-from functools import cached_property, lru_cache
-from typing import Sequence, overload
+from typing import Self, overload
 
 from delta import DeltaTable
 from pyspark.errors.exceptions.base import AnalysisException
@@ -25,7 +27,7 @@ _SPECIAL_CHAR_PATTERN = re.compile(r"[^a-zA-Z0-9_]")
 
 class Table(DbObject):
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, spark: SparkSession | None = SPARK):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, spark: SparkSession | None = SPARK) -> Self:
         return cls(step, topic, item, spark=spark)
 
     @cached_property
@@ -70,8 +72,7 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
 
         df = self.describe_history()
-        version = df.select(max("version")).collect()[0][0]
-        return version
+        return df.select(max("version")).collect()[0][0]
 
     @cached_property
     def identity_enabled(self) -> bool:
@@ -108,7 +109,7 @@ class Table(DbObject):
         """Mutable, must query fresh."""
         return self.get_property("delta.enableChangeDataFeed") == "true"
 
-    def drop(self):
+    def drop(self) -> None:
         super().drop()
 
         if self.delta_path.exists():
@@ -131,7 +132,7 @@ class Table(DbObject):
         foreign_keys: dict[str, ForeignKey] | None = None,
         generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
-    ): ...
+    ) -> None: ...
 
     @overload
     def create(
@@ -149,7 +150,7 @@ class Table(DbObject):
         foreign_keys: dict[str, ForeignKey] | None = None,
         generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
-    ): ...
+    ) -> None: ...
 
     def create(
         self,
@@ -166,7 +167,7 @@ class Table(DbObject):
         foreign_keys: dict[str, ForeignKey] | None = None,
         generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
-    ):
+    ) -> None:
         self._create(
             df=df,
             schema=schema,
@@ -184,10 +185,7 @@ class Table(DbObject):
         )
 
     def _get_ddl_columns(
-        self,
-        df: DataFrame,
-        masks: dict[str, str] | None,
-        comments: dict[str, str] | None,
+        self, df: DataFrame, masks: dict[str, str] | None, comments: dict[str, str] | None
     ) -> list[str]:
         def _backtick(name: str, dtype: str) -> str:
             json_value = df.schema[name].jsonValue()
@@ -195,11 +193,7 @@ class Table(DbObject):
             names = _NAME_PATTERN.findall(str(json_value))
             for n in names:
                 escaped = re.escape(n)
-                dtype = re.sub(
-                    f"(?<=,){escaped}(?=:)|(?<=<){escaped}(?=:)",
-                    f"`{n}`",
-                    dtype,
-                )
+                dtype = re.sub(f"(?<=,){escaped}(?=:)|(?<=<){escaped}(?=:)", f"`{n}`", dtype)
 
             return dtype
 
@@ -233,7 +227,7 @@ class Table(DbObject):
         foreign_keys: dict[str, ForeignKey] | None = None,
         generated_columns: dict[str, str] | None = None,
         comments: dict[str, str] | None = None,
-    ):
+    ) -> None:
         if self.registered:
             DEFAULT_LOGGER.debug("table already exists, skipping creation", extra={"label": self})
             return
@@ -314,8 +308,8 @@ class Table(DbObject):
                 "tblproperties (" + ",".join(f"'{key}' = '{value}'" for key, value in properties.items()) + ")"
             )
 
-        sql = f""" 
-        create table {self.qualified_name} 
+        sql = f"""
+        create table {self.qualified_name}
         (
         {ddl_identity}
         {ddl_columns}
@@ -328,10 +322,8 @@ class Table(DbObject):
         {ddl_cluster_by}
         location '{self.delta_path}'
         """
-        try:
+        with contextlib.suppress(Exception):
             sql = fix(sql)
-        except Exception:
-            pass
 
         DEFAULT_LOGGER.debug("ddl", extra={"label": self, "sql": sql})
         self.spark.sql(sql)
@@ -343,8 +335,7 @@ class Table(DbObject):
         except Exception as e:
             if "PERMISSION_DENIED" in str(e) or "row filter or column mask" in str(e):
                 return True
-            else:
-                raise e
+            raise e
 
     @property
     def column_mapping_enabled(self) -> bool:
@@ -355,17 +346,17 @@ class Table(DbObject):
     def exists(self) -> bool:
         return self.is_deltatable and self.registered
 
-    def register(self):
+    def register(self) -> None:
         DEFAULT_LOGGER.debug("register table", extra={"label": self})
         self.spark.sql(f"create table if not exists {self.qualified_name} using delta location '{self.delta_path}'")
 
-    def restore_to_version(self, version: int):
+    def restore_to_version(self, version: int) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.info(f"restore table to version {version}", extra={"label": self})
         self.spark.sql(f"restore table {self.qualified_name} to version as of {version}")
 
-    def truncate(self):
+    def truncate(self) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.warning("truncate table", extra={"label": self})
@@ -381,9 +372,7 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
 
         diffs = self.get_schema_differences(
-            df,
-            exclude_columns_with_prefix=exclude_columns_with_prefix,
-            exclude_columns=exclude_columns,
+            df, exclude_columns_with_prefix=exclude_columns_with_prefix, exclude_columns=exclude_columns
         )
         return len(diffs) > 0
 
@@ -398,9 +387,8 @@ class Table(DbObject):
         DEFAULT_LOGGER.debug("get schema differences", extra={"label": self, "df": df})
 
         df1 = self.dataframe
-        if self.identity_enabled:
-            if "__identity" in df1.columns:
-                df1 = df1.drop("__identity")
+        if self.identity_enabled and "__identity" in df1.columns:
+            df1 = df1.drop("__identity")
 
         if self.generated_columns_enabled:
             generated_cols = [c for c in df1.columns if c.startswith("__generated_")]
@@ -413,8 +401,8 @@ class Table(DbObject):
         if exclude_columns:
             all_columns = {c for c in all_columns if c not in exclude_columns}
 
-        df1_dict = {name: dtype for name, dtype in df1.dtypes}
-        df2_dict = {name: dtype for name, dtype in df.dtypes}
+        df1_dict = dict(df1.dtypes)
+        df2_dict = dict(df.dtypes)
 
         diffs: list[SchemaDiff] = []
 
@@ -431,13 +419,7 @@ class Table(DbObject):
             elif old_datatype != new_datatype:
                 assert old_datatype is not None
                 assert new_datatype is not None
-                diffs.append(
-                    ChangedColumn(
-                        column=c,
-                        data_type=old_datatype,
-                        new_data_type=new_datatype,
-                    )
-                )
+                diffs.append(ChangedColumn(column=c, data_type=old_datatype, new_data_type=new_datatype))
 
         if len(diffs) > 0:
             DEFAULT_LOGGER.warning("difference(s) with delta table", extra={"label": self, "df": df})
@@ -454,7 +436,7 @@ class Table(DbObject):
         schema: StructType | None = None,
         widen_types: bool = False,
         diffs: Sequence[SchemaDiff] | None = None,
-    ):
+    ) -> None:
         if df is None and schema is None:
             raise ValueError("Either df or schema must be provided")
 
@@ -487,14 +469,14 @@ class Table(DbObject):
                     data_type = f"{row.new_data_type}"
 
                 DEFAULT_LOGGER.debug(
-                    f"{row.status.replace('ed', 'ing')} {row.column} ({data_type})",
-                    extra={"label": self},
+                    f"{row.status.replace('ed', 'ing')} {row.column} ({data_type})", extra={"label": self}
                 )
 
                 try:
                     # https://docs.databricks.com/aws/en/delta/type-widening#widen-types-with-automatic-schema-evolution
                     # The type change is not one of byte, short, int, or long to decimal or double.
-                    # These type changes can only be applied manually using ALTER TABLE to avoid accidental promotion of integers to decimals.
+                    # These type changes can only be applied manually using ALTER TABLE to avoid
+                    # accidental promotion of integers to decimals.
                     if row.data_type in ["byte", "short", "int", "long"] and row.new_data_type in [
                         "decimal",
                         "double",
@@ -514,7 +496,7 @@ class Table(DbObject):
                 except Exception:
                     pass
 
-    def overwrite_schema(self, df: DataFrame | None = None, schema: StructType | None = None):
+    def overwrite_schema(self, df: DataFrame | None = None, schema: StructType | None = None) -> None:
         if df is None and schema is None:
             raise ValueError("Either df or schema must be provided")
 
@@ -525,7 +507,9 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
 
         if not self.column_mapping_enabled:
-            self.enable_column_mapping()  # Ensure column mapping is enabled before making schema changes (required for drop_column and change_column)
+            # Ensure column mapping is enabled before making schema changes
+            # (required for drop_column and change_column)
+            self.enable_column_mapping()
 
         diffs = self.get_schema_differences(df)
         if diffs:
@@ -552,7 +536,7 @@ class Table(DbObject):
                             self.drop_column(row.column)
                             self.add_column(row.column, row.new_data_type)
 
-    def vacuum(self, retention_days: int = 7):
+    def vacuum(self, retention_days: int = 7) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug(f"vacuum table (removing files older than {retention_days} days)", extra={"label": self})
@@ -568,7 +552,7 @@ class Table(DbObject):
 
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
 
-    def optimize(self, columns: str | list[str] | None = None):
+    def optimize(self, columns: str | list[str] | None = None) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.info("optimize", extra={"label": self})
@@ -576,10 +560,7 @@ class Table(DbObject):
         # Cache property access for performance (accessed up to 6 times)
         qualified_name = self.qualified_name
 
-        if self.liquid_clustering_enabled:
-            self.spark.sql(f"optimize {qualified_name}")
-
-        elif self.auto_liquid_clustering_enabled:
+        if self.liquid_clustering_enabled or self.auto_liquid_clustering_enabled:
             self.spark.sql(f"optimize {qualified_name}")
 
         elif columns is None:
@@ -603,14 +584,14 @@ class Table(DbObject):
                 DEFAULT_LOGGER.debug(f"zorder by {cols}", extra={"label": self})
                 self.spark.sql(f"optimize {qualified_name} zorder by ({cols})")
 
-    def analyze(self):
+    def analyze(self) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug("analyze", extra={"label": self})
         self.compute_statistics()
         self.compute_delta_statistics()
 
-    def compute_statistics(self):
+    def compute_statistics(self) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug("compute statistics", extra={"label": self})
@@ -626,13 +607,13 @@ class Table(DbObject):
         cols = ", ".join(sorted(cols))
         self.spark.sql(f"analyze table {self.qualified_name} compute statistics for columns {cols}")
 
-    def compute_delta_statistics(self):
+    def compute_delta_statistics(self) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug("compute delta statistics", extra={"label": self})
         self.spark.sql(f"analyze table {self.qualified_name} compute delta statistics")
 
-    def drop_column(self, name: str):
+    def drop_column(self, name: str) -> None:
         assert self.registered, f"{self} not registered"
         assert self.column_mapping_enabled, "column mapping not enabled"
 
@@ -644,7 +625,7 @@ class Table(DbObject):
             """
         )
 
-    def change_column(self, name: str, type: str):
+    def change_column(self, name: str, type: str) -> None:
         assert self.registered, f"{self} not registered"
         assert self.column_mapping_enabled, "column mapping not enabled"
 
@@ -656,7 +637,7 @@ class Table(DbObject):
             """
         )
 
-    def rename_column(self, old: str, new: str):
+    def rename_column(self, old: str, new: str) -> None:
         assert self.registered, f"{self} not registered"
         assert self.column_mapping_enabled, "column mapping not enabled"
 
@@ -669,8 +650,7 @@ class Table(DbObject):
         )
 
     def get_column_data_type(self, name: str) -> str:
-        data_type = self.get_description().where(f"col_name == '{name}'").select("data_type").collect()[0][0]
-        return data_type
+        return self.get_description().where(f"col_name == '{name}'").select("data_type").collect()[0][0]
 
     def get_details(self) -> DataFrame:
         assert self.registered, f"{self} not registered"
@@ -701,9 +681,7 @@ class Table(DbObject):
         sql = f"describe history {self.qualified_name}"
         if limit is not None:
             sql += f" limit {limit}"
-        df = self.spark.sql(sql)
-
-        return df
+        return self.spark.sql(sql)
 
     def get_last_version(self) -> int:
         assert self.registered, f"{self} not registered"
@@ -719,10 +697,14 @@ class Table(DbObject):
 
         return df.select(max("version")).collect()[0][0]
 
-    @lru_cache(maxsize=128)
     def get_property_cached(self, key: str) -> str | None:
         """Get a table property value from the cache. Returns None if the property is not set."""
-        return self.get_property(key)
+        # ponytail: per-instance cache dict instead of @lru_cache, which would leak Table instances
+        # (the cache holds a strong ref to self for the process lifetime). Upgrade if profiling shows it matters.
+        cache: dict[str, str | None] = self.__dict__.setdefault("_property_cache", {})
+        if key not in cache:
+            cache[key] = self.get_property(key)
+        return cache[key]
 
     def get_property(self, key: str) -> str | None:
         assert self.registered, f"{self} not registered"
@@ -738,18 +720,18 @@ class Table(DbObject):
         except (IndexError, ValueError):
             return None
 
-    def enable_change_data_feed(self):
+    def enable_change_data_feed(self) -> None:
         DEFAULT_LOGGER.info("enable change data feed", extra={"label": self})
         self.set_property("delta.enableChangeDataFeed", "true")
 
-    def enable_column_mapping(self):
+    def enable_column_mapping(self) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.info("enable column mapping", extra={"label": self})
         try:
             self.spark.sql(
                 f"""
-                alter table {self.qualified_name} 
+                alter table {self.qualified_name}
                 set tblproperties ('delta.columnMapping.mode' = 'name')
                 """
             )
@@ -758,7 +740,7 @@ class Table(DbObject):
             DEFAULT_LOGGER.debug("update reader and writer version", extra={"label": self})
             self.spark.sql(
                 f"""
-                alter table {self.qualified_name} 
+                alter table {self.qualified_name}
                 set tblproperties (
                     'delta.columnMapping.mode' = 'name',
                     'delta.minReaderVersion' = '2',
@@ -767,7 +749,7 @@ class Table(DbObject):
                 """
             )
 
-    def set_property(self, key: str | int, value: str | int):
+    def set_property(self, key: str | int, value: str | int) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug(f"set property {key} = {value}", extra={"label": self})
@@ -778,7 +760,7 @@ class Table(DbObject):
             """
         )
 
-    def add_constraint(self, name: str, expr: str):
+    def add_constraint(self, name: str, expr: str) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug(f"add constraint ({name} check ({expr}))", extra={"label": self})
@@ -789,12 +771,12 @@ class Table(DbObject):
             """
         )
 
-    def drop_comments(self):
+    def drop_comments(self) -> None:
         self.drop_table_comment()
         for col in self.columns:
             self.drop_column_comment(col)
 
-    def drop_table_comment(self):
+    def drop_table_comment(self) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug("drop table comment", extra={"label": self})
@@ -805,7 +787,7 @@ class Table(DbObject):
             """
         )
 
-    def drop_column_comment(self, column: str):
+    def drop_column_comment(self, column: str) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug(f"drop comment from column {column}", extra={"label": self})
@@ -816,7 +798,7 @@ class Table(DbObject):
             """
         )
 
-    def add_column_comment(self, column: str, comment: str):
+    def add_column_comment(self, column: str, comment: str) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug(f"add comment '{comment}' to column {column}", extra={"label": self})
@@ -827,7 +809,7 @@ class Table(DbObject):
             """
         )
 
-    def add_table_comment(self, comment: str):
+    def add_table_comment(self, comment: str) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.debug(f"add comment '{comment}'", extra={"label": self})
@@ -838,7 +820,7 @@ class Table(DbObject):
             """
         )
 
-    def add_materialized_column(self, name: str, expr: str, type: str):
+    def add_materialized_column(self, name: str, expr: str, type: str) -> None:
         assert self.registered, f"{self} not registered"
         assert self.column_mapping_enabled, "column mapping not enabled"
 
@@ -850,7 +832,7 @@ class Table(DbObject):
             """
         )
 
-    def add_column(self, name: str, type: str, after: str | None = None):
+    def add_column(self, name: str, type: str, after: str | None = None) -> None:
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.info(f"add column {name} ({type})", extra={"label": self})
@@ -862,7 +844,7 @@ class Table(DbObject):
             """
         )
 
-    def create_bloomfilter_index(self, columns: str | list[str]):
+    def create_bloomfilter_index(self, columns: str | list[str]) -> None:
         assert self.registered, f"{self} not registered"
 
         if isinstance(columns, str):
@@ -878,7 +860,7 @@ class Table(DbObject):
             """
         )
 
-    def create_restore_point(self):
+    def create_restore_point(self) -> None:
         last_version = self.get_last_version() + 1
         self.set_property("fabricks.last_version", last_version)
 
@@ -902,7 +884,7 @@ class Table(DbObject):
 
         return self.spark.sql(f"describe history {self.qualified_name}")
 
-    def enable_liquid_clustering(self, columns: str | list[str] | None = None, auto: bool | None = False):
+    def enable_liquid_clustering(self, columns: str | list[str] | None = None, auto: bool | None = False) -> None:
         assert self.registered, f"{self} not registered"
 
         if auto:
@@ -925,7 +907,7 @@ class Table(DbObject):
                 """
             )
 
-    def update_clustering(self, columns: str | list[str] | None = None, auto: bool | None = False):
+    def update_clustering(self, columns: str | list[str] | None = None, auto: bool | None = False) -> None:
         assert self.registered, f"{self} not registered"
 
         if auto:

@@ -39,11 +39,7 @@ def _reset(row: Row):
     if job.paths.to_checkpoints.exists():
         job.paths.to_checkpoints.rm()
 
-    if job.mode == "memory":
-        pass
-    elif job.mode == "invoke":
-        pass
-    elif job.mode == "register":
+    if job.mode == "memory" or job.mode == "invoke" or job.mode == "register":
         pass
     else:
         if job.table.exists():

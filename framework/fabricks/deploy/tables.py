@@ -6,7 +6,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.metastore.table import Table
 
 
-def deploy_tables(drop: bool = False, update: bool = False):
+def deploy_tables(drop: bool = False, update: bool = False) -> None:
     DEFAULT_LOGGER.info("create or replace fabricks (default) tables", extra={"label": "fabricks"})
 
     create_table_log(drop=drop, update=update)
@@ -15,7 +15,7 @@ def deploy_tables(drop: bool = False, update: bool = False):
 
 
 # TODO: switch to view and use fabricks.runtime
-def create_table_step(drop: bool = False, update: bool = False):
+def create_table_step(drop: bool = False, update: bool = False) -> None:
     table = Table("fabricks", "steps")
     schema = StructType(
         [
@@ -29,16 +29,12 @@ def create_table_step(drop: bool = False, update: bool = False):
         table.drop()
 
     if not table.exists():
-        table.create(
-            schema=schema,
-            partitioning=True,
-            partition_by=["expand"],
-        )
+        table.create(schema=schema, partitioning=True, partition_by=["expand"])
     elif update:
         table.overwrite_schema(schema=schema)
 
 
-def create_table_log(drop: bool = False, update: bool = False):
+def create_table_log(drop: bool = False, update: bool = False) -> None:
     table = Table("fabricks", "logs")
     schema = StructType(
         [
@@ -70,16 +66,12 @@ def create_table_log(drop: bool = False, update: bool = False):
         table.drop()
 
     if not table.exists():
-        table.create(
-            schema=schema,
-            partitioning=True,
-            partition_by=["schedule_id", "step"],
-        )
+        table.create(schema=schema, partitioning=True, partition_by=["schedule_id", "step"])
     elif update:
         table.overwrite_schema(schema=schema)
 
 
-def create_table_dummy(drop: bool = False, update: bool = False):
+def create_table_dummy(drop: bool = False, update: bool = False) -> None:
     cdc = NoCDC("fabricks", "dummy")
     df = SPARK.sql(
         """

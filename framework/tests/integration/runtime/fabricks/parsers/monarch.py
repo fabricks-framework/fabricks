@@ -1,5 +1,3 @@
-from typing import Optional
-
 from py4j.protocol import Py4JError
 from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.errors.exceptions.connect import SparkConnectGrpcException
@@ -14,20 +12,13 @@ from fabricks.utils.read import read
 
 
 class DeleteLogBaseParser(BaseParser):
-    def __init__(self, options: Optional[ParserOptions] = None):
-        if options:
-            file_format = options.file_format or "parquet"
-        else:
-            file_format = "parquet"
+    def __init__(self, options: ParserOptions | None = None):
+        file_format = options.file_format or "parquet" if options else "parquet"
         super().__init__(options, file_format)
 
     def _parse(
-        self,
-        stream: bool,
-        data_path: FileSharePath,
-        schema_path: FileSharePath,
-        spark: SparkSession,
-    ) -> Optional[DataFrame]:
+        self, stream: bool, data_path: FileSharePath, schema_path: FileSharePath, spark: SparkSession
+    ) -> DataFrame | None:
         df = read(
             stream=stream,
             path=data_path,
@@ -39,22 +30,15 @@ class DeleteLogBaseParser(BaseParser):
 
         cols = [c.casefold() for c in df.columns]
         if "BEL_IsFullLoad".casefold() in cols:
-            df = df.withColumn(
-                "__operation",
-                expr("if(BEL_IsFullLoad, 'reload', 'upsert')"),
-            )
+            df = df.withColumn("__operation", expr("if(BEL_IsFullLoad, 'reload', 'upsert')"))
         else:
             df = df.withColumn("__operation", lit("upsert"))
 
         return df
 
     def _parse_delete_log(
-        self,
-        data_path: FileSharePath,
-        schema_path: FileSharePath,
-        spark: SparkSession,
-        stream: bool,
-    ) -> Optional[DataFrame]:
+        self, data_path: FileSharePath, schema_path: FileSharePath, spark: SparkSession, stream: bool
+    ) -> DataFrame | None:
         data_path = data_path.append("__deletelog")
         schema_path = schema_path.append("__deletelog")
         try:
@@ -66,7 +50,7 @@ class DeleteLogBaseParser(BaseParser):
                 options=self.options.read_options if self.options else {},
                 spark=spark,
             )
-            df.columns
+            _ = df.columns  # force schema resolution here so lazy errors are caught below
             return df.withColumn("__operation", lit("delete"))
 
         except (AnalysisException, Py4JError, SparkConnectGrpcException):
@@ -79,17 +63,12 @@ class DeleteLogBaseParser(BaseParser):
         if df:
             for c in [c for c in df.columns if not c.startswith("__")]:
                 df = df.withColumn(
-                    c,
-                    when(df[f"`{c}`"].cast("string") == "1753-01-01 00:00:00.000", None).otherwise(df[f"`{c}`"]),
+                    c, when(df[f"`{c}`"].cast("string") == "1753-01-01 00:00:00.000", None).otherwise(df[f"`{c}`"])
                 )
         return df
 
     def parse(
-        self,
-        data_path: FileSharePath,
-        schema_path: FileSharePath,
-        spark: SparkSession,
-        stream: bool,
+        self, data_path: FileSharePath, schema_path: FileSharePath, spark: SparkSession, stream: bool
     ) -> DataFrame:
         dfs = []
 
@@ -105,18 +84,13 @@ class DeleteLogBaseParser(BaseParser):
         df = self.add_timestamp_from_file_path(df)
         df = self.nullify(df)
         # avoid fake updates based on the BEL_UpdateDateUtc
-        df = df.drop("BEL_IsFullLoad", "BEL_UpdateDateUtc", "BEL_DeleteDateUtc")
-        return df
+        return df.drop("BEL_IsFullLoad", "BEL_UpdateDateUtc", "BEL_DeleteDateUtc")
 
 
 @parser(name="monarch")
 class MonarchParser(DeleteLogBaseParser):
     def parse(
-        self,
-        data_path: FileSharePath,
-        schema_path: FileSharePath,
-        spark: SparkSession,
-        stream: bool,
+        self, data_path: FileSharePath, schema_path: FileSharePath, spark: SparkSession, stream: bool
     ) -> DataFrame:
         df = super().parse(stream=stream, data_path=data_path, schema_path=schema_path, spark=spark)
         if df:

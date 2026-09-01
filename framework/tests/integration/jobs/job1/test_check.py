@@ -63,23 +63,26 @@ def test_gold_check_skip():
     assert j.table.rows == 0, "table should be empty"
 
 
-# @pytest.mark.order(166)
-# def test_gold_check_no_dependency_fail():
-#     j = get_job(step="gold", topic="check", item="no_dependency_fail")
-#     error = get_last_error(j.job_id)
-#     assert error == "no dependency fail check failed (gold.check_fail)"
-#     assert j.table.rows == 0, "table should be empty"
+@pytest.mark.skip(reason="not implemented: gold.check.no_dependency_fail fixture")
+@pytest.mark.order(166)
+def test_gold_check_no_dependency_fail():
+    j = get_job(step="gold", topic="check", item="no_dependency_fail")
+    error = get_last_error(j.job_id)
+    assert error == "no dependency fail check failed (gold.check_fail)"
+    assert j.table.rows == 0, "table should be empty"
 
 
-# @pytest.mark.order(167)
-# def test_gold_check_duplicate_key():
-#     j = get_job(step="gold", topic="check", item="duplicate_key")
-#     error = get_last_error(j.job_id)
-#     assert error == "duplicate key"
+@pytest.mark.skip(reason="not implemented: gold.check.duplicate_key fixture")
+@pytest.mark.order(167)
+def test_gold_check_duplicate_key():
+    j = get_job(step="gold", topic="check", item="duplicate_key")
+    error = get_last_error(j.job_id)
+    assert error == "duplicate key"
 
 
-# @pytest.mark.order(168)
-# def test_gold_check_duplicate_identity():
-#     j = get_job(step="gold", topic="check", item="duplicate_identity")
-#     error = get_last_error(j.job_id)
-#     assert error == "duplicate identity"
+@pytest.mark.skip(reason="not implemented: gold.check.duplicate_identity fixture")
+@pytest.mark.order(168)
+def test_gold_check_duplicate_identity():
+    j = get_job(step="gold", topic="check", item="duplicate_identity")
+    error = get_last_error(j.job_id)
+    assert error == "duplicate identity"

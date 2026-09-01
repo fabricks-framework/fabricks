@@ -7,9 +7,9 @@ job_schema_gold = get_job_schema("gold")
 
 __all__ = [
     "get_job_schema",
-    "print_job_schema",
     "job_schema",
     "job_schema_bronze",
-    "job_schema_silver",
     "job_schema_gold",
+    "job_schema_silver",
+    "print_job_schema",
 ]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Union
+from typing import Any
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import StructType
@@ -17,12 +17,8 @@ from fabricks.utils.helpers import backticks
 
 class Configurator(ABC):
     def __init__(
-        self,
-        database: str,
-        *levels: str,
-        change_data_capture: str,
-        spark: Optional[SparkSession] = None,
-    ):
+        self, database: str, *levels: str, change_data_capture: str, spark: SparkSession | None = None
+    ) -> None:
         if spark is None:
             spark = SPARK
         assert spark is not None
@@ -34,49 +30,49 @@ class Configurator(ABC):
         self.table = Table(self.database.name, *self.levels, spark=self.spark)
 
     @property
-    def is_view(self):
+    def is_view(self) -> bool:
         return self.table.is_view
 
     @property
-    def registered(self):
+    def registered(self) -> bool:
         return self.table.registered
 
     @property
-    def qualified_name(self):
+    def qualified_name(self) -> str:
         return f"{self.database}_{'_'.join(self.levels)}"
 
     @abstractmethod
-    def get_query(self, src: AllowedSources, **kwargs) -> str: ...
+    def get_query(self, src: AllowedSources, **kwargs: Any) -> str: ...  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
 
     @abstractmethod
-    def get_data(self, src: AllowedSources, **kwargs) -> DataFrame: ...
+    def get_data(self, src: AllowedSources, **kwargs: Any) -> DataFrame: ...  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
 
     @abstractmethod
     def create_table(
         self,
         src: AllowedSources,
-        partitioning: Optional[bool] = False,
-        partition_by: Optional[Union[List[str], str]] = None,
-        identity: Optional[bool] = False,
-        liquid_clustering: Optional[bool] = False,
-        cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str | bool | int]] = None,
-        masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, Any]] = None,
-        foreign_keys: Optional[dict[str, Any]] = None,
-        generated_columns: Optional[dict[str, str]] = None,
-        comments: Optional[dict[str, Any]] = None,
-        **kwargs,
-    ): ...
+        partitioning: bool | None = False,
+        partition_by: list[str] | str | None = None,
+        identity: bool | None = False,
+        liquid_clustering: bool | None = False,
+        cluster_by: list[str] | str | None = None,
+        properties: dict[str, str | bool | int] | None = None,
+        masks: dict[str, str] | None = None,
+        primary_key: dict[str, Any] | None = None,
+        foreign_keys: dict[str, Any] | None = None,
+        generated_columns: dict[str, str] | None = None,
+        comments: dict[str, Any] | None = None,
+        **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
+    ) -> None: ...
 
     @abstractmethod
-    def drop(self): ...
+    def drop(self) -> None: ...
 
     @abstractmethod
-    def create_or_replace_view(self, src: Union[Table, str], **kwargs): ...
+    def create_or_replace_view(self, src: Table | str, **kwargs: Any) -> None: ...  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
 
     @property
-    def allowed_input__columns(self) -> List[str]:
+    def allowed_input__columns(self) -> list[str]:
         cols = self.__columns
 
         if self.slowly_changing_dimension:
@@ -92,7 +88,7 @@ class Configurator(ABC):
         return cols
 
     @property
-    def allowed_ouput_leading__columns(self) -> List[str]:
+    def allowed_ouput_leading__columns(self) -> list[str]:
         cols = [
             "__identity",
             "__source",
@@ -114,13 +110,8 @@ class Configurator(ABC):
         return cols
 
     @property
-    def allowed_output_trailing__columns(self) -> List[str]:
-        cols = [
-            "__operation",
-            "__metadata",
-            "__last_updated",
-            "__rescued_data",
-        ]
+    def allowed_output_trailing__columns(self) -> list[str]:
+        cols = ["__operation", "__metadata", "__last_updated", "__rescued_data"]
 
         if self.slowly_changing_dimension:
             cols.remove("__operation")
@@ -128,7 +119,7 @@ class Configurator(ABC):
         return cols
 
     @property
-    def __columns(self) -> List[str]:
+    def __columns(self) -> list[str]:
         return [
             # Leading
             "__identity",
@@ -151,7 +142,7 @@ class Configurator(ABC):
     def slowly_changing_dimension(self) -> bool:
         return self.change_data_capture in ["scd0", "scd1", "scd2"]
 
-    def get_src(self, src: AllowedSources) -> "DataFrameLike":
+    def get_src(self, src: AllowedSources) -> DataFrameLike:
         if isinstance(src, DataFrameLike):
             df = src
         elif isinstance(src, Table):
@@ -165,18 +156,14 @@ class Configurator(ABC):
 
         return df
 
-    def has_data(self, src: AllowedSources, **kwargs) -> bool:
+    def has_data(self, src: AllowedSources, **_kwargs: Any) -> bool:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         DEFAULT_LOGGER.debug("check if has data", extra={"label": self})
         df = self.get_src(src=src)
         return not df.isEmpty()
 
     def get_columns(
-        self,
-        src: AllowedSources,
-        backtick: Optional[bool] = True,
-        sort: Optional[bool] = True,
-        check: Optional[bool] = True,
-    ) -> List[str]:
+        self, src: AllowedSources, backtick: bool | None = True, sort: bool | None = True, check: bool | None = True
+    ) -> list[str]:
         if backtick:
             backtick = True
 
@@ -194,7 +181,7 @@ class Configurator(ABC):
 
         return backticks(columns) if backtick else columns
 
-    def sort_columns(self, columns: List[str]) -> List[str]:
+    def sort_columns(self, columns: list[str]) -> list[str]:
         fields = [c for c in columns if not c.startswith("__")]
 
         leading = self.allowed_ouput_leading__columns
@@ -211,7 +198,7 @@ class Configurator(ABC):
 
         return __leading + fields + __trailing
 
-    def reorder_dataframe(self, df: DataFrame, extra__columns: Optional[List[str]] = None) -> DataFrame:
+    def reorder_dataframe(self, df: DataFrame, extra__columns: list[str] | None = None) -> DataFrame:
         columns = self.sort_columns(df.columns)
         if extra__columns:
             extra__columns = [c for c in extra__columns if c in df.columns]
@@ -221,16 +208,16 @@ class Configurator(ABC):
         return df.select(columns)
 
     @abstractmethod
-    def optimize_table(self): ...
+    def optimize_table(self) -> None: ...
 
     @abstractmethod
-    def update_schema(self, src: AllowedSources, **kwargs): ...
+    def update_schema(self, src: AllowedSources, **kwargs: Any) -> None: ...  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
 
     @abstractmethod
-    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs): ...
+    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs: Any) -> DataFrame: ...  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
 
     @abstractmethod
-    def overwrite_schema(self, src: AllowedSources): ...
+    def overwrite_schema(self, src: AllowedSources) -> None: ...
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.table.qualified_name}"

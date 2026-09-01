@@ -23,10 +23,7 @@ expected_failures = [
     "gold.check_duplicate_key",
     "gold.check_duplicate_identity",
 ]
-expected_skips = [
-    "gold.check_time_ko",
-    "gold.check_skip",
-]
+expected_skips = ["gold.check_time_ko", "gold.check_skip"]
 expected_failures_as_str = ", ".join(f'"{f}"' for f in expected_failures)
 expected_skips_as_str = ", ".join(f'"{f}"' for f in expected_skips)
 
@@ -38,7 +35,7 @@ def test_schedule():
 
     try:
         run_notebook(PATH_NOTEBOOKS.joinpath("standalone"), schedule="test")
-        assert False  # notebook should fail
+        raise AssertionError  # notebook should fail
     except Exception:
         assert True
 

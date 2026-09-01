@@ -1,4 +1,5 @@
-from typing import Final, Optional
+from pathlib import Path
+from typing import Final
 from zoneinfo import ZoneInfo
 
 import yaml
@@ -7,10 +8,10 @@ from fabricks.context.config import PATH_CONFIG
 from fabricks.models import Database, RuntimeConf, StepBronzeConf, StepGoldConf, StepSilverConf
 from fabricks.utils.path import FileSharePath, GitPath
 
-with open(str(PATH_CONFIG)) as f:
+with Path(str(PATH_CONFIG)).open() as f:
     data = yaml.safe_load(f)
 
-conf = [d["conf"] for d in data][0]
+conf = next(d["conf"] for d in data)
 assert conf, "conf mandatory"
 
 CONF_RUNTIME: Final[RuntimeConf] = RuntimeConf.model_validate(conf)
@@ -27,7 +28,7 @@ VARIABLES: dict = variables
 
 
 IS_UNITY_CATALOG: Final[bool] = CONF_RUNTIME.options.unity_catalog or False
-CATALOG: Optional[str] = CONF_RUNTIME.options.catalog
+CATALOG: str | None = CONF_RUNTIME.options.catalog
 
 if IS_UNITY_CATALOG and not CATALOG:
     raise ValueError("catalog mandatory in options if unity catalog is enabled")
@@ -43,7 +44,7 @@ PATHS_RESOLVED = CONF_RUNTIME.resolved_path_options
 
 FABRICKS_STORAGE: Final[FileSharePath] = PATHS_RESOLVED.storage
 
-FABRICKS_STORAGE_CREDENTIAL: Final[Optional[str]] = CONF_RUNTIME.path_options.storage_credential
+FABRICKS_STORAGE_CREDENTIAL: Final[str | None] = CONF_RUNTIME.path_options.storage_credential
 
 PATH_UDFS: Final[GitPath] = PATHS_RESOLVED.udfs
 PATH_PARSERS: Final[GitPath] = PATHS_RESOLVED.parsers

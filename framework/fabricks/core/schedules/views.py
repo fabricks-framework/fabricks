@@ -5,7 +5,7 @@ from fabricks.core.schedules.get_schedules import get_schedules_df
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-def create_or_replace_view_internal(name: str, options: dict):
+def create_or_replace_view_internal(name: str, options: dict) -> None:
     step = "-- no step provided"
     tag = "-- no tag provided"
     view = "-- no view provided"
@@ -31,7 +31,7 @@ def create_or_replace_view_internal(name: str, options: dict):
         fabricks.jobs j
         {view}
     where
-        true 
+        true
         {step}
         {tag}
         and j.type not in ('manual')
@@ -42,7 +42,7 @@ def create_or_replace_view_internal(name: str, options: dict):
     SPARK.sql(sql)
 
 
-def create_or_replace_view(name: str):
+def create_or_replace_view(name: str) -> None:
     sc = get_schedule(name=name)
     try:
         create_or_replace_view_internal(sc["name"], sc["options"])
@@ -50,7 +50,7 @@ def create_or_replace_view(name: str):
         DEFAULT_LOGGER.exception(f"could not create nor replace view {sc['name']}", exc_info=e)
 
 
-def create_or_replace_views():
+def create_or_replace_views() -> None:
     DEFAULT_LOGGER.info("create or replace (schedule) views")
 
     rows = get_schedules_df().collect()

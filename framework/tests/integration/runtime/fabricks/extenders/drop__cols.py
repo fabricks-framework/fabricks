@@ -7,5 +7,4 @@ from fabricks.core.extenders import extender
 def drop__cols(df: DataFrame) -> DataFrame:
     cols = [c for c in df.columns if c.startswith("__")]
     cols = [c for c in cols if c not in ["__partition_by_1", "__cluster_by_1"]]
-    df = df.drop(*cols)
-    return df
+    return df.drop(*cols)

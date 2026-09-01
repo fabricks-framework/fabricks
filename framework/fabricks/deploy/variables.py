@@ -3,7 +3,7 @@ from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-def deploy_variables(deploy_runtime_first: bool = True):
+def deploy_variables(deploy_runtime_first: bool = True) -> None:
     """
     Deploy variables to the fabricks.variables view.
     """

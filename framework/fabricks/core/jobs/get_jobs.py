@@ -1,4 +1,5 @@
-from typing import List, Literal, Optional, Union, overload
+from collections.abc import Iterator
+from typing import Any, Literal, overload
 
 from pydantic import BaseModel
 from pyspark.sql import DataFrame
@@ -27,11 +28,11 @@ class JobConfGeneric(BaseModel):
     options: GenericOptions
 
 
-def _get_job(row: Row):
+def _get_job(row: Row) -> BaseJob:
     return get_job(row=row)
 
 
-def get_jobs_internal():
+def get_jobs_internal() -> Iterator[dict[str, Any]]:
     """Yield job configurations from YAML files with variable substitution."""
     for p in PATHS_RUNTIME.values():
         yield from read_yaml(p, root="job")
@@ -42,14 +43,11 @@ def get_jobs_internal_df() -> DataFrame:
     if IS_JOB_CONFIG_FROM_YAML:
         schema = create_spark_schema(JobConfGeneric)
 
-        def _read_yaml(path: GitPath):
-            df = SPARK.createDataFrame(
-                read_yaml(path, root="job"),
-                schema=schema,
-            )
+        def _read_yaml(path: GitPath) -> DataFrame | None:
+            df = SPARK.createDataFrame(read_yaml(path, root="job"), schema=schema)
             if df:
-                df = df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))
-                return df
+                return df.withColumn("job_id", expr("md5(concat(step,'.',topic,'_',item))"))
+            return None
 
         dfs = run_in_parallel(_read_yaml, list(PATHS_RUNTIME.values()))
         df = concat_dfs(dfs)
@@ -62,14 +60,14 @@ def get_jobs_internal_df() -> DataFrame:
 
 
 @overload
-def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[True]) -> List[BaseJob]: ...
+def get_jobs(df: DataFrame | None = None, *, convert: Literal[True]) -> list[BaseJob]: ...
 
 
 @overload
-def get_jobs(df: Optional[DataFrame] = None, *, convert: Literal[False]) -> DataFrame: ...
+def get_jobs(df: DataFrame | None = None, *, convert: Literal[False]) -> DataFrame: ...
 
 
-def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) -> Union[List[BaseJob], DataFrame]:
+def get_jobs(df: DataFrame | None = None, convert: bool | None = False) -> list[BaseJob] | DataFrame:
     """
     Retrieves a list of jobs or a DataFrame containing job information.
 
@@ -88,30 +86,20 @@ def get_jobs(df: Optional[DataFrame] = None, convert: Optional[bool] = False) ->
     if not convert:
         return get_jobs_internal_df()
 
+    if df is None:
+        return [
+            get_job_internal(j["step"], j["topic"], j["item"], j.get("job_id"), conf=j) for j in get_jobs_internal()
+        ]
+
+    if "step" in df.columns and "topic" in df.columns and "item" in df.columns:
+        df = df.select("step", "topic", "item")
+    elif "step" in df.columns and "job_id" in df.columns:
+        df = df.select("step", "job_id")
+    elif "job" in df.columns:
+        df = df.select("job")
     else:
-        if df is None:
-            return list(
-                get_job_internal(
-                    j["step"],
-                    j["topic"],
-                    j["item"],
-                    j.get("job_id"),
-                    conf=j,
-                )
-                for j in get_jobs_internal()
-            )
+        raise ValueError("step, topic, item or step, job_id or job mandatory")
 
-        else:
-            if "step" in df.columns and "topic" in df.columns and "item" in df.columns:
-                df = df.select("step", "topic", "item")
-            elif "step" in df.columns and "job_id" in df.columns:
-                df = df.select("step", "job_id")
-            elif "job" in df.columns:
-                df = df.select("job")
-            else:
-                raise ValueError("step, topic, item or step, job_id or job mandatory")
+    assert df
 
-        assert df
-
-        jobs = run_in_parallel(_get_job, df)
-        return jobs
+    return run_in_parallel(_get_job, df)

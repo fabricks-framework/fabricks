@@ -5,6 +5,8 @@
 # see docs/SKILLS.md for how .claude/skills/ gets synced.
 extend-exclude = [".claude/skills", ".claude/worktrees"]
 
+line-length = 119
+
 [lint]
 select = [
     "E",    # pycodestyle errors

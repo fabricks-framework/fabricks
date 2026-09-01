@@ -1,6 +1,7 @@
-import os
-import re
+from collections.abc import Iterator
 from pathlib import Path as PathlibPath
+import re
+from typing import Any
 
 from fabricks.utils.path.base import BasePath
 
@@ -10,7 +11,7 @@ _ABFSS_FS_PATTERN = re.compile(r"(?<=\.)(.+)(?=/)")
 
 
 class FileSharePath(BasePath):
-    def __init__(self, path: str | PathlibPath):
+    def __init__(self, path: str | PathlibPath) -> None:
         super().__init__(path=path)
 
     def exists(self) -> bool:
@@ -28,36 +29,28 @@ class FileSharePath(BasePath):
         """Get the container name from an ABFSS path."""
         assert self.string.startswith("abfss://")
 
-        m = _ABFSS_CONTAINER_PATTERN.findall(self.string)[0]
-        return m
+        return _ABFSS_CONTAINER_PATTERN.findall(self.string)[0]
 
     def get_storage_account(self) -> str:
         """Get the storage account name from an ABFSS path."""
         assert self.string.startswith("abfss://")
 
-        m = _ABFSS_ACCOUNT_PATTERN.findall(self.string)[0]
-        return m
+        return _ABFSS_ACCOUNT_PATTERN.findall(self.string)[0]
 
     def get_file_system(self) -> str:
         """Get the file system from an ABFSS path."""
         assert self.string.startswith("abfss://")
 
-        m = _ABFSS_FS_PATTERN.findall(self.string)[0]
-        return m
+        return _ABFSS_FS_PATTERN.findall(self.string)[0]
 
     def get_dbfs_mnt_path(self) -> str:
         """Get the DBFS mount path."""
         mount_point = self.pathlibpath.parts[1].split(".")[0].split("@")[0]
         rest = self.pathlibpath.parts[2:]
 
-        return str(os.path.join("/dbfs/mnt", mount_point, "/".join(rest)))
+        return str(PathlibPath("/dbfs/mnt", mount_point, *rest))
 
-    def walk(
-        self,
-        depth: int | None = None,
-        convert: bool | None = False,
-        file_format: str | None = None,
-    ) -> list:
+    def walk(self, depth: int | None = None, convert: bool | None = False, file_format: str | None = None) -> list:
         out = []
         if self.exists():
             if self.pathlibpath.is_file():
@@ -77,16 +70,11 @@ class FileSharePath(BasePath):
 
     def get_file_info(self) -> list[dict[str, str | int]]:
         return [
-            {
-                "path": c.path,
-                "name": c.name,
-                "size": c.size,
-                "modification_time": c.modificationTime,
-            }
+            {"path": c.path, "name": c.name, "size": c.size, "modification_time": c.modificationTime}
             for c in self._yield_file_info(self.string)
         ]
 
-    def rm(self):
+    def rm(self) -> None:
         from databricks.sdk.runtime import dbutils
 
         if self.exists():
@@ -106,8 +94,7 @@ class FileSharePath(BasePath):
             while True:
                 if i == depth:
                     break
-                else:
-                    children = []
+                children = []
 
                 for path in paths:
                     children += dbutils.fs.ls(path.path)
@@ -117,7 +104,7 @@ class FileSharePath(BasePath):
 
         return [c.path for c in children]
 
-    def _yield_file_info(self, path: str):
+    def _yield_file_info(self, path: str) -> Iterator[Any]:
         from databricks.sdk.runtime import dbutils
 
         for child in dbutils.fs.ls(path):
@@ -127,7 +114,7 @@ class FileSharePath(BasePath):
             else:
                 yield child
 
-    def _yield(self, path: str | PathlibPath):
+    def _yield(self, path: str | PathlibPath) -> Iterator[str]:
         """Recursively yield all file paths in the distributed file system."""
         from databricks.sdk.runtime import dbutils
 
@@ -140,7 +127,7 @@ class FileSharePath(BasePath):
             else:
                 yield str(child.path)
 
-    def _rm(self, path: str):
+    def _rm(self, path: str) -> Iterator[bool]:
         from databricks.sdk.runtime import dbutils
 
         try:
@@ -151,7 +138,7 @@ class FileSharePath(BasePath):
                     yield dbutils.fs.rm(child.path, recurse=True)
 
         except Exception:
-            return False
+            return
 
 
 def resolve_fileshare_path(

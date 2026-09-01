@@ -1,7 +1,7 @@
+from collections.abc import Callable
 import importlib.util
-import os
+from pathlib import Path
 import re
-from typing import Callable
 
 from pyspark.sql import SparkSession
 
@@ -14,7 +14,7 @@ UDF_SCHEMA = CONF_RUNTIME.udf_options.schema_name or "default" if CONF_RUNTIME.u
 UDF_PREFIX = CONF_RUNTIME.udf_options.prefix or "udf_" if CONF_RUNTIME.udf_options else "udf_"
 
 
-def register_all_udfs(extension: str | None = None, overwrite=False):
+def register_all_udfs(extension: str | None = None, overwrite: bool = False) -> None:
     """
     Register all user-defined functions (UDFs).
     """
@@ -29,7 +29,7 @@ def register_all_udfs(extension: str | None = None, overwrite=False):
 
 
 def get_udfs(extension: str | None = None) -> list[str]:
-    files = [os.path.basename(f) for f in PATH_UDFS.walk()]
+    files = [Path(f).name for f in PATH_UDFS.walk()]
     udfs = [f for f in files if not str(f).endswith("__init__.py") and not str(f).endswith(".requirements.txt")]
     if extension:
         udfs = [f for f in udfs if f.endswith(f".{extension}")]
@@ -61,11 +61,8 @@ def is_registered(udf: str, spark: SparkSession | None = None) -> bool:
 
 
 def register_udf(
-    udf: str,
-    extension: str | None = None,
-    overwrite: bool = False,
-    spark: SparkSession | None = None,
-):
+    udf: str, extension: str | None = None, overwrite: bool = False, spark: SparkSession | None = None
+) -> None:
     """
     Register a user-defined function (UDF).
     """
@@ -107,8 +104,8 @@ def register_udf(
             raise ValueError(f"{udf} not found")
 
 
-def udf(name: str):
-    def decorator(fn: Callable):
+def udf(name: str) -> Callable[[Callable], Callable]:
+    def decorator(fn: Callable) -> Callable:
         UDFS[name] = fn
         return fn
 

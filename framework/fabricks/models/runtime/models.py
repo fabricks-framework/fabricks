@@ -1,6 +1,6 @@
 """Runtime configuration models."""
 
-from datetime import timezone as tz
+from datetime import UTC
 from functools import cached_property
 from pathlib import Path
 from typing import Any, ClassVar
@@ -83,7 +83,7 @@ class RuntimeOptions(BaseModel):
     workers: int = 16
     timeouts: RuntimeTimeoutOptions
     retention_days: int = 7
-    timezone: str = str(tz.utc)
+    timezone: str = str(UTC)
 
 
 class RuntimeConf(BaseModel):
@@ -114,7 +114,7 @@ class RuntimeConf(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _substitute_variables(cls, data: Any) -> Any:
+    def _substitute_variables(cls, data: Any) -> Any:  # noqa: ANN401 - pydantic before-validator: raw pre-parse input of unknown shape
         """Perform variable substitution during parsing.
 
         Loads variables from path_options.variables if defined, otherwise uses
@@ -135,11 +135,7 @@ class RuntimeConf(BaseModel):
             variables_path = path_options.get("variables") if isinstance(path_options, dict) else None
 
         # Step 1: Load variables
-        variables = load_variables(
-            data=data,
-            config_path=config_path,
-            variables_path=variables_path,
-        )
+        variables = load_variables(data=data, config_path=config_path, variables_path=variables_path)
 
         # Step 2: Perform substitution
         return perform_variable_substitution(data=data, variables=variables)

@@ -1,6 +1,6 @@
+from datetime import datetime
 import json
 import logging
-from datetime import datetime
 from typing import Final, Literal
 
 import requests
@@ -8,27 +8,15 @@ import requests
 from fabricks.context import IS_DEBUGMODE, IS_FUNMODE, LOGLEVEL, SECRET_SCOPE, TIMEZONE
 from fabricks.utils.log import get_logger
 
-logger, _ = get_logger(
-    "logs",
-    LOGLEVEL,
-    table=None,
-    debugmode=IS_DEBUGMODE,
-    timezone=TIMEZONE,
-)
+logger, _ = get_logger("logs", LOGLEVEL, table=None, debugmode=IS_DEBUGMODE, timezone=TIMEZONE)
 logging.getLogger("SQLQueryContextLogger").setLevel(logging.CRITICAL)
 
 DEFAULT_LOGGER: Final[logging.Logger] = logger
-COLORS = {
-    "DEBUG": "#00BCD4",
-    "INFO": "#2196F3",
-    "WARNING": "#FF9800",
-    "ERROR": "#F44336",
-    "CRITICAL": "#C62828",
-}
+COLORS = {"DEBUG": "#00BCD4", "INFO": "#2196F3", "WARNING": "#FF9800", "ERROR": "#F44336", "CRITICAL": "#C62828"}
 
 if IS_FUNMODE:
     # 🎄 Christmas Easter Egg 🎅
-    _now = datetime.now()
+    _now = datetime.now(tz=TIMEZONE)
     if _now.month == 12:
         _day = _now.day
         if _day <= 24:
@@ -88,7 +76,8 @@ if IS_FUNMODE:
 
     if _now.month == 8 and _now.day == 1:
         DEFAULT_LOGGER.info(
-            "🏖️ Happy Swiss National Day! Celebrating precision and excellence in data, just like Swiss craftsmanship! 🇨🇭📈"
+            "🏖️ Happy Swiss National Day! Celebrating precision and excellence in data, "
+            "just like Swiss craftsmanship! 🇨🇭📈"
         )
 
     if _now.month == 7 and _now.day == 14:
@@ -103,7 +92,8 @@ if IS_FUNMODE:
 
     if _now.day > 27 and _now.day < 31:
         DEFAULT_LOGGER.warning(
-            "⚠️ Warning: End of month is near! Make sure to finalize your data reports and close out any pending tasks! 📅✅"
+            "⚠️ Warning: End of month is near! Make sure to finalize your data reports "
+            "and close out any pending tasks! 📅✅"
         )
 
     if _now.weekday() == 4:
@@ -142,11 +132,7 @@ def send_message_to_channel(
     channel = channel.replace(" ", "-")
     webhook_url = dbutils.secrets.get(scope=SECRET_SCOPE, key=f"{channel}-webhook-url")
 
-    teams_message = {
-        "@type": "MessageCard",
-        "@context": "http://schema.org/extensions",
-        "summary": title,
-    }
+    teams_message = {"@type": "MessageCard", "@context": "http://schema.org/extensions", "summary": title}
 
     if title:
         teams_message["title"] = title
@@ -162,7 +148,4 @@ def send_message_to_channel(
     teams_message_json = json.dumps(teams_message)
 
     response = requests.post(webhook_url, data=teams_message_json, headers={"Content-Type": "application/json"})
-    if response.status_code == 200:
-        return True
-    else:
-        return False
+    return response.status_code == 200

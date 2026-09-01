@@ -59,9 +59,6 @@ def test_gold_fact_udf():
     addition = SPARK.sql("select addition from gold.fact_udf").collect()[0][0]
     assert addition == "3", f"{addition} <> 3"
 
-    # phone_number = spark.sql("select phone_number from gold.fact_udf").collect()[0][0]
-    # assert phone_number.clean_phone_nr == "+32478478478", f"{phone_number} <> +32478478478"
-
 
 @pytest.mark.order(129)
 def test_gold_fact_memory():
@@ -145,7 +142,7 @@ def test_gold_fact_no_drop():
 
     try:
         j.drop()
-        assert False, "drop is allowed while no_drop is set"
+        raise AssertionError("drop is allowed while no_drop is set")
     except ValueError:
         assert True, "drop not allowed while no_drop is set"
 
