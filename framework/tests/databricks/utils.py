@@ -73,7 +73,7 @@ def convert_json_to_parquet(from_dir: GitPath, to_dir: FileSharePath):
     dates = ["BEL_DeleteDateUtc", "BEL_RestoredDateUtc", "BEL_UpdateDateUtc"]
     files = from_dir.walk()
     for f in files:
-        p_df = pd.read_json(f, orient="records", convert_dates=cast(Any, dates))
+        p_df = pd.read_json(f, orient="records", lines=True, convert_dates=cast(Any, dates))
         df = spark.createDataFrame(p_df)
 
         folder = str(Path(f).parent)
