@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
@@ -173,8 +174,21 @@ def create_expected_views():
             # this function ever visits this directory's .sql files.
             for v in sorted(views.walk(file_format="ndjson")):
                 DEFAULT_LOGGER.debug(f"create table {v}")
-                job_num = re.search(r"\d+", GitPath(v).get_file_name()).group()
+                job_num = str(int(re.search(r"\d+", GitPath(v).get_file_name()).group()))
                 rows = [json.loads(line) for line in GitPath(v).pathlibpath.read_text().splitlines()]
+                for row in rows:
+                    # tzinfo=utc pins these as instants (matching the original SQL's
+                    # `cast(... as timestamp)` on a UTC-session string) instead of
+                    # leaving them naive, which Spark Connect's client-side row->Arrow
+                    # conversion would otherwise localize using the driver machine's
+                    # OS timezone (silently shifting every value, and raising OSError
+                    # for the far-future '9999-12-31' sentinel on Windows drivers).
+                    row["__valid_from"] = datetime.strptime(row["__valid_from"], "%Y-%m-%d %H:%M:%S").replace(
+                        tzinfo=timezone.utc
+                    )
+                    row["__valid_to"] = datetime.strptime(row["__valid_to"], "%Y-%m-%d %H:%M:%S").replace(
+                        tzinfo=timezone.utc
+                    )
                 df = spark.createDataFrame(rows, schema=_EXPECTED_SCD2_SCHEMA)
                 df.write.mode("overwrite").saveAsTable(f"expected.silver_scd2_job{job_num}")
 
