@@ -10,8 +10,8 @@ from databricks.sdk.runtime import dbutils, spark
 from fabricks.context import CATALOG
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
-from tests.integration._types import paths
-from tests.integration.utils import git_to_landing, landing_to_raw
+from tests.databricks._types import paths
+from tests.databricks.utils import git_to_landing, landing_to_raw
 
 # COMMAND ----------
 

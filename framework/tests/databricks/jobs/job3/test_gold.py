@@ -5,7 +5,7 @@ import pytest
 from fabricks.context import SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
-from tests.integration.compare import assert_dfs_equal, compare_gold_to_expected
+from tests.databricks.compare import assert_dfs_equal, compare_gold_to_expected
 
 DEFAULT_LOGGER.setLevel(ERROR)
 

@@ -4,7 +4,7 @@ import pytest
 
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
-from tests.integration.compare import get_last_status
+from tests.databricks.compare import get_last_status
 
 DEFAULT_LOGGER.setLevel(ERROR)
 
