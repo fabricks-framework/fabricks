@@ -1210,15 +1210,15 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 **Files:**
 - Create: `framework/tests/local/generate_fixtures.py`
-- Create: `framework/tests/local/fixtures/job{1..9}/bronze_king_scd1.ndjson` (generated output, committed — 9 files)
-- Create: `framework/tests/local/fixtures/job{1..9}/bronze_queen_scd1.ndjson` (generated output, committed — 9 files)
+- Create: `framework/tests/local/fixtures/job{1..9}/bronze_king_scd1.jsonl` (generated output, committed — 9 files)
+- Create: `framework/tests/local/fixtures/job{1..9}/bronze_queen_scd1.jsonl` (generated output, committed — 9 files)
 - Test: `framework/tests/unit/test_generate_local_fixtures.py`
 
 **Why the test lives in `tests/unit/`, not `tests/local/`, even though the script it tests lives in `tests/local/`:** `generate_fixtures.py` itself only imports `pandas`/stdlib — no `fabricks`, no Spark. But once Task 7's `tests/local/conftest.py` exists, pytest loads it (and its module-level Delta-session build) for *any* file collected from `tests/local/`, including a test that doesn't use `local_spark` at all — conftest loading is directory-scoped, not test-file-scoped, so there's no way to opt a file in that directory out of it. Placing this test under `tests/unit/` instead avoids the JVM/Docker entirely for a test that has nothing to do with Spark — same reasoning as Task 5's `LocalFileSharePath` test.
 
 **Interfaces:**
 - Consumes: raw NDJSON fixtures at `framework/tests/data/job{N}/king/**/*.json` and `framework/tests/data/job{N}/queen/**/*.json` for each job number in `generate_fixtures.py`'s `_JOB_NUMBERS` list (already exist on disk for `job1` through `job11`, read-only — converted from JSON-array to NDJSON format by Task 2 and moved to this shared location by Task 3 — `derive_rows` below reads them with `lines=True`, same as Task 2 updated `convert_json_to_parquet` to do). `_JOB_NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9]` for this plan's actual scope — job1 through job9's derived output is generated and committed, verified as the full range where both `king` and `queen` have plain (non-deletelog) data (`job10` has `queen__deletelog` only, `job11` has no queen folder at all — see "Out of scope"). `expected/silver/{scd1,scd2}/job01.sql` through `job09.sql` all exist, confirming the corresponding comparison targets are real.
-- Produces: `derive_rows(entity_dir: Path, source: str) -> list[dict]` in `tests/local/generate_fixtures.py` — one dict per input row, with `id`, `name`, `doubleField`, `__timestamp` (ISO string, derived from the containing `YYYY/MM/DD/NNNN` folder path), and `__source` (the `source` argument) keys. `main()` loops over `_JOB_NUMBERS`, calling `derive_rows` per job/entity and writing to `tests/local/fixtures/job{N}/bronze_{entity}_scd1.ndjson` — a naming pattern that already generalizes without a rename, since it was job-number-templated from the start (see docs/adr/0001-...md's job-sequential testing strategy). Used directly by Task 9's bronze-table-loading fixture.
+- Produces: `derive_rows(entity_dir: Path, source: str) -> list[dict]` in `tests/local/generate_fixtures.py` — one dict per input row, with `id`, `name`, `doubleField`, `__timestamp` (ISO string, derived from the containing `YYYY/MM/DD/NNNN` folder path), and `__source` (the `source` argument) keys. `main()` loops over `_JOB_NUMBERS`, calling `derive_rows` per job/entity and writing to `tests/local/fixtures/job{N}/bronze_{entity}_scd1.jsonl` — a naming pattern that already generalizes without a rename, since it was job-number-templated from the start (see docs/adr/0001-...md's job-sequential testing strategy). Used directly by Task 9's bronze-table-loading fixture.
 
 Ported from `tests/databricks/utils.py`'s `convert_json_to_parquet`/`convert_parquet_to_delta`: read each JSON file with `pandas.read_json(..., lines=True)`, derive `__timestamp` from the folder path (`.../YYYY/MM/DD/NNNN/file.json` → `YYYY-MM-DDTHH:00:00`, mirroring the original's `left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)` string-slice logic, using the last 4 path segments before the filename), skip the Unity-Catalog 3x-replication workaround (`for i in range(1, 4)` in the original — irrelevant here), and write NDJSON instead of parquet — both input and output are NDJSON, only the record shape differs (raw landing columns vs. CDC-ready rows).
 
@@ -1251,8 +1251,8 @@ def test_derive_rows_from_job1_king():
 
 
 def test_generated_ndjson_files_are_committed():
-    king_path = _REPO_ROOT / "framework" / "tests" / "local" / "fixtures" / "job1" / "bronze_king_scd1.ndjson"
-    queen_path = _REPO_ROOT / "framework" / "tests" / "local" / "fixtures" / "job1" / "bronze_queen_scd1.ndjson"
+    king_path = _REPO_ROOT / "framework" / "tests" / "local" / "fixtures" / "job1" / "bronze_king_scd1.jsonl"
+    queen_path = _REPO_ROOT / "framework" / "tests" / "local" / "fixtures" / "job1" / "bronze_queen_scd1.jsonl"
 
     assert king_path.exists()
     assert queen_path.exists()
@@ -1302,7 +1302,7 @@ def test_king_and_queen_rows_share_the_same_schema():
 
 def test_write_ndjson_round_trips_without_loss(tmp_path):
     rows = derive_rows(_JOB1_KING, source="king")
-    out_path = tmp_path / "king.ndjson"
+    out_path = tmp_path / "king.jsonl"
 
     write_ndjson(rows, out_path)
     round_tripped = [json.loads(line) for line in out_path.read_text().splitlines()]
@@ -1318,8 +1318,8 @@ def test_regenerating_fixtures_twice_is_byte_identical(tmp_path):
     # drift even if test_derive_rows_is_deterministic_across_calls passes.
     rows = derive_rows(_JOB1_KING, source="king")
 
-    first_path = tmp_path / "run1" / "king.ndjson"
-    second_path = tmp_path / "run2" / "king.ndjson"
+    first_path = tmp_path / "run1" / "king.jsonl"
+    second_path = tmp_path / "run2" / "king.jsonl"
     write_ndjson(rows, first_path)
     write_ndjson(derive_rows(_JOB1_KING, source="king"), second_path)
 
@@ -1405,7 +1405,7 @@ def main() -> None:
         job_dir = f"job{job_num}"
         for entity in ("king", "queen"):
             rows = derive_rows(_DATA_ROOT / job_dir / entity, source=entity)
-            write_ndjson(rows, _FIXTURES_ROOT / job_dir / f"bronze_{entity}_scd1.ndjson")
+            write_ndjson(rows, _FIXTURES_ROOT / job_dir / f"bronze_{entity}_scd1.jsonl")
 
 
 if __name__ == "__main__":
@@ -1415,7 +1415,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run the script to generate the committed fixtures**
 
 Run: `cd framework && uv run python -m tests.local.generate_fixtures`
-Expected: creates `tests/local/fixtures/job{N}/bronze_king_scd1.ndjson` and `tests/local/fixtures/job{N}/bronze_queen_scd1.ndjson` for every `N` in `_JOB_NUMBERS` (job1 through job9 — 18 files total).
+Expected: creates `tests/local/fixtures/job{N}/bronze_king_scd1.jsonl` and `tests/local/fixtures/job{N}/bronze_queen_scd1.jsonl` for every `N` in `_JOB_NUMBERS` (job1 through job9 — 18 files total).
 
 - [ ] **Step 5: Run test to verify it passes**
 
@@ -1557,7 +1557,7 @@ def create_expected_views(spark: SparkSession, step: str, cdc: str) -> None:
         # king_and_queen_built only calls create_expected_views for
         # ("silver", "scd2")/("silver", "scd1"), not per job. See Task 3's
         # mirrored fix in tests/databricks/utils.py's create_expected_views.
-        for ndjson_file in sorted(views_dir.glob("*.ndjson")):
+        for ndjson_file in sorted(views_dir.glob("*.jsonl")):
             job_num = re.search(r"\d+", ndjson_file.stem).group()
             rows = [json.loads(line) for line in ndjson_file.read_text().splitlines()]
             df = spark.createDataFrame(rows, schema=_EXPECTED_SCD2_SCHEMA)
@@ -1620,7 +1620,7 @@ def king_and_queen_built(local_spark):
             for entity in ("king", "queen"):
                 rows = [
                     json.loads(line)
-                    for line in (fixtures_root / f"bronze_{entity}_scd1.ndjson").read_text().splitlines()
+                    for line in (fixtures_root / f"bronze_{entity}_scd1.jsonl").read_text().splitlines()
                 ]
                 df = local_spark.createDataFrame(rows)
                 # append, not overwrite: bronze accumulates across jobs,
@@ -1655,7 +1655,7 @@ Add the `import json`, `from pathlib import Path` (already imported at module le
 Run: `cd framework && docker compose -f tests/local/docker-compose.yml run --rm local-tests pytest tests/local/jobs/job1/test_silver.py -v`
 Expected: PASS (18 passed) — 2 test functions × 9 parametrized scenarios (`_SCENARIOS`, `jobs=[1]` through `jobs=[1..9]`).
 
-If a specific scenario fails, isolate it first (`pytest tests/local/jobs/job1/test_silver.py -k "jobs3-compare_to3"` or similar `-k` filter on the parametrize id, rather than re-running all 18) before investigating. For a row-count/column-value mismatch against `expected.silver_{scd1,scd2}_job{compare_to}`, compare what that expected view actually contains (`framework/tests/expected/silver/scd1/job{NN}.sql`'s query, or `job01.ndjson`'s rows for job1's root) against what `SCD1`/`SCD2.update()` produces — the most likely mismatches are `keys=` (confirm the real `king_and_queen` job's business key really is just `id`, by checking whether the raw fixture data has any per-entity id collisions between king and queen that only `__source` disambiguates — if so, `keys=["id"]` combined with the automatic `__source` append already handles it, per the paragraph above), a `__timestamp` derivation mismatch from Task 8, or — for any scenario beyond `jobs=[1]` — a genuine schema-drift case `autoMerge` doesn't cover (a type change rather than a new column; `autoMerge` handles the latter, confirmed present via job2's `newField`, but not the former). Don't adjust `expected/**/job{NN}.sql` to match a guessed output — that file is the correctness oracle.
+If a specific scenario fails, isolate it first (`pytest tests/local/jobs/job1/test_silver.py -k "jobs3-compare_to3"` or similar `-k` filter on the parametrize id, rather than re-running all 18) before investigating. For a row-count/column-value mismatch against `expected.silver_{scd1,scd2}_job{compare_to}`, compare what that expected view actually contains (`framework/tests/expected/silver/scd1/job{NN}.sql`'s query, or `job01.jsonl`'s rows for job1's root) against what `SCD1`/`SCD2.update()` produces — the most likely mismatches are `keys=` (confirm the real `king_and_queen` job's business key really is just `id`, by checking whether the raw fixture data has any per-entity id collisions between king and queen that only `__source` disambiguates — if so, `keys=["id"]` combined with the automatic `__source` append already handles it, per the paragraph above), a `__timestamp` derivation mismatch from Task 8, or — for any scenario beyond `jobs=[1]` — a genuine schema-drift case `autoMerge` doesn't cover (a type change rather than a new column; `autoMerge` handles the latter, confirmed present via job2's `newField`, but not the former). Don't adjust `expected/**/job{NN}.sql` to match a guessed output — that file is the correctness oracle.
 
 If a *future* scenario (e.g. `jobs=[1, 2]`) produces the wrong history once job2's fixture data exists, check first whether job2's `_build` call is actually landing against job1's already-merged table state (i.e. that `_build`'s per-job loop isn't accidentally re-creating the `SCD1`/`SCD2` objects inside the loop instead of once per scenario, which would reset `has_rows` to falsy for every job and silently degrade back to the single-job code path) before suspecting the merge logic itself.
 

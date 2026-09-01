@@ -242,7 +242,7 @@ The production code runs completely unmodified — no template rewrite, no
    reference *queries*, materialized into views by `create_expected_views()`
    (except each job's `silver/scd2/jobNN.sql` — the root of the per-job DAG,
    a literal `create ... from values (...)` list, i.e. genuinely hardcoded
-   data rather than a query. `job01.sql` is converted to `job01.ndjson`
+   data rather than a query. `job01.sql` is converted to `job01.jsonl`
    during the `data`/`expected` extraction, named-field rows instead of
    positional `col1, col2, ...` tuples matched against a separate `cast(colN
    as type) as name` header; `create_expected_views()` loads it with an

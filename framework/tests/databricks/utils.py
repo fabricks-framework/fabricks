@@ -161,18 +161,15 @@ def create_expected_views():
         views = paths.tests.parent().joinpath("expected", step, cdc)
 
         if step == "silver" and cdc == "scd2":
-            # Only job1's file is hand-authored NDJSON data (see Task 3's
-            # Files note) — job2.sql onward are still real SQL, each unioning
-            # its OWN new VALUES rows with `select ... from
-            # expected.silver_scd2_job{N-1} where not __is_current` (verified:
-            # job3.sql references job2, job2.sql references job1 — a genuine
-            # sequential chain, not all pointing at job1). So this branch
-            # must create job1's NDJSON root *then fall through* to the SQL
-            # loop below for job2 onward, in ascending job-number order — an
-            # early `return` here would silently skip creating
-            # expected.silver_scd2_job{2..9} entirely, since nothing else in
-            # this function ever visits this directory's .sql files.
-            for v in sorted(views.walk(file_format="ndjson")):
+            # job01.jsonl..job11.jsonl are all committed NDJSON golden data.
+            # job02 onward were originally derived from a chained job{N}.sql
+            # of hand-authored VALUES rows unioned with job{N-1}'s
+            # non-current rows; that chain has since been generated and
+            # committed as static .jsonl and the .sql sources retired (see
+            # Task 3c). Loaded here in ascending job-number order; the SQL
+            # loop below is a no-op for this dir since no .sql files remain
+            # under it.
+            for v in sorted(views.walk(file_format="jsonl")):
                 DEFAULT_LOGGER.debug(f"create table {v}")
                 job_num = str(int(re.search(r"\d+", GitPath(v).get_file_name()).group()))
                 rows = [json.loads(line) for line in GitPath(v).pathlibpath.read_text().splitlines()]
