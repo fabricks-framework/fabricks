@@ -11,6 +11,8 @@ pick which `docs/` file it belongs in.
 - for testing see [docs/TEST.md](./docs/TEST.md);
 
 - for hard-won bug signatures see [docs/DEBUG.md](./docs/DEBUG.md);
+- for design decisions on subsystems not yet (or only partly) built see
+  [docs/adr/](./docs/adr/);
 
 
 ## Inline documentation
@@ -21,8 +23,7 @@ otherwise come back). Never restate what the code already says.
 
 ## Skills
 
-Checked into `.claude/skills/` (the `!.claude/skills/*` exceptions in
-`.gitignore` list which ones survive `.claude/skills/*`'s default ignore).
+Checked into `.claude/skills/`. 
 Each entry below gives **when** it fires:
 
 - `using-superpowers` (from the `superpowers-marketplace`) — at the start of

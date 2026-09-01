@@ -41,11 +41,12 @@ because they need a live cluster with the runtime deployed:
   with `pytest.mark.order(...)` (via `pytest-order`) because later jobs
   depend on tables earlier jobs produced (schedules, CDC reload, invoke,
   dependency resolution, checks, etc. each get their own `test_*.py`).
-- `tests/integration/expected/{silver,gold}/{scd0,scd1,scd2}/job*.sql` —
-  golden SQL snapshots. `compare.py` builds the job's generated SQL and
-  diffs it against these; a deliberate SQL-generation change means
-  regenerating the matching snapshot, not hand-editing it to make the diff
-  pass.
+- `tests/expected/{silver,gold}/{scd0,scd1,scd2}/job*.sql` — golden SQL
+  snapshots, a top-level sibling of `tests/integration/`/`tests/unit/`
+  (shared, not owned by either suite). `compare.py` builds the job's
+  generated SQL and diffs it against these; a deliberate SQL-generation
+  change means regenerating the matching snapshot, not hand-editing it to
+  make the diff pass.
 - `tests/integration/phases/0_armageddon/` .. `phases/5_extra/` — the same
   jobs grouped into ordered phases (full reset → first schedule → second
   schedule → a plain run → CDC reload → step-level extras) mirroring what a
