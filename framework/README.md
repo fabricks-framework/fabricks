@@ -101,7 +101,7 @@ gold:
       option1: value1
 ```
 
-A more advanced config can be found in the [tests](tests/integration/runtime/fabricks/conf.5589296195699698.yml)
+A more advanced config can be found in the [tests](tests/databricks/runtime/fabricks/conf.5589296195699698.yml)
 
 ## 🥉 Bronze Step
 
@@ -142,7 +142,7 @@ or directly create a delta file using a pre-run, which we'll show below:
 ### Examples
 
 - Sample bronze job: `framework/examples/runtime/bronze/_config.example.yml`
-- More bronze patterns: `framework/tests/integration/runtime/bronze/`
+- More bronze patterns: `framework/tests/databricks/runtime/bronze/`
 
 ## 🥈 Silver Step
 
@@ -171,7 +171,7 @@ In addition, a view named `TABLENAME__current` will be created for convenience.
 ### Examples
 
 - Sample silver job: `framework/examples/runtime/silver/_config.example.yml`
-- Rich silver scenarios (SCD1/2, latest, combine, extenders): `framework/tests/integration/runtime/silver/`
+- Rich silver scenarios (SCD1/2, latest, combine, extenders): `framework/tests/databricks/runtime/silver/`
 
 ## 🥇 Gold Step Type
 
@@ -192,7 +192,7 @@ so you could create a transf step, a gold step, a power bi step, all of which ar
 ### Examples
 
 - Sample gold jobs: `framework/examples/runtime/gold/gold/_config.example.yml` and `hello_world.sql`
-- Advanced gold scenarios (SCD1/2, options, dependencies, invoke): `framework/tests/integration/runtime/gold/gold/`
+- Advanced gold scenarios (SCD1/2, options, dependencies, invoke): `framework/tests/databricks/runtime/gold/gold/`
 
 ## 📚 Use Cases / Features
 

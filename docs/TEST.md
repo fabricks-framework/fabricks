@@ -19,35 +19,35 @@ path handling (`test_git_path.py`), YAML/config parsing
 uv run pytest tests/unit
 ```
 
-## Integration tests — `tests/integration/`
+## Integration tests — `tests/databricks/`
 
 Exercise real jobs end-to-end against a real Databricks cluster
 (`databricks-connect`) and a real fixture runtime checked into this repo at
-`tests/integration/runtime/` (its own `bronze/`, `silver/`, `gold/`, parsers,
+`tests/databricks/runtime/` (its own `bronze/`, `silver/`, `gold/`, parsers,
 UDFs, extenders, masks, views, schedules, and
 `conf.uc.fabricks.yml` / `conf.5589296195699698.yml`). They are not
 self-contained pytest — they run as Databricks notebooks
 (`# Databricks notebook source` header, driven by `dbutils.widgets`),
 because they need a live cluster with the runtime deployed:
 
-- `tests/integration/runtests.py` — the entry notebook. Widgets control
+- `tests/databricks/runtests.py` — the entry notebook. Widgets control
   `initialize` / `armageddon` (full data reset) / `reset` / `fix_notebooks`,
   and which of `job1`..`job5` to run. It resolves to `pytest -k <selection>`
   under `jobs/`.
-- `tests/integration/init.sh` — cluster init script; sets
+- `tests/databricks/init.sh` — cluster init script; sets
   `FABRICKS_RUNTIME` / `FABRICKS_NOTEBOOKS` / `FABRICKS_CONFIG` env vars and
   pip-installs the test/runtime dependencies onto the cluster.
-- `tests/integration/jobs/job1/…job5/` — the actual test modules, ordered
+- `tests/databricks/jobs/job1/…job5/` — the actual test modules, ordered
   with `pytest.mark.order(...)` (via `pytest-order`) because later jobs
   depend on tables earlier jobs produced (schedules, CDC reload, invoke,
   dependency resolution, checks, etc. each get their own `test_*.py`).
 - `tests/expected/{silver,gold}/{scd0,scd1,scd2}/job*.sql` — golden SQL
-  snapshots, a top-level sibling of `tests/integration/`/`tests/unit/`
+  snapshots, a top-level sibling of `tests/databricks/`/`tests/unit/`
   (shared, not owned by either suite). `compare.py` builds the job's
   generated SQL and diffs it against these; a deliberate SQL-generation
   change means regenerating the matching snapshot, not hand-editing it to
   make the diff pass.
-- `tests/integration/phases/0_armageddon/` .. `phases/5_extra/` — the same
+- `tests/databricks/phases/0_armageddon/` .. `phases/5_extra/` — the same
   jobs grouped into ordered phases (full reset → first schedule → second
   schedule → a plain run → CDC reload → step-level extras) mirroring what a
   real deployment does over its lifetime.

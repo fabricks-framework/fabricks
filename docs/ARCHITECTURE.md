@@ -54,7 +54,7 @@ Two different codebases share the term "runtime":
   published as the `fabricks` PyPI package.
 - **A runtime** is a *consumer* repo: YAML job configs plus SQL/notebook
   files under `bronze/`, `silver/`, `gold/`, pointed to by that repo's
-  `[tool.fabricks]` config in `pyproject.toml`. `tests/integration/runtime/`
+  `[tool.fabricks]` config in `pyproject.toml`. `tests/databricks/runtime/`
   is this repo's own fixture runtime, used only by the integration suite —
   see [TEST.md](./TEST.md).
 
