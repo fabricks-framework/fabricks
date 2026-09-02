@@ -7,8 +7,17 @@ from typing_extensions import deprecated
 from fabricks.utils.path.base import BasePath
 from fabricks.utils.path.file_share import FileSharePath, resolve_fileshare_path
 from fabricks.utils.path.git import GitPath, resolve_git_path
+from fabricks.utils.path.local import LocalFileSharePath
 
-__all__ = ["BasePath", "FileSharePath", "GitPath", "Path", "resolve_fileshare_path", "resolve_git_path"]
+__all__ = [
+    "BasePath",
+    "FileSharePath",
+    "GitPath",
+    "LocalFileSharePath",
+    "Path",
+    "resolve_fileshare_path",
+    "resolve_git_path",
+]
 
 
 @deprecated("Use GitPath or FileSharePath directly instead.")

@@ -3,7 +3,9 @@ from pathlib import Path as PathlibPath
 import re
 from typing import Any
 
+from fabricks.utils.environment import FABRICKS_ENVIRONMENT
 from fabricks.utils.path.base import BasePath
+from fabricks.utils.path.local import LocalFileSharePath
 
 _ABFSS_CONTAINER_PATTERN = re.compile(r"(?<=abfss://)(.+?)(?=@)")
 _ABFSS_ACCOUNT_PATTERN = re.compile(r"(?<=@)(.+?)(?=\.)")
@@ -141,6 +143,16 @@ class FileSharePath(BasePath):
             return
 
 
+def _fileshare_class(value: str) -> type["FileSharePath"]:
+    if FABRICKS_ENVIRONMENT == "docker":
+        return LocalFileSharePath  # type: ignore[return-value]
+
+    assert value.startswith("abfss://"), (
+        f"expected an abfss:// path outside FABRICKS_ENVIRONMENT=docker, got {value!r}"
+    )
+    return FileSharePath
+
+
 def resolve_fileshare_path(
     path: str | None,
     default: str | None = None,
@@ -161,16 +173,18 @@ def resolve_fileshare_path(
         Resolved FileSharePath object
     """
     if isinstance(base, str):
-        base = FileSharePath(base)
+        base = _fileshare_class(base)(base)
 
     resolved_value = path or default
     if resolved_value is None:
         raise ValueError("path and default cannot both be None")
 
+    cls = _fileshare_class(resolved_value)
+
     if variables:
-        return FileSharePath.from_uri(resolved_value, regex=variables)
+        return cls.from_uri(resolved_value, regex=variables)
 
     if base:
         return base.joinpath(resolved_value)
 
-    return FileSharePath(resolved_value)
+    return cls(resolved_value)
