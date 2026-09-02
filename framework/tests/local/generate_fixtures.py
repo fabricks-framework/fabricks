@@ -33,11 +33,18 @@ def _timestamp_from_path(json_file: Path) -> str:
 
 def derive_rows(entity_dir: Path, source: str) -> list[dict]:
     rows: list[dict] = []
+    # Raw fixtures are .jsonl (NDJSON), not .json — converted by Task 2, moved by Task 3.
+    # Glob pattern must match .jsonl or it silently produces zero rows.
     for json_file in sorted(entity_dir.rglob("*.jsonl")):
         timestamp = _timestamp_from_path(json_file)
+        # Don't use convert_dates: null date fields would become NaT (pandas Not-a-Time),
+        # which json.dumps(default=str) would serialize as literal string "NaT" in output.
+        # Instead, NaN→None conversion below ensures proper JSON null. String dates pass
+        # through unchanged (identical result to convert_dates + json serialization, but
+        # avoids the NaT corruption of null fields).
         df = pd.read_json(json_file, orient="records", lines=True)
         for record in df.to_dict(orient="records"):
-            # Replace NaN with None so it round-trips through JSON as null
+            # Replace NaN with None so null fields serialize as JSON null, not string "NaT"
             record = {k: (None if pd.isna(v) else v) for k, v in record.items()}
             record["__timestamp"] = timestamp
             record["__source"] = source

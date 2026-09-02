@@ -46,10 +46,10 @@ def test_derive_rows_is_deterministic_across_calls():
 
 
 def test_derive_rows_order_matches_sorted_file_path_order():
-    # derive_rows sorts entity_dir.rglob("*.json") before reading, so row
+    # derive_rows sorts entity_dir.rglob("*.jsonl") before reading, so row
     # order should follow the YYYY/MM/DD/NNNN path order chronologically —
     # batch 2022/01/01/0001's 3 rows (incl. a duplicate) before batch
-    # 2022/01/02/0001's 1 row. Order matters here: king_and_queen_built
+    # 2022/01/02/0001's 2 rows. Order matters here: king_and_queen_built
     # (Task 9) feeds these rows straight into NoCDC.overwrite() as one
     # DataFrame, and a silently reordered batch would change which row
     # "wins" a same-key dedup without changing the row count, so a count-only
