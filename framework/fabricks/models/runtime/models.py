@@ -11,7 +11,7 @@ from fabricks.models.common import Database, ExtenderOptions, SparkOptions
 from fabricks.models.config import ConfigOptions, config
 from fabricks.models.runtime.utils import load_variables, perform_variable_substitution, resolve_runtime_paths
 from fabricks.models.step import BronzeConf, GoldConf, PowerBI, SilverConf
-from fabricks.utils.path import BasePath, FileSharePath, GitPath, LocalFileSharePath
+from fabricks.utils.path import FileSharePath, GitPath, LocalFileSharePath
 
 
 class RuntimePathOptions(BaseModel):

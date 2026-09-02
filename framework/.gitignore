@@ -194,4 +194,4 @@ test.*
 New Notebook *
 
 # Local test storage (Stage 1 CDC/DDL tests) — recreated each run, never committed
-framework/tests/local/.storage/
+tests/local/.storage/
