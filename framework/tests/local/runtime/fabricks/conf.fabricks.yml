@@ -1,0 +1,30 @@
+---
+- conf:
+    name: local-test
+    options:
+      secret_scope: none
+      timeouts:
+        step: 3600
+        job: 3600
+        pre_run: 3600
+        post_run: 3600
+    path_options:
+      storage: tests/local/.storage/fabricks
+      udfs: fabricks/udfs
+      parsers: fabricks/parsers
+      schedules: fabricks/schedules
+      views: fabricks/views
+      requirements: fabricks/requirements.txt
+    databases:
+      - name: bronze
+        path_options:
+          storage: tests/local/.storage/bronze
+      - name: silver
+        path_options:
+          storage: tests/local/.storage/silver
+      - name: gold
+        path_options:
+          storage: tests/local/.storage/gold
+      - name: expected
+        path_options:
+          storage: tests/local/.storage/expected

@@ -11,7 +11,7 @@ from fabricks.models.common import Database, ExtenderOptions, SparkOptions
 from fabricks.models.config import ConfigOptions, config
 from fabricks.models.runtime.utils import load_variables, perform_variable_substitution, resolve_runtime_paths
 from fabricks.models.step import BronzeConf, GoldConf, PowerBI, SilverConf
-from fabricks.utils.path import FileSharePath, GitPath
+from fabricks.utils.path import BasePath, FileSharePath, GitPath, LocalFileSharePath
 
 
 class RuntimePathOptions(BaseModel):
@@ -46,7 +46,7 @@ class RuntimeResolvedPathOptions(BaseModel):
 
     model_config = ConfigDict(extra=config.extra_config, frozen=True, arbitrary_types_allowed=True)
 
-    storage: FileSharePath
+    storage: FileSharePath | LocalFileSharePath
     udfs: GitPath
     parsers: GitPath
     schedules: GitPath
@@ -55,7 +55,7 @@ class RuntimeResolvedPathOptions(BaseModel):
     extenders: GitPath
     masks: GitPath
 
-    storages: dict[str, FileSharePath]
+    storages: dict[str, FileSharePath | LocalFileSharePath]
     runtimes: dict[str, GitPath]
 
 
