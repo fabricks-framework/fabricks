@@ -1,0 +1,9 @@
+# Throwaway research build — excludes the host venv (unused inside the
+# container, which builds its own at /opt/venv via uv sync) and other
+# local junk, so COPY . . doesn't copy ~1.3GB for nothing.
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+tests/local/.storage/
+.databricks/

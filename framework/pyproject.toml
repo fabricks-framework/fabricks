@@ -15,8 +15,6 @@ dependencies = [
     "azure-identity >=1.10.0",
     "azure-storage-blob >=12.14.1",
     "azure-storage-queue >=12.10.0,<13",
-    "databricks-cli>=0.18.0",
-    "databricks-connect >=11.0.0",
     "databricks-sdk >=0.20.0",
     "delta-spark>=4.1.0",
     "deptry>=0.23.1",
@@ -54,6 +52,14 @@ dev = [
     "shandy-sqlfmt>=0.29.0",
     "yamlfix >=1.14.0",
     "ty>=0.0.29",
+]
+# databricks-connect patches pyspark's SparkSession in place (blocks plain
+# local sessions unconditionally, regardless of JVM presence) - keep it out
+# of the default install so `tests/local/`'s real local Spark+Delta suite
+# isn't corrupted by it. Only needed for FABRICKS_ENVIRONMENT=remote.
+databricks-remote = [
+    "databricks-cli>=0.18.0",
+    "databricks-connect >=11.0.0",
 ]
 
 [build-system]
