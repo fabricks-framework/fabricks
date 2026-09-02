@@ -1,0 +1,9 @@
+# framework/tests/local/docker-compose.yml
+services:
+  local-tests:
+    build:
+      context: ../..
+      dockerfile: tests/local/Dockerfile
+    volumes:
+      - ../..:/workspace
+    working_dir: /workspace

@@ -724,12 +724,16 @@ dependencies = [
     { name = "databricks-sdk" },
     { name = "delta-spark" },
     { name = "deptry" },
+    { name = "googleapis-common-protos" },
+    { name = "grpcio" },
+    { name = "grpcio-status" },
     { name = "ipython" },
     { name = "jinja2" },
     { name = "mermaid-magic" },
     { name = "pandas" },
     { name = "py4j", version = "0.10.9.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "py4j", version = "0.10.9.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "pyarrow" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyspark" },
@@ -740,6 +744,7 @@ dependencies = [
     { name = "tenacity" },
     { name = "tqdm" },
     { name = "xxhash" },
+    { name = "zstandard" },
 ]
 
 [package.dev-dependencies]
@@ -774,11 +779,15 @@ requires-dist = [
     { name = "databricks-sdk", specifier = ">=0.20.0" },
     { name = "delta-spark", specifier = ">=4.1.0" },
     { name = "deptry", specifier = ">=0.23.1" },
+    { name = "googleapis-common-protos", specifier = ">=1.56.4" },
+    { name = "grpcio", specifier = ">=1.48.1" },
+    { name = "grpcio-status", specifier = ">=1.48.1" },
     { name = "ipython", specifier = ">=8.18.1" },
     { name = "jinja2", specifier = ">=2.11.3" },
     { name = "mermaid-magic", specifier = ">=0.1.4" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "py4j", specifier = ">=0.10.9.7" },
+    { name = "pyarrow", specifier = ">=15.0.0" },
     { name = "pydantic", specifier = ">=1.10.21" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
     { name = "pyspark", specifier = ">=3.5.7" },
@@ -790,6 +799,7 @@ requires-dist = [
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.2.1" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "xxhash", specifier = ">=3.6.0" },
+    { name = "zstandard", specifier = ">=0.25.0" },
 ]
 
 [package.metadata.requires-dev]

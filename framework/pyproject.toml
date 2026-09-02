@@ -18,11 +18,20 @@ dependencies = [
     "databricks-sdk >=0.20.0",
     "delta-spark>=4.1.0",
     "deptry>=0.23.1",
+    # pyspark.sql.connect (imported unconditionally by fabricks/utils/_types.py
+    # for the DataFrameLike/SparkSessionLike unions) requires these four at
+    # import time regardless of environment - previously pulled in
+    # transitively via databricks-connect before that moved to the opt-in
+    # databricks-remote group (see below).
+    "googleapis-common-protos>=1.56.4",
+    "grpcio>=1.48.1",
+    "grpcio-status>=1.48.1",
     "ipython>=8.18.1",
     "jinja2 >=2.11.3",
     "mermaid-magic>=0.1.4",
     "pandas>=2.2.3",
     "py4j>=0.10.9.7",
+    "pyarrow>=15.0.0",
     "pydantic>=1.10.21",
     "pydantic-settings>=2.11.0",
     "pyspark>=3.5.7",
@@ -34,6 +43,7 @@ dependencies = [
     "tomli>=2.2.1;python_version<\"3.11\"",
     "tqdm>=4.67.1",
     "xxhash>=3.6.0",
+    "zstandard>=0.25.0",
 ]
 
 [dependency-groups]
