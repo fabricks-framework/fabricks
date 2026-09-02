@@ -2,10 +2,10 @@ import os
 import shutil
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-LOCAL_STORAGE = REPO_ROOT / "framework" / "tests" / "local" / ".storage"
+FRAMEWORK_ROOT = Path(__file__).resolve().parents[2]
+LOCAL_STORAGE = FRAMEWORK_ROOT / "tests" / "local" / ".storage"
 
-os.environ["FABRICKS_BASE"] = str(REPO_ROOT / "framework")
+os.environ["FABRICKS_BASE"] = str(FRAMEWORK_ROOT)
 os.environ["FABRICKS_CONFIG"] = "tests/local/runtime/fabricks/conf.fabricks.yml"
 os.environ["FABRICKS_ENVIRONMENT"] = "docker"
 
