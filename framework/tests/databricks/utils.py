@@ -22,6 +22,12 @@ _EXPECTED_SCD2_SCHEMA = StructType(
         StructField("id", IntegerType(), True),
         StructField("name", StringType(), True),
         StructField("doubleField", DoubleType(), True),
+        # job1's rows have no "newField" key at all (job1 predates the
+        # column); job2-11's rows always carry it (string, or JSON null).
+        # Nullable, so a missing dict key converts to NULL for job1's rows --
+        # verified against the real Spark Connect row converter (see task-3c
+        # report) -- rather than needing an explicit default filled in here.
+        StructField("newField", StringType(), True),
         StructField("__is_current", BooleanType(), True),
         StructField("__is_deleted", BooleanType(), True),
         StructField("__source", StringType(), True),

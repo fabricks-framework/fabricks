@@ -248,17 +248,24 @@ The production code runs completely unmodified — no template rewrite, no
    as type) as name` header; `create_expected_views()` loads it with an
    explicit schema and registers it as a real table so every other file's
    `from expected.silver_scd2_job{N}` reference keeps working unchanged.
-   Only job1 is converted — job02-job11 stay as `.sql`, and not because
-   they're out of scope: read directly, `job02.sql`/`job03.sql` are each
-   `VALUES (...) union all select ... from expected.silver_scd2_job{N-1}
-   where not __is_current` — a genuine sequential chain of hand-authored
-   rows referencing the *previous* job's view, not a standalone data root
-   the way job1's is. `create_expected_views()` must still run these `.sql`
-   files, in ascending order, for job2-9's scenarios to have anything to
-   compare against — an early `return` after the NDJSON branch (present in
-   an earlier draft of this design) would have silently skipped creating
-   `expected.silver_scd2_job{2..9}` entirely; fixed to fall through to the
-   `.sql` loop instead.)
+   `job02.sql`-`job11.sql` were originally kept as real SQL alongside
+   job01's NDJSON root — each was a genuine sequential chain of
+   hand-authored rows (`VALUES (...) union all select ... from
+   expected.silver_scd2_job{N-1} where not __is_current`), not a standalone
+   data root the way job1's was, so `create_expected_views()` had to run
+   them too, in ascending order, for job2-9's scenarios to have anything to
+   compare against (an early `return` after the NDJSON branch, present in
+   an earlier draft, would have silently skipped creating
+   `expected.silver_scd2_job{2..9}` entirely). That chain has since been
+   generated once and committed as static `job02.jsonl`-`job11.jsonl`, and
+   the `.sql` sources retired (Task 3c) — `silver/scd2/` now holds only
+   `.jsonl` files, no `.sql`, and `create_expected_views()`'s NDJSON branch
+   loads all of job01-job11 uniformly through one `views.walk(file_format=
+   "jsonl")` loop and one schema (widened to include `newField`, which
+   job02.jsonl onward carry but job01.jsonl's rows predate — a missing dict
+   key converts to NULL for a nullable field, so job1's rows don't need
+   special-casing). The `.sql` loop below the NDJSON branch is now a no-op
+   for this directory.)
    (`tests/databricks/utils.py`, plain `spark.sql(GitPath(v).get_sql())`)
    as `expected.silver_{cdc}_job{iter}`/`expected.gold_{cdc}_job{iter}`, and
    compared against the actual job table's *data* via
