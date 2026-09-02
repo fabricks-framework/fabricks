@@ -1,0 +1,3 @@
+{"id": 101, "name": "Louise", "doubleField": 0.19000101, "BEL_DeleteDateUtc": null, "BEL_RestoredDateUtc": null, "BEL_IsFullLoad": true, "BEL_UpdateDateUtc": "2022-01-01 01:00:00", "__timestamp": "2022-01-01T00:01:00", "__source": "queen"}
+{"id": 201, "name": "Marie-Henriette", "doubleField": 0.20220102, "BEL_DeleteDateUtc": null, "BEL_RestoredDateUtc": null, "BEL_IsFullLoad": false, "BEL_UpdateDateUtc": "2022-01-02 01:00:00", "__timestamp": "2022-01-02T00:01:00", "__source": "queen"}
+{"id": 201, "name": "Marie-Henriette", "doubleField": 0.20220404, "BEL_DeleteDateUtc": null, "BEL_RestoredDateUtc": "2022-01-04 01:00:00", "BEL_IsFullLoad": false, "BEL_UpdateDateUtc": "2022-01-04 01:00:00", "__timestamp": "2022-01-04T00:01:00", "__source": "queen"}
