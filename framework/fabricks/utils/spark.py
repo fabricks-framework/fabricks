@@ -1,14 +1,13 @@
 import os
-from typing import Final
 
 from databricks.sdk.dbutils import RemoteDbUtils
 from pyspark.sql import DataFrame, SparkSession
 
-DATABRICKS_LOCALMODE: Final[bool] = os.getenv("DATABRICKS_LOCALMODE", "false").lower() in ("true", "1", "yes")
+from fabricks.utils.environment import FABRICKS_ENVIRONMENT
 
 
 def get_spark() -> SparkSession:
-    if DATABRICKS_LOCALMODE:
+    if FABRICKS_ENVIRONMENT == "remote":
         from databricks.connect.session import DatabricksSession
         from databricks.sdk.core import Config
 
@@ -21,6 +20,38 @@ def get_spark() -> SparkSession:
 
         spark = DatabricksSession.builder.sdkConfig(c).getOrCreate()
 
+    elif FABRICKS_ENVIRONMENT == "docker":
+        from delta import configure_spark_with_delta_pip
+
+        builder = (
+            SparkSession.builder.appName("fabricks-docker")
+            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+            .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+            .config("spark.driver.allowMultipleContexts", "true")
+            .enableHiveSupport()
+        )
+        spark = configure_spark_with_delta_pip(builder).getOrCreate()
+        # Job-sequential Silver scenarios (Task 9) merge job2+'s data — which
+        # introduces columns job1's schema doesn't have (verified: job2 adds
+        # `newField`, still present through job9) — into a table whose schema
+        # was created from an earlier job. This plan bypasses job
+        # orchestration entirely (no Bronze/Silver/Gold classes, no
+        # update_schema() between jobs), so without autoMerge a `MERGE INTO`
+        # referencing a new source column would fail with a real schema
+        # mismatch. Matches production's own fix for this (`add_spark_options_to_spark()`
+        # in fabricks/context/spark_session.py already sets this for every
+        # real Databricks session) rather than inventing local-only schema-
+        # reconciliation logic. Confirmed via Delta Lake's own OSS docs this
+        # is a core open-source feature (available since Delta 0.6.0), not
+        # Databricks-Runtime-only, despite the `spark.databricks.*` config
+        # namespace. Does not need resolveMergeUpdateStructsByName alongside
+        # it: this plan's fixture data has no `__metadata`/struct columns
+        # (verified — `has_metadata = "__metadata" in columns`,
+        # `fabricks/cdc/base/processor.py`), so the struct-field merge clause
+        # that setting affects is never emitted here; add it only if a future
+        # job's data actually introduces a struct column.
+        spark.sql("set spark.databricks.delta.schema.autoMerge.enabled = true")
+
     else:
         spark = SparkSession.builder.getOrCreate()
 
@@ -30,10 +61,11 @@ def get_spark() -> SparkSession:
 
 def display(df: DataFrame, limit: int | None = None) -> None:
     """
-    Display a Spark DataFrame in Databricks notebook or local environment.
-    If running in local mode, it converts the DataFrame to a Pandas DataFrame for display.
+    Display a Spark DataFrame. Uses IPython/pandas display outside a native
+    Databricks runtime (FABRICKS_ENVIRONMENT != "databricks"); the
+    Databricks-injected display otherwise.
     """
-    if DATABRICKS_LOCALMODE:
+    if FABRICKS_ENVIRONMENT != "databricks":
         from IPython.display import display
 
         if limit is not None:
@@ -52,7 +84,7 @@ def display(df: DataFrame, limit: int | None = None) -> None:
 
 def get_dbutils(spark: SparkSession | None = None) -> RemoteDbUtils | None:
     try:
-        if DATABRICKS_LOCALMODE:
+        if FABRICKS_ENVIRONMENT == "remote":
             from databricks.sdk import WorkspaceClient
 
             w = WorkspaceClient()

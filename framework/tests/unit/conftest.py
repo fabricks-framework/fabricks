@@ -19,7 +19,6 @@ def mock_spark():
         dbutils=mock_dbutils_obj,
         get_spark=MagicMock(return_value=mock_spark_session),
         get_dbutils=MagicMock(return_value=mock_dbutils_obj),
-        DATABRICKS_LOCALMODE=False,
     )
 
     # Mock fabricks.context and related modules
