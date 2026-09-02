@@ -1,5 +1,6 @@
-{"id": 1, "name": "Leopold I", "doubleField": 0.19000101, "BEL_DeleteDateUtc": null, "BEL_RestoredDateUtc": null, "BEL_IsFullLoad": true, "BEL_UpdateDateUtc": "2022-01-01 01:00:00", "__timestamp": "2022-01-01T00:01:00", "__source": "king"}
-{"id": 2, "name": "Leopold II", "doubleField": 0.19000101, "BEL_DeleteDateUtc": null, "BEL_RestoredDateUtc": null, "BEL_IsFullLoad": true, "BEL_UpdateDateUtc": "2022-01-01 01:00:00", "__timestamp": "2022-01-01T00:01:00", "__source": "king"}
-{"id": 2, "name": "Leopold II", "doubleField": 0.19000101, "BEL_DeleteDateUtc": null, "BEL_RestoredDateUtc": null, "BEL_IsFullLoad": true, "BEL_UpdateDateUtc": "2022-01-01 01:00:00", "__timestamp": "2022-01-01T00:01:00", "__source": "king"}
-{"id": 1, "name": "Leopold I", "doubleField": 0.19000101, "BEL_DeleteDateUtc": null, "BEL_RestoredDateUtc": null, "BEL_IsFullLoad": false, "BEL_UpdateDateUtc": "2022-01-01 01:00:00", "__timestamp": "2022-01-02T00:01:00", "__source": "king"}
-{"id": 2, "name": "Leopold II", "doubleField": 0.20220102, "BEL_DeleteDateUtc": null, "BEL_RestoredDateUtc": null, "BEL_IsFullLoad": false, "BEL_UpdateDateUtc": "2022-01-02 01:00:00", "__timestamp": "2022-01-02T00:01:00", "__source": "king"}
+{"id": 1, "name": "Leopold I", "doubleField": 0.19000101, "__operation": "reload", "__timestamp": "2022-01-01T00:01:00", "__source": "king"}
+{"id": 2, "name": "Leopold II", "doubleField": 0.19000101, "__operation": "reload", "__timestamp": "2022-01-01T00:01:00", "__source": "king"}
+{"id": 2, "name": "Leopold II", "doubleField": 0.19000101, "__operation": "reload", "__timestamp": "2022-01-01T00:01:00", "__source": "king"}
+{"id": 1, "name": "Leopold I", "doubleField": 0.19000101, "__operation": "upsert", "__timestamp": "2022-01-02T00:01:00", "__source": "king"}
+{"id": 2, "name": "Leopold II", "doubleField": 0.20220102, "__operation": "upsert", "__timestamp": "2022-01-02T00:01:00", "__source": "king"}
+{"id": 3, "__operation": "delete", "__timestamp": "2022-02-01T00:01:00", "__source": "king"}

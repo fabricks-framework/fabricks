@@ -1,1 +1,2 @@
-{"id": 4, "name": "Leopold III", "doubleField": 0.20220305, "newField": true, "BEL_DeleteDateUtc": null, "BEL_RestoredDateUtc": null, "BEL_IsFullLoad": false, "BEL_UpdateDateUtc": "2022-03-01 00:12:34", "__timestamp": "2022-03-01T00:34:00", "__source": "king"}
+{"id": 4, "name": "Leopold III", "doubleField": 0.20220305, "newField": true, "__operation": "upsert", "__timestamp": "2022-03-01T00:34:00", "__source": "king"}
+{"id": 4, "__operation": "delete", "__timestamp": "2022-03-01T00:34:00", "__source": "king"}

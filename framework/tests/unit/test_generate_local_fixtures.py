@@ -30,9 +30,14 @@ def test_generated_ndjson_files_are_committed():
     assert queen_path.exists()
 
     lines = king_path.read_text().strip().splitlines()
-    assert len(lines) == 5
+    # 5 main rows (see test_derive_rows_from_job1_king) + 1 from the sibling
+    # job1/king__deletelog directory, which main() concatenates in.
+    assert len(lines) == 6
     row = json.loads(lines[0])
     assert row["__source"] == "king"
+    assert row["__operation"] == "reload"
+    assert not any(k.startswith("BEL_") for row in map(json.loads, lines) for k in row)
+    assert any(json.loads(line)["__operation"] == "delete" for line in lines)
 
 
 def test_derive_rows_is_deterministic_across_calls():

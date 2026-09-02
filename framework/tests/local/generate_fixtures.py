@@ -31,7 +31,24 @@ def _timestamp_from_path(json_file: Path) -> str:
     return f"{year}-{month}-{day}T00:{minute:02d}:00"
 
 
-def derive_rows(entity_dir: Path, source: str) -> list[dict]:
+def derive_rows(entity_dir: Path, source: str, operation: str | None = None) -> list[dict]:
+    """Mirror monarch.py's DeleteLogBaseParser/MonarchParser row derivation.
+
+    - `__operation`: 'reload' if BEL_IsFullLoad is truthy else 'upsert'
+      (DeleteLogBaseParser._parse), unless `operation` is given, in which
+      case every row gets that fixed value — used for __deletelog rows,
+      which _parse_delete_log always tags 'delete' regardless of their own
+      BEL_IsFullLoad.
+    - All BEL_* columns are dropped (DeleteLogBaseParser.parse drops
+      BEL_IsFullLoad/BEL_UpdateDateUtc/BEL_DeleteDateUtc, MonarchParser.parse
+      drops any others, e.g. BEL_RestoredDateUtc — dropping the whole prefix
+      here covers both in one pass).
+
+    Not replicated: DeleteLogBaseParser.nullify()'s sentinel-date-to-null
+    logic (string "1753-01-01 00:00:00.000" -> None on every non-__ column).
+    Verified via grep that no "1753-01-01" value exists anywhere under
+    tests/data/job1-9, so it's a no-op for this fixture set.
+    """
     rows: list[dict] = []
     # Raw fixtures are .jsonl (NDJSON), not .json — converted by Task 2, moved by Task 3.
     # Glob pattern must match .jsonl or it silently produces zero rows.
@@ -46,6 +63,8 @@ def derive_rows(entity_dir: Path, source: str) -> list[dict]:
         for record in df.to_dict(orient="records"):
             # Replace NaN with None so null fields serialize as JSON null, not string "NaT"
             record = {k: (None if pd.isna(v) else v) for k, v in record.items()}
+            record["__operation"] = operation or ("reload" if record.get("BEL_IsFullLoad") else "upsert")
+            record = {k: v for k, v in record.items() if not k.startswith("BEL_")}
             record["__timestamp"] = timestamp
             record["__source"] = source
             rows.append(record)
@@ -74,7 +93,17 @@ def main() -> None:
     for job_num in _JOB_NUMBERS:
         job_dir = f"job{job_num}"
         for entity in ("king", "queen"):
-            rows = derive_rows(_DATA_ROOT / job_dir / entity, source=entity)
+            entity_dir = _DATA_ROOT / job_dir / entity
+            rows = derive_rows(entity_dir, source=entity)
+            # Sibling __deletelog dir, if present, holds real delete events
+            # (monarch.py's DeleteLogBaseParser._parse_delete_log). Appended
+            # after the main rows, matching concat_dfs([df, df_del])'s order
+            # in the real parser — the merge's own __timestamp-ordered window
+            # functions do the actual historization, so append order between
+            # the two sources doesn't affect the result.
+            deletelog_dir = entity_dir.parent / f"{entity}__deletelog"
+            if deletelog_dir.is_dir():
+                rows += derive_rows(deletelog_dir, source=entity, operation="delete")
             write_ndjson(rows, _FIXTURES_ROOT / job_dir / f"bronze_{entity}_scd1.jsonl")
 
 
