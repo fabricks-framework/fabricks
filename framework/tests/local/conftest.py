@@ -63,6 +63,12 @@ _SPARK: SparkSession = get_spark()
 # makes the *unmodified* production DDL create the Delta tables it already
 # assumes it's creating.
 _SPARK.sql("set spark.sql.sources.default = delta")
+# ponytail: fixtures are a handful of rows, but Spark's 200-partition shuffle
+# default still fires on every merge - pure per-test overhead here, not real
+# computation. Tuned for this session-scoped local-test JVM only; production
+# get_spark() is untouched. (spark.ui.enabled is a static config - can't be
+# changed post-getOrCreate(), skipping it here.)
+_SPARK.conf.set("spark.sql.shuffle.partitions", "2")
 
 from fabricks.metastore.database import Database  # noqa: E402 - must follow _SPARK's construction above
 
@@ -90,21 +96,26 @@ def local_spark():
 
 @pytest.fixture(scope="session")
 def king_and_queen_built(local_spark):
-    """Factory fixture: returns a callable that builds bronze/silver tables
-    for a given ordered list of job numbers, one SCD1/SCD2.update() call per
+    """Factory fixture: returns a callable that advances one shared
+    bronze/silver table pair through job N, one SCD1/SCD2.update() call per
     job (see Task 9's "Why job-sequential" note) — no job classes, no job
-    config, no get_job(). Each scenario's tables are named by its job-list
-    signature (e.g. jobs=[1] -> topic "king_and_queen_1", jobs=[1, 2] ->
-    "king_and_queen_1_2") so multiple parametrized scenarios in the same
-    pytest session get isolated tables, no state collision.
+    config, no get_job().
+
+    `_build(N)` applies job N exactly once, against whatever state job N-1
+    left behind, against the *same* live table every call — not one fresh
+    table per scenario. A caller must compare the result against expected
+    output immediately, before requesting job N+1: since there's no
+    snapshotting, a comparison made after the table has moved on to a later
+    job would see that later job's state, not job N's (verified: reproduced
+    exactly when this was briefly two independent loops over 1..9 instead of
+    one). Requires strictly increasing N across the whole session (the one
+    caller in test_silver.py loops 1..9 in order, comparing after each).
 
     Outer fixture is session-scoped (creates the `expected` views once,
-    idempotently); the returned `_build` callable is invoked per test with
-    that test's own `jobs` list.
+    idempotently, and owns the one running SCD1/SCD2 pair); the returned
+    `_build` callable is invoked per job number.
     See docs/adr/0001-duckdb-backend-for-local-cdc-tests.md, Stage 1 item #5.
     """
-    from itertools import count
-
     from fabricks.cdc.nocdc import NoCDC
     from fabricks.cdc.scd1 import SCD1
     from fabricks.cdc.scd2 import SCD2
@@ -114,33 +125,17 @@ def king_and_queen_built(local_spark):
     create_expected_views(local_spark, "silver", "scd2")
     create_expected_views(local_spark, "silver", "scd1")
 
-    # Both test_silver_king_and_queen_scd2 and _scd1 call this factory
-    # independently for the *same* jobs list (each needs its own SCD2/SCD1
-    # objects), so _build() runs twice per scenario. That's harmless for the
-    # silver tables themselves (SCD.update()'s MERGE is idempotent against
-    # already-merged rows -- re-running it a second time against the same
-    # target finds every row already matched, so nothing changes) but NOT
-    # for bronze: NoCDC.append() is a plain, non-idempotent `insert into`.
-    # Naming bronze tables from `suffix` alone (as an earlier version of this
-    # fixture did) meant the second call's first job re-inserted a job's
-    # narrower raw schema into a bronze table the first call's later jobs had
-    # already autoMerge-widened (e.g. jobs=[1..8]: job2 adds newField, so by
-    # the time the second call replays job1 the target already has it) --
-    # verified this raises a genuine `DELTA_CREATE_TABLE_SCHEME_MISMATCH`
-    # for longer job chains (reproduced for jobs=[1..8]; shorter chains like
-    # jobs=[1,2] happened to not trip it, which is exactly the kind of
-    # accidental, chain-length-dependent fragility worth just removing
-    # outright). `_call_id` gives every _build() invocation its own bronze
-    # tables, regardless of which test function or scenario is calling.
-    _call_id = count()
+    scd2 = SCD2("silver", "king_and_queen", "scd2", spark=local_spark)
+    scd1 = SCD1("silver", "king_and_queen", "scd1", spark=local_spark)
+    _last_applied = 0
 
-    def _build(jobs: list[int]) -> dict:
-        suffix = "_".join(str(j) for j in jobs)
-        bronze_suffix = f"{suffix}_{next(_call_id)}"
-        scd2 = SCD2("silver", f"king_and_queen_{suffix}", "scd2", spark=local_spark)
-        scd1 = SCD1("silver", f"king_and_queen_{suffix}", "scd1", spark=local_spark)
+    def _build(through_job: int) -> dict:
+        nonlocal _last_applied
+        assert through_job == _last_applied + 1, (
+            f"king_and_queen_built must be called in order: expected job {_last_applied + 1}, got {through_job}"
+        )
 
-        for job_num in jobs:
+        for job_num in [through_job]:
             fixtures_root = Path(__file__).resolve().parent / "fixtures" / f"job{job_num}"
 
             job_dfs = []
@@ -164,7 +159,7 @@ def king_and_queen_built(local_spark):
                 # accumulated so far) — each job's .update() call gets only
                 # that job's new rows; the CDC merge itself is what compares
                 # against the already-merged silver state from prior jobs.
-                nocdc = NoCDC("bronze", f"{entity}_{bronze_suffix}", "scd1", spark=local_spark)
+                nocdc = NoCDC("bronze", f"{entity}_king_and_queen", "scd1", spark=local_spark)
                 nocdc.append(df)
                 job_dfs.append(df)
 
@@ -283,6 +278,7 @@ def king_and_queen_built(local_spark):
             scd2.update(combined, keys="id", add_key=True, soft_delete=True, correct_valid_from=True)
             scd1.update(combined, keys="id", add_key=True, soft_delete=True)
 
+        _last_applied = through_job
         return {"scd1": scd1, "scd2": scd2}
 
     return _build

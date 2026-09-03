@@ -6,4 +6,11 @@ services:
       dockerfile: tests/local/Dockerfile
     volumes:
       - ../..:/workspace
+      # ponytail: configure_spark_with_delta_pip() resolves Delta's JARs via
+      # Ivy at runtime (see get_spark()'s docker branch). Without a persisted
+      # cache, every `--rm` container re-fetches them from Maven from scratch.
+      - local-tests-ivy-cache:/root/.ivy2
     working_dir: /workspace
+
+volumes:
+  local-tests-ivy-cache: {}
