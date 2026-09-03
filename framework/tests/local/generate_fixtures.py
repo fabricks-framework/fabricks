@@ -20,15 +20,30 @@ _FIXTURES_ROOT = _REPO_ROOT / "framework" / "tests" / "local" / "fixtures"
 
 
 def _timestamp_from_path(json_file: Path) -> str:
-    """Mirror convert_parquet_to_delta's folder-path timestamp derivation:
-    the parent dir is .../YYYY/MM/DD/NNNN, giving 'YYYY-MM-DDT00:NN:00' —
-    minute-of-day encoded from the batch number, hour fixed at 00, matching
-    the original's `slice(__split, __split_size - 4, 4)` over year/month/day/batch.
+    """Mirror convert_parquet_to_delta's folder-path timestamp derivation
+    exactly: `left(concat_ws('', slice(__split, __split_size - 4, 4), '00'), 14)`
+    then `to_timestamp(..., 'yyyyMMddHHmmss')` — i.e. concatenate
+    year+month+day+batch+"00", take the first 14 characters, and parse that
+    as yyyyMMddHHmmss. Since year+month+day always contribute exactly 8
+    characters, this reduces to: HHMMSS = (batch + "00")[:6], hour fixed at
+    00 for every batch folder actually present under tests/data (all start
+    with "00").
+
+    NOT simply "minute = int(batch) % 60, second = 0" (the previous version
+    of this function) -- that only coincidentally matches for a 4-digit
+    batch like "0001" (int(batch) % 60 == 1 == the string slice's minute
+    digits "01"). It silently diverges for any batch string longer than 4
+    digits: verified against tests/data/job3/king/2022/03/01/001234/ (a real
+    6-digit batch folder) and tests/expected/silver/scd2/job03.sql's chained
+    VALUES rows -- the real formula gives "00:12:34" (batch "001234"[:6],
+    since batch alone is already 6 chars: HH="00" MM="12" SS="34"), while
+    int("001234") % 60 == 34 gives the wrong "00:34:00".
     """
     parts = json_file.parent.parts
     year, month, day, batch = parts[-4], parts[-3], parts[-2], parts[-1]
-    minute = int(batch) % 60
-    return f"{year}-{month}-{day}T00:{minute:02d}:00"
+    hhmmss = (batch + "00")[:6]
+    hour, minute, second = hhmmss[0:2], hhmmss[2:4], hhmmss[4:6]
+    return f"{year}-{month}-{day}T{hour}:{minute}:{second}"
 
 
 def derive_rows(entity_dir: Path, source: str, operation: str | None = None) -> list[dict]:

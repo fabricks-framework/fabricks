@@ -195,3 +195,5 @@ New Notebook *
 
 # Local test storage (Stage 1 CDC/DDL tests) — recreated each run, never committed
 tests/local/.storage/
+metastore_db
+spark-warehouse

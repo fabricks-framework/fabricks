@@ -48,6 +48,22 @@ from fabricks.utils.spark import get_spark  # noqa: E402 - must follow the env-v
 
 _SPARK: SparkSession = get_spark()
 
+# fabricks/metastore/table.py's Table._create() issues plain `create table
+# ... location '...'` DDL with no `using delta` clause -- it relies entirely
+# on the session's default table provider being Delta. Real Databricks
+# Runtime configures that by default; get_spark()'s "docker" branch (Task 4)
+# does not -- confirmed empirically (this container's real Spark session:
+# `describe detail` on a table created via that exact DDL pattern showed
+# `format=parquet`), so every table Table.create() makes here is silently a
+# plain Hive/parquet table, and any later `merge into` on it raises
+# `UnsupportedOperationException: ... does not support MERGE INTO TABLE`
+# (reproduced exactly). Set here rather than in get_spark()'s docker branch
+# (Task 4, not this plan's to touch) -- this is test-harness session setup,
+# not a change to production table-creation DDL or CDC merge logic; it only
+# makes the *unmodified* production DDL create the Delta tables it already
+# assumes it's creating.
+_SPARK.sql("set spark.sql.sources.default = delta")
+
 from fabricks.metastore.database import Database  # noqa: E402 - must follow _SPARK's construction above
 
 for _db_name in ("bronze", "silver", "gold", "expected"):
@@ -70,3 +86,203 @@ def pytest_collection_modifyitems(items):
 def local_spark():
     yield _SPARK
     _SPARK.stop()
+
+
+@pytest.fixture(scope="session")
+def king_and_queen_built(local_spark):
+    """Factory fixture: returns a callable that builds bronze/silver tables
+    for a given ordered list of job numbers, one SCD1/SCD2.update() call per
+    job (see Task 9's "Why job-sequential" note) — no job classes, no job
+    config, no get_job(). Each scenario's tables are named by its job-list
+    signature (e.g. jobs=[1] -> topic "king_and_queen_1", jobs=[1, 2] ->
+    "king_and_queen_1_2") so multiple parametrized scenarios in the same
+    pytest session get isolated tables, no state collision.
+
+    Outer fixture is session-scoped (creates the `expected` views once,
+    idempotently); the returned `_build` callable is invoked per test with
+    that test's own `jobs` list.
+    See docs/adr/0001-duckdb-backend-for-local-cdc-tests.md, Stage 1 item #5.
+    """
+    from itertools import count
+
+    from fabricks.cdc.nocdc import NoCDC
+    from fabricks.cdc.scd1 import SCD1
+    from fabricks.cdc.scd2 import SCD2
+
+    from tests.local.compare import create_expected_views
+
+    create_expected_views(local_spark, "silver", "scd2")
+    create_expected_views(local_spark, "silver", "scd1")
+
+    # Both test_silver_king_and_queen_scd2 and _scd1 call this factory
+    # independently for the *same* jobs list (each needs its own SCD2/SCD1
+    # objects), so _build() runs twice per scenario. That's harmless for the
+    # silver tables themselves (SCD.update()'s MERGE is idempotent against
+    # already-merged rows -- re-running it a second time against the same
+    # target finds every row already matched, so nothing changes) but NOT
+    # for bronze: NoCDC.append() is a plain, non-idempotent `insert into`.
+    # Naming bronze tables from `suffix` alone (as an earlier version of this
+    # fixture did) meant the second call's first job re-inserted a job's
+    # narrower raw schema into a bronze table the first call's later jobs had
+    # already autoMerge-widened (e.g. jobs=[1..8]: job2 adds newField, so by
+    # the time the second call replays job1 the target already has it) --
+    # verified this raises a genuine `DELTA_CREATE_TABLE_SCHEME_MISMATCH`
+    # for longer job chains (reproduced for jobs=[1..8]; shorter chains like
+    # jobs=[1,2] happened to not trip it, which is exactly the kind of
+    # accidental, chain-length-dependent fragility worth just removing
+    # outright). `_call_id` gives every _build() invocation its own bronze
+    # tables, regardless of which test function or scenario is calling.
+    _call_id = count()
+
+    def _build(jobs: list[int]) -> dict:
+        suffix = "_".join(str(j) for j in jobs)
+        bronze_suffix = f"{suffix}_{next(_call_id)}"
+        scd2 = SCD2("silver", f"king_and_queen_{suffix}", "scd2", spark=local_spark)
+        scd1 = SCD1("silver", f"king_and_queen_{suffix}", "scd1", spark=local_spark)
+
+        for job_num in jobs:
+            fixtures_root = Path(__file__).resolve().parent / "fixtures" / f"job{job_num}"
+
+            job_dfs = []
+            for entity in ("king", "queen"):
+                # spark.read.json(path), not createDataFrame(list-of-dicts):
+                # every job's fixture carries BEL_DeleteDateUtc/
+                # BEL_RestoredDateUtc columns that are null in every single
+                # row (no deletes/restores ever happen in this fixture data).
+                # createDataFrame's list-of-dicts schema inference raises
+                # PySparkValueError(CANNOT_DETERMINE_TYPE) for an
+                # all-null column (verified empirically against this
+                # container's real Spark session) -- Spark's JSON-file reader
+                # uses a different, more lenient inference path that types an
+                # all-null column as nullable StringType instead of failing.
+                path = str(fixtures_root / f"bronze_{entity}_scd1.jsonl")
+                df = local_spark.read.json(path)
+                # append, not overwrite: bronze accumulates across jobs,
+                # matching production's landing-table semantics. The SILVER
+                # merge below uses this job's own `df` directly, not
+                # nocdc.table.dataframe (which would be every job's rows
+                # accumulated so far) — each job's .update() call gets only
+                # that job's new rows; the CDC merge itself is what compares
+                # against the already-merged silver state from prior jobs.
+                nocdc = NoCDC("bronze", f"{entity}_{bronze_suffix}", "scd1", spark=local_spark)
+                nocdc.append(df)
+                job_dfs.append(df)
+
+            combined = job_dfs[0].unionByName(job_dfs[1], allowMissingColumns=True)
+
+            # One .update() call per job, sequentially: job N's call runs
+            # against whatever table state job N-1's call left behind.
+            #
+            # add_key=True, keys="id" (a string, not a list) -- both needed,
+            # for two separate reasons, discovered by reproducing the exact
+            # malformed generated MERGE SQL against this container's real
+            # Spark session:
+            #
+            # 1. add_key=True: without it, Processor.get_query_context()'s
+            # `has_key` (computed from the add_key kwarg BEFORE mode="update"
+            # forces add_key on internally, so the early, un-forced value is
+            # what sticks) stays False, so `__key` never makes it into the
+            # merged query view's own output columns. merge.sql.jinja's
+            # merge-condition branches on exactly that column's presence: with
+            # __key it emits the simple `on t.__key == s.__merge_key`; without
+            # it, it falls back to a per-`keys`-entry equality loop whose
+            # jinja source (fabricks/cdc/templates/merges/scd2.sql.jinja)
+            # unconditionally appends a trailing " and" after *every* key
+            # (including the last) and then unconditionally emits a further
+            # "and t.__is_current" line right after -- so that branch always
+            # renders a bare "and\n  and", a syntax error, regardless of how
+            # many keys there are. fabricks/core/jobs/silver.py's
+            # get_cdc_context() always sets context["add_key"] = True for
+            # slowly-changing-dimension jobs (see its line ~314) -- this
+            # mirrors that, and takes the same __key-based branch real Silver
+            # jobs do, rather than the effectively-dead __else__ branch this
+            # test would otherwise be the first caller to ever exercise.
+            #
+            # 2. keys="id", not keys=["id"]: independently of (1), a caller-
+            # supplied *list* is also unsafe here because Merger.merge() calls
+            # get_query_context() twice within one .update() call whenever the
+            # target table doesn't exist yet (once via create_table()'s own
+            # get_data() call, once via merge()'s subsequent get_data() call)
+            # -- both sharing the same kwargs dict, and therefore the same
+            # "keys" list object (passed by reference through nested **kwargs
+            # unpacking). get_query_context()'s `keys.append("__source")`
+            # mutates that object *in place*, so the second invocation appends
+            # "__source" again. A plain string sidesteps this: both
+            # get_query_context() and get_merge_context() already special-case
+            # `isinstance(keys, str)` by rebinding to a *new* one-element list
+            # (`keys = [keys]`) rather than mutating anything, so the
+            # immutable string kwargs entry is untouched across repeat
+            # invocations.
+            #
+            # Both are latent bugs in fabricks/cdc/base/processor.py's `keys`/
+            # `add_key` handling, not bugs in this test -- but production never
+            # trips either one, since get_cdc_context() always sets add_key
+            # explicitly and never passes an explicit "keys" kwarg at all
+            # (letting it default to a freshly-built list(fields) every call).
+            # Out of this test's scope to fix in fabricks/cdc/ itself; using
+            # the calling convention real Silver jobs already use avoids both
+            # without touching production code or changing which code path
+            # this test exercises.
+            #
+            # soft_delete=True: fabricks/core/jobs/silver.py's
+            # get_cdc_context() always sets context["soft_delete"] =
+            # self.slowly_changing_dimension (True for scd1/scd2). Without
+            # it, Processor.get_query_context()'s `outputs.append` for
+            # __is_deleted (both cdc types) and __is_current (scd1 only --
+            # scd2 always adds __is_current unconditionally) never fires, so
+            # those columns are silently missing from the produced table
+            # (verified: UNRESOLVED_COLUMN against this container's real
+            # Spark session when the expected side has them and the actual
+            # table doesn't).
+            #
+            # correct_valid_from=True (scd2 only): fabricks/core/jobs/
+            # silver.py's get_cdc_context() always sets
+            # context["correct_valid_from"] = True when change_data_capture
+            # == "scd2". It's what rewrites __valid_from to the 1900-01-01
+            # sentinel for every row sharing the batch's global-minimum
+            # __timestamp (scd2.sql.jinja's `__correct_valid_from` CTE:
+            # `min(__valid_from) over (partition by null)` -- a true global
+            # window, no partitioning, so *every* row tied for the minimum
+            # gets rewritten, not just one). Without it, a first-ever load's
+            # oldest row(s) keep their real batch timestamp instead of the
+            # epoch-start sentinel the expected oracle encodes (verified:
+            # job1's king batch-1 (id=1, id=2) and queen batch-1 (id=101)
+            # all share the identical batch-derived timestamp
+            # "2022-01-01T00:01:00", so all three legitimately become
+            # 1900-01-01 -- not a one-row special case).
+            #
+            # update_schema() before update(), when the table already exists
+            # (skipped on each CDC object's first-ever call, where
+            # create_table() already builds the schema fresh from that job's
+            # own data): real Silver jobs widen the target table's schema
+            # between incremental runs (this plan deliberately has no such
+            # orchestration step -- see the "no update_schema() between
+            # jobs" note in fabricks/utils/spark.py's docker branch).
+            # Without it, job2's newField column (present in its own source
+            # rows but absent from job1-created table) breaks the merge
+            # query's own rectify CTE (fabricks/cdc/templates/ctes/
+            # rectify.sql.jinja's __rectified_base, which selects
+            # `intermediates` -- including newField once any job introduces
+            # it -- by name from *both* the incoming batch and `__current`,
+            # a CTE reading the existing target table's own rows): verified
+            # UNRESOLVED_COLUMN against this container's real Spark session,
+            # listing only the target table's pre-existing 5 columns.
+            # autoMerge (spark.databricks.delta.schema.autoMerge.enabled)
+            # only patches the final `merge into` statement -- it doesn't
+            # retroactively widen an arbitrary SELECT reading the
+            # not-yet-altered target table mid-query. update_schema() (an
+            # existing, already-public Generator method -- not new
+            # production code) issues the real ALTER TABLE ADD COLUMNS
+            # ahead of time, exactly what real job orchestration does
+            # between runs.
+            if scd2.table.exists():
+                scd2.update_schema(combined, keys="id", add_key=True, soft_delete=True, correct_valid_from=True)
+            if scd1.table.exists():
+                scd1.update_schema(combined, keys="id", add_key=True, soft_delete=True)
+
+            scd2.update(combined, keys="id", add_key=True, soft_delete=True, correct_valid_from=True)
+            scd1.update(combined, keys="id", add_key=True, soft_delete=True)
+
+        return {"scd1": scd1, "scd2": scd2}
+
+    return _build
