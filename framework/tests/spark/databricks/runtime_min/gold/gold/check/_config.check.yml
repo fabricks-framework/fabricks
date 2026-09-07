@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema.json
+- job:
+    step: gold
+    topic: check
+    item: fail
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      pre_run: true
+- job:
+    step: gold
+    topic: check
+    item: skip
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      skip: true

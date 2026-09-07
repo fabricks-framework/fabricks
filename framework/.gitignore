@@ -194,6 +194,7 @@ test.*
 New Notebook *
 
 # Local test storage (Stage 1 CDC/DDL tests) — recreated each run, never committed
-tests/local/.storage/
+tests/spark/apache/.storage/
+tests/spark/apache/.worker_cwd/
 metastore_db
 spark-warehouse

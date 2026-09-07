@@ -5,6 +5,14 @@
 Proposed — design agreed, not yet implemented. Staged: Stage 1 is the
 near-term plan; Stage 2 is documented but deliberately deferred.
 
+**Naming update (2026-09-04):** the test directories this ADR refers to as
+`tests/unit/`, `tests/local/`, and `tests/databricks/` were later renamed to
+`tests/plain/`, `tests/spark/apache/`, and `tests/spark/databricks/`
+respectively (plus a new `tests/spark/config/` tier added after this ADR
+was written — see [TEST.md](../TEST.md)). Path references below are kept
+as originally written, for historical accuracy at the time of this
+decision.
+
 ## Problem
 
 `Merger`/`Processor`/`Generator`/`Configurator` (CDC layer, `framework/fabricks/cdc/`)

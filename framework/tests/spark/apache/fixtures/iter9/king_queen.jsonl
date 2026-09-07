@@ -1,0 +1,10 @@
+{"id": 7, "name": "Philippe", "doubleField": 0.20220901, "newField": false, "__operation": "upsert", "__timestamp": "2022-09-01T00:01:00", "__source": "king"}
+{"id": 7, "name": "Philippe", "doubleField": 0.20220903, "newField": false, "__operation": "upsert", "__timestamp": "2022-09-03T00:01:00", "__source": "king"}
+{"id": 7, "name": "Philippe", "doubleField": 0.20220903, "newField": false, "__operation": "upsert", "__timestamp": "2022-09-03T00:02:00", "__source": "king"}
+{"id": 8, "name": "Philippe", "doubleField": 0.20220908, "newField": true, "__operation": "reload", "__timestamp": "2022-09-08T00:01:00", "__source": "king"}
+{"id": 7, "__operation": "delete", "__timestamp": "2022-09-02T00:01:00", "__source": "king"}
+{"id": 7, "__operation": "delete", "__timestamp": "2022-09-04T00:01:00", "__source": "king"}
+{"id": 7, "__operation": "delete", "__timestamp": "2022-09-04T00:05:00", "__source": "king"}
+{"id": 7, "__operation": "delete", "__timestamp": "2022-09-04T00:09:00", "__source": "king"}
+{"id": 801, "name": "Mathilde", "doubleField": 0.20220908, "newField": true, "__operation": "reload", "__timestamp": "2022-09-08T00:01:00", "__source": "queen"}
+{"id": 701, "__operation": "delete", "__timestamp": "2022-09-01T00:01:00", "__source": "queen"}

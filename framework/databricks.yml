@@ -28,7 +28,7 @@ resources:
 #          depends_on:
 #            - task_key: cluster
 #          notebook_task:
-#            notebook_path: tests/databricks/runtests.py
+#            notebook_path: tests/spark/databricks/runtests.py
 #            source: WORKSPACE
 #          job_cluster_key: fabricks_test_cluster
       job_clusters:
@@ -45,7 +45,7 @@ resources:
             enable_elastic_disk: true
             init_scripts:
               - workspace:
-                  destination: ${workspace.file_path}/tests/databricks/init.sh
+                  destination: ${workspace.file_path}/tests/spark/databricks/init.sh
             data_security_mode: LEGACY_SINGLE_USER_STANDARD
             runtime_engine: PHOTON
             autoscale:
@@ -145,7 +145,7 @@ resources:
             enable_elastic_disk: true
             init_scripts:
               - workspace:
-                  destination: ${workspace.file_path}/tests/databricks/init.sh
+                  destination: ${workspace.file_path}/tests/spark/databricks/init.sh
             data_security_mode: LEGACY_SINGLE_USER_STANDARD
             runtime_engine: PHOTON
             autoscale:

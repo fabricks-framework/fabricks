@@ -1,0 +1,13 @@
+---
+# yaml-language-server: $schema=../../../../../job-schema.json
+# Downstream of bronze.king_scd1 (the parser-mode job) -- proves real
+# cross-layer dependency ordering (bronze -> silver), not just config shape.
+- job:
+    step: silver
+    topic: king
+    item: scd1
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+      parents: [bronze.king_scd1]

@@ -1,0 +1,20 @@
+---
+- job:
+    step: semantic
+    topic: fact
+    item: step_option
+    tags: [test]
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: job_option
+    tags: [test]
+    options:
+      mode: complete
+    table_options:
+      properties:
+        delta.minReaderVersion: 2
+        delta.minWriterVersion: 5
+        delta.columnMapping.mode: none

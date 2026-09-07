@@ -16,7 +16,7 @@ dependencies = [
     "azure-storage-blob >=12.14.1",
     "azure-storage-queue >=12.10.0,<13",
     "databricks-sdk >=0.20.0",
-    "delta-spark>=4.1.0",
+    "delta-spark>=4.4.0",
     "deptry>=0.23.1",
     # pyspark.sql.connect (imported unconditionally by fabricks/utils/_types.py
     # for the DataFrameLike/SparkSessionLike unions) requires these four at
@@ -50,6 +50,7 @@ dependencies = [
 test = [
     "pytest >=7.1.2",
     "pytest-order >=1.0.1",
+    "pytest-xdist >=3.6.1",
 ]
 dev = [
     "autoflake >=2.3.1,<3",
@@ -65,7 +66,7 @@ dev = [
 ]
 # databricks-connect patches pyspark's SparkSession in place (blocks plain
 # local sessions unconditionally, regardless of JVM presence) - keep it out
-# of the default install so `tests/local/`'s real local Spark+Delta suite
+# of the default install so `tests/spark/apache/`'s real Spark+Delta suite
 # isn't corrupted by it. Only needed for FABRICKS_ENVIRONMENT=remote.
 databricks-remote = [
     "databricks-cli>=0.18.0",
@@ -120,16 +121,17 @@ DEP002 = [
 [tool.pytest.ini_options]
 python_files = ["test_*.py"]
 markers = [
-    "unit: marks tests as unit tests (no spark dependencies)",
+    "plain: marks tests as pure-Python tests (no Spark/fabricks.context dependency)",
     "databricks: marks tests as Databricks-cluster integration tests (slower, needs a live cluster)",
-    "local: marks tests as local CDC/DDL tests (real local Spark+Delta, no Databricks)",
+    "apache: marks tests as Apache Spark CDC/DDL tests (real Spark+Delta, no Databricks Runtime)",
+    "config: marks tests as config-resolution tests (real get_step/get_job, fake Spark, no container)",
 ]
 
 [tool.fabricks]
-runtime = "tests/databricks/runtime"
-notebooks = "tests/databricks/runtime/fabricks/notebooks"
+runtime = "tests/spark/databricks/runtime"
+notebooks = "tests/spark/databricks/runtime/fabricks/notebooks"
 job_config_from_yaml = true
 loglevel = "debug"
 debugmode = true
-config = "tests/databricks/runtime/fabricks/conf.uc.fabricks.yml"
+config = "tests/spark/databricks/runtime/fabricks/conf.uc.fabricks.yml"
 devmode = true

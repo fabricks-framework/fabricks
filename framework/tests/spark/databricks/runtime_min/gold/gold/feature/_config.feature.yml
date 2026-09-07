@@ -1,0 +1,29 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema.json
+# Databricks/Unity-Catalog-only features (docs/superpowers/plans/2026-09-04-
+# databricks-cut-list.md's Risks #1): no OSS Delta equivalent, so these can
+# never move to tests/spark/apache/ -- kept here deliberately, one job per
+# feature, so a failure names exactly which feature broke.
+#
+# Deliberately untagged (no `tags: [test]`): these aren't part of the
+# orchestration/DAG proof test_schedule.py exercises, so they're excluded
+# from the tag-filtered schedule() run entirely and invoked directly
+# (get_job(...).run()) in their own small assertion instead -- same pattern
+# the original test_gold_fact_masker_and_commenter used.
+- job:
+    step: gold
+    topic: feature
+    item: mask
+    options:
+      mode: complete
+    table_options:
+      masks:
+        dummy: "mask_dummy"
+- job:
+    step: gold
+    topic: feature
+    item: cluster_by
+    options:
+      mode: complete
+    table_options:
+      cluster_by: [dummy]

@@ -1,0 +1,70 @@
+---
+# Minimal runtime for the consolidated Databricks test_schedule.py/test_notebook.py
+# (see docs/superpowers/plans/2026-09-04-databricks-cut-list.md). Deliberately
+# NOT the full topic zoo -- this only needs to prove orchestration (DAG
+# ordering across layers/modes, forced failure/skip, notebook invocation),
+# not CDC merge correctness, which now lives in tests/spark/apache/.
+- conf:
+    name: test
+    options:
+      secret_scope: bmskv
+      timeouts:
+        step: 3600
+        job: 3600
+        pre_run: 3600
+        post_run: 3600
+      workers: 8
+      retention_days: 7
+      timezone: Europe/Paris
+    path_options:
+      storage: abfss://fabricks@$standard
+      udfs: fabricks/udfs
+      extenders: fabricks/extenders
+      parsers: fabricks/parsers
+      schedules: fabricks/schedules
+      views: fabricks/views
+      requirements: fabricks/requirements.txt
+      masks: fabricks/masks
+    bronze:
+      - name: bronze
+        path_options:
+          storage: abfss://bronze@$standard
+          runtime: bronze
+        options:
+          order: 101
+    silver:
+      - name: silver
+        path_options:
+          storage: abfss://silver@$standard
+          runtime: silver
+        options:
+          order: 201
+          parent: bronze
+          local_checkpoint: true
+    gold:
+      - name: gold
+        path_options:
+          storage: abfss://gold@$standard/gold
+          runtime: gold/gold
+        options:
+          timeouts:
+            job: 1800
+          order: 301
+      - name: transf
+        path_options:
+          storage: abfss://gold@$standard/transf
+          runtime: gold/transf
+        options:
+          timeouts:
+            job: 1800
+          workers: 2
+          order: 303
+    databases:
+      - name: expected
+        path_options:
+          storage: abfss://dummy@$standard
+    credentials:
+      bmsstatsteuwfabrickssnd.dfs.core.windows.net: bmsstatsteuwfabrickssnd-access-key
+    variables:
+      \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
+      \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net

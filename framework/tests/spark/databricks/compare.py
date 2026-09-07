@@ -1,0 +1,114 @@
+from pandas.testing import assert_frame_equal
+from pyspark.sql import DataFrame
+from pyspark.sql.functions import expr
+
+from fabricks.context import SPARK
+from fabricks.core.jobs.base import BaseJob
+from fabricks.core.parsers.utils import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
+
+
+def assert_dfs_equal(df: DataFrame, df_expected: DataFrame):
+    cols = df_expected.columns
+    order_by = "id"
+    if "__valid_from" in df.columns:
+        order_by = f"concat_ws('|', {order_by}, __valid_from, __valid_to)"
+    elif "valid_from" in df.columns:
+        order_by = f"concat_ws('|', {order_by}, valid_from, valid_to)"
+
+    def _transform(df_: DataFrame):
+        df_ = df_.withColumn("order_by", expr(order_by)).orderBy("order_by").select(cols)
+        df_ = df_.transform(decimal_to_double)
+        df_ = df_.transform(timestamp_as_string)
+        df_ = df_.transform(boolean_as_string)
+        return df_.transform(value_to_none)
+
+    print("<-- df -->\n")
+    df = _transform(df)
+    df.show()
+    p_df = df.toPandas()
+
+    print("<-- expected -->\n")
+    df_expected = _transform(df_expected)
+    df_expected.show()
+    p_df_expected = df_expected.toPandas()
+
+    assert_frame_equal(p_df, p_df_expected, check_dtype=False)
+
+
+def compare_silver_to_expected(job: BaseJob, cdc: str, iter: int):
+    df = SPARK.sql(f"select * from {job}") if job.mode == "memory" else job.table.dataframe
+
+    expected_df = SPARK.read.table(f"expected.silver_{cdc}_iter{iter}")
+    if job.topic in ["monarch", "memory", "regent"]:
+        expected_df = expected_df.drop("__source")
+
+    assert_dfs_equal(df, expected_df)
+
+
+def compare_gold_to_expected(job: BaseJob, cdc: str, iter: int, where: str | None = None):
+    df = SPARK.sql(f"select * from {job}") if job.mode == "memory" else job.table.dataframe
+
+    if str(job) == "gold.scd1_memory":
+        expected_df = SPARK.sql(
+            f"""
+        select
+          id,
+          name as monarch,
+          doubleField as value,
+          __is_current,
+          __is_deleted
+        from
+          expected.silver_{cdc}_iter{iter}
+        """
+        )
+    else:
+        expected_df = SPARK.read.table(f"expected.gold_{cdc}_iter{iter}")
+
+    if where:
+        expected_df = expected_df.where(where)
+
+    assert_dfs_equal(df, expected_df)
+
+
+def get_last_error(job_id: str, status: str = "failed"):
+    return (
+        SPARK.sql(
+            f"""
+            select
+              l.exception.message as error,
+              l.timestamp
+            from
+              fabricks.logs l
+            where
+              true
+              and l.job_id = '{job_id}'
+              and l.status = '{status}'
+            order by timestamp desc
+            limit 1
+            """
+        )
+        .select("error")
+        .collect()[0][0]
+    )
+
+
+def get_last_status(job_id: str):
+    return (
+        SPARK.sql(
+            f"""
+            select
+              l.status,
+              l.timestamp
+            from
+              fabricks.logs l
+            where
+              true
+              and l.job_id = '{job_id}'
+              and l.status in ('failed', 'done')
+            order by timestamp desc
+            limit 1
+            """
+        )
+        .select("status")
+        .collect()[0][0]
+    )

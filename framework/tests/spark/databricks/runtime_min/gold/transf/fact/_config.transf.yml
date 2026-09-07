@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema.json
+- job:
+    step: transf
+    topic: fact
+    item: memory
+    tags: [test]
+    options:
+      mode: memory
+- job:
+    step: transf
+    topic: fact
+    item: wait_for
+    tags: [test]
+    options:
+      mode: complete
+      wait_for: [transf.fact_memory, silver.king_scd1]

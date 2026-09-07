@@ -1,0 +1,5 @@
+{"id": 8, "name": "Philippe", "doubleField": 0.20220908, "newField": true, "__operation": "reload", "__timestamp": "2022-10-01T00:01:00", "__source": "king"}
+{"id": 8, "name": "Philippe", "doubleField": 0.20221002000000002, "newField": true, "__operation": "reload", "__timestamp": "2022-10-02T00:01:00", "__source": "king"}
+{"id": 8, "name": "Philippe", "doubleField": 0.20221002000000002, "newField": true, "__operation": "reload", "__timestamp": "2022-10-02T00:02:00", "__source": "king"}
+{"id": 9, "name": "Philippe", "doubleField": 0.20221003, "newField": true, "__operation": "reload", "__timestamp": "2022-10-03T00:01:00", "__source": "king"}
+{"id": 801, "__operation": "delete", "__timestamp": "2022-10-01T00:01:00", "__source": "queen"}

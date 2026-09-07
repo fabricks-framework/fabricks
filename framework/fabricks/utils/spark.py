@@ -30,15 +30,23 @@ def get_spark() -> SparkSession:
             .config("spark.driver.allowMultipleContexts", "true")
             .enableHiveSupport()
         )
+        # spark.sql.warehouse.dir is a static config -- can only be set on the
+        # builder, not via spark.conf.set() after getOrCreate(). Only the
+        # pytest-xdist local-test harness sets this (one warehouse dir per
+        # worker, see tests/spark/apache/conftest.py); unset in every other case.
+        _warehouse_dir = os.environ.get("FABRICKS_TEST_WAREHOUSE_DIR")
+        if _warehouse_dir:
+            builder = builder.config("spark.sql.warehouse.dir", _warehouse_dir)
         spark = configure_spark_with_delta_pip(builder).getOrCreate()
-        # Job-sequential Silver scenarios (Task 9) merge job2+'s data — which
-        # introduces columns job1's schema doesn't have (verified: job2 adds
-        # `newField`, still present through job9) — into a table whose schema
-        # was created from an earlier job. This plan bypasses job
-        # orchestration entirely (no Bronze/Silver/Gold classes, no
-        # update_schema() between jobs), so without autoMerge a `MERGE INTO`
-        # referencing a new source column would fail with a real schema
-        # mismatch. Matches production's own fix for this (`add_spark_options_to_spark()`
+        # Iteration-sequential Silver scenarios (Task 9) merge iteration 2+'s
+        # data — which introduces columns iteration 1's schema doesn't have
+        # (verified: iteration 2 adds `newField`, still present through
+        # iteration 9) — into a table whose schema was created from an
+        # earlier iteration. This plan bypasses job orchestration entirely
+        # (no Bronze/Silver/Gold classes, no update_schema() between
+        # iterations), so without autoMerge a `MERGE INTO` referencing a new
+        # source column would fail with a real schema mismatch. Matches
+        # production's own fix for this (`add_spark_options_to_spark()`
         # in fabricks/context/spark_session.py already sets this for every
         # real Databricks session) rather than inventing local-only schema-
         # reconciliation logic. Confirmed via Delta Lake's own OSS docs this
