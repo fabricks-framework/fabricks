@@ -107,7 +107,7 @@ _SPARK.conf.set("spark.sql.shuffle.partitions", "2")
 # Database(name, spark=...).create() is a one-line wrapper around exactly
 # this SQL (fabricks/metastore/database.py) -- no location/property setup at
 # the database level, so there's nothing the class adds here.
-for _db_name in ("bronze", "silver", "gold", "expected"):
+for _db_name in ("bronze", "silver", "gold", "expected", "cdc"):
     _SPARK.sql(f"create database if not exists {_db_name}")
 
 
@@ -147,12 +147,12 @@ def local_spark():
 
 @pytest.fixture(scope="session")
 def king_and_queen_built(local_spark):
-    """Factory fixture: returns a callable that builds bronze/silver tables
+    """Factory fixture: returns a callable that builds bronze/CDC target tables
     in isolation — no job classes, no job config, no get_job().
 
-    `_build(seed_from, iters, cdc)` seeds a fresh, uniquely-named Silver
+    `_build(seed_from, iters, cdc)` seeds a fresh, uniquely-named target
     table directly from iteration `seed_from`'s own known-correct `expected`
-    output (see seed_silver_table in tests/spark/apache/compare.py), then
+    output (see seed_table in tests/spark/expected/compare.py), then
     runs one real SCD1/SCD2.update() call per iteration number in `iters`,
     in order, against that same table — each call's output becomes the next
     call's input, with no reseeding in between. `seed_from=0` means "no
@@ -187,15 +187,15 @@ def king_and_queen_built(local_spark):
     """
     from fabricks.cdc.scd1 import SCD1
     from fabricks.cdc.scd2 import SCD2
-    from tests.spark.apache.compare import (
+    from tests.spark.expected.compare import (
         create_expected_views,
         load_expected_scd1_seed,
         load_expected_scd2_seed,
-        seed_silver_table,
+        seed_table,
     )
 
-    create_expected_views(local_spark, "silver", "scd2")
-    create_expected_views(local_spark, "silver", "scd1")
+    create_expected_views(local_spark, "scd2")
+    create_expected_views(local_spark, "scd1")
 
     # __key = md5(array_join(array(id::string, __source::string), '*', '-1'))
     # (fabricks/cdc/templates/macros/hash.sql.jinja's add_key(fields=keys)) —
@@ -215,8 +215,8 @@ def king_and_queen_built(local_spark):
             return _cache[cache_key]
 
         suffix = f"king_and_queen_seed{seed_from}_{iters[0]}to{iters[-1]}_{cdc}"
-        scd = SCD2("silver", suffix, "scd2", spark=local_spark) if cdc == "scd2" else SCD1(
-            "silver", suffix, "scd1", spark=local_spark
+        scd = SCD2("cdc", suffix, "scd2", spark=local_spark) if cdc == "scd2" else SCD1(
+            "cdc", suffix, "scd1", spark=local_spark
         )
 
         if seed_from > 0:
@@ -224,13 +224,13 @@ def king_and_queen_built(local_spark):
                 # expected's own scd2 schema has no __timestamp column either
                 # -- same gap as scd1's, see load_expected_scd2_seed's
                 # docstring.
-                seed_silver_table(scd.table, load_expected_scd2_seed(local_spark, seed_from), keys=key_fields)
+                seed_table(scd.table, load_expected_scd2_seed(local_spark, seed_from), keys=key_fields)
             else:
                 # scd1's own expected view has no __timestamp column (dropped
                 # by its own oracle SQL) -- current.sql.jinja's __current CTE
                 # needs it back off the real target on the next merge. See
                 # load_expected_scd1_seed's docstring.
-                seed_silver_table(scd.table, load_expected_scd1_seed(local_spark, seed_from), keys=key_fields)
+                seed_table(scd.table, load_expected_scd1_seed(local_spark, seed_from), keys=key_fields)
 
         # Each iteration in `iters` runs as a real, sequential
         # SCD1/SCD2.update() call against whatever this loop already left in

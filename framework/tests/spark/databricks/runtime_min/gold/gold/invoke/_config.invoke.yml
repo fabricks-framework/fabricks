@@ -1,0 +1,39 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema.json
+# Real dbutils.notebook.run invocation status propagation -- test_notebook.py's
+# own fixture (docs/superpowers/plans/2026-09-04-databricks-cut-list.md).
+# Deliberately untagged: invoked directly via get_job(...).run(), not through
+# schedule(tag="test") -- same reasoning as ../feature/_config.feature.yml.
+- job:
+    step: gold
+    topic: invoke
+    item: notebook
+    options:
+      mode: invoke
+    invoker_options:
+      run:
+        - notebook: gold/gold/invoke/notebook
+          arguments:
+            arg1: 1
+- job:
+    step: gold
+    topic: invoke
+    item: failed_pre_run
+    options:
+      mode: memory
+    invoker_options:
+      pre_run:
+        - notebook: gold/gold/invoke/pre_run/exe
+          arguments:
+            arg1: 1
+- job:
+    step: gold
+    topic: invoke
+    item: post_run
+    options:
+      mode: memory
+    invoker_options:
+      post_run:
+        - notebook: gold/gold/invoke/post_run/exe
+          arguments:
+            arg1: 1

@@ -18,3 +18,18 @@
       mode: complete
     check_options:
       skip: true
+- job:
+    # Same check_options shape as check.fail -- pre_run: true reads
+    # warning.pre_run.sql, whose __action is 'warning' instead of 'fail'.
+    # fabricks/core/dags/run.py catches CheckWarning separately from a plain
+    # Exception and logs 'warned' (not 'failed') -- the job's for_each_run()
+    # still executes first (Processor.run() only raises the warning at the
+    # very end), so the table is populated despite the warning.
+    step: gold
+    topic: check
+    item: warning
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      pre_run: true

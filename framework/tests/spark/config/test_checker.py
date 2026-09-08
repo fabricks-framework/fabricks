@@ -15,15 +15,31 @@ runs for real with no actual data or container.
 from datetime import datetime, timedelta
 
 import pytest
+from pyspark.sql import Row
 
 from fabricks.context import TIMEZONE
 from fabricks.core import get_job
-from fabricks.core.jobs.base.exception import PostRunCheckException, SkipRunTimeWarning
+from fabricks.core.jobs.base.exception import (
+    PostRunCheckException,
+    PreRunCheckException,
+    PreRunCheckWarning,
+    SkipRunCheckWarning,
+    SkipRunTimeWarning,
+)
 from fabricks.models.job import CheckOptions
 
 
 def _job_with_check_options(**check_options):
     job = get_job(step="semantic", topic="fact", item="step_option")
+    job.conf = job.conf.model_copy(update={"check_options": CheckOptions(**check_options)})
+    return job
+
+
+def _check_job(**check_options):
+    # semantic.fact.check: no check_options in its own YAML, only exists so
+    # check.pre_run.sql/check.skip.sql (Checker.check_pre_run/check_skip_run
+    # assert these files exist) have a job to attach to.
+    job = get_job(step="semantic", topic="fact", item="check")
     job.conf = job.conf.model_copy(update={"check_options": CheckOptions(**check_options)})
     return job
 
@@ -96,3 +112,59 @@ def test_check_run_time_after_raises_before_the_target_time():
 
     with pytest.raises(SkipRunTimeWarning):
         job._check_run_time(future, "after")
+
+
+# check_pre_run()/check_skip_run() (framework/fabricks/core/jobs/base/checker.py):
+# the __action/__skip-column SQL mechanism behind gold.check_fail/check_skip,
+# proven today only via a real orchestration run (tests/spark/databricks/
+# test_schedule.py::test_forced_failure/test_forced_skip) reading
+# fabricks.last_schedule after the fact -- this proves the decision logic
+# itself, isolated from any DAG/schedule. spark.sql(...).where(...).collect()
+# is a MagicMock chain here, so `.where()`'s return_value is the same object
+# regardless of the "__action == 'fail'" vs "'warning'" argument passed to it
+# -- side_effect (a list, one entry consumed per .collect() call) is what
+# lets the fail-check's collect() and the warning-check's collect() return
+# different rows in the same test.
+def test_check_pre_run_raises_on_fail_action():
+    job = _check_job(pre_run=True)
+    job.spark.sql.return_value.where.return_value.collect.return_value = [
+        Row(__action="fail", __message="boom")
+    ]
+
+    with pytest.raises(PreRunCheckException, match="boom"):
+        job.check_pre_run()
+
+
+def test_check_pre_run_raises_warning_when_no_fail_rows():
+    job = _check_job(pre_run=True)
+    job.spark.sql.return_value.where.return_value.collect.side_effect = [
+        [],  # fail_df.collect()
+        [Row(__action="warning", __message="careful")],  # warning_df.collect()
+    ]
+
+    with pytest.raises(PreRunCheckWarning, match="careful"):
+        job.check_pre_run()
+
+
+def test_check_pre_run_passes_when_no_rows():
+    job = _check_job(pre_run=True)
+    job.spark.sql.return_value.where.return_value.collect.return_value = []
+
+    job.check_pre_run()  # must not raise
+
+
+def test_check_skip_run_raises_when_skip_row_present():
+    job = _check_job(skip=True)
+    job.spark.sql.return_value.where.return_value.collect.return_value = [
+        Row(__skip=True, __message="skip me")
+    ]
+
+    with pytest.raises(SkipRunCheckWarning, match="skip me"):
+        job.check_skip_run()
+
+
+def test_check_skip_run_passes_when_no_skip_rows():
+    job = _check_job(skip=True)
+    job.spark.sql.return_value.where.return_value.collect.return_value = []
+
+    job.check_skip_run()  # must not raise

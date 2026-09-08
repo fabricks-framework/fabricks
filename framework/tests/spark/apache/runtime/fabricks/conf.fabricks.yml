@@ -65,3 +65,9 @@
       - name: expected
         path_options:
           storage: /workspace/tests/spark/apache/.storage/expected
+      # Neutral namespace for test_cdc.py's own throwaway target tables --
+      # CDC merge correctness doesn't depend on which layer a table lives in,
+      # so it's proven here rather than borrowing "silver"/"gold"'s name.
+      - name: cdc
+        path_options:
+          storage: /workspace/tests/spark/apache/.storage/cdc

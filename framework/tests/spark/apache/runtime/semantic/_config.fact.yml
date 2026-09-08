@@ -18,3 +18,14 @@
         delta.minReaderVersion: 2
         delta.minWriterVersion: 5
         delta.columnMapping.mode: none
+- job:
+    # No check_options here -- tests/spark/config/test_checker.py sets them
+    # per-scenario via job.conf.model_copy(...), same as step_option/job_option
+    # above. Only exists so check.pre_run.sql/check.skip.sql have a job to
+    # attach to (Checker.check_pre_run/check_skip_run assert the file exists).
+    step: semantic
+    topic: fact
+    item: check
+    tags: [test]
+    options:
+      mode: complete

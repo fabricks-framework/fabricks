@@ -1,16 +1,17 @@
 """Derive CDC-ready NDJSON rows from the raw JSON landing fixtures under
-tests/spark/fixtures/ -- the same directory tests/spark/databricks/utils.py's
-convert_json_to_parquet() reads from (paths.tests.parent().joinpath(...)),
-shared between the apache and databricks tiers rather than each tier keeping
-its own copy of the raw landing data. Run once, output committed to
-tests/spark/apache/fixtures/ (this tier's own derived NDJSON cache, not
-shared) — see docs/adr/0001-duckdb-backend-for-local-cdc-tests.md, Stage 1
-item #6.
+tests/spark/fixtures/ -- only king/queen (+ their __deletelog siblings) are
+read; every other topic that directory used to hold (prince, princess,
+monarch, regent, ...) belonged to the old topic-zoo Databricks suite (see
+_archive/databricks-old/) and has been moved to _archive/fixtures-old-topics/
+since nothing here reads it. Run once, output committed to
+tests/spark/apache/fixtures/ (this tier's own derived NDJSON cache) — see
+docs/adr/0001-duckdb-backend-for-local-cdc-tests.md, Stage 1 item #6.
 
-Ported from tests/spark/databricks/utils.py's convert_json_to_parquet/
-convert_parquet_to_delta (which import databricks.sdk.runtime and can't run
-outside a Databricks notebook): same pandas.read_json read, same folder-path
-__timestamp derivation, no Spark/parquet write, no Unity-Catalog replication.
+Originally ported from the archived tests/spark/databricks/utils.py's
+convert_json_to_parquet/convert_parquet_to_delta (which imported
+databricks.sdk.runtime and couldn't run outside a Databricks notebook): same
+pandas.read_json read, same folder-path __timestamp derivation, no
+Spark/parquet write, no Unity-Catalog replication.
 """
 
 import argparse
@@ -39,7 +40,7 @@ def _timestamp_from_path(json_file: Path) -> str:
     batch like "0001" (int(batch) % 60 == 1 == the string slice's minute
     digits "01"). It silently diverges for any batch string longer than 4
     digits: verified against tests/spark/fixtures/iter3/king/2022/03/01/001234/ (a real
-    6-digit batch folder) and tests/spark/expected/silver/scd2/iter03.sql's chained
+    6-digit batch folder) and tests/spark/expected/scd2/iter03.jsonl's chained
     VALUES rows -- the real formula gives "00:12:34" (batch "001234"[:6],
     since batch alone is already 6 chars: HH="00" MM="12" SS="34"), while
     int("001234") % 60 == 34 gives the wrong "00:34:00".
@@ -144,7 +145,7 @@ def main() -> None:
         # concatenated into one file -- mimics a single combined bronze topic
         # (like the real "monarch" topic, which lands king- and queen-shaped
         # rows through one raw source rather than two separate ones; see
-        # tests/spark/fixtures/iter4/monarch for a real example of that shape).
+        # _archive/fixtures-old-topics/iter4-monarch for a real example of that shape).
         # Each row keeps its own __source ("king"/"queen"), same as
         # bronze_{entity}.jsonl -- this only changes which *file* the rows
         # arrive in, not the row content.
