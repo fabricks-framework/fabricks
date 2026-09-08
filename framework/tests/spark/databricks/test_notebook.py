@@ -2,7 +2,7 @@
 
 One notebook, invoked directly via get_job(...).run() -- not through a
 schedule, unlike test_schedule.py -- asserting the resulting fabricks.last_status
-row. See runtime_min/gold/gold/invoke/_config.invoke.yml for the three jobs.
+row. See runtime/gold/gold/invoke/_config.invoke.yml for the three jobs.
 """
 
 import pytest

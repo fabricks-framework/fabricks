@@ -1,0 +1,10 @@
+---
+- job:
+    step: bronze
+    topic: queen
+    item: scd1
+    tags: [test]
+    options:
+      mode: register
+      uri: /workspace/tests/spark/apache/.storage/bronze_external/queen
+      keys: [id]

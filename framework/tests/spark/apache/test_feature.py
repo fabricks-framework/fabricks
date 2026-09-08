@@ -4,11 +4,11 @@ import pytest
 from fabricks.metastore.table import Table
 
 # Real table-feature behavior needing actual Delta table state to verify, one
-# function per feature -- mirrors tests/spark/databricks/runtime_min/gold/gold/
+# function per feature -- mirrors tests/spark/databricks/runtime/gold/gold/
 # feature/'s own split (feature_mask/feature_cluster_by), but for whichever
 # features are genuine open-source Delta Lake protocol rather than
 # Databricks/Unity-Catalog-only. Column masking and liquid clustering stay in
-# runtime_min's feature/ topic instead -- see its README for why those two
+# runtime's feature/ topic instead -- see its README for why those two
 # can't move here.
 
 

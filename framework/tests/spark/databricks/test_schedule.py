@@ -1,11 +1,11 @@
 """Real DAG ordering, forced-failure/skip bookkeeping, real fabricks.last_schedule state.
 
-Runs runtime_min's tag="test" schedule once (via fabricks.core.schedules.standalone,
+Runs runtime's tag="test" schedule once (via fabricks.core.schedules.standalone,
 the same generate -> process (per step, real dbutils.notebook.run) -> terminate
 sequence fabricks_run_job's tasks in databricks.yml drive), then asserts against
 the resulting fabricks.last_schedule catalog state.
 
-One test per runtime_min job/feature (see its README's table) -- each tagged
+One test per runtime job/feature (see its README's table) -- each tagged
 job gets exactly one assertion naming what it proves, rather than one test
 per SQL query shape.
 """

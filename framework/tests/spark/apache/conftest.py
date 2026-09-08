@@ -9,8 +9,8 @@ what makes this win the race against fabricks.context's eager, non-Delta
 SPARK singleton (see Task 7's "Why" note in the plan). Do not move this into
 `local_spark`'s function body — that reintroduces the race.
 
-Do not mix `tests/spark/apache` with `tests/plain`/`tests/spark/databricks`/
-`tests/spark/config` in the same pytest invocation — `fabricks.context.runtime`
+Do not mix `tests/spark/apache` with `tests/unit/plain`/`tests/spark/databricks`/
+`tests/unit/config` in the same pytest invocation — `fabricks.context.runtime`
 resolves CONF_RUNTIME once per process, and the first import wins.
 """
 
@@ -45,8 +45,15 @@ _WORKER = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
 _LOCAL_STORAGE = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".storage"
 
 os.environ["FABRICKS_BASE"] = str(_FRAMEWORK_ROOT)
+os.environ["FABRICKS_RUNTIME"] = "tests/spark/apache/runtime"
 os.environ["FABRICKS_CONFIG"] = "tests/spark/apache/runtime/fabricks/conf.fabricks.yml"
 os.environ["FABRICKS_ENVIRONMENT"] = "docker"
+# Real get_job()/get_step() resolution against this file's bronze/silver
+# blocks below, instead of falling back to `select * from fabricks.*_jobs`
+# (a catalog table this suite never populates). Same flag tests/unit/config/
+# already sets, against the same conf.fabricks.yml -- this just lets the
+# same job/step config resolve against a real Spark+Delta session here too.
+os.environ["FABRICKS_IS_JOB_CONFIG_FROM_YAML"] = "TRUE"
 
 shutil.rmtree(_LOCAL_STORAGE, ignore_errors=True)
 
@@ -418,3 +425,36 @@ def king_and_queen_built(local_spark):
         return scd
 
     return _build
+
+
+@pytest.fixture(scope="session")
+def king_and_queen_registered_sources(local_spark):
+    """Seeds the two Delta tables tests/spark/apache/runtime/bronze/_config.{kings,queens}.yml's
+    `register`-mode jobs read from (their `uri`), independent of anything
+    king_and_queen_built creates under its own `cdc` database. Session-scoped
+    + written once: `register` mode's source table is read-only from the
+    job's own point of view -- reuses the same iter1 NDJSON fixture files
+    king_and_queen_built already reads, no new fixture data.
+
+    Writing the Delta files at `uri` isn't enough: Bronze.parse(stream=False)
+    (fabricks/core/jobs/bronze.py) reads `select * from {qualified_name}`, not
+    from `uri` directly, so the job's own catalog table
+    (bronze.king_scd1/bronze.queen_scd1) must exist too -- register_external_table()
+    is the framework's own mechanism for that (`create table if not exists ...
+    location '<uri>'`).
+    """
+    from pyspark.sql.functions import col
+
+    from fabricks.core import get_job
+    from fabricks.utils.path import resolve_fileshare_path
+
+    fixtures_root = Path(__file__).resolve().parent / "fixtures" / "iter1"
+    for entity in ("king", "queen"):
+        path = resolve_fileshare_path(f"/workspace/tests/spark/apache/.storage/bronze_external/{entity}")
+        df = local_spark.read.json(str(fixtures_root / f"bronze_{entity}.jsonl"))
+        # register_external_table() asserts __timestamp is TimestampType; the JSON
+        # reader infers it as string from the fixture's ISO-8601 literals.
+        df = df.withColumn("__timestamp", col("__timestamp").cast("timestamp"))
+        df.write.format("delta").mode("overwrite").save(path.string)
+
+        get_job(step="bronze", topic=entity, item="scd1").register_external_table()

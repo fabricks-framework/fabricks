@@ -40,28 +40,34 @@
       schedules: fabricks/schedules
       views: fabricks/views
       requirements: fabricks/requirements.txt
-    gold:
-      - name: semantic
+    bronze:
+      - name: bronze
         path_options:
-          storage: /workspace/tests/spark/apache/.storage/semantic
-          runtime: semantic
+          storage: /workspace/tests/spark/apache/.storage/bronze
+          runtime: bronze
         options:
-          order: 304
+          order: 101
+    silver:
+      - name: silver
+        path_options:
+          storage: /workspace/tests/spark/apache/.storage/silver
+          runtime: silver
+        options:
+          order: 201
+          parent: bronze
+    gold:
+      - name: gold
+        path_options:
+          storage: /workspace/tests/spark/apache/.storage/gold
+          runtime: gold
+        options:
+          order: 301
         table_options:
           properties:
             delta.minReaderVersion: 1
             delta.minWriterVersion: 7
             delta.columnMapping.mode: none
     databases:
-      - name: bronze
-        path_options:
-          storage: /workspace/tests/spark/apache/.storage/bronze
-      - name: silver
-        path_options:
-          storage: /workspace/tests/spark/apache/.storage/silver
-      - name: gold
-        path_options:
-          storage: /workspace/tests/spark/apache/.storage/gold
       - name: expected
         path_options:
           storage: /workspace/tests/spark/apache/.storage/expected

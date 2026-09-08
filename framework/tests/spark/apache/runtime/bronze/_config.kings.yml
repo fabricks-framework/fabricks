@@ -1,0 +1,14 @@
+---
+# register mode: no parser, no stream (Bronze.stream/Bronze.parser both
+# special-case it), reads directly from an existing Delta table at `uri`
+# via `select * from delta.\`{uri}\`` -- that table just needs to exist on
+# disk, seeded by conftest.py's king_and_queen_registered_sources fixture.
+- job:
+    step: bronze
+    topic: king
+    item: scd1
+    tags: [test]
+    options:
+      mode: register
+      uri: /workspace/tests/spark/apache/.storage/bronze_external/king
+      keys: [id]

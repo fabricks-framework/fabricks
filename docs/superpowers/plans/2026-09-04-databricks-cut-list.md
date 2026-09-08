@@ -1,7 +1,7 @@
 # Databricks Cut List — one schedule, all CDC in Apache
 
 A draft of §3's minimal runtime now exists at
-[framework/tests/spark/databricks/runtime_min/](../../../framework/tests/spark/databricks/runtime_min/README.md)
+[framework/tests/spark/databricks/runtime/](../../../framework/tests/spark/databricks/runtime/README.md)
 (10 jobs, not yet wired to any test).
 
 Companion to
@@ -60,7 +60,7 @@ no job orchestration).
 | Table options/comment/**liquid clustering**/spark-options/timeout | `test_gold_fact_option`, `test_silver_timeout` | New scenario for comment/spark-options/timeout/`cluster_by`-DDL-shape — **liquid clustering's real behavior stays Databricks-only** (see Risks: it's a Databricks Runtime execution-engine feature, not part of open-source Delta — OSS Spark can write the `clustering` table feature flag but doesn't implement real clustering) | — |
 | SCD1 last-timestamp bookkeeping | `test_gold_scd1_last_timestamp` | New scenario | — |
 | `no_drop` exception | `test_gold_fact_no_drop` | **CONFIG candidate**, not Apache — pure option+exception, no real data needed | — |
-| Column masking (real values) | `test_gold_fact_masker_and_commenter` | **Cannot port — Databricks/Unity-Catalog-only feature, no OSS Delta equivalent at all.** Stays Databricks-only permanently — now its own untagged `feature_mask` job in `runtime_min` (see Risks) | — |
+| Column masking (real values) | `test_gold_fact_masker_and_commenter` | **Cannot port — Databricks/Unity-Catalog-only feature, no OSS Delta equivalent at all.** Stays Databricks-only permanently — now its own untagged `feature_mask` job in `runtime` (see Risks) | — |
 | Column comments | `test_gold_fact_masker_and_commenter` (was bundled with masking) | **Split out — this one IS portable.** Plain ANSI `COMMENT '...'` DDL, no Databricks/UC dependency, unlike the masking check it was bundled with in the original test. New scenario | — |
 | Overwrite mode | `test_overwrite.py` (dim/fact) | New scenario | — |
 | Append/latest modes | `test_silver_princess_append`/`latest` | New scenario/topic | — |
@@ -148,7 +148,7 @@ independently and immediately.
    - **Column masking** (`test_gold_fact_masker_and_commenter`) — Unity
      Catalog/Databricks Runtime governance feature, no OSS Delta equivalent
      whatsoever. The real masked-value check is Databricks-only, permanently
-     — now its own untagged `gold.feature_mask` job in `runtime_min`, kept
+     — now its own untagged `gold.feature_mask` job in `runtime`, kept
      separate from the (portable) column-comments check it used to be
      bundled with in the original test.
    - **Liquid clustering** (`test_gold_fact_option`'s `cluster_by`/
@@ -181,7 +181,7 @@ independently and immediately.
    Gold Apache port landing first (§2, row 1). Cutting before porting opens
    a real window with zero gold-merge-correctness coverage on either tier.
 
-4. **The draft runtime (`runtime_min/`) is unverified.** Hand-matched
+4. **The draft runtime (`runtime/`) is unverified.** Hand-matched
    against real existing job entries, but never schema-validated (no
    `jsonschema` in this venv) or run against an actual cluster. Don't delete
    the old Databricks tests until `test_schedule.py`/`test_notebook.py` are
