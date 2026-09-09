@@ -41,6 +41,7 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
 
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
 
+
 _EXPECTED_ROOT = Path(__file__).resolve().parent  # this file now lives inside tests/spark/expected/ itself
 
 # OSS Apache Spark (this local test container) has no QUALIFY clause support
@@ -162,7 +163,9 @@ def create_expected_views(spark: SparkSession, cdc: str) -> None:
             # tests/spark/databricks/utils.py's create_expected_views (commit
             # d4f2498e) -- without it, "scd2_iter01" is created but
             # "scd2_iter1" (what iter1.sql selects from) is never found.
-            iter_num = str(int(re.search(r"\d+", ndjson_file.stem).group()))
+            match = re.search(r"\d+", ndjson_file.stem)
+            assert match, f"no iteration number in {ndjson_file.name}"
+            iter_num = str(int(match.group()))
             rows = [json.loads(line) for line in ndjson_file.read_text().splitlines()]
             for row in rows:
                 # __valid_from/__valid_to are plain "YYYY-MM-DD HH:MM:SS"
@@ -173,12 +176,8 @@ def create_expected_views(spark: SparkSession, cdc: str) -> None:
                 # would otherwise be localized using the JVM/driver's local
                 # timezone) — mirrors tests/spark/databricks/utils.py's identical
                 # parsing for the same NDJSON files.
-                row["__valid_from"] = datetime.strptime(row["__valid_from"], "%Y-%m-%d %H:%M:%S").replace(
-                    tzinfo=UTC
-                )
-                row["__valid_to"] = datetime.strptime(row["__valid_to"], "%Y-%m-%d %H:%M:%S").replace(
-                    tzinfo=UTC
-                )
+                row["__valid_from"] = datetime.strptime(row["__valid_from"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
+                row["__valid_to"] = datetime.strptime(row["__valid_to"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
                 # newField was committed to these NDJSON files as a mix of
                 # stringified literals ("true"/"false"/"null") and genuine
                 # JSON null (verified: grep across every iter0N.jsonl) --
@@ -195,7 +194,7 @@ def create_expected_views(spark: SparkSession, cdc: str) -> None:
             expected_table = f"expected.scd2_iter{iter_num}"
             expected_cache = os.environ.get("FABRICKS_TEST_EXPECTED_CACHE")
             if expected_cache:
-                cache_path = Path(expected_cache)
+                cache_path = Path(expected_cache) / f"scd2_iter{iter_num}"
                 if not (cache_path / "_delta_log").exists():
                     df.write.format("delta").save(str(cache_path))
                 spark.sql(f"create table {expected_table} using delta location '{cache_path}'")

@@ -9,9 +9,7 @@ resolution + orchestration-adjacent path instead.
 from fabricks.core import get_job
 
 
-def test_get_job_bronze_king_only_reads_real_registered_delta_table(
-    local_spark, king_and_queen_registered_sources
-):
+def test_get_job_bronze_king_only_reads_real_registered_delta_table(local_spark, king_and_queen_registered_sources):
     job = get_job(step="bronze", topic="king", item="scd1")
 
     df = job.parse(stream=False)
@@ -19,9 +17,7 @@ def test_get_job_bronze_king_only_reads_real_registered_delta_table(
     assert "id" in df.columns
 
 
-def test_get_job_bronze_queen_only_reads_real_registered_delta_table(
-    local_spark, king_and_queen_registered_sources
-):
+def test_get_job_bronze_queen_only_reads_real_registered_delta_table(local_spark, king_and_queen_registered_sources):
     job = get_job(step="bronze", topic="queen", item="scd1")
 
     df = job.parse(stream=False)

@@ -85,9 +85,7 @@ sys.modules["fabricks.utils.spark"] = MagicMock(
 )
 
 sys.modules["databricks.sdk.runtime"] = MagicMock(
-    name="fake_databricks_sdk_runtime",
-    spark=_fake_spark_session,
-    dbutils=_fake_dbutils,
+    name="fake_databricks_sdk_runtime", spark=_fake_spark_session, dbutils=_fake_dbutils
 )
 
 sys.modules["fabricks.core.dags.log"] = MagicMock(

@@ -21,12 +21,7 @@ import time
 
 import pytest
 
-# parents[3]: apache -> spark -> tests -> framework. Deliberately NOT
-# parents[4]/"framework" (the repo root then re-descending) - that only
-# happens to work on the host. docker-compose.yml bind-mounts the
-# "framework" dir itself to /workspace, so inside the container parents[4]
-# lands on the container's filesystem root and FABRICKS_BASE would resolve
-# to the nonexistent "/framework".
+# parents[3]: apache -> spark -> tests -> framework.
 _FRAMEWORK_ROOT = Path(__file__).resolve().parents[3]
 
 # Under pytest-xdist, each worker is a separate process importing this module
@@ -34,8 +29,7 @@ _FRAMEWORK_ROOT = Path(__file__).resolve().parents[3]
 # non-xdist run).
 _WORKER = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
 
-# conf.fabricks.yml hardcodes each layer's storage as a single fixed absolute
-# path (e.g. /workspace/tests/spark/apache/.storage/silver) -- not worker-scoped,
+# Each layer's storage is a single fixed absolute path -- not worker-scoped,
 # unlike the Derby/warehouse dirs below. Every worker wiping the same shared
 # tree at import time is safe: pytest-xdist has every worker finish its own
 # collection (which is what triggers this import) before the controller
@@ -43,7 +37,11 @@ _WORKER = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
 # worker's tests start writing table data -- there's no window where one
 # worker's rmtree could delete another's in-progress output.
 _LOCAL_STORAGE = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".storage"
-_EXPECTED_CACHE = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".expected-cache" / "scd2_iter1"
+_EXPECTED_CACHE = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".expected-cache"
+_WORKER_ROOT = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".worker_cwd" / _WORKER
+_WORKER_ROOT.mkdir(parents=True, exist_ok=True)
+_VARIABLES_FILE = _WORKER_ROOT / "variables.yml"
+_VARIABLES_FILE.write_text(f"$apache_storage: {_LOCAL_STORAGE}\n")
 
 os.environ["FABRICKS_BASE"] = str(_FRAMEWORK_ROOT)
 os.environ["FABRICKS_RUNTIME"] = "tests/spark/apache/runtime"
@@ -51,7 +49,10 @@ os.environ["FABRICKS_TEST_SPARK_DEFAULT_PARALLELISM"] = "2"
 os.environ["FABRICKS_TEST_DISPOSABLE_STORAGE"] = str(_LOCAL_STORAGE)
 os.environ["FABRICKS_TEST_EXPECTED_CACHE"] = str(_EXPECTED_CACHE)
 os.environ["FABRICKS_CONFIG"] = "tests/spark/apache/runtime/fabricks/conf.fabricks.yml"
+os.environ["FABRICKS_VARIABLE"] = str(_VARIABLES_FILE)
 os.environ["FABRICKS_ENVIRONMENT"] = "docker"
+os.environ["FABRICKS_IS_DEBUGMODE"] = "FALSE"
+os.environ["FABRICKS_LOGLEVEL"] = "WARNING"
 # Real get_job()/get_step() resolution against this file's bronze/silver
 # blocks below, instead of falling back to `select * from fabricks.*_jobs`
 # (a catalog table this suite never populates). Same flag tests/unit/config/
@@ -63,21 +64,17 @@ shutil.rmtree(_LOCAL_STORAGE, ignore_errors=True)
 
 # get_spark()'s docker branch (enableHiveSupport(), no spark.sql.warehouse.dir
 # override - Task 4, out of scope here) defaults Hive's embedded Derby
-# metastore and warehouse to CWD (/workspace in the container, bind-mounted to
-# this framework/ dir on the host - see docker-compose.yml). Without this,
-# table registration from a previous `podman compose run` leaks into the next
-# one (each `run --rm` is a fresh container, but /workspace is not).
+# metastore and warehouse to CWD. Without this, table registration from a
+# previous run leaks into the next one, since the repo working tree persists.
 #
 # Can't just chdir() each worker into its own directory here: pytest-xdist
 # workers re-run collection themselves against the CLI's test-path argument,
 # and a chdir at conftest import time (before that argument is resolved)
-# makes every worker collect 0 items. So CWD stays /workspace for everyone,
+# makes every worker collect 0 items. So CWD stays unchanged for everyone,
 # and per-worker isolation instead goes through JVM/Spark config: Derby's
 # embedded metastore resolves its (relative, by default) database directory
 # against the `derby.system.home` system property rather than CWD, and
 # `_JAVA_OPTIONS` is honored by any `java` process py4j launches.
-_WORKER_ROOT = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".worker_cwd" / _WORKER
-_WORKER_ROOT.mkdir(parents=True, exist_ok=True)
 os.environ["_JAVA_OPTIONS"] = f"-Dderby.system.home={_WORKER_ROOT}"
 # spark.sql.warehouse.dir is a static config -- must reach get_spark()'s
 # builder before getOrCreate(), a plain spark.conf.set() afterward raises
@@ -86,6 +83,7 @@ os.environ["FABRICKS_TEST_WAREHOUSE_DIR"] = str(_WORKER_ROOT / "spark-warehouse"
 for _leftover in ("metastore_db", "spark-warehouse"):
     shutil.rmtree(_WORKER_ROOT / _leftover, ignore_errors=True)
 (_WORKER_ROOT / "derby.log").unlink(missing_ok=True)
+
 
 from pyspark.sql import SparkSession  # noqa: E402
 
@@ -96,29 +94,15 @@ _SPARK: SparkSession = get_spark()
 # fabricks/metastore/table.py's Table._create() issues plain `create table
 # ... location '...'` DDL with no `using delta` clause -- it relies entirely
 # on the session's default table provider being Delta. Real Databricks
-# Runtime configures that by default; get_spark()'s "docker" branch (Task 4)
-# does not -- confirmed empirically (this container's real Spark session:
-# `describe detail` on a table created via that exact DDL pattern showed
-# `format=parquet`), so every table Table.create() makes here is silently a
-# plain Hive/parquet table, and any later `merge into` on it raises
-# `UnsupportedOperationException: ... does not support MERGE INTO TABLE`
-# (reproduced exactly). Set here rather than in get_spark()'s docker branch
-# (Task 4, not this plan's to touch) -- this is test-harness session setup,
-# not a change to production table-creation DDL or CDC merge logic; it only
-# makes the *unmodified* production DDL create the Delta tables it already
-# assumes it's creating.
+# Runtime configures that by default; get_spark()'s "docker" branch does not.
 _SPARK.sql("set spark.sql.sources.default = delta")
-# ponytail: fixtures are a handful of rows, but Spark's 200-partition shuffle
-# default still fires on every merge - pure per-test overhead here, not real
-# computation. Tuned for this session-scoped local-test JVM only; production
-# get_spark() is untouched. (spark.ui.enabled is a static config - can't be
-# changed post-getOrCreate(), skipping it here.)
+# ponytail: fixtures are a handful of rows, but Spark's production-scale
+# partition defaults add pure per-test overhead here.
 _SPARK.conf.set("spark.sql.shuffle.partitions", "2")
+_SPARK.conf.set("spark.databricks.delta.snapshotPartitions", "2")
 _SPARK.conf.set("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "false")
 
-# Database(name, spark=...).create() is a one-line wrapper around exactly
-# this SQL (fabricks/metastore/database.py) -- no location/property setup at
-# the database level, so there's nothing the class adds here.
+# Database(name, spark=...).create() adds no location or property setup.
 for _db_name in ("bronze", "silver", "gold", "expected", "cdc", "fabricks"):
     _SPARK.sql(f"create database if not exists {_db_name}")
 
@@ -227,8 +211,10 @@ def king_and_queen_built(local_spark):
             return _cache[cache_key]
 
         suffix = f"king_and_queen_seed{seed_from}_{iters[0]}to{iters[-1]}_{cdc}"
-        scd = SCD2("cdc", suffix, "scd2", spark=local_spark) if cdc == "scd2" else SCD1(
-            "cdc", suffix, "scd1", spark=local_spark
+        scd = (
+            SCD2("cdc", suffix, "scd2", spark=local_spark)
+            if cdc == "scd2"
+            else SCD1("cdc", suffix, "scd1", spark=local_spark)
         )
 
         if seed_from > 0:
@@ -394,7 +380,7 @@ def king_and_queen_built(local_spark):
             # existing target table's own rows): verified UNRESOLVED_COLUMN
             # against this container's real Spark session, listing only the
             # target table's pre-existing 5 columns.
-            # autoMerge (spark.databricks.delta.schema.autoMerge.enabled)  # noqa: ERA001 - prose, not code
+            # autoMerge (spark.databricks.delta.schema.autoMerge.enabled)
             # only patches the final `merge into` statement -- it doesn't
             # retroactively widen an arbitrary SELECT reading the
             # not-yet-altered target table mid-query. update_schema() (an
@@ -455,7 +441,7 @@ def king_and_queen_registered_sources(local_spark):
 
     fixtures_root = Path(__file__).resolve().parent / "fixtures" / "iter1"
     for entity in ("king", "queen"):
-        path = resolve_fileshare_path(f"/workspace/tests/spark/apache/.storage/bronze_external/{entity}")
+        path = resolve_fileshare_path(str(_LOCAL_STORAGE / "bronze_external" / entity))
         df = local_spark.read.json(str(fixtures_root / f"bronze_{entity}.jsonl"))
         # register_external_table() asserts __timestamp is TimestampType; the JSON
         # reader infers it as string from the fixture's ISO-8601 literals.

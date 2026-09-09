@@ -42,7 +42,9 @@ IS_TYPE_WIDENING: Final[bool] = CONF_RUNTIME.options.type_widening or False
 # Resolve all paths at once
 PATHS_RESOLVED = CONF_RUNTIME.resolved_path_options
 
-FABRICKS_STORAGE: Final[FileSharePath] = PATHS_RESOLVED.storage
+# LocalFileSharePath only stands in under FABRICKS_ENVIRONMENT=docker, where
+# FileSharePath's abfss-only members go unused -- hence the ignores below.
+FABRICKS_STORAGE: Final[FileSharePath] = PATHS_RESOLVED.storage  # ty: ignore[invalid-assignment]
 
 FABRICKS_STORAGE_CREDENTIAL: Final[str | None] = CONF_RUNTIME.path_options.storage_credential
 
@@ -53,7 +55,7 @@ PATH_VIEWS: Final[GitPath] = PATHS_RESOLVED.views
 PATH_SCHEDULES: Final[GitPath] = PATHS_RESOLVED.schedules
 PATH_REQUIREMENTS: Final[GitPath] = PATHS_RESOLVED.requirements
 PATH_MASKS: Final[GitPath] = PATHS_RESOLVED.masks
-PATHS_STORAGE: Final[dict[str, FileSharePath]] = PATHS_RESOLVED.storages
+PATHS_STORAGE: Final[dict[str, FileSharePath]] = PATHS_RESOLVED.storages  # ty: ignore[invalid-assignment]
 PATHS_RUNTIME: Final[dict[str, GitPath]] = PATHS_RESOLVED.runtimes
 
 Bronzes = list(BRONZE.keys())

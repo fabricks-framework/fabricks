@@ -103,7 +103,9 @@ def test_gold_metadata_job_level_true_wins():
 def test_gold_metadata_falls_back_to_step_level_when_job_unset():
     job = _gold_job(metadata=None)
     step_conf = job.step_conf
-    job.base_step_conf = step_conf.model_copy(update={"options": step_conf.options.model_copy(update={"metadata": True})})
+    job.base_step_conf = step_conf.model_copy(
+        update={"options": step_conf.options.model_copy(update={"metadata": True})}
+    )
 
     context = job.get_cdc_context(_FakeDF(columns=["id"]))
 
@@ -113,7 +115,9 @@ def test_gold_metadata_falls_back_to_step_level_when_job_unset():
 def test_gold_metadata_defaults_false_when_neither_level_sets_it():
     job = _gold_job(metadata=None)
     step_conf = job.step_conf
-    job.base_step_conf = step_conf.model_copy(update={"options": step_conf.options.model_copy(update={"metadata": None})})
+    job.base_step_conf = step_conf.model_copy(
+        update={"options": step_conf.options.model_copy(update={"metadata": None})}
+    )
 
     context = job.get_cdc_context(_FakeDF(columns=["id"]))
 
@@ -331,12 +335,7 @@ def _silver_job(*, mode="update", change_data_capture="nocdc", stream=True, **op
         "step": "silver_test",
         "topic": "fact",
         "item": "dummy",
-        "options": {
-            "mode": mode,
-            "change_data_capture": change_data_capture,
-            "stream": stream,
-            **option_overrides,
-        },
+        "options": {"mode": mode, "change_data_capture": change_data_capture, "stream": stream, **option_overrides},
     }
     job = Silver(step="silver_test", topic="fact", item="dummy", conf=conf)
     # job.spark (Configurator.spark) unconditionally reads

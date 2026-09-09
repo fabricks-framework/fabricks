@@ -169,3 +169,7 @@ cython_debug/
 
 # Local, uncommitted reference copies of retired code
 _archive/
+
+# Headroom
+.serena/
+.headroom_*

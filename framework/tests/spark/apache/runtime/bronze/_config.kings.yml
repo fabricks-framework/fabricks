@@ -10,5 +10,5 @@
     tags: [test]
     options:
       mode: register
-      uri: /workspace/tests/spark/apache/.storage/bronze_external/king
+      uri: $apache_storage/bronze_external/king
       keys: [id]

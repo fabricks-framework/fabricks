@@ -18,7 +18,7 @@
       mode: complete
     table_options:
       masks:
-        dummy: "mask_dummy"
+        dummy: mask_dummy
 - job:
     step: gold
     topic: feature

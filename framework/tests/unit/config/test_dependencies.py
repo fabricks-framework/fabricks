@@ -23,10 +23,10 @@
 
 from unittest.mock import MagicMock
 
-import fabricks.core.steps.base as steps_base
 from fabricks.core import get_job
 from fabricks.core.jobs.silver import Silver
 from fabricks.core.steps import get_step
+import fabricks.core.steps.base as steps_base
 
 
 def _gold_job(*, parents=None, wait_for=None):
@@ -50,10 +50,7 @@ def test_gold_dependencies_parents_and_new_wait_for():
 
     deps = job.get_dependencies()
 
-    assert {(d.origin, d.parent) for d in deps} == {
-        ("parent", "gold.fact_other"),
-        ("wait_for", "gold.fact_third"),
-    }
+    assert {(d.origin, d.parent) for d in deps} == {("parent", "gold.fact_other"), ("wait_for", "gold.fact_third")}
 
 
 def test_gold_dependencies_wait_for_already_covered_by_parents_is_dropped():

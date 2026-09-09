@@ -1,0 +1,74 @@
+---
+# Unity Catalog twin of conf.fabricks.yml -- same minimal orchestration runtime
+# (identical bronze/silver/gold/transf trees), only the catalog and the storage
+# layout differ. Pick between the two with databricks.yml's `fabricks_conf`
+# variable, which feeds FABRICKS_CONFIG.
+#
+# No `credentials` block on purpose: build_spark_session skips
+# add_credentials_to_spark when unity_catalog is on
+# (fabricks/context/spark_session.py:67), so it would be dead config here --
+# the account key arrives via the cluster's FABRICKS_ACCESS_KEY env var.
+- conf:
+    name: test
+    options:
+      secret_scope: bmskv
+      catalog: bms_dna_test
+      unity_catalog: true
+      timeouts:
+        step: 3600
+        job: 3600
+        pre_run: 3600
+        post_run: 3600
+      workers: 8
+      retention_days: 7
+      timezone: Europe/Paris
+    path_options:
+      storage: abfss://test@$standard
+      udfs: fabricks/udfs
+      extenders: fabricks/extenders
+      parsers: fabricks/parsers
+      schedules: fabricks/schedules
+      views: fabricks/views
+      requirements: fabricks/requirements.txt
+      masks: fabricks/masks
+    bronze:
+      - name: bronze
+        path_options:
+          storage: abfss://test@$standard/bronze
+          runtime: bronze
+        options:
+          order: 101
+    silver:
+      - name: silver
+        path_options:
+          storage: abfss://test@$standard/silver
+          runtime: silver
+        options:
+          order: 201
+          parent: bronze
+          local_checkpoint: true
+    gold:
+      - name: gold
+        path_options:
+          storage: abfss://test@$standard/gold
+          runtime: gold/gold
+        options:
+          timeouts:
+            job: 1800
+          order: 301
+      - name: transf
+        path_options:
+          storage: abfss://test@$standard/transf
+          runtime: gold/transf
+        options:
+          timeouts:
+            job: 1800
+          workers: 2
+          order: 303
+    databases:
+      - name: expected
+        path_options:
+          storage: abfss://test@$standard/dummy
+    variables:
+      \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
+      \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net

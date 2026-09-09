@@ -35,6 +35,13 @@ jobs:
         run: uv run ty check fabricks
         working-directory: framework
 
-      - name: Run Unit Tests
-        run:   uv run pytest tests/unit --maxfail 3
+      # One tier per pytest process: each tier's conftest.py patches
+      # sys.modules at import time, so `pytest tests/unit` would let whichever
+      # conftest imports first win for the rest of the run -- see docs/TEST.md.
+      - name: Run Plain Unit Tests
+        run: uv run pytest tests/unit/plain --maxfail 3
+        working-directory: framework
+
+      - name: Run Config Unit Tests
+        run: uv run pytest tests/unit/config --maxfail 3
         working-directory: framework

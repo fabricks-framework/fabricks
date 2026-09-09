@@ -145,7 +145,7 @@ class FileSharePath(BasePath):
 
 def _fileshare_class(value: str) -> type["FileSharePath"]:
     if FABRICKS_ENVIRONMENT == "docker":
-        return LocalFileSharePath  # type: ignore[return-value]
+        return LocalFileSharePath  # ty: ignore[invalid-return-type] - BasePath sibling, drop-in for local storage roots
 
     assert value.startswith("abfss://"), (
         f"expected an abfss:// path outside FABRICKS_ENVIRONMENT=docker, got {value!r}"

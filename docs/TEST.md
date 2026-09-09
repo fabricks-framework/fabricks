@@ -72,8 +72,8 @@ increasing fidelity. (Still under `tests/spark/` rather than a matching
 ### Apache Spark — `tests/spark/apache/`
 
 Real Spark+Delta (Apache Spark — stock open source, as opposed to
-Databricks Runtime), running in a podman container (needs a JVM, which
-this repo's default dev venv doesn't provide). `tests/spark/apache/conftest.py`
+Databricks Runtime), running natively on a local JVM — Java 17 or later.
+`tests/spark/apache/conftest.py`
 builds a real Delta-configured `SparkSession` at module-import time against
 a fixture runtime checked into this repo at
 `tests/spark/apache/runtime/fabricks/conf.fabricks.yml`. Use these for CDC
@@ -82,7 +82,7 @@ verify (real row counts, real table features) — not just the DDL/config
 *generation* logic, which belongs in `tests/unit/config/` instead.
 
 ```
-podman compose -f framework/tests/spark/apache/docker-compose.yml run --rm apache-tests
+just test-apache   # needs Java 17 or later on PATH
 ```
 
 ### Databricks — `tests/spark/databricks/`

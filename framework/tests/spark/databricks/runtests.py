@@ -22,7 +22,7 @@ from logging import INFO
 from databricks.sdk.runtime import dbutils
 import pytest
 
-from fabricks.context import PATH_RUNTIME, SPARK
+from fabricks.context import CATALOG, IS_UNITY_CATALOG, PATH_RUNTIME, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 from fabricks.deploy import Deploy
@@ -39,6 +39,18 @@ dbutils.widgets.dropdown("runtests", "True", Booleans)
 seed_raw = dbutils.widgets.get("seed_raw").lower() == "true"
 armageddon = dbutils.widgets.get("armageddon").lower() == "true"
 runtests = dbutils.widgets.get("runtests").lower() == "true"
+
+# COMMAND ----------
+
+# Checked before armageddon drops anything: assert the *live* session catalog,
+# not just CATALOG from the config -- the config only proves what
+# add_catalog_to_spark asked for, and dropping against the wrong catalog is
+# unrecoverable.
+if IS_UNITY_CATALOG:
+    current_catalog = SPARK.catalog.currentCatalog()
+    assert current_catalog == "bms_dna_test", (
+        f"unity catalog run must target bms_dna_test, but spark is on {current_catalog!r} (config: {CATALOG!r})"
+    )
 
 # COMMAND ----------
 

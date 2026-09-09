@@ -14,7 +14,15 @@ artifacts:
     type: whl
 variables:
   spark_version:
-    default: 15.4.x-scala2.12
+    default: 18.x-scala2.13
+  # Which runtime config the job runs against. Both live side by side in
+  # tests/spark/databricks/runtime/fabricks/:
+  #   conf.fabricks.yml     -- hive_metastore, per-layer abfss containers
+  #   conf.uc.fabricks.yml  -- unity catalog bms_dna_test
+  # UC is the default; override per deploy for the hive variant:
+  #   databricks bundle deploy -t test --var="fabricks_conf=conf.fabricks.yml"
+  fabricks_conf:
+    default: conf.uc.fabricks.yml
 resources:
   jobs:
     fabricks_test_job:
@@ -45,14 +53,21 @@ resources:
               first_on_demand: 1
               availability: SPOT_WITH_FALLBACK_AZURE
               spot_bid_max_price: -1
-            node_type_id: Standard_D4ds_v4
-            driver_node_type_id: Standard_D8ds_v4
+            node_type_id: Standard_D8ads_v5
+            driver_node_type_id: Standard_D8ds_v5
+            kind: CLASSIC_PREVIEW
             enable_elastic_disk: true
+            enable_local_disk_encryption: false
+            autotermination_minutes: 60
             init_scripts:
               - workspace:
                   destination: ${workspace.file_path}/tests/spark/databricks/init.sh
-            data_security_mode: LEGACY_SINGLE_USER_STANDARD
+            spark_env_vars:
+              FABRICKS_ACCESS_KEY: '{{secrets/bmskv/bmsstatsteuwfabrickssnd-access-key}}'
+              FABRICKS_ENCRYPTION_KEY: '{{secrets/bmskv/encryption-key}}'
+              FABRICKS_CONFIG: ${workspace.file_path}/tests/spark/databricks/runtime/fabricks/${var.fabricks_conf}
+            data_security_mode: USER_ISOLATION
             runtime_engine: PHOTON
             autoscale:
               min_workers: 1
-              max_workers: 8
+              max_workers: 4

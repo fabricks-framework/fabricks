@@ -104,6 +104,16 @@ packages = ["fabricks"]
 [tool.ty.rules]
 deprecated = "ignore"
 
+# Tests deliberately narrow past the annotations: get_job() returns a
+# Bronze | Gold | Silver union whose step-specific members each test knows it
+# has, and the fake-Spark suites pass stand-in DataFrames.
+[[tool.ty.overrides]]
+include = ["tests/**"]
+
+[tool.ty.overrides.rules]
+invalid-argument-type = "ignore"
+unresolved-attribute = "ignore"
+
 [tool.ty.terminal]
 output-format = "full"
 

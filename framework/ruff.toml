@@ -35,13 +35,14 @@ select = [
 ]
 
 ignore = [
-    "ANN101",  # Missing type annotation for self
-    "ANN102",  # Missing type annotation for cls
     "B008",    # FastAPI Depends() in function defaults is intentional
 ]
 
 [lint.per-file-ignores]
-"tests/*" = ["ANN"]  # Don't require type hints in tests
+# ANN: no type hints in tests. ARG: pytest fixtures and monkeypatch lambdas
+# take arguments they never read. ERA001: explanatory comments in tests quote
+# code paths and read as commented-out code.
+"tests/*" = ["ANN", "ARG", "ERA001"]
 
 [lint.isort]
 known-first-party = ["app"]

@@ -3,13 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from fabricks.cdc import NoCDC, SCD1
+from fabricks.cdc import SCD1, NoCDC
 from fabricks.cdc.scd0 import SCD0
 from tests.spark.expected.compare import compare_to_expected, create_expected_views
 
 
 def test_local_spark_uses_small_fixture_parallelism(local_spark):
     assert local_spark.sparkContext.defaultParallelism == 2
+    assert local_spark.conf.get("spark.databricks.delta.snapshotPartitions") == "2"
     assert local_spark.conf.get("spark.databricks.delta.merge.repartitionBeforeWrite.enabled") == "false"
 
 
@@ -166,7 +167,9 @@ _SCENARIOS = [
 
 
 def _assert_scenario_consistent(seed_from, iters, compare_to):
-    assert iters == list(range(seed_from + 1, iters[-1] + 1)), "iters must be the contiguous range right after seed_from"
+    assert iters == list(range(seed_from + 1, iters[-1] + 1)), (
+        "iters must be the contiguous range right after seed_from"
+    )
     assert iters[-1] == compare_to, "compare_to must be iters' own last element"
 
 
@@ -196,8 +199,10 @@ def test_scd1_update(local_spark, king_and_queen_built, seed_from, iters, compar
 @pytest.mark.order(13)
 def test_scd2_correct_valid_from(local_spark, king_and_queen_built):
     scd2 = king_and_queen_built(0, [1], "scd2")
-    min_valid_from = scd2.table.dataframe.selectExpr("min(__valid_from) as m").collect()[0]["m"]
-    assert str(min_valid_from) == "1900-01-01 00:00:00", "min __valid_from should be corrected to the sentinel"
+    min_valid_from = scd2.table.dataframe.selectExpr(
+        "date_format(min(__valid_from), 'yyyy-MM-dd HH:mm:ss') as m"
+    ).collect()[0]["m"]
+    assert min_valid_from == "1900-01-01 00:00:00", "min __valid_from should be corrected to the sentinel"
 
 
 # SCD0's merge template (fabricks/cdc/templates/merges/scd0.sql.jinja) has

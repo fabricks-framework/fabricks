@@ -14,8 +14,7 @@
       # with no `using delta`, relying on Delta's default-source config (set in
       # tests/spark/apache/conftest.py) to make it a real Delta table. With a relative
       # location, Spark resolves it two different, inconsistent ways: the
-      # initial commit is written CWD-relative
-      # (/workspace/tests/spark/apache/.storage/...), but the Hive metastore stores the
+      # initial commit is written CWD-relative, but the Hive metastore stores the
       # table's location resolved relative to the *database's* default warehouse
       # directory (spark-warehouse/<db>.db/tests/spark/apache/.storage/...) since
       # Database.create() (fabricks/metastore/database.py) creates databases
@@ -29,12 +28,9 @@
       # the same absolute string as-is). Real production Databricks storage
       # paths are always abfss:// URIs (absolute cloud URIs -- enforced by
       # resolve_fileshare_path's own assertion for non-docker environments), so
-      # this ambiguity never arises there; it's unique to this local-docker
-      # config's plain relative filesystem paths. /workspace is this
-      # container's fixed mount point (docker-compose.yml: `working_dir:
-      # /workspace`, bind-mounting the framework/ dir there), not a
-      # host-dependent value.
-      storage: /workspace/tests/spark/apache/.storage/fabricks
+      # this ambiguity never arises there; it's unique to this local config's
+      # plain filesystem paths. conftest.py supplies the absolute storage root.
+      storage: $apache_storage/fabricks
       udfs: fabricks/udfs
       parsers: fabricks/parsers
       schedules: fabricks/schedules
@@ -43,14 +39,14 @@
     bronze:
       - name: bronze
         path_options:
-          storage: /workspace/tests/spark/apache/.storage/bronze
+          storage: $apache_storage/bronze
           runtime: bronze
         options:
           order: 101
     silver:
       - name: silver
         path_options:
-          storage: /workspace/tests/spark/apache/.storage/silver
+          storage: $apache_storage/silver
           runtime: silver
         options:
           order: 201
@@ -58,7 +54,7 @@
     gold:
       - name: gold
         path_options:
-          storage: /workspace/tests/spark/apache/.storage/gold
+          storage: $apache_storage/gold
           runtime: gold
         options:
           order: 301
@@ -70,10 +66,10 @@
     databases:
       - name: expected
         path_options:
-          storage: /workspace/tests/spark/apache/.storage/expected
+          storage: $apache_storage/expected
       # Neutral namespace for test_cdc.py's own throwaway target tables --
       # CDC merge correctness doesn't depend on which layer a table lives in,
       # so it's proven here rather than borrowing "silver"/"gold"'s name.
       - name: cdc
         path_options:
-          storage: /workspace/tests/spark/apache/.storage/cdc
+          storage: $apache_storage/cdc

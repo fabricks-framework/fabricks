@@ -18,11 +18,7 @@ def test_option_hierarchy_falls_back_to_step_level_when_job_omits_it():
 
     properties = job._get_option_hierarchy("properties", into="table")
 
-    assert properties == {
-        "delta.minReaderVersion": 1,
-        "delta.minWriterVersion": 7,
-        "delta.columnMapping.mode": "none",
-    }
+    assert properties == {"delta.minReaderVersion": 1, "delta.minWriterVersion": 7, "delta.columnMapping.mode": "none"}
 
 
 def test_option_hierarchy_job_level_overrides_step_level():
@@ -30,11 +26,7 @@ def test_option_hierarchy_job_level_overrides_step_level():
 
     properties = job._get_option_hierarchy("properties", into="table")
 
-    assert properties == {
-        "delta.minReaderVersion": 2,
-        "delta.minWriterVersion": 5,
-        "delta.columnMapping.mode": "none",
-    }
+    assert properties == {"delta.minReaderVersion": 2, "delta.minWriterVersion": 5, "delta.columnMapping.mode": "none"}
 
 
 def test_option_hierarchy_returns_default_when_neither_level_sets_it():

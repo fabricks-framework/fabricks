@@ -14,8 +14,8 @@ runs for real with no actual data or container.
 
 from datetime import datetime, timedelta
 
-import pytest
 from pyspark.sql import Row
+import pytest
 
 from fabricks.context import TIMEZONE
 from fabricks.core import get_job
@@ -128,9 +128,7 @@ def test_check_run_time_after_raises_before_the_target_time():
 # different rows in the same test.
 def test_check_pre_run_raises_on_fail_action():
     job = _check_job(pre_run=True)
-    job.spark.sql.return_value.where.return_value.collect.return_value = [
-        Row(__action="fail", __message="boom")
-    ]
+    job.spark.sql.return_value.where.return_value.collect.return_value = [Row(__action="fail", __message="boom")]
 
     with pytest.raises(PreRunCheckException, match="boom"):
         job.check_pre_run()
@@ -156,9 +154,7 @@ def test_check_pre_run_passes_when_no_rows():
 
 def test_check_skip_run_raises_when_skip_row_present():
     job = _check_job(skip=True)
-    job.spark.sql.return_value.where.return_value.collect.return_value = [
-        Row(__skip=True, __message="skip me")
-    ]
+    job.spark.sql.return_value.where.return_value.collect.return_value = [Row(__skip=True, __message="skip me")]
 
     with pytest.raises(SkipRunCheckWarning, match="skip me"):
         job.check_skip_run()

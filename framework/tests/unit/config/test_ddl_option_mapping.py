@@ -128,11 +128,7 @@ def test_create_ddl_includes_column_masks_and_comments():
     df = _fake_df(dummy=StringType())
     table, mock_spark, df = _make_table(df)
 
-    table._create(
-        df=df,
-        masks={"dummy": "mask_dummy"},
-        comments={"dummy": "This is a dummy comment"},
-    )
+    table._create(df=df, masks={"dummy": "mask_dummy"}, comments={"dummy": "This is a dummy comment"})
 
     # sqlglot's `fix()` normalization (uppercasing, etc. - see the other
     # tests in this file) silently fails on this particular DDL shape
@@ -159,7 +155,7 @@ def test_create_ddl_omits_masks_and_comments_for_columns_not_listed():
 
 
 def test_create_ddl_defaults_column_mapping_when_special_chars_in_columns():
-    df = _fake_df(**{"Näàme": StringType()})
+    df = _fake_df(Näàme=StringType())
     table, mock_spark, df = _make_table(df)
 
     table._create(df=df)

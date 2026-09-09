@@ -23,7 +23,7 @@ def test_gold_invoke_notebook():
 
 def test_gold_invoke_failed_pre_run():
     j = get_job(step="gold", topic="invoke", item="failed_pre_run")
-    with pytest.raises(Exception):  # noqa: B017 - pre_run notebook deliberately raises
+    with pytest.raises(Exception):  # noqa: B017,PT011 - pre_run notebook deliberately raises
         j.run()
     assert _last_status(j.job_id).failed
 

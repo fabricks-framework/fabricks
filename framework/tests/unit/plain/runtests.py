@@ -53,7 +53,7 @@ res = pytest.main([".", "-v", "-p", "no:cacheprovider", f"-k {k}"])
 
 # COMMAND ----------
 
-assert res.value == 0, "failed"  # type: ignore
+assert res.value == 0, "failed"
 
 # COMMAND ----------
 

@@ -1,9 +1,6 @@
+---
 - schedule:
     name: test
     options:
       tag: test
-      steps:
-        - bronze
-        - silver
-        - transf
-        - gold
+      steps: [bronze, silver, transf, gold]

@@ -24,9 +24,9 @@ test-plain:
 test-config:
     uv run pytest tests/unit/config
 
-# Run Apache Spark integration tests (tests/spark/apache/) in a podman container
+# Run the Apache Spark integration tests (real Spark+Delta, needs Java 17+)
 test-apache:
-    podman compose -f tests/spark/apache/docker-compose.yml run --rm apache-tests
+    uv run pytest tests/spark/apache -v
 
 # Deploy the bundle and run the Databricks test suite (tests/spark/databricks/) against the 'test' workspace
 test-databricks:

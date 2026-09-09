@@ -1,6 +1,7 @@
-$workers: "12"
+---
+$workers: '12'
 $catalog: stg_dev_dwh
 $storage_account: stgstaccdeveuwdwh01.dfs.core.windows.net
 $storage: account.dfs.core.windows.net
-$retention_days: "7"
+$retention_days: '7'
 $secret_scope: test_scope
