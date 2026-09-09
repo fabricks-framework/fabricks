@@ -32,3 +32,30 @@ def test_feature_identity(local_spark):
 
     assert [row["__identity"] for row in rows] == [1, 2]
     assert table.identity_enabled
+
+
+@pytest.mark.order(21)
+def test_feature_column_comment(local_spark):
+    """Table.create(comments={...}) emits a real `comment '...'` column DDL
+    clause (fabricks/metastore/table.py's _get_ddl_columns) -- plain ANSI
+    SQL, no Unity Catalog needed, unlike masks/liquid clustering.
+    """
+    table = Table("gold", "comment", "test", spark=local_spark)
+    schema = StructType([StructField("name", StringType(), True)])
+    table.create(schema=schema, comments={"name": "the name of a person"})
+
+    column = local_spark.sql(f"describe table {table.qualified_name}").where("col_name = 'name'").collect()[0]
+
+    assert column["comment"] == "the name of a person"
+
+
+# Column widening (Table.update_schema(widen_types=True) -> change_column()'s
+# manual `alter table ... change column ... type ...`) was attempted here and
+# dropped after 3 failed attempts: the schema diff is correctly detected
+# ("changed column value (bigint -> double)" in DEFAULT_LOGGER output) but
+# the ALTER silently has no effect even with delta.enableTypeWidening set both
+# via CREATE TABLE's TBLPROPERTIES and via a follow-up ALTER TABLE ... SET
+# TBLPROPERTIES -- change_column()'s bare `except Exception: pass` swallows
+# whatever the real error is. Needs a real Delta-protocol investigation
+# (minReaderVersion/minWriterVersion negotiation, not just the boolean
+# property) before another attempt -- not a quick win.

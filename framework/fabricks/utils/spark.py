@@ -37,6 +37,9 @@ def get_spark() -> SparkSession:
         _warehouse_dir = os.environ.get("FABRICKS_TEST_WAREHOUSE_DIR")
         if _warehouse_dir:
             builder = builder.config("spark.sql.warehouse.dir", _warehouse_dir)
+        _default_parallelism = os.environ.get("FABRICKS_TEST_SPARK_DEFAULT_PARALLELISM")
+        if _default_parallelism:
+            builder = builder.config("spark.default.parallelism", _default_parallelism)
         spark = configure_spark_with_delta_pip(builder).getOrCreate()
         # Iteration-sequential Silver scenarios (Task 9) merge iteration 2+'s
         # data — which introduces columns iteration 1's schema doesn't have

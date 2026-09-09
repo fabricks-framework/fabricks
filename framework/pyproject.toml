@@ -128,10 +128,10 @@ markers = [
 ]
 
 [tool.fabricks]
-runtime = "tests/spark/databricks/runtime_min"
+runtime = "tests/spark/databricks/runtime"
 notebooks = "fabricks/api/notebooks"
 job_config_from_yaml = true
 loglevel = "debug"
 debugmode = true
-config = "tests/spark/databricks/runtime_min/fabricks/conf.fabricks.yml"
+config = "tests/spark/databricks/runtime/fabricks/conf.fabricks.yml"
 devmode = true

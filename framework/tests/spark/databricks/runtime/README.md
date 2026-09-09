@@ -10,16 +10,17 @@ out to `_archive/databricks-old/` (repo root, gitignored) for reference —
 **unverified against a real cluster yet**: run `test_schedule.py`/
 `test_notebook.py` there for real before trusting this over the archive.
 
-16 jobs, exactly the minimal set the cut list calls for — no topic zoo. One
+17 jobs, exactly the minimal set the cut list calls for — no topic zoo. One
 test per job/feature below (`test_schedule.py` for the tagged rows,
 `test_notebook.py` for the `invoke_*` ones) — a job with no dedicated
 assertion is a gap, not implicit coverage via some other job's check.
 
 | Layer | Job | Tagged? | Proves |
 |---|---|---|---|
-| bronze | `king_scd1` | `test` | **parser** mode — real file parsing via the `monarch` parser plugin |
-| bronze | `regent_scd1` | `test` | **register** mode — external-table registration, no parsing |
-| bronze | `queen_scd1` | `test` | **memory** mode — no physical object, `create()`/`for_each_run()` no-op |
+| bronze | `king_scd1` | `test` | **register** mode — external-table registration against a seeded Delta table |
+| bronze | `regent_scd1` | `test` | **register** mode — external-table registration against an already-real, standing Delta table on the storage account (not per-run seeded: Unity Catalog binds a path to one table for good) |
+| bronze | `queen_scd1` | `test` | **register** mode — external-table registration against a seeded Delta table |
+| bronze | `feature_parser` | *(none)* | **parser** mode — real file parsing via the `dummy` custom parser plugin (`fabricks/parsers/dummy.py`); register mode never calls `get_parser()`, so this untagged job is the only one that proves plugin loading |
 | silver | `king_scd1` | `test` | cross-layer dependency (`parents: [bronze.king_scd1]`) |
 | gold | `dim_time` | `test` | dependency *target* — memory-mode gold table |
 | gold | `fact_dependency` | `test` | gold-depends-on-gold, auto-detected via SQL parsing (references `gold.dim_time` + `silver.king_scd1__current`) |
@@ -30,6 +31,8 @@ assertion is a gap, not implicit coverage via some other job's check.
 | transf | `fact_wait_for` | `test` | manual `wait_for: [transf.fact_memory, silver.king_scd1]` override (vs. `fact_dependency`'s auto-detected pair) |
 | gold | `feature_mask` | *(none)* | **column masking** — Databricks/Unity-Catalog-only, no OSS Delta equivalent (see cut-list doc's Risks #1); can never move to Apache, so it stays covered here |
 | gold | `feature_cluster_by` | *(none)* | **liquid clustering** — Databricks Runtime execution-engine feature; OSS Delta writes the table-feature flag but doesn't implement real clustering, so this stays here too |
+| gold | `feature_extender` | *(none)* | **extender plugin** — job-level `extender_options` applies the `dummy` extender (`fabricks/extenders/dummy.py`) via `Invoker.extend_job()` |
+| gold | `feature_udf` | *(none)* | **udf plugin** — `udf_dummy` (`fabricks/udfs/dummy.sql`) registered by `deploy_udfs()`/`register_all_udfs()` and called directly in the job's SQL |
 | gold | `invoke_notebook` | *(none)* | `test_notebook.py`'s success case — `mode: invoke`, one `invoker_options.run` notebook |
 | gold | `invoke_failed_pre_run` | *(none)* | `test_notebook.py`'s failure case — `mode: memory`, `invoker_options.pre_run` notebook deliberately raises |
 | gold | `invoke_post_run` | *(none)* | `test_notebook.py`'s post-run case — `mode: memory`, `invoker_options.post_run` notebook |
@@ -59,6 +62,14 @@ distinct `__action`/`__skip` outcome. The mechanism itself (does the
 `__action`/`__skip`-column SQL correctly raise the right exception type) is
 also proven in isolation, no schedule needed, in
 `tests/unit/config/test_checker.py`.
+
+`feature_extender`/`feature_udf`/bronze's `feature_parser` share the
+untagged/direct-invoke pattern above, asserted in `test_feature.py` rather
+than `test_schedule.py`. There's
+also one custom view, `fabricks.dummy` (`fabricks/views/dummy.sql`), deployed
+by `create_or_replace_views()` at armageddon time and asserted directly in
+`test_schedule.py`'s `test_custom_view` — it isn't a job, so it has no row
+in the table above.
 
 Not included (deliberately): `semantic`/`powerbi`/`uc` steps, any topic
 beyond `king`/`queen`/`regent`.

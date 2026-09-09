@@ -1,0 +1,8 @@
+---
+- job:
+    step: silver
+    topic: append_test
+    item: test
+    tags: [test]
+    options:
+      mode: append

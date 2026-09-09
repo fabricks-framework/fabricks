@@ -9,7 +9,7 @@ services:
       # ponytail: configure_spark_with_delta_pip() resolves Delta's JARs via
       # Ivy at runtime (see get_spark()'s docker branch). Without a persisted
       # cache, every `--rm` container re-fetches them from Maven from scratch.
-      - apache-tests-ivy-cache:/root/.ivy2
+      - apache-tests-ivy-cache:/root/.ivy2.5.2
     working_dir: /workspace
 
 volumes:

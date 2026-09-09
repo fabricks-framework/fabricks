@@ -27,3 +27,21 @@
       mode: complete
     table_options:
       cluster_by: [dummy]
+# extender/udf below aren't UC-only (both are plain PySpark plugin-loading
+# mechanisms, fabricks/core/extenders.py + fabricks/core/udfs.py) -- kept
+# here anyway, end-to-end against a real workspace, same isolated
+# one-job-one-mechanism shape as mask/cluster_by above.
+- job:
+    step: gold
+    topic: feature
+    item: extender
+    options:
+      mode: complete
+    extender_options:
+      - extender: dummy
+- job:
+    step: gold
+    topic: feature
+    item: udf
+    options:
+      mode: complete

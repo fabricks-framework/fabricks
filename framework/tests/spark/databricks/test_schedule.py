@@ -34,18 +34,18 @@ def _succeeded(job: str) -> bool:
     return not row.failed and not row.skipped
 
 
-def test_bronze_parser_mode():
-    # bronze.king_scd1: real file parsing via the monarch parser plugin.
+def test_bronze_register_mode_king():
+    # bronze.king_scd1: external-table registration against its seeded Delta
+    # table -- the dummy-parser plugin itself is proven separately, direct-
+    # invoke, by test_feature.py's test_bronze_feature_parser.
     assert _succeeded("bronze.king_scd1")
 
 
-def test_bronze_register_mode():
-    # bronze.regent_scd1: external-table registration, no parsing.
+def test_bronze_register_mode_regent():
     assert _succeeded("bronze.regent_scd1")
 
 
-def test_bronze_memory_mode():
-    # bronze.queen_scd1: no physical object, create()/for_each_run() no-op.
+def test_bronze_register_mode_queen():
     assert _succeeded("bronze.queen_scd1")
 
 
@@ -85,6 +85,13 @@ def test_forced_warning():
     assert row.warned
     assert not row.failed
     assert SPARK.sql(f"select count(*) from {EXPECTED_WARNING}").collect()[0][0] == 1
+
+
+def test_custom_view():
+    # fabricks.dummy (fabricks/views/dummy.sql): create_or_replace_views()
+    # deploys custom views from PATH_VIEWS at armageddon time.
+    df = SPARK.sql("select * from fabricks.dummy")
+    assert df.count() > 0
 
 
 def test_no_unforced_failures():

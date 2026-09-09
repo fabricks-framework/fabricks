@@ -1,30 +1,25 @@
 ---
 # yaml-language-server: $schema=../../../../../job-schema.json
-# One job per structurally distinct Bronze mode (fabricks/core/jobs/bronze.py) --
-# each takes a different code path (parse/create/for_each_run), not just a
-# different config value, so each needs its own job to be exercised at all.
-#
-# parser: json (not the repo's custom "monarch" parser) -- get_parser() maps
-# built-in format names (json/parquet/avro/csv/tsv/delta/table) straight to
-# plain BaseParser with zero custom logic (fabricks/core/parsers/
-# get_parser.py:10-18), so this needs no delete-log handling at all. Bronze's
-# `stream` is `mode not in ["register"]` (bronze.py:35-36), so both king
-# (append) and queen (memory) are nominally "streaming" -- but memory mode's
-# for_each_run() is a no-op (bronze.py, confirmed separately), so it never
-# actually calls parse()/streams anything. king_scd1 below is therefore
-# already the only job that genuinely exercises streaming -- one streaming
-# option, not two.
+# All three tagged jobs use register mode -- proves external-table
+# registration (Bronze.create()/register(), bronze.py), each reading its own
+# real Delta table under raw/delta/<topic>. king/queen are seeded per run by
+# runtests.py's _seed_raw_delta_fixtures(); regent instead reads an
+# already-real, standing external table on the storage account -- Unity
+# Catalog binds a path to one table for good, so its data isn't
+# re-seeded/re-registered on every run. Register mode never calls get_parser()
+# (Bronze.parser asserts mode != "register"), so it can't prove the "dummy"
+# custom parser plugin -- that's covered separately by the untagged
+# feature/parser job below, invoked directly in test_feature.py instead of
+# through the tag="test" schedule.
 - job:
     step: bronze
     topic: king
     item: scd1
     tags: [test]
     options:
-      mode: append
-      uri: abfss://fabricks@$datahub/raw/king
-      parser: json
+      mode: register
+      uri: abfss://fabricks@$datahub/raw/delta/king
       keys: [id]
-      source: king
 - job:
     step: bronze
     topic: regent
@@ -40,7 +35,20 @@
     item: scd1
     tags: [test]
     options:
-      mode: memory
-      uri: abfss://fabricks@$datahub/raw/monarch
-      parser: json
+      mode: register
+      uri: abfss://fabricks@$datahub/raw/delta/queen
       keys: [id]
+# Deliberately untagged (no `tags: [test]`): not part of the orchestration/DAG
+# proof test_schedule.py exercises, so excluded from schedule(tag="test") and
+# invoked directly (get_job(...).run()) in test_feature.py instead -- same
+# pattern as gold/gold/feature/_config.feature.yml.
+- job:
+    step: bronze
+    topic: feature
+    item: parser
+    options:
+      mode: append
+      uri: abfss://fabricks@$datahub/raw/king
+      parser: dummy
+      keys: [id]
+      source: king

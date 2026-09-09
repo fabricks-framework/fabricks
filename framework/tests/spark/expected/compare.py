@@ -5,6 +5,7 @@ See docs/adr/0001-duckdb-backend-for-local-cdc-tests.md, Stage 1 item #7.
 
 from datetime import UTC, datetime
 import json
+import os
 from pathlib import Path
 import re
 
@@ -191,7 +192,15 @@ def create_expected_views(spark: SparkSession, cdc: str) -> None:
                 if isinstance(row.get("newField"), str):
                     row["newField"] = {"true": True, "false": False, "null": None}[row["newField"]]
             df = spark.createDataFrame(rows, schema=_expected_scd2_schema(rows))
-            df.write.mode("overwrite").saveAsTable(f"expected.scd2_iter{iter_num}")
+            expected_table = f"expected.scd2_iter{iter_num}"
+            expected_cache = os.environ.get("FABRICKS_TEST_EXPECTED_CACHE")
+            if expected_cache:
+                cache_path = Path(expected_cache)
+                if not (cache_path / "_delta_log").exists():
+                    df.write.format("delta").save(str(cache_path))
+                spark.sql(f"create table {expected_table} using delta location '{cache_path}'")
+            else:
+                df.write.mode("overwrite").saveAsTable(expected_table)
 
     if cdc == "scd0":
         # No dedicated oracle files -- generated straight from

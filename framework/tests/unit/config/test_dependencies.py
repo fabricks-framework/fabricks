@@ -21,6 +21,8 @@
   list doesn't support.
 """
 
+from unittest.mock import MagicMock
+
 import fabricks.core.steps.base as steps_base
 from fabricks.core import get_job
 from fabricks.core.jobs.silver import Silver
@@ -124,3 +126,31 @@ def test_get_dependencies_internal_no_errors_when_all_succeed(monkeypatch):
     _, errors = step._get_dependencies_internal(include_manual=True)
 
     assert errors == []
+
+
+# options.type == "manual" (fabricks/models/common.py's AllowedTypes) marks a
+# job as excluded from automatic scheduling/dependency resolution -- it must
+# be run out of band. _get_dependencies_internal() is where that exclusion is
+# enforced, via a `df.where(...)` call get_jobs() must return a real
+# DataFrame for -- a plain list (as used above) doesn't support `.where`, so
+# this needs a DataFrame-shaped mock instead.
+def test_get_dependencies_internal_excludes_manual_jobs_by_default(monkeypatch):
+    step = get_step("gold")
+    mock_jobs_df = MagicMock()
+    monkeypatch.setattr(step, "get_jobs", lambda topic=None: mock_jobs_df)
+    monkeypatch.setattr(steps_base, "run_in_parallel", lambda *args, **kwargs: [])
+
+    step._get_dependencies_internal()
+
+    mock_jobs_df.where.assert_called_once_with("not options.type <=> 'manual'")
+
+
+def test_get_dependencies_internal_keeps_manual_jobs_when_requested(monkeypatch):
+    step = get_step("gold")
+    mock_jobs_df = MagicMock()
+    monkeypatch.setattr(step, "get_jobs", lambda topic=None: mock_jobs_df)
+    monkeypatch.setattr(steps_base, "run_in_parallel", lambda *args, **kwargs: [])
+
+    step._get_dependencies_internal(include_manual=True)
+
+    mock_jobs_df.where.assert_not_called()

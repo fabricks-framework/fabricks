@@ -43,9 +43,13 @@ _WORKER = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
 # worker's tests start writing table data -- there's no window where one
 # worker's rmtree could delete another's in-progress output.
 _LOCAL_STORAGE = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".storage"
+_EXPECTED_CACHE = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".expected-cache" / "scd2_iter1"
 
 os.environ["FABRICKS_BASE"] = str(_FRAMEWORK_ROOT)
 os.environ["FABRICKS_RUNTIME"] = "tests/spark/apache/runtime"
+os.environ["FABRICKS_TEST_SPARK_DEFAULT_PARALLELISM"] = "2"
+os.environ["FABRICKS_TEST_DISPOSABLE_STORAGE"] = str(_LOCAL_STORAGE)
+os.environ["FABRICKS_TEST_EXPECTED_CACHE"] = str(_EXPECTED_CACHE)
 os.environ["FABRICKS_CONFIG"] = "tests/spark/apache/runtime/fabricks/conf.fabricks.yml"
 os.environ["FABRICKS_ENVIRONMENT"] = "docker"
 # Real get_job()/get_step() resolution against this file's bronze/silver
@@ -110,11 +114,12 @@ _SPARK.sql("set spark.sql.sources.default = delta")
 # get_spark() is untouched. (spark.ui.enabled is a static config - can't be
 # changed post-getOrCreate(), skipping it here.)
 _SPARK.conf.set("spark.sql.shuffle.partitions", "2")
+_SPARK.conf.set("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "false")
 
 # Database(name, spark=...).create() is a one-line wrapper around exactly
 # this SQL (fabricks/metastore/database.py) -- no location/property setup at
 # the database level, so there's nothing the class adds here.
-for _db_name in ("bronze", "silver", "gold", "expected", "cdc"):
+for _db_name in ("bronze", "silver", "gold", "expected", "cdc", "fabricks"):
     _SPARK.sql(f"create database if not exists {_db_name}")
 
 

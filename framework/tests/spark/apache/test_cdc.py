@@ -1,8 +1,22 @@
+import os
+from pathlib import Path
+
 import pytest
 
-from fabricks.cdc import NoCDC
+from fabricks.cdc import NoCDC, SCD1
 from fabricks.cdc.scd0 import SCD0
 from tests.spark.expected.compare import compare_to_expected, create_expected_views
+
+
+def test_local_spark_uses_small_fixture_parallelism(local_spark):
+    assert local_spark.sparkContext.defaultParallelism == 2
+    assert local_spark.conf.get("spark.databricks.delta.merge.repartitionBeforeWrite.enabled") == "false"
+
+
+def test_expected_cache_is_outside_disposable_storage():
+    assert not Path(os.environ["FABRICKS_TEST_EXPECTED_CACHE"]).is_relative_to(
+        Path(os.environ["FABRICKS_TEST_DISPOSABLE_STORAGE"])
+    )
 
 
 @pytest.mark.order(1)
@@ -25,6 +39,91 @@ def test_nocdc_append(local_spark):
     assert nocdc.table.dataframe.count() == 1
     nocdc.append(df)
     assert nocdc.table.dataframe.count() == 2
+
+
+# order_duplicate_by/deduplicate are **kwargs read directly by
+# Processor.get_query_context (fabricks/cdc/base/processor.py) -- available
+# on every CDC class's merge()/complete()/update() call, not a Gold-job-only
+# concept, so no get_job()/YAML config is needed to exercise them. Must use
+# SCD1 here, not NoCDC: dedup_key/dedup_hash only skip the `qualify` clause
+# (fabricks/cdc/templates/ctes/deduplicate_key.sql.jinja's "advanced_ctes"
+# branch, plain row_number()+filter instead) for change_data_capture in
+# ["scd0","scd1","scd2"] -- NoCDC always takes the `qualify` branch, which
+# OSS Spark's parser rejects (Databricks' does not; fix_sql only transpiles
+# to the "databricks" sqlglot dialect, it doesn't rewrite qualify away).
+@pytest.mark.order(3)
+def test_order_duplicate_by(local_spark):
+    df = local_spark.createDataFrame(
+        [(1, 1, "upsert", "2022-01-01 00:00:00"), (1, 2, "upsert", "2022-01-01 00:00:00")],
+        ["id", "dummy", "__operation", "__timestamp"],
+    )
+    scd1 = SCD1("cdc", "order_duplicate", "test", spark=local_spark)
+
+    scd1.update(df, keys="id", add_key=True, order_duplicate_by={"dummy": "desc"})
+
+    rows = scd1.table.dataframe.collect()
+    assert len(rows) == 1
+    assert rows[0]["dummy"] == 2
+
+
+@pytest.mark.order(4)
+def test_deduplicate(local_spark):
+    df = local_spark.createDataFrame(
+        [(1, 1, "upsert", "2022-01-01 00:00:00"), (1, 1, "upsert", "2022-01-01 00:00:00")],
+        ["id", "dummy", "__operation", "__timestamp"],
+    )
+    scd1 = SCD1("cdc", "deduplicate", "test", spark=local_spark)
+
+    scd1.update(df, keys="id", add_key=True, deduplicate=True)
+
+    assert scd1.table.dataframe.count() == 1
+
+
+# Processor.get_query_context (fabricks/cdc/base/processor.py) only strips
+# unrecognized `__`-prefixed input columns from `outputs` for scd0/scd1/scd2
+# (`fields`, i.e. non-`__` columns, plus the specific system columns each
+# mode explicitly re-adds) -- NoCDC's outputs = inputs verbatim, so this is
+# an SCD-only guarantee, not something every CDC class provides. Mirrors the
+# old suite's gold-memory-mode test's intent (an internal working column
+# from upstream must never leak into a job's real output), proven directly
+# at the CDC-class level since the mechanism doesn't depend on job mode.
+@pytest.mark.order(5)
+def test_scd_output_drops_unrecognized_internal_columns(local_spark):
+    df = local_spark.createDataFrame(
+        [(1, "a", "upsert", "2022-01-01 00:00:00", "should not survive")],
+        ["id", "name", "__operation", "__timestamp", "__should_not_be_found"],
+    )
+    scd1 = SCD1("cdc", "internal_column", "test", spark=local_spark)
+
+    scd1.update(df, keys="id", add_key=True)
+
+    assert "__should_not_be_found" not in scd1.table.dataframe.columns
+
+
+@pytest.mark.order(6)
+def test_special_char_columns_preserved(local_spark):
+    df = local_spark.createDataFrame([(1, "a", 1.0)], ["@Id", "Näàme", "double Field!"])
+    nocdc = NoCDC("cdc", "special_char", "test", spark=local_spark)
+
+    nocdc.overwrite(df)
+
+    assert set(nocdc.table.dataframe.columns) == {"@Id", "Näàme", "double Field!"}
+
+
+@pytest.mark.order(7)
+def test_delete_log_marks_rows_deleted(local_spark):
+    scd1 = SCD1("cdc", "delete_log", "test", spark=local_spark)
+    df1 = local_spark.createDataFrame(
+        [(1, "a", "upsert", "2022-01-01 00:00:00")], ["id", "name", "__operation", "__timestamp"]
+    )
+    scd1.update(df1, keys="id", add_key=True, soft_delete=True)
+
+    df2 = local_spark.createDataFrame(
+        [(1, "a", "delete", "2022-01-02 00:00:00")], ["id", "name", "__operation", "__timestamp"]
+    )
+    scd1.update(df2, keys="id", add_key=True, soft_delete=True)
+
+    assert scd1.table.dataframe.where("__is_deleted").count() == 1
 
 
 # (seed_from, iters, compare_to): king_and_queen_built seeds the target table
@@ -85,6 +184,20 @@ def test_scd1_update(local_spark, king_and_queen_built, seed_from, iters, compar
     _assert_scenario_consistent(seed_from, iters, compare_to)
     scd1 = king_and_queen_built(seed_from, iters, "scd1")
     compare_to_expected(local_spark, table=scd1.table, cdc="scd1", iter=compare_to, topic="king_and_queen")
+
+
+# king_and_queen_built always passes correct_valid_from=True for scd2 -- the
+# from-scratch batch (seed_from=0) is the one case where a row's real earliest
+# __valid_from is also the batch's global min, so scd2.sql.jinja's
+# __correct_valid_from CTE replaces it with the 1900-01-01 sentinel (see
+# fabricks/cdc/templates/queries/scd2.sql.jinja). compare_to_expected already
+# proves the whole table matches row-for-row; this asserts the specific
+# behavior directly instead of leaving it implicit in that comparison.
+@pytest.mark.order(13)
+def test_scd2_correct_valid_from(local_spark, king_and_queen_built):
+    scd2 = king_and_queen_built(0, [1], "scd2")
+    min_valid_from = scd2.table.dataframe.selectExpr("min(__valid_from) as m").collect()[0]["m"]
+    assert str(min_valid_from) == "1900-01-01 00:00:00", "min __valid_from should be corrected to the sentinel"
 
 
 # SCD0's merge template (fabricks/cdc/templates/merges/scd0.sql.jinja) has

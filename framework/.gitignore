@@ -49,3 +49,4 @@ New Notebook *
 # Local test storage (Stage 1 CDC/DDL tests) — recreated each run, never committed
 tests/spark/apache/.storage/
 tests/spark/apache/.worker_cwd/
+tests/spark/apache/.expected-cache/
