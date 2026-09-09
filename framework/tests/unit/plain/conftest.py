@@ -5,12 +5,15 @@ for tests that need the *real* fabricks.context with only Spark faked, see
 tests/unit/config/.
 """
 
-from pathlib import Path
 import sys
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+
+from tests.tier_policy import activate_tier
+
+activate_tier("plain")
 
 
 def mock_spark():
@@ -56,16 +59,3 @@ def minimal_runtime_config() -> dict[str, Any]:
             "requirements": "fabricks/requirements",
         },
     }
-
-
-def pytest_collection_modifyitems(items):
-    """Automatically add 'plain' marker to all tests in this directory."""
-    root = Path(__file__).parent
-    for item in items:
-        try:
-            if Path(item.fspath).is_relative_to(root):
-                item.add_marker(pytest.mark.plain)
-        except (ValueError, AttributeError):
-            # Fallback for older Python or edge cases
-            if "plain" in str(item.fspath):
-                item.add_marker(pytest.mark.plain)

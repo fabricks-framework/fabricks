@@ -64,9 +64,11 @@ from pathlib import Path
 import sys
 from unittest.mock import MagicMock
 
-import pytest
-
 _FRAMEWORK_ROOT = Path(__file__).resolve().parents[3]
+
+from tests.tier_policy import activate_tier  # noqa: E402
+
+activate_tier("config")
 
 os.environ["FABRICKS_BASE"] = str(_FRAMEWORK_ROOT)
 os.environ["FABRICKS_RUNTIME"] = "tests/spark/apache/runtime"
@@ -102,11 +104,3 @@ _fake_builder.config.return_value = _fake_builder
 _fake_builder.enableHiveSupport.return_value = _fake_builder
 _fake_builder.getOrCreate.return_value = _fake_spark_session
 SparkSession.builder = _fake_builder
-
-
-def pytest_collection_modifyitems(items):
-    """Automatically add 'config' marker to all tests in this directory."""
-    root = Path(__file__).parent
-    for item in items:
-        if Path(item.fspath).is_relative_to(root):
-            item.add_marker(pytest.mark.config)

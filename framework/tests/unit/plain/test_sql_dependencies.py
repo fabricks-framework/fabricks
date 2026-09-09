@@ -2,19 +2,10 @@ from pathlib import Path
 
 from fabricks.utils.sqlglot import get_tables
 
-_FIXTURE = (
-    Path(__file__).resolve().parents[2]
-    / "spark"
-    / "databricks"
-    / "runtime"
-    / "gold"
-    / "gold"
-    / "fact"
-    / "dependency_sql.sql"
-)
+_FIXTURE = Path(__file__).parent / "fixtures" / "sql" / "dependency.sql"
 
 
-def test_get_tables_extracts_gold_fact_dependency_sql_dependencies():
+def test_get_tables_extracts_fixture_dependencies():
     sql = _FIXTURE.read_text()
 
     tables = get_tables(sql, allowed_databases=["gold", "transf", "silver"])

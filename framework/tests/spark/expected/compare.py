@@ -3,8 +3,6 @@
 See docs/adr/0001-duckdb-backend-for-local-cdc-tests.md, Stage 1 item #7.
 """
 
-from datetime import UTC, datetime
-import json
 import os
 from pathlib import Path
 import re
@@ -16,6 +14,7 @@ from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType, Str
 
 from fabricks.metastore.table import Table
 from fabricks.utils.dataframe import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
+from tests.spark.test_data import EXPECTED_ROOT, read_expected_rows
 
 
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
@@ -42,7 +41,7 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
 
 
-_EXPECTED_ROOT = Path(__file__).resolve().parent  # this file now lives inside tests/spark/expected/ itself
+_EXPECTED_ROOT = EXPECTED_ROOT
 
 # OSS Apache Spark (this local test container) has no QUALIFY clause support
 # -- it's a Databricks SQL extension. tests/spark/expected/scd1/iter*.sql (the
@@ -97,7 +96,7 @@ _EXPECTED_SCD2_BASE_SCHEMA = StructType(
         # container's real Spark session, `id (int -> bigint)`). Comparison
         # via assert_dfs_equal never noticed the mismatch (int vs. bigint
         # values compare equal after its own normalization), but seeding a
-        # table from this schema (seed_table) writes the *type*
+        # table from this schema (CDC scenario seeding) writes the *type*
         # verbatim, producing a genuine int-vs-bigint schema difference the
         # next update_schema() call detects and "fixes" for no reason.
         StructField("id", LongType(), True),
@@ -116,7 +115,7 @@ _EXPECTED_SCD2_BASE_SCHEMA = StructType(
 # king_and_queen's real job config declares a fixed bronze schema
 # up front (so bronze.king already carries a NULL newField column from its
 # very first landing batch, before iter2 ever supplies a real value) -- but
-# this plan has no job config/parsers layer at all (see king_and_queen_built
+# this plan has no job config/parsers layer at all (see run_cdc_scenario
 # in conftest.py: raw spark.read.json() per iteration's own NDJSON file, one column
 # set per file, autoMerge only ever *adding* columns once a later iteration's data
 # introduces them). So a iters=[1]-only target genuinely has no
@@ -131,7 +130,7 @@ _EXPECTED_SCD2_BASE_SCHEMA = StructType(
 # BooleanType, not StringType: every raw fixture's `newField` value is a
 # genuine JSON boolean (`true`/`false`, verified across all of iter2-9's
 # fixtures, never a string) -- same int-vs-bigint reasoning as `id` above,
-# this only mattered once this schema started feeding seed_table.
+# this only mattered once this schema started feeding CDC scenario seeding.
 _NEW_FIELD = StructField("newField", BooleanType(), True)
 
 
@@ -153,7 +152,7 @@ def create_expected_views(spark: SparkSession, cdc: str) -> None:
         # through to the SQL loop below for iter2 onward in ascending order —
         # an early `return` here would silently skip
         # expected.scd2_iter{2..9} entirely, since Task 9's
-        # king_and_queen_built only calls create_expected_views for
+        # run_cdc_scenario only calls create_expected_views for
         # "scd2"/"scd1", not per iteration. See Task 3's
         # mirrored fix in tests/spark/databricks/utils.py's create_expected_views.
         for ndjson_file in sorted(views_dir.glob("*.jsonl")):
@@ -166,30 +165,7 @@ def create_expected_views(spark: SparkSession, cdc: str) -> None:
             match = re.search(r"\d+", ndjson_file.stem)
             assert match, f"no iteration number in {ndjson_file.name}"
             iter_num = str(int(match.group()))
-            rows = [json.loads(line) for line in ndjson_file.read_text().splitlines()]
-            for row in rows:
-                # __valid_from/__valid_to are plain "YYYY-MM-DD HH:MM:SS"
-                # strings in the NDJSON; TimestampType.toInternal() requires
-                # an actual datetime (it calls .utctimetuple()/.timetuple()),
-                # so a raw string fails schema conversion. tzinfo=utc pins
-                # these as instants rather than leaving them naive (which
-                # would otherwise be localized using the JVM/driver's local
-                # timezone) — mirrors tests/spark/databricks/utils.py's identical
-                # parsing for the same NDJSON files.
-                row["__valid_from"] = datetime.strptime(row["__valid_from"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
-                row["__valid_to"] = datetime.strptime(row["__valid_to"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
-                # newField was committed to these NDJSON files as a mix of
-                # stringified literals ("true"/"false"/"null") and genuine
-                # JSON null (verified: grep across every iter0N.jsonl) --
-                # predates this schema using a real BooleanType (it used to
-                # be StringType, which silently accepted any string, and
-                # assert_dfs_equal's own string-normalizing comparison never
-                # noticed). Normalize here rather than re-loosen the schema
-                # back to StringType, which would just resurface the same
-                # spurious update_schema()-triggering type mismatch this
-                # schema exists to avoid (see _EXPECTED_SCD2_BASE_SCHEMA).
-                if isinstance(row.get("newField"), str):
-                    row["newField"] = {"true": True, "false": False, "null": None}[row["newField"]]
+            rows = read_expected_rows(int(iter_num))
             df = spark.createDataFrame(rows, schema=_expected_scd2_schema(rows))
             expected_table = f"expected.scd2_iter{iter_num}"
             expected_cache = os.environ.get("FABRICKS_TEST_EXPECTED_CACHE")
@@ -236,61 +212,6 @@ def load_expected(spark: SparkSession, cdc: str, iter: int) -> DataFrame:
     return spark.read.table(f"expected.{cdc}_iter{iter}")
 
 
-def load_expected_scd2_seed(spark: SparkSession, iter: int) -> DataFrame:
-    """Like load_expected(spark, "scd2", iter), but also adds `__timestamp`
-    (copied from `__valid_from`) — needed only for seeding an SCD2 table,
-    not for comparison. Same underlying gap as load_expected_scd1_seed's:
-    `processor.py` persists `__timestamp` as a real output column whenever
-    `has_timestamp` is true, regardless of cdc type — `expected`'s own SCD2
-    schema never had it (current.sql.jinja's `__current` CTE derives SCD2's
-    `__timestamp` from `__valid_from` when reading a *real* target back, so
-    it isn't needed there), but a seeded table missing it looks like a
-    genuine schema difference to king_and_queen_built's own
-    "does the incoming batch have a column the target doesn't" check —
-    triggering a real (if harmless) `update_schema()` call on every iteration
-    instead of skipping it, exactly what that check exists to avoid.
-    """
-    return load_expected(spark, "scd2", iter).selectExpr("*", "__valid_from as __timestamp")
-
-
-def load_expected_scd1_seed(spark: SparkSession, iter: int) -> DataFrame:
-    """Like load_expected(spark, "scd1", iter), but keeps `__valid_from`
-    (renamed `__timestamp`) instead of dropping it — needed only for seeding
-    an SCD1 table (see seed_table), not for comparison.
-
-    `expected.scd1_iter{N}`'s own schema has no `__timestamp` column
-    (tests/spark/expected/scd1/iter{N}.sql: `select * except (__valid_from,
-    __valid_to) from expected.scd2_iter{N} qualify row_number() over
-    (partition by id order by __valid_to desc) = 1`) — fine for *comparing*
-    against a real table (compare_to_expected only ever selects
-    `expected`'s own columns), but not for *seeding* one: a real SCD1
-    target persists `__timestamp` (fabricks/cdc/templates/ctes/base.sql.jinja:
-    `{% elif cdc == "scd1" %} __timestamp,`), and current.sql.jinja's
-    `__current` CTE reads that stored value back on the *next* iteration's merge
-    to compare against a later reload's own timestamp (rectify.sql.jinja) —
-    deciding whether a row missing from that reload should become
-    non-current. Without it, a seeded table can never trigger that
-    comparison (confirmed empirically: iter2's reload correctly drops iter1's
-    superseded king rows against a *real* iter1-then-iter2 replay, but not
-    against a table seeded from `load_expected(spark, "scd1", 1)` alone).
-
-    Derived from the same `expected.scd2_iter{N}` root SCD1's own
-    oracle view already reads, replicating its row_number-over-id-by-
-    __valid_to-desc "latest known state per id" logic without OSS
-    Spark's unsupported QUALIFY clause (see `_make_spark_compatible`).
-    """
-    scd2_df = spark.read.table(f"expected.scd2_iter{iter}")
-    scd2_df.createOrReplaceTempView(f"__seed_scd2_src_{iter}")
-    return spark.sql(f"""
-        select * except (__valid_from, __valid_to, __rn), __valid_from as __timestamp
-        from (
-            select *, row_number() over (partition by id order by __valid_to desc) as __rn
-            from __seed_scd2_src_{iter}
-        )
-        where __rn = 1
-    """)
-
-
 def compare_to_expected(spark: SparkSession, table: Table, cdc: str, iter: int, topic: str) -> None:
     df = table.dataframe
 
@@ -299,61 +220,3 @@ def compare_to_expected(spark: SparkSession, table: Table, cdc: str, iter: int, 
         expected_df = expected_df.drop("__source")
 
     assert_dfs_equal(df, expected_df)
-
-
-def seed_table(table: Table, expected_df: DataFrame, keys: list[str]) -> None:
-    """Seed a not-yet-existing CDC target table directly from a prior iteration's known-
-    correct `expected` output, instead of replaying every earlier iteration through
-    the real merge code first. This is what makes each iteration's test independent
-    and order-free: a bug in iteration N's merge can never corrupt what iteration N+1's
-    test sees, since N+1 seeds from N's *expected* state, not N's actual one.
-
-    `expected`'s own schema needs two columns added to match every column a
-    real merge target ends up with — pass `load_expected_scd2_seed`/
-    `load_expected_scd1_seed`'s output (which already add `__timestamp`),
-    not plain `load_expected(...)`'s, when seeding either table; see those
-    functions' own docstrings for why:
-
-    - `__key`: confirmed via fabricks/cdc/base/merger.py's
-      get_merge_context() (`on t.__key == s.__merge_key`) and
-      fabricks/cdc/templates/macros/hash.sql.jinja's `add_key(fields)`
-      macro: `md5(array_join(array(<fields>::string), '*', '-1'))`, computed
-      here identically over `keys` (the real merge always calls this with
-      `keys + ["__source"]` once `has_source` is true — pass the full field
-      list, not just the business key).
-    - `__operation`: `processor.py`'s `has_operation = add_operation or
-      "__operation" in inputs` is true whenever the incoming batch has it
-      (it always does here), so it IS a real persisted output column —
-      confirmed via `outputs.append("__operation")`. Its *stored* value
-      doesn't matter for correctness though: current.sql.jinja's `__current`
-      CTE overwrites it unconditionally to the literal `'current'` (or
-      `'delete'` if `has_no_data`) whenever a real target row is read back
-      for the next iteration's merge, never reading what's actually stored — so
-      seeding the literal `'current'` here matches exactly what a real
-      target row would resolve to regardless.
-
-    Neither is optional cosmetics: without both, a seeded table's column set
-    genuinely differs from a real target's, which king_and_queen_built's own
-    "does the incoming batch have a column the target doesn't" check
-    correctly (if unhelpfully) detects as real schema drift — triggering an
-    `update_schema()` call on every single iteration instead of only where the
-    fixture data genuinely introduces one (iter2's `newField`).
-
-    `__hash` needs no seeding: fabricks/cdc/templates/merges/scd2.sql.jinja
-    never reads it back off the target (`t.__hash` appears nowhere in any
-    merge template) — it's written fresh from the incoming source rows on
-    every call, never compared against a stored value.
-
-    Writes to `table.delta_path` + `table.register()` (not `saveAsTable`,
-    which would let Spark pick its own default warehouse location) so the
-    seeded table lives at exactly the path `Table.create()` itself would use
-    — the same relative-vs-absolute path pitfall Task 9 already hit once
-    (conf.fabricks.yml's storage paths) would otherwise silently reappear
-    here as a `DELTA_TABLE_NOT_FOUND` on the very next `.update()` call.
-    """
-    key_cols = ", ".join(f"cast(`{k}` as string)" for k in keys)
-    seeded = expected_df.selectExpr(
-        "*", f"md5(array_join(array({key_cols}), '*', '-1')) as __key", "'current' as __operation"
-    )
-    seeded.write.format("delta").mode("overwrite").save(str(table.delta_path))
-    table.register()

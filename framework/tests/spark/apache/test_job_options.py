@@ -6,7 +6,26 @@ real methods (not a full scheduled run) since these behaviors don't depend
 on bronze/dependency plumbing.
 """
 
+import pytest
+
 from fabricks.core import get_job
+from tests.spark.expected.compare import compare_to_expected, create_expected_views
+from tests.spark.test_data import load_combined_frame
+
+
+@pytest.fixture(scope="session")
+def cdc_oracles(local_spark):
+    for cdc in ("scd2", "scd1"):
+        if not local_spark.catalog.tableExists(f"expected.{cdc}_iter1"):
+            create_expected_views(local_spark, cdc)
+
+
+def _iteration(spark, number: int):
+    frame = load_combined_frame(spark, number)
+    # Silver consumes Bronze output, where the business key is already derived.
+    return frame.selectExpr(
+        "*", "md5(array_join(array(cast(id as string), cast(__source as string)), '*', '-1')) as __key"
+    )
 
 
 def test_append_mode_accumulates_across_batches(local_spark):
@@ -40,3 +59,21 @@ def test_latest_mode_replaces_target_with_each_batchs_full_snapshot(local_spark)
         )
     )
     assert job.table.dataframe.count() == 2
+
+
+def test_silver_scd1_handles_incremental_schema_drift(local_spark, cdc_oracles):
+    job = get_job(step="silver", topic="king_and_queen", item="scd1")
+
+    job.for_each_batch(_iteration(local_spark, 1))
+    job.update_schema(_iteration(local_spark, 2))
+    job.for_each_batch(_iteration(local_spark, 2))
+
+    compare_to_expected(local_spark, table=job.table, cdc="scd1", iter=2, topic="king_and_queen")
+
+
+def test_silver_scd2_first_load_wires_validity_options(local_spark, cdc_oracles):
+    job = get_job(step="silver", topic="king_and_queen", item="scd2")
+
+    job.for_each_batch(_iteration(local_spark, 1))
+
+    compare_to_expected(local_spark, table=job.table, cdc="scd2", iter=1, topic="king_and_queen")

@@ -4,15 +4,14 @@ Four tiers under `framework/tests/`, grouped by two questions: does a test
 need `fabricks.context` at all (**unit** vs. **integration**), and if so,
 how real does Spark need to be. Each tier is plain `pytest`, distinguished
 by marker (`plain` / `config` / `apache` / `databricks`, declared in
-`pyproject.toml` `[tool.pytest.ini_options]`); each tier's `conftest.py`
-auto-applies its own marker to every test under it, so you don't need to
-tag tests by hand.
+`pyproject.toml` `[tool.pytest.ini_options]`); `tests/tier_policy.py`
+assigns markers from each test's path, so you don't need to tag tests by hand.
 
 **Do not mix tiers in one `pytest` invocation.** Each tier's `conftest.py`
 mutates `sys.modules`/patches Spark at *module import time*, before any
 test file in that directory is collected — whichever tier's conftest runs
 first in a process wins for the rest of that process. Run each tier as its
-own separate `pytest` command.
+own separate `pytest` command; the shared tier policy rejects mixed runs.
 
 ## Unit tests — `tests/unit/`
 
