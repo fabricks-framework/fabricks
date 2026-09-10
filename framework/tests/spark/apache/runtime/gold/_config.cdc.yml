@@ -1,0 +1,29 @@
+---
+- job:
+    step: gold
+    topic: cdc
+    item: scd0_update
+    options:
+      mode: update
+      change_data_capture: scd0
+- job:
+    step: gold
+    topic: cdc
+    item: scd1_complete
+    options:
+      mode: complete
+      change_data_capture: scd1
+- job:
+    step: gold
+    topic: cdc
+    item: scd2_update
+    options:
+      mode: update
+      change_data_capture: scd2
+- job:
+    step: gold
+    topic: cdc
+    item: recovery
+    options:
+      mode: update
+      change_data_capture: scd1

@@ -1,0 +1,45 @@
+---
+- job:
+    step: semantic
+    topic: fact
+    item: table
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: step_option
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: job_option
+    options:
+      mode: complete
+    table_options:
+      properties:
+        delta.checkpointInterval: 7
+- job:
+    step: semantic
+    topic: fact
+    item: partitioning
+    options:
+      mode: complete
+    table_options:
+      partition_by: [Monarch]
+- job:
+    step: semantic
+    topic: fact
+    item: zstd
+    options:
+      mode: complete
+- job:
+    step: semantic
+    topic: fact
+    item: powerbi
+    options:
+      mode: complete
+    table_options:
+      powerbi: true
+      partition_by: [Monarch]

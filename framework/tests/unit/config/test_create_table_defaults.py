@@ -28,7 +28,7 @@ class _FakeCreateTableDF(_FakeDF):
         pass
 
 
-def _job(monkeypatch, *, table_options: TableOptions | None = None):
+def _job(monkeypatch, *, table_options: TableOptions | None = None, columns: list[str] | None = None):
     job = get_job(step="gold", topic="fact", item="step_option")
 
     # The "gold" step declares table_options.properties of its own
@@ -41,7 +41,11 @@ def _job(monkeypatch, *, table_options: TableOptions | None = None):
     if table_options is not None:
         job.conf = job.conf.model_copy(update={"table_options": table_options})
 
-    df = _FakeCreateTableDF(columns=["id", "name"], dtypes=[("id", "int"), ("name", "string")])
+    columns = columns or ["id", "name"]
+    df = _FakeCreateTableDF(
+        columns=columns,
+        dtypes=[(column, "int" if column == "id" else "string") for column in columns],
+    )
     monkeypatch.setattr(job, "get_data", lambda **_kwargs: df)
     monkeypatch.setattr(job, "base_transform", lambda d: d)
     monkeypatch.setattr(job, "get_cdc_context", lambda _d: {})
@@ -108,12 +112,16 @@ def test_create_table_explicit_properties_win_over_defaults(monkeypatch):
 
 
 def test_create_table_liquid_clustering_auto(monkeypatch):
-    job, captured = _job(monkeypatch, table_options=TableOptions(liquid_clustering=True))
+    job, captured = _job(
+        monkeypatch,
+        table_options=TableOptions(liquid_clustering=True),
+        columns=["id", "name", "__cluster_by_id"],
+    )
 
     job.create_table()
 
     assert captured["liquid_clustering"] is True
-    assert captured["cluster_by"] == []
+    assert captured["cluster_by"] == ["__cluster_by_id"]
 
 
 def test_create_table_liquid_clustering_explicit_list(monkeypatch):

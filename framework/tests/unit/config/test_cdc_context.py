@@ -332,22 +332,17 @@ def test_gold_order_duplicate_by_absent_when_neither_column_present():
 
 def _silver_job(*, mode="update", change_data_capture="nocdc", stream=True, **option_overrides):
     conf = {
-        "step": "silver_test",
+        "step": "silver",
         "topic": "fact",
         "item": "dummy",
         "options": {"mode": mode, "change_data_capture": change_data_capture, "stream": stream, **option_overrides},
     }
-    job = Silver(step="silver_test", topic="fact", item="dummy", conf=conf)
+    job = Silver(step="silver", topic="fact", item="dummy", conf=conf)
     # job.spark (Configurator.spark) unconditionally reads
-    # self.step_spark_options -> self.step_conf.spark_options, which would
-    # KeyError on STEPS["silver_test"] (not a registered step) the moment
-    # anything here touches job.spark (the reload-eligibility probe does,
-    # for any non-append/non-nocdc case) - bypass STEPS the same way `conf=`
-    # bypasses YAML for job.conf, by overriding the base_step_conf
-    # cached_property directly with a minimal, self-contained step config.
+    # Keep the step config minimal so these tests only exercise CDC context.
     job.base_step_conf = StepSilverConf(
-        name="silver_test",
-        path_options=StepPathOptions(runtime="silver_test", storage="silver_test"),
+        name="silver",
+        path_options=StepPathOptions(runtime="silver", storage="silver"),
         options=StepSilverOptions(order=1, parent="bronze"),
     )
     return job

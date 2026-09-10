@@ -63,6 +63,17 @@
             delta.minReaderVersion: 1
             delta.minWriterVersion: 7
             delta.columnMapping.mode: none
+      - name: semantic
+        path_options:
+          storage: $apache_storage/semantic
+          runtime: semantic
+        options:
+          order: 304
+          metadata: true
+          schema_drift: true
+        table_options:
+          properties:
+            delta.checkpointInterval: 11
     databases:
       - name: expected
         path_options:

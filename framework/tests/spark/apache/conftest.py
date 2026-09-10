@@ -48,7 +48,7 @@ _SPARK.conf.set("spark.sql.shuffle.partitions", "2")
 _SPARK.conf.set("spark.databricks.delta.snapshotPartitions", "2")
 _SPARK.conf.set("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "false")
 
-for _database in ("bronze", "silver", "gold", "expected", "cdc", "fabricks"):
+for _database in ("bronze", "silver", "gold", "semantic", "expected", "cdc", "fabricks"):
     _SPARK.sql(f"create database if not exists {_database}")
 @pytest.fixture(scope="session")
 def local_spark():

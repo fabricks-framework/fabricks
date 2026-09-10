@@ -80,43 +80,30 @@ merge correctness and DDL that genuinely needs real Delta table state to
 verify (real row counts, real table features) — not just the DDL/config
 *generation* logic, which belongs in `tests/unit/config/` instead.
 
+The tier also covers representative Silver/Gold CDC wiring, focused
+truncate/reload recovery, and the `semantic` Gold-family step's physical
+properties, partitioning, compression, and Power BI-compatible Delta
+settings. CI runs this tier independently under Java 17.
+
 ```
 just test-apache   # needs Java 17 or later on PATH
 ```
 
 ### Databricks — `tests/spark/databricks/`
 
-Exercise real jobs end-to-end against a real Databricks cluster
-(`databricks-connect`) and a real fixture runtime checked into this repo at
-`tests/spark/databricks/runtime/` (its own `bronze/`, `silver/`, `gold/`,
-parsers, UDFs, extenders, masks, views, schedules, and
-`conf.uc.fabricks.yml` / `conf.5589296195699698.yml`). They are not
-self-contained pytest — they run as Databricks notebooks
-(`# Databricks notebook source` header, driven by `dbutils.widgets`),
-because they need a live cluster with the runtime deployed:
+Exercise the behavior that genuinely requires a live Databricks workspace:
+notebook invocation, schedule ordering/status propagation, Unity Catalog
+masks, liquid clustering, plugin loading, and type widening. The minimal
+fixture runtime lives under `tests/spark/databricks/runtime/`.
 
-- `tests/spark/databricks/runtests.py` — the entry notebook. Widgets
-  control `initialize` / `armageddon` (full data reset) / `reset` /
-  `fix_notebooks`, and which of `job1`..`job5` to run. It resolves to
-  `pytest -k <selection>` under `jobs/`.
-- `tests/spark/databricks/init.sh` — cluster init script; sets
-  `FABRICKS_RUNTIME` / `FABRICKS_NOTEBOOKS` / `FABRICKS_CONFIG` env vars and
-  pip-installs the test/runtime dependencies onto the cluster.
-- `tests/spark/databricks/jobs/job1/…job5/` — the actual test modules,
-  ordered with `pytest.mark.order(...)` (via `pytest-order`) because later
-  jobs depend on tables earlier jobs produced (schedules, CDC reload,
-  invoke, dependency resolution, checks, etc. each get their own
-  `test_*.py`).
-- `tests/spark/expected/{silver,gold}/{scd0,scd1,scd2}/iter*.sql` — golden
-  SQL snapshots, a sibling of `tests/spark/databricks/`/`tests/spark/apache/`
-  under `tests/spark/` (shared, not owned by either suite). `compare.py`
-  builds the job's generated SQL and diffs it against these; a deliberate
-  SQL-generation change means regenerating the matching snapshot, not
-  hand-editing it to make the diff pass.
-- `tests/spark/databricks/phases/0_armageddon/` .. `phases/5_extra/` — the
-  same jobs grouped into ordered phases (full reset → first schedule →
-  second schedule → a plain run → CDC reload → step-level extras)
-  mirroring what a real deployment does over its lifetime.
+- `runtests.py` seeds raw data, performs armageddon, and launches pytest.
+- `test_schedule.py` runs one tagged schedule and asserts exact success,
+  failure, skip, warning, dependency-order, and timeout outcomes.
+- `test_notebook.py` covers direct run/pre-run/post-run notebook invocation.
+- `test_feature.py` covers parser/extender/UDF loading, masks, liquid
+  clustering, and physical type widening.
+- `runtime/README.md` is the authoritative job inventory.
+- `init.sh` configures the runtime and dependencies on the cluster.
 
 There is no local way to run these — they need the fixture runtime
 deployed to an actual Databricks workspace/cluster with `init.sh` applied,
@@ -130,6 +117,11 @@ belongs in `tests/unit/config/` or `tests/spark/apache/` instead — see
 for the full per-test breakdown of what's already been moved and what's
 still a candidate (written before the `unit/` regroup — read `tests/spark/config/`
 there as `tests/unit/config/` and `tests/plain/` as `tests/unit/plain/`).
+
+The live suite retains one schedule run with representative pre-run,
+row-count, duplicate-key, timeout, skip, and warning outcomes. Direct feature
+tests cover notebook invocation, parser/extender/UDF loading, masks, liquid
+clustering, and type widening.
 
 ## Rule of thumb
 

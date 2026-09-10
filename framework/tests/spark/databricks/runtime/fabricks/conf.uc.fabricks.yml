@@ -12,6 +12,7 @@
     name: test
     options:
       secret_scope: bmskv
+      type_widening: true
       catalog: bms_dna_test
       unity_catalog: true
       timeouts:

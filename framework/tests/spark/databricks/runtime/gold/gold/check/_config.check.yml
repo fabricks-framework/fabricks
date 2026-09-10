@@ -19,6 +19,22 @@
     check_options:
       skip: true
 - job:
+    step: gold
+    topic: check
+    item: max_rows
+    tags: [test]
+    options:
+      mode: complete
+    check_options:
+      max_rows: 2
+- job:
+    step: gold
+    topic: check
+    item: duplicate_key
+    tags: [test]
+    options:
+      mode: complete
+- job:
     # Same check_options shape as check.fail -- pre_run: true reads
     # warning.pre_run.sql, whose __action is 'warning' instead of 'fail'.
     # fabricks/core/dags/run.py catches CheckWarning separately from a plain

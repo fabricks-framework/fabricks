@@ -59,3 +59,31 @@ def test_gold_feature_cluster_by():
     j = get_job(step="gold", topic="feature", item="cluster_by")
     j.run()
     assert j.table.liquid_clustering_enabled
+
+
+def test_gold_type_widening_overwrite():
+    j = get_job(step="gold", topic="type_widening", item="overwrite")
+    j.run()
+
+    df = SPARK.sql("select cast(field as double) as field from values (1.5), (2.5) as source(field)")
+    j._for_each_batch(df)
+
+    table = SPARK.table(j.table.qualified_name)
+    assert table.schema["field"].dataType.simpleString() == "double"
+    assert [row.field for row in table.orderBy("field").collect()] == [1.5, 2.5]
+
+
+def test_gold_type_widening_merge():
+    j = get_job(step="gold", topic="type_widening", item="merge")
+    j.run()
+
+    df = SPARK.sql(
+        "select __key, cast(field as double) as field "
+        "from values ('one', 1.0), ('two', 2.5) as source(__key, field)"
+    )
+    j._for_each_batch(df)
+
+    table = SPARK.table(j.table.qualified_name)
+    assert table.schema["field"].dataType.simpleString() == "double"
+    rows = table.select("__key", "field").orderBy("__key").collect()
+    assert [(row["__key"], row.field) for row in rows] == [("one", 1.0), ("two", 2.5)]

@@ -63,16 +63,12 @@ def test_gold_dependencies_wait_for_already_covered_by_parents_is_dropped():
 
 def _silver_job(*, parents=None, wait_for=None):
     conf = {
-        "step": "silver_test",
+        "step": "silver",
         "topic": "fact",
         "item": "dummy",
         "options": {"mode": "append", "parents": parents, "wait_for": wait_for},
     }
-    # Explicit conf (row=) makes get_job_conf bypass YAML/STEPS entirely, so
-    # "silver_test" need not be a registered step - fine here since parents
-    # is always non-empty, so get_dependencies() never touches
-    # self.parent_step (which would need a real step_conf).
-    return Silver(step="silver_test", topic="fact", item="dummy", conf=conf)
+    return Silver(step="silver", topic="fact", item="dummy", conf=conf)
 
 
 def test_silver_dependencies_parents_only():

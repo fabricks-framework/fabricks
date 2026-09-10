@@ -25,6 +25,7 @@ each assertion true regardless of exactly which of __key/__hash/__operation
 happen to land in the final SELECT.
 """
 
+import re
 from unittest.mock import MagicMock
 
 from pyspark.sql import DataFrame
@@ -96,7 +97,7 @@ def test_get_query_order_duplicate_by_adds_dedup_cte():
     sql = cdc.get_query(_src(["id", "name"]), mode="complete", order_duplicate_by={"name": "asc"})
 
     assert "__deduplicated_key" in sql
-    assert "name asc" in sql
+    assert re.search(r"`?name`?\s+asc", sql, re.IGNORECASE)
 
 
 def test_get_query_without_order_duplicate_by_has_no_dedup_cte():

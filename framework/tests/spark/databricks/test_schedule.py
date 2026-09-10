@@ -15,7 +15,7 @@ import pytest
 from fabricks.context import SPARK
 from fabricks.core.schedules import standalone
 
-EXPECTED_FAILURE = "gold.check_fail"
+EXPECTED_FAILURES = {"gold.check_duplicate_key", "gold.check_fail", "gold.check_max_rows", "gold.invoke_timeout"}
 EXPECTED_SKIP = "gold.check_skip"
 EXPECTED_WARNING = "gold.check_warning"
 
@@ -67,7 +67,15 @@ def test_manual_wait_for():
 
 
 def test_forced_failure():
-    assert _row(EXPECTED_FAILURE).failed
+    assert _row("gold.check_fail").failed
+
+
+def test_failure_causes():
+    assert _row("gold.check_fail").exception.message == "Please don't fail on me :("
+    assert _row("gold.check_max_rows").exception.message == "max rows check failed (3 > 2)"
+    assert _row("gold.check_duplicate_key").exception.message == "duplicate __key check failed (1)"
+    timeout_message = _row("gold.invoke_timeout").exception.message.lower()
+    assert "timed out" in timeout_message or "timeout" in timeout_message
 
 
 def test_forced_skip():
@@ -83,6 +91,7 @@ def test_forced_warning():
     # at the very end), so the table is populated despite the warning.
     row = _row(EXPECTED_WARNING)
     assert row.warned
+    assert row.done
     assert not row.failed
     assert SPARK.sql(f"select count(*) from {EXPECTED_WARNING}").collect()[0][0] == 1
 
@@ -95,10 +104,10 @@ def test_custom_view():
 
 
 def test_no_unforced_failures():
-    df = SPARK.sql(f"select * from fabricks.last_schedule where failed and job != '{EXPECTED_FAILURE}'")
-    assert df.count() == 0, "unforced failure <> 0"
+    rows = SPARK.sql("select job from fabricks.last_schedule where failed").collect()
+    assert {row.job for row in rows} == EXPECTED_FAILURES
 
 
 def test_no_unforced_skips():
-    df = SPARK.sql(f"select * from fabricks.last_schedule where skipped and job != '{EXPECTED_SKIP}'")
-    assert df.count() == 0, "unforced skip <> 0"
+    rows = SPARK.sql("select job from fabricks.last_schedule where skipped").collect()
+    assert {row.job for row in rows} == {EXPECTED_SKIP}

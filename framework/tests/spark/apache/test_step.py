@@ -10,10 +10,11 @@ from fabricks.core.steps import get_step
 
 def test_update_configurations_writes_gold_jobs(local_spark):
     step = get_step("gold")
+    expected = step.get_jobs().count()
 
     step.update_configurations()
 
-    assert local_spark.sql("select * from fabricks.gold_jobs").count() == 3
+    assert local_spark.sql("select * from fabricks.gold_jobs").count() == expected
 
 
 def test_update_dependencies_writes_silver_dependencies(local_spark):

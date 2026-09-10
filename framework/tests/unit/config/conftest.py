@@ -74,6 +74,7 @@ os.environ["FABRICKS_BASE"] = str(_FRAMEWORK_ROOT)
 os.environ["FABRICKS_RUNTIME"] = "tests/spark/apache/runtime"
 os.environ["FABRICKS_CONFIG"] = "tests/spark/apache/runtime/fabricks/conf.fabricks.yml"
 os.environ["FABRICKS_ENVIRONMENT"] = "docker"
+os.environ["FABRICKS_IS_DEBUGMODE"] = "FALSE"
 os.environ["FABRICKS_IS_JOB_CONFIG_FROM_YAML"] = "TRUE"
 
 _fake_spark_session = MagicMock(name="fake_spark_session")

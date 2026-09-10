@@ -42,6 +42,7 @@ def _check_job(**check_options):
     # assert these files exist) have a job to attach to.
     job = get_job(step="gold", topic="fact", item="check")
     job.conf = job.conf.model_copy(update={"check_options": CheckOptions(**check_options)})
+    job.spark.sql.return_value.where.return_value.collect.side_effect = None
     return job
 
 
