@@ -45,6 +45,7 @@ def test_add_key_is_stable_for_identical_field_values(local_spark):
     second = _eval_sql(local_spark, sql_expr, row_sql)
 
     assert first == second, "same key fields, same values must hash identically across calls"
+    assert first == "8321ca3a6e9d2da20fa8120e7dfbce25"
 
 
 def test_add_key_changes_when_a_key_field_value_changes(local_spark):

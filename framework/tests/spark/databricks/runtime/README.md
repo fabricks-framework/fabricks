@@ -10,20 +10,21 @@ out to `_archive/databricks-old/` (repo root, gitignored) for reference —
 **unverified against a real cluster yet**: run `test_schedule.py`/
 `test_notebook.py` there for real before trusting this over the archive.
 
-24 jobs, exactly the minimal set the cut list and test-gap plan call for — no topic zoo. One
+25 jobs, exactly the minimal set the cut list and test-gap plan call for — no topic zoo. One
 test per job/feature below (`test_schedule.py` for the tagged rows,
 `test_notebook.py` for the direct-invoke `invoke_*` ones) — a job with no dedicated
 assertion is a gap, not implicit coverage via some other job's check.
 
 | Layer | Job | Tagged? | Proves |
 |---|---|---|---|
-| bronze | `king_scd1` | `test` | **register** mode — external-table registration against a seeded Delta table |
+| bronze | `king_scd1` | `test` | **register** mode — external-table registration against a seeded Delta table; direct layer tests also prove its first-iteration CDC path |
 | bronze | `regent_scd1` | `test` | **register** mode — external-table registration against an already-real, standing Delta table on the storage account (not per-run seeded: Unity Catalog binds a path to one table for good) |
 | bronze | `queen_scd1` | `test` | **register** mode — external-table registration against a seeded Delta table |
-| bronze | `feature_parser` | *(none)* | **parser** mode — real file parsing via the `dummy` custom parser plugin (`fabricks/parsers/dummy.py`); register mode never calls `get_parser()`, so this untagged job is the only one that proves plugin loading |
-| silver | `king_scd1` | `test` | cross-layer dependency (`parents: [bronze.king_scd1]`) |
+| bronze | `feature_parser` | *(none)* | **streaming parser** mode — real file parsing via the `dummy` custom parser plugin (`fabricks/parsers/dummy.py`), checkpointed second-run idempotency; register mode never calls `get_parser()` |
+| silver | `king_scd1` | `test` | cross-layer dependency (`parents: [bronze.king_scd1]`); direct layer tests compare its first-iteration CDC state to the seeded expected rows |
 | gold | `dim_time` | `test` | dependency *target* — memory-mode gold table |
-| gold | `fact_dependency` | `test` | gold-depends-on-gold, auto-detected via SQL parsing (references `gold.dim_time` + `silver.king_scd1__current`) |
+| gold | `fact_dependency` | `test` | gold-depends-on-gold, auto-detected via SQL parsing (references `gold.dim_time` + `silver.king_scd1__current`); direct layer test proves materialization |
+| gold | `dependency_notebook` | *(none)* | notebook-derived dependency persisted from the live query plan |
 | gold | `check_fail` | `test` | deliberate pre-run failure (`check_options.pre_run: true`, `__action: fail`) |
 | gold | `check_skip` | `test` | forced skip (`check_options.skip: true`, `__skip: true`) |
 | gold | `check_warning` | `test` | pre-run warning (`check_options.pre_run: true`, `__action: warning`) — `for_each_run()` still executes first, so the table is populated despite the warning; `fabricks/core/dags/run.py` logs this as `warned`, not `failed` |

@@ -1,0 +1,12 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema.json
+- job:
+    step: gold
+    topic: dependency
+    item: notebook
+    options:
+      mode: complete
+      notebook: true
+    invoker_options:
+      run:
+        - notebook: gold/gold/dependency/notebook

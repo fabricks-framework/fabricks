@@ -34,6 +34,9 @@
     item: zstd
     options:
       mode: complete
+    spark_options:
+      conf:
+        spark.sql.parquet.compression.codec: zstd
 - job:
     step: semantic
     topic: fact
@@ -43,3 +46,10 @@
     table_options:
       powerbi: true
       partition_by: [Monarch]
+- job:
+    step: semantic
+    topic: fact
+    item: dependency
+    options:
+      mode: complete
+      parents: [gold.fact_parent]

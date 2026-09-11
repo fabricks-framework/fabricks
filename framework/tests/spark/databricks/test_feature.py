@@ -9,7 +9,7 @@ from fabricks.context import SPARK
 from fabricks.core import get_job
 
 
-def test_bronze_feature_parser():
+def test_bronze_feature_parser_streams_once_per_checkpoint():
     # bronze.feature_parser: real file parsing via the "dummy" custom parser
     # plugin (fabricks/parsers/dummy.py) -- get_parser() loads it from
     # PATH_PARSERS by name. The tagged king/regent/queen jobs are all
@@ -17,8 +17,14 @@ def test_bronze_feature_parser():
     # untagged job is the only place that proves plugin loading works.
     j = get_job(step="bronze", topic="feature", item="parser")
     j.run()
+    first_count = SPARK.sql("select count(*) from bronze.feature_parser").collect()[0][0]
+
+    j.run()
+
     df = SPARK.sql("select distinct __parsed_by from bronze.feature_parser")
     assert [r["__parsed_by"] for r in df.collect()] == ["dummy"]
+    assert SPARK.sql("select count(*) from bronze.feature_parser").collect()[0][0] == first_count
+    assert j.paths.to_checkpoints.exists()
 
 
 def test_gold_feature_extender():
@@ -77,10 +83,7 @@ def test_gold_type_widening_merge():
     j = get_job(step="gold", topic="type_widening", item="merge")
     j.run()
 
-    df = SPARK.sql(
-        "select __key, cast(field as double) as field "
-        "from values ('one', 1.0), ('two', 2.5) as source(__key, field)"
-    )
+    df = SPARK.sql("select __key, cast(field as double) as field from values ('two', 2.5) as source(__key, field)")
     j._for_each_batch(df)
 
     table = SPARK.table(j.table.qualified_name)

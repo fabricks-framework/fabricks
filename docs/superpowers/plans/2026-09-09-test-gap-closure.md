@@ -380,7 +380,8 @@ work. These items are not part of the implementation above and remain planned.
 ### Priority 3: Restore focused physical assertions
 
 - Persist and assert the Gold last-timestamp value.
-- Verify semantic schema drift updates both the table and current view.
+- Verify semantic schema drift updates the physical table. `__current` is a
+  Silver-step view contract, not a semantic Gold contract.
 - Test step configuration repair/idempotency after deleted and stale rows.
 - Add one known `__key`/`__hash` digest alongside invariant-based hashing tests.
 - Add focused manual Gold mode and calculated-column execution checks.

@@ -388,8 +388,6 @@ class Gold(BaseJob):
         else:
             last_version = None
 
-            if self.options.persist_last_timestamp:
-                last_version = self.table.get_last_version()
             if self.options.persist_last_updated_timestamp:
                 last_version = self.table.get_last_version()
             if self.updater_options and self.updater_options.columns:
@@ -398,7 +396,7 @@ class Gold(BaseJob):
             super().for_each_run(**kwargs)
 
             if self.options.persist_last_timestamp:
-                self._persist_timestamp(field="__timestamp", last_version=last_version)
+                self._persist_timestamp(field="__timestamp")
 
             if self.options.persist_last_updated_timestamp:
                 self._persist_timestamp(field="__last_updated", last_version=last_version)

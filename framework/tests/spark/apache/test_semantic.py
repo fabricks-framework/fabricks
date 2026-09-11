@@ -23,7 +23,24 @@ def test_semantic_table_materializes_rows_and_metadata(local_spark):
 
     rows = job.table.dataframe.select("Monarch_ID", "Monarch").orderBy("Monarch_ID").collect()
     assert rows == [(1, "king"), (2, "queen")]
-    assert "__metadata" in job.table.columns
+    metadata = job.table.dataframe.select("__metadata").orderBy("Monarch_ID").collect()
+    assert all(set(row["__metadata"].asDict()) == {"inserted"} for row in metadata)
+    assert all(row["__metadata"].inserted is not None for row in metadata)
+
+
+def test_semantic_schema_drift_updates_the_physical_table(local_spark):
+    job = get_job(step="semantic", topic="fact", item="table")
+    initial = local_spark.createDataFrame([(1, "king")], ["Monarch_ID", "Monarch"])
+    drifted = local_spark.createDataFrame([(1, "king", "Belgium")], ["Monarch_ID", "Monarch", "Realm"])
+
+    job.create()
+    job._for_each_batch(initial)
+    job._for_each_batch(drifted)
+
+    assert "Realm" in job.table.columns
+    assert [(row.Monarch, row.Realm) for row in job.table.dataframe.select("Monarch", "Realm").collect()] == [
+        ("king", "Belgium")
+    ]
 
 
 def test_semantic_step_properties_are_materialized(local_spark):
@@ -46,12 +63,7 @@ def test_semantic_partitioning_is_physical(local_spark):
 
 
 def test_semantic_zstd_is_physical(local_spark):
-    previous = local_spark.conf.get("spark.sql.parquet.compression.codec")
-    local_spark.conf.set("spark.sql.parquet.compression.codec", "zstd")
-    try:
-        job = _run(local_spark, "zstd")
-    finally:
-        local_spark.conf.set("spark.sql.parquet.compression.codec", previous)
+    job = _run(local_spark, "zstd")
 
     data_file = next(Path(str(job.table.delta_path)).rglob("*.parquet"))
     metadata = parquet.ParquetFile(data_file).metadata
