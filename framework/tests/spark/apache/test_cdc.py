@@ -181,6 +181,16 @@ def test_scd1_update(local_spark, seed_from, iters, compare_to):
     compare_to_expected(local_spark, table=scd1.table, cdc="scd1", iter=compare_to, topic="king_and_queen")
 
 
+@pytest.mark.order(12)
+def test_cdc_scenario_rebuilds_after_its_table_is_dropped(local_spark):
+    first = run_cdc_scenario(local_spark, 0, [1], "scd2")
+    first.table.drop()
+
+    second = run_cdc_scenario(local_spark, 0, [1], "scd2")
+
+    compare_to_expected(local_spark, table=second.table, cdc="scd2", iter=1, topic="king_and_queen")
+
+
 # run_cdc_scenario always passes correct_valid_from=True for scd2 -- the
 # from-scratch batch (seed_from=0) is the one case where a row's real earliest
 # __valid_from is also the batch's global min, so scd2.sql.jinja's
@@ -210,7 +220,7 @@ def test_scd2_correct_valid_from(local_spark):
 # calls on the same target -- mirroring two real production runs -- proving
 # new keys get inserted and existing keys' values stay frozen even though
 # iteration 2 changes some of them.
-@pytest.mark.order(12)
+@pytest.mark.order(13)
 def test_scd0(local_spark):
     create_expected_views(local_spark, "scd0")
 

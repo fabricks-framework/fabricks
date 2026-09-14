@@ -26,6 +26,7 @@ from fabricks.context import CATALOG, IS_UNITY_CATALOG, PATH_RUNTIME, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core import get_job
 from fabricks.deploy import Deploy
+from tests.spark.test_data import registered_delta_rows
 
 DEFAULT_LOGGER.setLevel(INFO)
 
@@ -85,13 +86,9 @@ def _seed_raw_delta_fixtures() -> None:
     """
     from pyspark.sql.functions import col, lit
 
-    rows = [
-        {"id": 1, "name": "Leopold I", "__operation": "upsert", "__timestamp": "2022-01-01T00:01:00"},
-        {"id": 2, "name": "Leopold II", "__operation": "upsert", "__timestamp": "2022-01-01T00:01:00"},
-    ]
     for topic in ("king", "queen"):
         job = get_job(step="bronze", topic=topic, item="scd1")
-        df = SPARK.createDataFrame(rows)
+        df = SPARK.createDataFrame(registered_delta_rows(topic))
         df = df.withColumn("__source", lit(topic)).withColumn("__timestamp", col("__timestamp").cast("timestamp"))
         df.write.format("delta").mode("overwrite").save(job.data_path.string)
 

@@ -2,7 +2,6 @@ from typing import Literal
 
 from tests.spark.test_data import load_entity_frames
 
-_CACHE: dict[tuple[int, int, tuple[int, ...], str], object] = {}
 _PREPARED_SPARKS: set[int] = set()
 
 
@@ -17,9 +16,6 @@ def validate_scenario(seed_from: int, iters: list[int], compare_to: int | None =
 
 def run_cdc_scenario(spark, seed_from: int, iters: list[int], cdc: Literal["scd1", "scd2"]):
     validate_scenario(seed_from, iters)
-    cache_key = (id(spark), seed_from, tuple(iters), cdc)
-    if cache_key in _CACHE:
-        return _CACHE[cache_key]
 
     from fabricks.cdc.scd1 import SCD1
     from fabricks.cdc.scd2 import SCD2
@@ -31,9 +27,9 @@ def run_cdc_scenario(spark, seed_from: int, iters: list[int], cdc: Literal["scd1
         _PREPARED_SPARKS.add(id(spark))
 
     suffix = f"king_and_queen_seed{seed_from}_{iters[0]}to{iters[-1]}_{cdc}"
-    scd = SCD2("cdc", suffix, "scd2", spark=spark) if cdc == "scd2" else SCD1(
-        "cdc", suffix, "scd1", spark=spark
-    )
+    scd = SCD2("cdc", suffix, "scd2", spark=spark) if cdc == "scd2" else SCD1("cdc", suffix, "scd1", spark=spark)
+    if scd.table.exists():
+        scd.table.drop()
 
     if seed_from:
         expected = _load_scd2_seed(spark, seed_from) if cdc == "scd2" else _load_scd1_seed(spark, seed_from)
@@ -52,7 +48,6 @@ def run_cdc_scenario(spark, seed_from: int, iters: list[int], cdc: Literal["scd1
             scd.update_schema(combined, **options)
         scd.update(combined, **options)
 
-    _CACHE[cache_key] = scd
     return scd
 
 

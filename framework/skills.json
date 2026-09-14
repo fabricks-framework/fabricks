@@ -23,7 +23,7 @@
   "ponytail": {
     "marketplace": "ponytail",
     "plugin": "ponytail",
-    "version": "4.8.3",
+    "version": "4.9.0",
     "skills": [
       "ponytail",
       "ponytail-audit",
@@ -36,7 +36,7 @@
   "python-library-complete": {
     "marketplace": "dev-skills",
     "plugin": "python-library-complete",
-    "version": "3f59485bd4ed",
+    "version": "81abccd68eb1",
     "skills": [
       {
         "src": "python/documentation",
@@ -56,7 +56,7 @@
     "marketplace": "mattpocock",
     "plugin": "mattpocock-skills",
     "layout": "marketplace",
-    "version": "0ab1b63",
+    "version": "3cca18b",
     "skills": [
       {
         "src": "engineering/code-review",
@@ -65,6 +65,10 @@
       {
         "src": "engineering/improve-codebase-architecture",
         "dest": "improve-codebase-architecture"
+      },
+      {
+        "src": "engineering/codebase-design",
+        "dest": "codebase-design"
       },
       {
         "src": "engineering/research",

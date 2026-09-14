@@ -11,6 +11,13 @@ SPARK_TEST_ROOT = Path(__file__).parent
 RAW_FIXTURES_ROOT = SPARK_TEST_ROOT / "fixtures"
 APACHE_FIXTURES_ROOT = SPARK_TEST_ROOT / "apache" / "fixtures"
 EXPECTED_ROOT = SPARK_TEST_ROOT / "expected"
+_REGISTERED_DELTA_ROWS = {
+    "king": (
+        {"id": 1, "name": "Leopold I", "__operation": "upsert", "__timestamp": "2022-01-01T00:01:00"},
+        {"id": 2, "name": "Leopold II", "__operation": "upsert", "__timestamp": "2022-01-01T00:01:00"},
+    ),
+    "queen": ({"id": 101, "name": "Louise", "__operation": "upsert", "__timestamp": "2022-01-01T00:01:00"},),
+}
 
 
 def derive_source_rows(entity_dir: Path, source: str, operation: str | None = None) -> list[dict]:
@@ -34,6 +41,10 @@ def derive_entity_rows(iteration: int, entity: Literal["king", "queen"]) -> list
     if delete_log.is_dir():
         rows += derive_source_rows(delete_log, source=entity, operation="delete")
     return rows
+
+
+def registered_delta_rows(entity: Literal["king", "queen"]) -> list[dict]:
+    return [dict(row) for row in _REGISTERED_DELTA_ROWS[entity]]
 
 
 def read_ndjson(path: Path) -> list[dict]:

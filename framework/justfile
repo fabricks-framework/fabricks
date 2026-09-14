@@ -12,7 +12,7 @@ format:
     uv run sqlfmt fabricks/ tests/
     uv run yamlfix fabricks/ tests/
 
-# Re-sync marketplace-sourced .claude/skills/ from the local plugin cache (per skills.json) -- requires the marketplace already installed locally.
+# Refresh marketplaces, then re-sync .claude/skills/ from the plugin cache (per skills.json).
 update-skills:
     uv run python scripts/update_skills.py
 
@@ -31,7 +31,8 @@ test-apache:
 # Deploy the bundle and run the Databricks test suite (tests/spark/databricks/) against the 'test' workspace
 test-databricks:
     databricks bundle deploy -t test
-    databricks bundle run fabricks_test_job -t test
+    # Disabled while the Databricks test job is unavailable.
+    # databricks bundle run fabricks_test_job -t test
 
 # Run every test tier: plain, config, apache, then databricks (deploy + run against the 'test' workspace)
 test-all: test-plain test-config test-apache test-databricks

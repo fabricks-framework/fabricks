@@ -7,6 +7,7 @@ from tests.spark.test_data import (
     ITERATIONS,
     RAW_FIXTURES_ROOT,
     derive_source_rows,
+    registered_delta_rows,
     validate_iteration,
     write_ndjson,
 )
@@ -27,6 +28,17 @@ def test_derive_rows_from_iter1_king():
     assert first["name"] == "Leopold I"
     assert first["__source"] == "king"
     assert first["__timestamp"] == "2022-01-01T00:01:00"
+
+
+def test_registered_delta_rows_are_canonical_and_isolated():
+    rows = registered_delta_rows("king")
+
+    assert rows == [
+        {"id": 1, "name": "Leopold I", "__operation": "upsert", "__timestamp": "2022-01-01T00:01:00"},
+        {"id": 2, "name": "Leopold II", "__operation": "upsert", "__timestamp": "2022-01-01T00:01:00"},
+    ]
+    rows[0]["name"] = "changed"
+    assert registered_delta_rows("king")[0]["name"] == "Leopold I"
 
 
 def test_generated_ndjson_files_are_committed():

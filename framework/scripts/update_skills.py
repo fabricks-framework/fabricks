@@ -1,7 +1,8 @@
-"""Re-sync marketplace-sourced .claude/skills/ from the local plugin cache,
-per the manifest in skills.json. Requires the marketplace already installed
-locally (`claude plugin marketplace add ...` / an entry in
-.claude/settings.json's extraKnownMarketplaces, then installed).
+"""Refresh marketplaces and re-sync .claude/skills/ from the local plugin cache.
+
+Requires the marketplace already installed locally (`claude plugin marketplace
+add ...` / an entry in .claude/settings.json's extraKnownMarketplaces, then
+installed).
 
 Usage:
     python scripts/update_skills.py
@@ -27,6 +28,16 @@ _SKILLS_DIR = _GIT_ROOT / ".claude" / "skills"
 _PLUGINS_ROOT = Path.home() / ".claude" / "plugins"
 _CACHE_ROOT = _PLUGINS_ROOT / "cache"
 _MARKETPLACES_ROOT = _PLUGINS_ROOT / "marketplaces"
+
+
+def _refresh_marketplaces() -> None:
+    if shutil.which("claude") is None:
+        print("skip marketplace refresh: claude CLI not found", file=sys.stderr)
+        return
+
+    result = subprocess.run(["claude", "plugin", "marketplace", "update"], check=False)
+    if result.returncode:
+        print("marketplace refresh failed; using cached plugins", file=sys.stderr)
 
 
 def _latest_version(plugin_dir: Path) -> Path:
@@ -70,6 +81,7 @@ def _skills_root(info: dict) -> tuple[Path, str] | tuple[None, None]:
 
 
 def main() -> None:
+    _refresh_marketplaces()
     manifest = json.loads(_MANIFEST.read_text())
     changed = False
 
