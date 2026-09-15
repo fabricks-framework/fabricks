@@ -5,7 +5,7 @@ tests/spark/databricks/runtime/semantic/fact/_config.semantic.yml's
 step_option/job_option fixtures (see tests/spark/databricks/jobs/job1/
 test_semantic.py's test_semantic_fact_step_option/test_semantic_fact_job_option),
 against the "gold" step declared locally in
-tests/spark/apache/runtime/fabricks/conf.fabricks.yml + tests/spark/apache/runtime/gold/
+tests/spark/runtime/fabricks/conf.fabricks.yml + tests/spark/runtime/gold/
 _config.fact.yml.
 """
 

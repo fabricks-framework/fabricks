@@ -1,7 +1,7 @@
 """Configurator.timeout / _get_timeout (framework/fabricks/core/jobs/base/
 configurator.py:140-153): job-level options.timeout -> step-level
 step_options.timeouts.job -> runtime_options.timeouts.job, in that order.
-The runtime fallback (3600) comes from tests/spark/apache/runtime/fabricks/
+The runtime fallback (3600) comes from tests/spark/runtime/fabricks/
 conf.fabricks.yml's `options.timeouts.job`; the "gold" step there
 declares no `timeouts` of its own, so it's also the step-level test's
 starting point.

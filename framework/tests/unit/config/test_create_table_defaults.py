@@ -32,7 +32,7 @@ def _job(monkeypatch, *, table_options: TableOptions | None = None, columns: lis
     job = get_job(step="gold", topic="fact", item="step_option")
 
     # The "gold" step declares table_options.properties of its own
-    # (tests/spark/apache/runtime/fabricks/conf.fabricks.yml) - option-level
+    # (tests/spark/runtime/fabricks/conf.fabricks.yml) - option-level
     # fallback onto that is test_option_hierarchy.py's concern, not this
     # file's. Clear it so create_table()'s own default-properties branch is
     # what's under test here, isolated from the job/step hierarchy.

@@ -58,6 +58,11 @@ config) and real `pyspark` types for realistic mocking, since code under
 test does genuine `isinstance(x, DataFrameLike)` checks that a duck-typed
 stand-in can't satisfy.
 
+This tier reads real config from the same `tests/spark/runtime/` tree
+`tests/spark/apache/` uses (see below) — it only ever resolves
+`gold/fact/*` jobs there, never touching the CDC/Silver/Bronze/semantic
+config Apache's own tests exercise.
+
 ```
 uv run pytest tests/unit/config
 ```
@@ -75,7 +80,7 @@ Databricks Runtime), running natively on a local JVM — Java 17 or later.
 `tests/spark/apache/conftest.py`
 builds a real Delta-configured `SparkSession` at module-import time against
 a fixture runtime checked into this repo at
-`tests/spark/apache/runtime/fabricks/conf.fabricks.yml`. Use these for CDC
+`tests/spark/runtime/fabricks/conf.fabricks.yml`. Use these for CDC
 merge correctness and DDL that genuinely needs real Delta table state to
 verify (real row counts, real table features) — not just the DDL/config
 *generation* logic, which belongs in `tests/unit/config/` instead.
@@ -84,6 +89,14 @@ The tier also covers representative Silver/Gold CDC wiring, focused
 truncate/reload recovery, and the `semantic` Gold-family step's physical
 properties, partitioning, compression, and Power BI-compatible Delta
 settings. CI runs this tier independently under Java 17.
+
+`tests/spark/runtime/` lives outside `tests/spark/apache/` because
+`tests/unit/config/` (above) shares it too — the tree is one fixture
+runtime, not two. Apache's tests exercise `bronze/`, `silver/`, `gold/cdc/`,
+and `semantic/fact/`; `unit/config`'s exercise `gold/fact/` only. Neither
+tier's tests overlap on the same job, so there's no risk of one tier's
+change silently breaking the other's fixtures — but a genuinely new job
+belongs under whichever tier will exercise it.
 
 ```
 just test-apache   # needs Java 17 or later on PATH

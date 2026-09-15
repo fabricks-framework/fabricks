@@ -1,23 +1,58 @@
-"""Real-Spark (Apache-tier) comparison helpers against the shared expected/ oracle.
+"""Real-Spark (Apache-tier) comparison helpers against the shared expected/
+oracle (the "expected-state oracle" — see CONTEXT.md).
 
 See docs/adr/0001-duckdb-backend-for-local-cdc-tests.md, Stage 1 item #7.
+
+The QUALIFY-rewrite and schema-inference logic below (`_make_spark_compatible`/
+`_expected_scd2_schema`) is pure Python — no Spark session needed to exercise
+it — kept testable from `tests/unit/plain/test_compare.py` without paying for
+a JVM. The Spark-dependent functions below import `pyspark.sql`/
+`fabricks.metastore.table`/`fabricks.utils.dataframe` lazily, inside their own
+bodies, so importing this module at all doesn't require a real
+`fabricks.context` (same lazy-import pattern `tests/spark/apache/cdc_harness.py`
+uses for its own heavy `fabricks.cdc` import).
 """
 
+from __future__ import annotations
+
+from datetime import UTC, datetime
 import os
 from pathlib import Path
 import re
+from typing import TYPE_CHECKING
 
-from pandas.testing import assert_frame_equal
-from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import expr
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType, StructField, StructType, TimestampType
 
-from fabricks.metastore.table import Table
-from fabricks.utils.dataframe import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
-from tests.spark.test_data import EXPECTED_ROOT, read_expected_rows
+from tests.spark.test_data import SPARK_TEST_ROOT, read_ndjson
+
+if TYPE_CHECKING:
+    from pyspark.sql import DataFrame, SparkSession
+
+    from fabricks.metastore.table import Table
+
+EXPECTED_ROOT = SPARK_TEST_ROOT / "expected"
+
+
+def read_expected_rows(iteration: int) -> list[dict]:
+    rows = read_ndjson(EXPECTED_ROOT / "scd2" / f"iter{iteration:02}.jsonl")
+    for row in rows:
+        row["__valid_from"] = _utc_timestamp(row["__valid_from"])
+        row["__valid_to"] = _utc_timestamp(row["__valid_to"])
+        if isinstance(row.get("newField"), str):
+            row["newField"] = {"true": True, "false": False, "null": None}[row["newField"]]
+    return rows
+
+
+def _utc_timestamp(value: str) -> datetime:
+    return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
 
 
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
+    from pandas.testing import assert_frame_equal
+    from pyspark.sql.functions import expr
+
+    from fabricks.utils.dataframe import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
+
     cols = df_expected.columns
     order_by = "id"
     if "__valid_from" in df.columns:
@@ -40,8 +75,6 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
 
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
 
-
-_EXPECTED_ROOT = EXPECTED_ROOT
 
 # OSS Apache Spark (this local test container) has no QUALIFY clause support
 # -- it's a Databricks SQL extension. tests/spark/expected/scd1/iter*.sql (the
@@ -109,9 +142,9 @@ _EXPECTED_SCD2_BASE_SCHEMA = StructType(
 )
 
 # newField: added via a per-file StructField, not folded into the base schema
-# above, and NOT unconditionally on every iteration's NDJSON the way
-# tests/spark/databricks/utils.py's _EXPECTED_SCD2_SCHEMA does it (commit
-# 8a7cb451). That's correct for the Databricks-cluster suite, where
+# above, and not unconditionally on every iteration's NDJSON, unlike the now-
+# deleted Databricks-cluster suite's equivalent schema (commit 8a7cb451).
+# That was correct for the Databricks-cluster suite, where
 # king_and_queen's real job config declares a fixed bronze schema
 # up front (so bronze.king already carries a NULL newField column from its
 # very first landing batch, before iter2 ever supplies a real value) -- but
@@ -141,7 +174,11 @@ def _expected_scd2_schema(rows: list[dict]) -> StructType:
 
 
 def create_expected_views(spark: SparkSession, cdc: str) -> None:
-    views_dir = _EXPECTED_ROOT / cdc
+    views_dir = EXPECTED_ROOT / cdc
+
+    # tests/spark/databricks/utils.py, which this module's create_expected_views
+    # once mirrored fixes into (commits 8a7cb451, d4f2498e), was deleted in
+    # bdda89d6 ("remove old tests") - this is the sole create_expected_views now.
 
     if cdc == "scd2":
         # Only iter1's file is hand-authored NDJSON data — iter2.sql onward are
@@ -153,15 +190,13 @@ def create_expected_views(spark: SparkSession, cdc: str) -> None:
         # an early `return` here would silently skip
         # expected.scd2_iter{2..9} entirely, since Task 9's
         # run_cdc_scenario only calls create_expected_views for
-        # "scd2"/"scd1", not per iteration. See Task 3's
-        # mirrored fix in tests/spark/databricks/utils.py's create_expected_views.
+        # "scd2"/"scd1", not per iteration.
         for ndjson_file in sorted(views_dir.glob("*.jsonl")):
             # str(int(...)): strip the filename's leading zero (iter01.jsonl ->
             # "01") so it matches the un-padded table name (scd2_iter1)
-            # the scd1/iter*.sql oracle views reference. Same fix as
-            # tests/spark/databricks/utils.py's create_expected_views (commit
-            # d4f2498e) -- without it, "scd2_iter01" is created but
-            # "scd2_iter1" (what iter1.sql selects from) is never found.
+            # the scd1/iter*.sql oracle views reference -- without it,
+            # "scd2_iter01" is created but "scd2_iter1" (what iter1.sql
+            # selects from) is never found.
             match = re.search(r"\d+", ndjson_file.stem)
             assert match, f"no iteration number in {ndjson_file.name}"
             iter_num = str(int(match.group()))

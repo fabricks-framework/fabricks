@@ -20,11 +20,11 @@ _VARIABLES_FILE = _WORKER_ROOT / "variables.yml"
 _VARIABLES_FILE.write_text(f"$apache_storage: {_LOCAL_STORAGE}\n")
 
 os.environ["FABRICKS_BASE"] = str(_FRAMEWORK_ROOT)
-os.environ["FABRICKS_RUNTIME"] = "tests/spark/apache/runtime"
+os.environ["FABRICKS_RUNTIME"] = "tests/spark/runtime"
 os.environ["FABRICKS_TEST_SPARK_DEFAULT_PARALLELISM"] = "2"
 os.environ["FABRICKS_TEST_DISPOSABLE_STORAGE"] = str(_LOCAL_STORAGE)
 os.environ["FABRICKS_TEST_EXPECTED_CACHE"] = str(_EXPECTED_CACHE)
-os.environ["FABRICKS_CONFIG"] = "tests/spark/apache/runtime/fabricks/conf.fabricks.yml"
+os.environ["FABRICKS_CONFIG"] = "tests/spark/runtime/fabricks/conf.fabricks.yml"
 os.environ["FABRICKS_VARIABLE"] = str(_VARIABLES_FILE)
 os.environ["FABRICKS_ENVIRONMENT"] = "docker"
 os.environ["FABRICKS_IS_DEBUGMODE"] = "FALSE"

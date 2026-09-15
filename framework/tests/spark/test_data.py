@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 import json
 from pathlib import Path
 from typing import Literal
@@ -10,7 +9,6 @@ ENTITIES = ("king", "queen")
 SPARK_TEST_ROOT = Path(__file__).parent
 RAW_FIXTURES_ROOT = SPARK_TEST_ROOT / "fixtures"
 APACHE_FIXTURES_ROOT = SPARK_TEST_ROOT / "apache" / "fixtures"
-EXPECTED_ROOT = SPARK_TEST_ROOT / "expected"
 _REGISTERED_DELTA_ROWS = {
     "king": (
         {"id": 1, "name": "Leopold I", "__operation": "upsert", "__timestamp": "2022-01-01T00:01:00"},
@@ -71,17 +69,9 @@ def load_combined_frame(spark, iteration: int):
     return spark.read.json(str(APACHE_FIXTURES_ROOT / f"iter{iteration}" / "king_queen.jsonl"))
 
 
-def read_expected_rows(iteration: int) -> list[dict]:
-    rows = read_ndjson(EXPECTED_ROOT / "scd2" / f"iter{iteration:02}.jsonl")
-    for row in rows:
-        row["__valid_from"] = _utc_timestamp(row["__valid_from"])
-        row["__valid_to"] = _utc_timestamp(row["__valid_to"])
-        if isinstance(row.get("newField"), str):
-            row["newField"] = {"true": True, "false": False, "null": None}[row["newField"]]
-    return rows
-
-
 def validate_iteration(iteration: int) -> None:
+    from tests.spark.expected.compare import read_expected_rows
+
     expected_combined = []
     for entity in ENTITIES:
         derived = derive_entity_rows(iteration, entity)
@@ -104,7 +94,3 @@ def _timestamp_from_path(source_file: Path) -> str:
     year, month, day, batch = source_file.parent.parts[-4:]
     hhmmss = (batch + "00")[:6]
     return f"{year}-{month}-{day}T{hhmmss[0:2]}:{hhmmss[2:4]}:{hhmmss[4:6]}"
-
-
-def _utc_timestamp(value: str) -> datetime:
-    return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
