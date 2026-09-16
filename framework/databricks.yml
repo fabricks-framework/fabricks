@@ -2,8 +2,8 @@
 # These is the default bundle configuration if not otherwise overridden in
 # the "targets" top-level mapping.
 #
-# targets (workspace hosts, service principal) live in databricks.targets.yml,
-# gitignored -- not committed since they're environment-specific/sensitive.
+# The workspace host lives in databricks.targets.yml, gitignored -- not
+# committed since it's environment-specific.
 include:
   - databricks.targets.yml
 bundle:  # Required.
@@ -26,7 +26,7 @@ variables:
 resources:
   jobs:
     fabricks_test_job:
-      name: ${bundle.name}_${bundle.target}_pytest
+      name: fabricks_tests
       parameters:
         - name: schedule
           default: test
@@ -58,16 +58,80 @@ resources:
             kind: CLASSIC_PREVIEW
             enable_elastic_disk: true
             enable_local_disk_encryption: false
-            autotermination_minutes: 60
             init_scripts:
               - workspace:
                   destination: ${workspace.file_path}/tests/spark/databricks/init.sh
-            spark_env_vars:
-              FABRICKS_ACCESS_KEY: '{{secrets/bmskv/bmsstatsteuwfabrickssnd-access-key}}'
-              FABRICKS_ENCRYPTION_KEY: '{{secrets/bmskv/encryption-key}}'
-              FABRICKS_CONFIG: ${workspace.file_path}/tests/spark/databricks/runtime/fabricks/${var.fabricks_conf}
             data_security_mode: USER_ISOLATION
             runtime_engine: PHOTON
             autoscale:
               min_workers: 1
               max_workers: 4
+targets:
+  # The only target: 'test', workspace 89... . Single persistent
+  # interactive cluster plus the automated job-cluster-based test job,
+  # both deployed here -- no separate dev target/workspace.
+  test:
+    # We use 'mode: production' to indicate this is a production deployment.
+    # Doing so enables strict verification of the settings below.
+    mode: production
+    default: true
+    workspace:
+      root_path: /Workspace/fabricks_test/.bundle/${bundle.name}/${bundle.target}
+    resources:
+      # Persistent all-purpose cluster for interactive dev/test -- unlike
+      # fabricks_test_job's job cluster above, this one stays up between
+      # runs instead of spinning up/terminating per job. Trade-off:
+      # redeploying the whl won't refresh code on an already-running
+      # cluster; restart it after `databricks bundle deploy -t test` to
+      # pick up changes.
+      clusters:
+        fabricks_interactive_cluster:
+          cluster_name: fabricks-tests
+          spark_version: ${var.spark_version}
+          node_type_id: Standard_D8ads_v5
+          num_workers: 1
+          autotermination_minutes: 0
+          data_security_mode: USER_ISOLATION
+          runtime_engine: PHOTON
+          # No init_scripts: USER_ISOLATION (shared) clusters only accept
+          # init scripts from a UC volume, not a workspace file (wsfs).
+          # FABRICKS_RUNTIME/NOTEBOOKS/CONFIG/IS_JOB_CONFIG_FROM_YAML are
+          # deliberately not set here -- pyproject.toml's [tool.fabricks]
+          # supplies them via ConfigOptions' HierarchicalFileSettingsSource
+          # fallback. FABRICKS_ACCESS_KEY/FABRICKS_ENCRYPTION_KEY have no
+          # such fallback (plain os.environ.get, no pydantic-settings
+          # field), so those stay in databricks.targets.yml's merge.
+      jobs:
+        # A separate job, not an override of fabricks_test_job: DABs merges
+        # task fields by task_key across targets but can't *unset* a field,
+        # so job_cluster_key from the base job_cluster-based task would
+        # survive alongside existing_cluster_id here and fail at deploy
+        # (a task can't set both).
+        fabricks_interactive_job:
+          name: fabricks_tests_interactive
+          parameters:
+            - name: schedule
+              default: test
+          tasks:
+            - task_key: cluster
+              notebook_task:
+                notebook_path: fabricks/api/notebooks/cluster.py
+              existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
+              libraries:
+                - whl: ./dist/*.whl
+                # Test-only deps init.sh used to pip install; everything
+                # else it installed is already a fabricks runtime
+                # dependency and rides along on the whl above.
+                - pypi:
+                    package: pytest
+                - pypi:
+                    package: pytest-order
+                - pypi:
+                    package: polars
+            - task_key: runtests
+              depends_on:
+                - task_key: cluster
+              notebook_task:
+                notebook_path: tests/spark/databricks/runtests.py
+                source: WORKSPACE
+              existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
