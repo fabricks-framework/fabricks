@@ -1,12 +1,9 @@
 ---
 # yaml-language-server: $schema=../../../../../job-schema.json
-# All three tagged jobs use register mode -- proves external-table
-# registration (Bronze.create()/register(), bronze.py), each reading its own
-# real Delta table under raw/delta/<topic>. king/queen are seeded per run by
-# runtests.py's _seed_raw_delta_fixtures(); regent instead reads an
-# already-real, standing external table on the storage account -- Unity
-# Catalog binds a path to one table for good, so its data isn't
-# re-seeded/re-registered on every run. Register mode never calls get_parser()
+# Both tagged jobs use register mode -- proves external-table registration
+# (Bronze.create()/register(), bronze.py), each reading its own real Delta
+# table under raw/delta/<topic>, seeded per run by runtests.py's
+# _seed_raw_delta_fixtures(). Register mode never calls get_parser()
 # (Bronze.parser asserts mode != "register"), so it can't prove the "dummy"
 # custom parser plugin -- that's covered separately by the untagged
 # feature/parser job below, invoked directly in test_feature.py instead of
@@ -19,15 +16,6 @@
     options:
       mode: register
       uri: abfss://fabricks@$datahub/raw/delta/king
-      keys: [id]
-- job:
-    step: bronze
-    topic: regent
-    item: scd1
-    tags: [test]
-    options:
-      mode: register
-      uri: abfss://fabricks@$datahub/raw/delta/regent
       keys: [id]
 - job:
     step: bronze

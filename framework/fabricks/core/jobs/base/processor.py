@@ -22,6 +22,22 @@ from fabricks.models import JobBronzeOptions, JobSilverOptions
 from fabricks.utils.write import write_stream
 
 
+def _for_each_stream_batch(
+    df: DataFrame,
+    batch: int,
+    *,
+    step: str,
+    topic: str,
+    item: str,
+    schedule: str | None,
+    reload: bool | None,
+) -> None:
+    from fabricks.core.jobs.get_job import get_job
+
+    job = get_job(step=step, topic=topic, item=item)
+    job._for_each_batch(df, batch, schedule=schedule, reload=reload)
+
+
 class Processor(Invoker):
     def filter_where(self, df: DataFrame) -> DataFrame:
         assert isinstance(self.options, (JobBronzeOptions, JobSilverOptions))
@@ -95,12 +111,18 @@ class Processor(Invoker):
             df = self.get_data(stream=self.stream, **kwargs)
             assert df is not None, "no data"
 
-            partial(self._for_each_batch, **kwargs)
-
             if self.stream:
                 DEFAULT_LOGGER.debug("use streaming", extra={"label": self})
+                callback = partial(
+                    _for_each_stream_batch,
+                    step=self.step,
+                    topic=self.topic,
+                    item=self.item,
+                    schedule=kwargs.get("schedule"),
+                    reload=kwargs.get("reload"),
+                )
                 write_stream(
-                    df, checkpoints_path=self.paths.to_checkpoints, func=self._for_each_batch, timeout=self.timeout
+                    df, checkpoints_path=self.paths.to_checkpoints, func=callback, timeout=self.timeout
                 )
             else:
                 self._for_each_batch(df, **kwargs)

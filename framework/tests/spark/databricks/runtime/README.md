@@ -3,14 +3,16 @@
 Minimal runtime for the consolidated `test_schedule.py`/`test_notebook.py`,
 per
 [docs/superpowers/plans/2026-09-04-databricks-cut-list.md](../../../../docs/superpowers/plans/2026-09-04-databricks-cut-list.md).
-Wired in via `tests/spark/databricks/init.sh` (`FABRICKS_RUNTIME`/
-`FABRICKS_CONFIG`) and `pyproject.toml`'s `[tool.fabricks]` table for local
-tooling. The old topic-zoo `runtime/` + `jobs/job1-5/` suite has been moved
+Wired in via `pyproject.toml`'s `[tool.fabricks]` table (`FABRICKS_RUNTIME`/
+`FABRICKS_CONFIG`/...) for both local tooling and the Databricks cluster --
+`databricks.yml`'s job/cluster resources only set the two secrets
+(`FABRICKS_ACCESS_KEY`/`FABRICKS_ENCRYPTION_KEY`) that have no config-file
+fallback. The old topic-zoo `runtime/` + `jobs/job1-5/` suite has been moved
 out to `_archive/databricks-old/` (repo root, gitignored) for reference —
 **unverified against a real cluster yet**: run `test_schedule.py`/
 `test_notebook.py` there for real before trusting this over the archive.
 
-25 jobs, exactly the minimal set the cut list and test-gap plan call for — no topic zoo. One
+24 jobs, exactly the minimal set the cut list and test-gap plan call for — no topic zoo. One
 test per job/feature below (`test_schedule.py` for the tagged rows,
 `test_notebook.py` for the direct-invoke `invoke_*` ones) — a job with no dedicated
 assertion is a gap, not implicit coverage via some other job's check.
@@ -18,7 +20,6 @@ assertion is a gap, not implicit coverage via some other job's check.
 | Layer | Job | Tagged? | Proves |
 |---|---|---|---|
 | bronze | `king_scd1` | `test` | **register** mode — external-table registration against a seeded Delta table; direct layer tests also prove its first-iteration CDC path |
-| bronze | `regent_scd1` | `test` | **register** mode — external-table registration against an already-real, standing Delta table on the storage account (not per-run seeded: Unity Catalog binds a path to one table for good) |
 | bronze | `queen_scd1` | `test` | **register** mode — external-table registration against a seeded Delta table |
 | bronze | `feature_parser` | *(none)* | **streaming parser** mode — real file parsing via the `dummy` custom parser plugin (`fabricks/parsers/dummy.py`), checkpointed second-run idempotency; register mode never calls `get_parser()` |
 | silver | `king_scd1` | `test` | cross-layer dependency (`parents: [bronze.king_scd1]`); direct layer tests compare its first-iteration CDC state to the seeded expected rows |
@@ -85,4 +86,4 @@ by `create_or_replace_views()` at armageddon time and asserted directly in
 in the table above.
 
 Not included (deliberately): `semantic`/`powerbi`/`uc` steps, any topic
-beyond `king`/`queen`/`regent`.
+beyond `king`/`queen`.

@@ -116,11 +116,13 @@ fixture runtime lives under `tests/spark/databricks/runtime/`.
 - `test_feature.py` covers parser/extender/UDF loading, masks, liquid
   clustering, and physical type widening.
 - `runtime/README.md` is the authoritative job inventory.
-- `init.sh` configures the runtime and dependencies on the cluster.
+- `pyproject.toml`'s `[tool.fabricks]` table configures the runtime on the
+  cluster; the job/cluster libraries in `databricks.yml` install `pytest`
+  and the wheel's own dependencies.
 
 There is no local way to run these — they need the fixture runtime
-deployed to an actual Databricks workspace/cluster with `init.sh` applied,
-real notebook execution, or real multi-job wall-clock ordering. Keep this
+deployed to an actual Databricks workspace/cluster, real notebook
+execution, or real multi-job wall-clock ordering. Keep this
 tier limited to exactly that: real notebooks (`invoke_*`, `*_notebook`),
 real schedule timing (`wait_for`, forced-failure/skip assertions), and real
 Unity Catalog integration. If a test here is actually decision logic or

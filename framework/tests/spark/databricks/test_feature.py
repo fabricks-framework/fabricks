@@ -12,9 +12,9 @@ from fabricks.core import get_job
 def test_bronze_feature_parser_streams_once_per_checkpoint():
     # bronze.feature_parser: real file parsing via the "dummy" custom parser
     # plugin (fabricks/parsers/dummy.py) -- get_parser() loads it from
-    # PATH_PARSERS by name. The tagged king/regent/queen jobs are all
-    # register mode now (Bronze.parser asserts mode != "register"), so this
-    # untagged job is the only place that proves plugin loading works.
+    # PATH_PARSERS by name. The tagged king/queen jobs are both register
+    # mode (Bronze.parser asserts mode != "register"), so this untagged job
+    # is the only place that proves plugin loading works.
     j = get_job(step="bronze", topic="feature", item="parser")
     j.run()
     first_count = SPARK.sql("select count(*) from bronze.feature_parser").collect()[0][0]

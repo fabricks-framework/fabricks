@@ -15,14 +15,6 @@ artifacts:
 variables:
   spark_version:
     default: 18.x-scala2.13
-  # Which runtime config the job runs against. Both live side by side in
-  # tests/spark/databricks/runtime/fabricks/:
-  #   conf.fabricks.yml     -- hive_metastore, per-layer abfss containers
-  #   conf.uc.fabricks.yml  -- unity catalog bms_dna_test
-  # UC is the default; override per deploy for the hive variant:
-  #   databricks bundle deploy -t test --var="fabricks_conf=conf.fabricks.yml"
-  fabricks_conf:
-    default: conf.uc.fabricks.yml
 resources:
   jobs:
     fabricks_test_job:
@@ -37,6 +29,13 @@ resources:
           job_cluster_key: fabricks_test_cluster
           libraries:
             - whl: ./dist/*.whl
+            # Test-only deps; everything else init.sh used to pip install
+            # is already a fabricks runtime dependency and rides along on
+            # the whl above.
+            - pypi:
+                package: pytest
+            - pypi:
+                package: pytest-order
         - task_key: runtests
           depends_on:
             - task_key: cluster
@@ -58,9 +57,6 @@ resources:
             kind: CLASSIC_PREVIEW
             enable_elastic_disk: true
             enable_local_disk_encryption: false
-            init_scripts:
-              - workspace:
-                  destination: ${workspace.file_path}/tests/spark/databricks/init.sh
             data_security_mode: USER_ISOLATION
             runtime_engine: PHOTON
             autoscale:
@@ -119,15 +115,10 @@ targets:
               existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
               libraries:
                 - whl: ./dist/*.whl
-                # Test-only deps init.sh used to pip install; everything
-                # else it installed is already a fabricks runtime
-                # dependency and rides along on the whl above.
                 - pypi:
                     package: pytest
                 - pypi:
                     package: pytest-order
-                - pypi:
-                    package: polars
             - task_key: runtests
               depends_on:
                 - task_key: cluster

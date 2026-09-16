@@ -41,10 +41,6 @@ def test_bronze_register_mode_king():
     assert _succeeded("bronze.king_scd1")
 
 
-def test_bronze_register_mode_regent():
-    assert _succeeded("bronze.regent_scd1")
-
-
 def test_bronze_register_mode_queen():
     assert _succeeded("bronze.queen_scd1")
 

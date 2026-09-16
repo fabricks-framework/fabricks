@@ -4,18 +4,15 @@
 # the Databricks integration tests (test_schedule.py/test_notebook.py) --
 # see runtime/README.md and docs/superpowers/plans/2026-09-04-databricks-cut-list.md.
 #
-# The "expected" database in conf.fabricks.yml is scaffolding for parity with
-# production config shape only -- this suite asserts against
+# The "expected" database in conf.uc.fabricks.yml is scaffolding for parity
+# with production config shape only -- this suite asserts against
 # fabricks.last_schedule/last_status, not expected.*, so no expected views
 # are created here (that comparison lives in tests/spark/apache/expected/).
 #
-# king/regent/queen (the tagged bronze jobs) are all register mode now. king
-# and queen read their own per-run-seeded Delta table; regent still reads an
-# already-real, standing external table on the storage account (Unity
-# Catalog binds a path to one table for good -- re-seeding/re-registering it
-# here on every run would collide with that existing binding). bronze.
-# feature_parser (untagged, real file parsing via the "dummy" parser plugin)
-# is the one job that still needs raw json files seeded.
+# king/queen (the tagged bronze jobs) are both register mode, each reading
+# its own per-run-seeded Delta table. bronze.feature_parser (untagged, real
+# file parsing via the "dummy" parser plugin) is the one job that still
+# needs raw json files seeded.
 
 from logging import INFO
 
@@ -76,13 +73,6 @@ def _seed_raw_delta_fixtures() -> None:
     register_external_table() (bronze.py) selects from that uri directly, so
     it needs a real table there, same shape as tests/spark/apache/conftest.py's
     king_and_queen_registered_sources.
-
-    regent is deliberately excluded: its raw delta table is an already-real,
-    standing external table on the storage account, registered under
-    bronze.regent_scd1 outside this per-run lifecycle -- overwriting it here
-    would mean re-registering (or re-pointing at) a path Unity Catalog has
-    already bound to that table, which UC rejects the same way it rejects
-    binding any path to a second table.
     """
     from pyspark.sql.functions import col, lit
 
