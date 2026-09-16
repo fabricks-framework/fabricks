@@ -54,6 +54,14 @@ def test_cross_layer_dependency():
     assert _row("bronze.king_scd1").end_time < _row("silver.king_scd1").start_time
 
 
+def test_silver_queen_scd1():
+    assert _succeeded("silver.queen_scd1")
+
+
+def test_silver_feature_parser():
+    assert _succeeded("silver.feature_parser")
+
+
 def test_auto_detected_gold_dependency():
     # gold.fact_dependency's SQL joins gold.dim_time + silver.king_scd1__current;
     # both parents are auto-detected via sqlglot, no wait_for needed.

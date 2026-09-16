@@ -22,6 +22,8 @@ assertion is a gap, not implicit coverage via some other job's check.
 | bronze | `queen_scd1` | `test` | **register** mode — external-table registration against a seeded Delta table |
 | bronze | `feature_parser` | *(none)* | **streaming parser** mode — real file parsing via the `dummy` custom parser plugin (`fabricks/parsers/dummy.py`), checkpointed second-run idempotency; register mode never calls `get_parser()` |
 | silver | `king_scd1` | `test` | cross-layer dependency (`parents: [bronze.king_scd1]`); direct layer tests compare its first-iteration CDC state to the seeded expected rows |
+| silver | `queen_scd1` | `test` | cross-layer dependency (`parents: [bronze.queen_scd1]`) |
+| silver | `feature_parser` | `test` | cross-layer dependency (`parents: [bronze.feature_parser]`) |
 | gold | `dim_time` | `test` | dependency *target* — memory-mode gold table |
 | gold | `fact_dependency` | `test` | gold-depends-on-gold, auto-detected via SQL parsing (references `gold.dim_time` + `silver.king_scd1__current`); direct layer test proves materialization |
 | gold | `dependency_notebook` | *(none)* | notebook-derived dependency persisted from the live query plan |

@@ -11,3 +11,21 @@
       mode: update
       change_data_capture: scd1
       parents: [bronze.king_scd1]
+- job:
+    step: silver
+    topic: queen
+    item: scd1
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+      parents: [bronze.queen_scd1]
+- job:
+    step: silver
+    topic: feature
+    item: parser
+    tags: [test]
+    options:
+      mode: update
+      change_data_capture: scd1
+      parents: [bronze.feature_parser]
