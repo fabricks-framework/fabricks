@@ -1,4 +1,4 @@
-# Point git at the repo's tracked hooks (pre-commit: format+lint, pre-push: code-simplifier)
+# Point git at the repo's tracked hooks (pre-commit: format+lint)
 setup-hooks:
     git -C .. config core.hooksPath .githooks
 
