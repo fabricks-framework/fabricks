@@ -45,7 +45,7 @@ ignore = [
 "tests/*" = ["ANN", "ARG", "ERA001"]
 
 [lint.isort]
-known-first-party = ["app"]
+known-first-party = ["fabricks", "tests"]
 force-sort-within-sections = true
 split-on-trailing-comma=false
 section-order = [
