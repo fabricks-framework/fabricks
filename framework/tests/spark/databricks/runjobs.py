@@ -60,6 +60,7 @@ actions = [a.strip() for a in actions]
 
 # COMMAND ----------
 
+
 def do(job: str) -> tuple:
     todos: dict[str, Callable] = {}
 
@@ -126,11 +127,7 @@ def do(job: str) -> tuple:
 
         for key, func in todos.items():
             if key == "optimize":
-                func(
-                    compute_statistics=compute_statistics,
-                    vacuum=vacuum,
-                    optimize=optimize,
-                )
+                func(compute_statistics=compute_statistics, vacuum=vacuum, optimize=optimize)
             else:
                 func()
 
@@ -140,6 +137,7 @@ def do(job: str) -> tuple:
         return job, False, e
 
     return job, True
+
 
 # COMMAND ----------
 
@@ -187,6 +185,7 @@ def parse_complex_list(input: str) -> list[str]:
         return result
 
     return items
+
 
 # COMMAND ----------
 
@@ -241,4 +240,3 @@ if failed:
 # COMMAND ----------
 
 dbutils.notebook.exit("🛑")  # type: ignore
-

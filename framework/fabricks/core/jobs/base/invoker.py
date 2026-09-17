@@ -82,11 +82,10 @@ class Invoker(Checker):
                         errors.append(e)
 
         if errors:
-            # str(Exception(errors)) on a list of exception *objects* falls
-            # back to repr() of each (e.g. Py4JJavaError's repr, which is just
-            # "py4jjavaerror('an error occurred while calling o603.run.\n', ...)"
-            # -- str()'s actual message, with the real underlying cause, gets
-            # dropped entirely.
+            # str(Exception(errors)) on a list of exception objects falls
+            # back to each one's repr, which drops the real message (e.g.
+            # Py4JJavaError's repr is just the bare gateway call description)
+            # -- join str() of each instead so the actual cause survives.
             raise Exception("; ".join(str(e) for e in errors))
         return None
 
@@ -112,11 +111,10 @@ class Invoker(Checker):
                         errors.append(e)
 
         if errors:
-            # str(Exception(errors)) on a list of exception *objects* falls
-            # back to repr() of each (e.g. Py4JJavaError's repr, which is just
-            # "py4jjavaerror('an error occurred while calling o603.run.\n', ...)"
-            # -- str()'s actual message, with the real underlying cause, gets
-            # dropped entirely.
+            # str(Exception(errors)) on a list of exception objects falls
+            # back to each one's repr, which drops the real message (e.g.
+            # Py4JJavaError's repr is just the bare gateway call description)
+            # -- join str() of each instead so the actual cause survives.
             raise Exception("; ".join(str(e) for e in errors))
 
     def _run_notebook(

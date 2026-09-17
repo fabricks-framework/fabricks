@@ -34,9 +34,6 @@ def test_gold_materializes_silver_dependency():
 def test_silver_cdc_matches_first_iteration_expected_state():
     job = get_job(step="silver", topic="king", item="scd1")
     actual = job.table.dataframe.select("id", "name", "__is_current", "__is_deleted").orderBy("id").collect()
-    expected = [
-        (1, "Leopold I", True, False),
-        (2, "Leopold II", True, False),
-    ]
+    expected = [(1, "Leopold I", True, False), (2, "Leopold II", True, False)]
 
     assert [(row.id, row.name, row["__is_current"], row["__is_deleted"]) for row in actual] == expected
