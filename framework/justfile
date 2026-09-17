@@ -1,3 +1,7 @@
+# Point git at the repo's tracked hooks (pre-commit: format+lint, pre-push: code-simplifier)
+setup-hooks:
+    git -C .. config core.hooksPath .githooks
+
 # Run linter
 lint:
     uv run ruff check fabricks/

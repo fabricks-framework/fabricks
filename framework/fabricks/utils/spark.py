@@ -8,7 +8,7 @@ from fabricks.utils.environment import FABRICKS_ENVIRONMENT
 
 def get_spark() -> SparkSession:
     if FABRICKS_ENVIRONMENT == "remote":
-        from databricks.connect.session import DatabricksSession
+        from databricks.connect.session import DatabricksSession  # ty: ignore[unresolved-import]
         from databricks.sdk.core import Config
 
         profile = os.getenv("DATABRICKS_PROFILE", "DEFAULT")
@@ -102,7 +102,7 @@ def get_dbutils(spark: SparkSession | None = None) -> RemoteDbUtils | None:
             dbutils = w.dbutils
 
         else:
-            from pyspark.dbutils import DBUtils
+            from pyspark.dbutils import DBUtils  # ty: ignore[unresolved-import]
 
             dbutils = DBUtils(spark)
 

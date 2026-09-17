@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Runs the code-simplifier agent over commits about to be pushed. Never
+# rewrites the commits being pushed (git has already fixed those SHAs by the
+# time this hook runs) -- it only edits the working tree, then aborts the
+# push if it changed anything so you can review/commit/re-push.
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+zero="0000000000000000000000000000000000000000"
+files=""
+
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+    [ "$local_sha" = "$zero" ] && continue # deleting a ref, nothing to check
+    if [ "$remote_sha" = "$zero" ]; then
+        range="$local_sha" # new branch: whatever main doesn't already have
+        base="$(git merge-base origin/main "$local_sha" 2>/dev/null || echo "$local_sha^")"
+        range="$base..$local_sha"
+    else
+        range="$remote_sha..$local_sha"
+    fi
+    files="$files $(git diff --name-only "$range" -- framework | grep '\.py$' || true)"
+done
+
+files="$(echo "$files" | xargs -n1 2>/dev/null | sort -u | tr '\n' ' ')"
+[ -z "${files// /}" ] && exit 0
+
+echo "pre-push: running code-simplifier on:$files"
+claude -p --agent code-simplifier --allowed-tools "Read Edit Grep Glob" \
+    "Simplify these recently-changed files, editing in place where it genuinely helps:$files"
+
+if ! git diff --quiet -- $files; then
+    echo "pre-push: code-simplifier changed files above -- review, commit, and re-push." >&2
+    exit 1
+fi

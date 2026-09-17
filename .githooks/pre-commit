@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Formats and lints staged Python changes before commit.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)/framework"
+
+just format
+just lint
+
+# format/lint may have rewritten already-tracked files -- re-stage them.
+git add -u -- .
