@@ -110,12 +110,22 @@ masks, liquid clustering, plugin loading, and type widening. The minimal
 fixture runtime lives under `tests/spark/databricks/runtime/`.
 
 - `runtests.py` seeds raw data, performs armageddon, and launches pytest.
-- `test_schedule.py` runs one tagged schedule and asserts exact success,
-  failure, skip, warning, dependency-order, and timeout outcomes.
-- `test_notebook.py` covers direct run/pre-run/post-run notebook invocation.
-- `test_feature.py` covers parser/extender/UDF loading, masks, liquid
-  clustering, and physical type widening.
-- `runtime/README.md` is the authoritative job inventory.
+- `conftest.py`'s autouse, session-scoped `_schedule_run` fixture runs the
+  one tagged schedule before any test in this directory -- nearly every
+  job is tagged and runs there (parallelized where the DAG allows), not via
+  a direct `get_job(...).run()` in an individual test.
+- `test_schedule.py` asserts exact success, failure, skip, warning,
+  dependency-order, and timeout outcomes against the schedule's result --
+  one assertion per tagged job/feature, covering notebook invocation
+  (`invoke_*`, `dependency_notebook`), masks, liquid clustering, and
+  plugin/extender/UDF loading along with the DAG/status propagation.
+- `test_feature.py` holds the few jobs needing one deliberate action
+  *after* the schedule's run (checkpoint idempotency, physical type
+  widening) that a single schedule pass can't exercise on its own.
+- `test_dependencies.py`/`test_layers.py` read state the schedule already
+  materialized (`get_job(...)` for a handle, no `.run()`), for controlled
+  inspection of dependency-graph persistence and intermediate CDC state --
+  a different concern from "did the job succeed".
 - `pyproject.toml`'s `[tool.fabricks]` table configures the runtime on the
   cluster; the job/cluster libraries in `databricks.yml` install `pytest`
   and the wheel's own dependencies.

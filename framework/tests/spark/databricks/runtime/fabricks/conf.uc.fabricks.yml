@@ -31,6 +31,10 @@
       parsers: fabricks/parsers
       schedules: fabricks/schedules
       views: fabricks/views
+      # Required by RuntimeConf's path_options schema, but nothing reads
+      # PATH_REQUIREMENTS at runtime -- the file itself doesn't need to
+      # exist (resolve_git_path doesn't check), so it's not restored.
+      requirements: fabricks/requirements.txt
       masks: fabricks/masks
     bronze:
       - name: bronze
@@ -49,14 +53,6 @@
           parent: bronze
           local_checkpoint: true
     gold:
-      - name: gold
-        path_options:
-          storage: abfss://test@$standard/gold
-          runtime: gold/gold
-        options:
-          timeouts:
-            job: 1800
-          order: 301
       - name: transf
         path_options:
           storage: abfss://test@$standard/transf
@@ -65,11 +61,18 @@
           timeouts:
             job: 1800
           workers: 2
+          order: 301
+      - name: gold
+        path_options:
+          storage: abfss://test@$standard/gold
+          runtime: gold/gold
+        options:
+          timeouts:
+            job: 1800
           order: 303
     databases:
       - name: expected
         path_options:
           storage: abfss://test@$standard/dummy
     variables:
-      \$datahub: bmsstatsteuwfabrickssnd.dfs.core.windows.net
       \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net

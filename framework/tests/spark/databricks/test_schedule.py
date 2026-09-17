@@ -1,28 +1,29 @@
 """Real DAG ordering, forced-failure/skip bookkeeping, real fabricks.last_schedule state.
 
-Runs runtime's tag="test" schedule once (via fabricks.core.schedules.standalone,
-the same generate -> process (per step, real dbutils.notebook.run) -> terminate
-sequence fabricks_run_job's tasks in databricks.yml drive), then asserts against
-the resulting fabricks.last_schedule catalog state.
+The runtime's tag="test" schedule itself runs once per session via
+conftest.py's autouse _schedule_run fixture (the same generate -> process
+(per step, real dbutils.notebook.run) -> terminate sequence
+fabricks_run_job's tasks in databricks.yml drive) -- every tagged job runs
+there, in parallel where the DAG allows, rather than one at a time via a
+direct get_job(...).run() in an individual test. This module just asserts
+against the resulting fabricks.last_schedule catalog state.
 
-One test per runtime job/feature (see its README's table) -- each tagged
-job gets exactly one assertion naming what it proves, rather than one test
-per SQL query shape.
+One test per runtime job/feature -- each tagged job gets exactly one
+assertion naming what it proves, rather than one test per SQL query shape.
 """
 
-import pytest
-
 from fabricks.context import SPARK
-from fabricks.core.schedules import standalone
+from fabricks.core import get_job
 
-EXPECTED_FAILURES = {"gold.check_duplicate_key", "gold.check_fail", "gold.check_max_rows", "gold.invoke_timeout"}
+EXPECTED_FAILURES = {
+    "gold.check_duplicate_key",
+    "gold.check_fail",
+    "gold.check_max_rows",
+    "gold.invoke_failed_pre_run",
+    "gold.invoke_timeout",
+}
 EXPECTED_SKIP = "gold.check_skip"
 EXPECTED_WARNING = "gold.check_warning"
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _schedule_run():
-    standalone(schedule="test")
 
 
 def _row(job: str):
@@ -36,13 +37,23 @@ def _succeeded(job: str) -> bool:
 
 def test_bronze_register_mode_king():
     # bronze.king_scd1: external-table registration against its seeded Delta
-    # table -- the dummy-parser plugin itself is proven separately, direct-
-    # invoke, by test_feature.py's test_bronze_feature_parser.
+    # table -- the dummy-parser plugin itself is proven separately by
+    # bronze.feature_parser below.
     assert _succeeded("bronze.king_scd1")
 
 
 def test_bronze_register_mode_queen():
     assert _succeeded("bronze.queen_scd1")
+
+
+def test_bronze_feature_parser():
+    # bronze.feature_parser: real file parsing via the "dummy" custom parser
+    # plugin (fabricks/parsers/dummy.py) -- register mode (king/queen above)
+    # never calls get_parser(), so this is the only place that proves plugin
+    # loading works. test_feature.py's checkpoint-idempotency test does a
+    # second, direct get_job(...).run() after the schedule -- this just
+    # confirms the schedule's own (first) run succeeded.
+    assert _succeeded("bronze.feature_parser")
 
 
 def test_cross_layer_dependency():
@@ -65,9 +76,82 @@ def test_auto_detected_gold_dependency():
     assert _row("silver.king_scd1").end_time < _row("gold.fact_dependency").start_time
 
 
-def test_manual_wait_for():
-    # transf.fact_wait_for: wait_for=[transf.fact_memory, silver.king_scd1]
-    assert _row("transf.fact_memory").end_time < _row("transf.fact_wait_for").start_time
+def test_feature_wait_for_dependency():
+    # gold.feature_wait_for: explicit wait_for=[gold.dim_time], no notebook
+    # invocation involved -- isolates plain dependency ordering from
+    # notebook-mode's dbutils.notebook.run handoff (gold.dependency_notebook).
+    assert _succeeded("gold.feature_wait_for")
+    assert _row("gold.dim_time").end_time < _row("gold.feature_wait_for").start_time
+
+
+def test_gold_dependency_notebook():
+    # gold.dependency_notebook: notebook-derived dependency, schema inferred
+    # via a real dbutils.notebook.run child-notebook invocation -- see
+    # test_dependencies.py for the separate persisted-dependency-graph check.
+    assert _succeeded("gold.dependency_notebook")
+
+
+def test_gold_feature_extender():
+    # gold.feature_extender: job-level extender_options applies the "dummy"
+    # extender (fabricks/extenders/dummy.py) via Invoker.extend_job().
+    assert _succeeded("gold.feature_extender")
+    rows = SPARK.sql("select distinct extended_by from gold.feature_extender").collect()
+    assert [r["extended_by"] for r in rows] == ["dummy"]
+
+
+def test_gold_feature_udf():
+    # gold.feature_udf: udf_dummy (fabricks/udfs/dummy.sql) registered via
+    # register_all_udfs() and called directly in the job's SQL.
+    assert _succeeded("gold.feature_udf")
+    rows = SPARK.sql("select dummy from gold.feature_udf order by dummy").collect()
+    assert [r["dummy"] for r in rows] == ["dummy_1", "dummy_2"]
+
+
+def test_gold_feature_mask():
+    # gold.feature_mask: table_options.masks.dummy applies mask_dummy
+    # (fabricks/masks/dummy.sql) -- unconditionally (no caller-identity
+    # check), so the real masked value is visible to any query, proving the
+    # mask function actually runs, not just that the DDL was issued.
+    assert _succeeded("gold.feature_mask")
+    rows = SPARK.sql("select dummy from gold.feature_mask order by dummy").collect()
+    assert [r["dummy"] for r in rows] == ["***", "2"]
+
+
+def test_gold_feature_cluster_by():
+    # gold.feature_cluster_by: table_options.cluster_by enables real liquid
+    # clustering -- Table.liquid_clustering_enabled reads the Delta table
+    # feature back to confirm it actually took effect, not just that the
+    # option was set (that DDL-shape half is already covered by
+    # unit/config/test_create_table_defaults.py).
+    assert _succeeded("gold.feature_cluster_by")
+    job = get_job(step="gold", topic="feature", item="cluster_by")
+    assert job.table.liquid_clustering_enabled
+
+
+def test_gold_type_widening_overwrite():
+    # gold.type_widening_overwrite: schedule provides the (int) first write;
+    # test_feature.py's follow-up test feeds a widened (double) batch after
+    # and checks the physical column type actually changed.
+    assert _succeeded("gold.type_widening_overwrite")
+
+
+def test_gold_type_widening_merge():
+    assert _succeeded("gold.type_widening_merge")
+
+
+def test_gold_invoke_notebook():
+    assert _succeeded("gold.invoke_notebook")
+
+
+def test_gold_invoke_post_run():
+    assert _succeeded("gold.invoke_post_run")
+
+
+def test_gold_invoke_failed_pre_run():
+    # gold.invoke_failed_pre_run: invoker_options.pre_run notebook
+    # deliberately raises -- proves pre-run invoker failure propagates as a
+    # job failure (see EXPECTED_FAILURES).
+    assert _row("gold.invoke_failed_pre_run").failed
 
 
 def test_forced_failure():

@@ -107,7 +107,7 @@ def get_dbutils(spark: SparkSession | None = None) -> RemoteDbUtils | None:
             dbutils = DBUtils(spark)
 
         assert dbutils is not None
-        return dbutils  # type: ignore
+        return dbutils
 
     except Exception:
         return None

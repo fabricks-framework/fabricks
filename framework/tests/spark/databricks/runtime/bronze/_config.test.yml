@@ -1,13 +1,12 @@
 ---
 # yaml-language-server: $schema=../../../../../job-schema.json
-# Both tagged jobs use register mode -- proves external-table registration
+# king/queen use register mode -- proves external-table registration
 # (Bronze.create()/register(), bronze.py), each reading its own real Delta
 # table under raw/delta/<topic>, seeded per run by runtests.py's
 # _seed_raw_delta_fixtures(). Register mode never calls get_parser()
 # (Bronze.parser asserts mode != "register"), so it can't prove the "dummy"
-# custom parser plugin -- that's covered separately by the untagged
-# feature/parser job below, invoked directly in test_feature.py instead of
-# through the tag="test" schedule.
+# custom parser plugin -- that's covered separately by the feature/parser
+# job below.
 - job:
     step: bronze
     topic: king
@@ -15,7 +14,7 @@
     tags: [test]
     options:
       mode: register
-      uri: abfss://fabricks@$datahub/raw/delta/king
+      uri: abfss://test@$standard/raw/delta/king
       keys: [id]
 - job:
     step: bronze
@@ -24,19 +23,22 @@
     tags: [test]
     options:
       mode: register
-      uri: abfss://fabricks@$datahub/raw/delta/queen
+      uri: abfss://test@$standard/raw/delta/queen
       keys: [id]
-# Deliberately untagged (no `tags: [test]`): not part of the orchestration/DAG
-# proof test_schedule.py exercises, so excluded from schedule(tag="test") and
-# invoked directly (get_job(...).run()) in test_feature.py instead -- same
-# pattern as gold/gold/feature/_config.feature.yml.
+# Tagged so the schedule provides its first run (silver.feature_parser
+# depends on it, and needs real data, not just an empty table shell from
+# armageddon's create-only pass). test_feature.py's checkpoint-idempotency
+# test does a second, direct get_job(...).run() after the schedule, since
+# that's specifically testing repeat-run behavior the schedule's single
+# pass can't exercise on its own.
 - job:
     step: bronze
     topic: feature
     item: parser
+    tags: [test]
     options:
       mode: append
-      uri: abfss://fabricks@$datahub/raw/king
+      uri: abfss://test@$standard/raw/king
       parser: dummy
       keys: [id]
       source: king

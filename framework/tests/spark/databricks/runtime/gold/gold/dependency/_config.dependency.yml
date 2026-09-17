@@ -4,9 +4,16 @@
     step: gold
     topic: dependency
     item: notebook
+    tags: [test]
     options:
       mode: complete
       notebook: true
     invoker_options:
       run:
-        - notebook: gold/gold/dependency/notebook
+        - notebook: fabricks/notebooks/dependency
+- job:
+    step: gold
+    topic: dependency
+    item: sql
+    options:
+      mode: complete

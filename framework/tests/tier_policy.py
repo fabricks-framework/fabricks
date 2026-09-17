@@ -1,11 +1,9 @@
-import os
 from pathlib import Path
-from typing import Literal
 
 import pytest
 
-Tier = Literal["plain", "config", "apache", "databricks"]
-_ACTIVE_TIER = "FABRICKS_ACTIVE_TEST_TIER"
+from tests.spark.databricks.tier_policy import Tier, activate_tier  # noqa: F401
+
 _TESTS_ROOT = Path(__file__).parent.resolve()
 _PATH_TIERS: tuple[tuple[tuple[str, ...], Tier], ...] = (
     (("unit", "plain"), "plain"),
@@ -28,15 +26,6 @@ def tier_for_path(path: str | Path) -> Tier | None:
         if parts[: len(prefix)] == prefix:
             return tier
     return None
-
-
-def activate_tier(tier: Tier) -> None:
-    active = os.environ.get(_ACTIVE_TIER)
-    if active and active != tier:
-        raise pytest.UsageError(
-            f"cannot mix {active} and {tier} test tiers; run each tier with its separate just command"
-        )
-    os.environ[_ACTIVE_TIER] = tier
 
 
 def mark_collected_tests(items) -> None:

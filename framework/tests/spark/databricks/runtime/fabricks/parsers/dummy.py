@@ -19,4 +19,7 @@ class DummyParser(BaseParser):
         self, data_path: FileSharePath, schema_path: FileSharePath, spark: SparkSession, stream: bool
     ) -> DataFrame:
         df = super().parse(data_path=data_path, schema_path=schema_path, spark=spark, stream=stream)
-        return df.withColumn("__parsed_by", lit("dummy"))
+        # fabricks/cdc/base/configurator.py's Configurator.__columns treats any
+        # "__"-prefixed column as a reserved framework column and silently
+        # drops it if it's not in that fixed whitelist -- avoid the prefix here.
+        return df.withColumn("_parsed_by", lit("dummy"))

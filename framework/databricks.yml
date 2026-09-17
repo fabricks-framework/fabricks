@@ -18,10 +18,19 @@ variables:
 resources:
   jobs:
     fabricks_test_job:
-      name: fabricks_tests
+      name: fabricks_runtests
+      tags:
+        fabricks: 'true'
+        fabricks-tests: 'true'
       parameters:
         - name: schedule
           default: test
+        - name: seed
+          default: 'True'
+        - name: armageddon
+          default: 'True'
+        - name: runtests
+          default: 'True'
       tasks:
         - task_key: cluster
           notebook_task:
@@ -42,6 +51,12 @@ resources:
           notebook_task:
             notebook_path: tests/spark/databricks/runtests.py
             source: WORKSPACE
+            # base_parameters keys must match runtests.py's own widget
+            # names (dbutils.widgets.dropdown("seed", ...) etc.).
+            base_parameters:
+              seed: '{{job.parameters.seed}}'
+              armageddon: '{{job.parameters.armageddon}}'
+              runtests: '{{job.parameters.runtests}}'
           job_cluster_key: fabricks_test_cluster
       job_clusters:
         - job_cluster_key: fabricks_test_cluster
@@ -76,7 +91,8 @@ targets:
     resources:
       # Persistent all-purpose cluster for interactive dev/test -- unlike
       # fabricks_test_job's job cluster above, this one stays up between
-      # runs instead of spinning up/terminating per job. Trade-off:
+      # runs instead of spinning up/terminating per job (autotermination_minutes:
+      # 60 shuts it down after an hour idle, for cost control). Trade-off:
       # redeploying the whl won't refresh code on an already-running
       # cluster; restart it after `databricks bundle deploy -t test` to
       # pick up changes.
@@ -86,7 +102,7 @@ targets:
           spark_version: ${var.spark_version}
           node_type_id: Standard_D8ads_v5
           num_workers: 1
-          autotermination_minutes: 0
+          autotermination_minutes: 60
           data_security_mode: USER_ISOLATION
           runtime_engine: PHOTON
           # No init_scripts: USER_ISOLATION (shared) clusters only accept
@@ -103,11 +119,20 @@ targets:
         # so job_cluster_key from the base job_cluster-based task would
         # survive alongside existing_cluster_id here and fail at deploy
         # (a task can't set both).
-        fabricks_interactive_job:
-          name: fabricks_tests_interactive
+        fabricks_test_job_interactive:
+          name: fabricks_runtests_interactive
+          tags:
+            fabricks: 'true'
+            fabricks-tests: 'true'
           parameters:
             - name: schedule
               default: test
+            - name: seed
+              default: 'True'
+            - name: armageddon
+              default: 'True'
+            - name: runtests
+              default: 'True'
           tasks:
             - task_key: cluster
               notebook_task:
@@ -125,4 +150,46 @@ targets:
               notebook_task:
                 notebook_path: tests/spark/databricks/runtests.py
                 source: WORKSPACE
+                base_parameters:
+                  seed: '{{job.parameters.seed}}'
+                  armageddon: '{{job.parameters.armageddon}}'
+                  runtests: '{{job.parameters.runtests}}'
+              existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
+        # Ad-hoc job/action runner (tests/spark/databricks/runjobs.py) on the
+        # same persistent cluster, for manual debugging -- e.g. re-running a
+        # single job with "run" after an armageddon failure, without a full
+        # runtests.py pass. Job parameters map directly onto the notebook's
+        # own dbutils widgets.
+        fabricks_runjobs_interactive:
+          name: fabricks_runjobs_interactive
+          tags:
+            fabricks: 'true'
+            fabricks-tests: 'true'
+          parameters:
+            - name: workers
+              default: '~'
+            - name: actions
+              default: 'run'
+            - name: stop_on_fail
+              default: '~'
+            - name: jobs
+              default: '---'
+          tasks:
+            - task_key: cluster
+              notebook_task:
+                notebook_path: fabricks/api/notebooks/cluster.py
+              existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
+              libraries:
+                - whl: ./dist/*.whl
+            - task_key: runjobs
+              depends_on:
+                - task_key: cluster
+              notebook_task:
+                notebook_path: tests/spark/databricks/runjobs.py
+                source: WORKSPACE
+                base_parameters:
+                  workers: '{{job.parameters.workers}}'
+                  actions: '{{job.parameters.actions}}'
+                  stop_on_fail: '{{job.parameters.stop_on_fail}}'
+                  jobs: '{{job.parameters.jobs}}'
               existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}

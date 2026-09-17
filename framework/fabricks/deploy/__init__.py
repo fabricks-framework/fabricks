@@ -124,4 +124,5 @@ class Deploy:
         _call(Deploy.runtime, "deploy-runtime")
 
         if errors:
-            raise ValueError(f"armageddon completed with {len(errors)} error(s). Check logs for details")
+            details = "; ".join(f"{e['operation']}: {e['error']}" for e in errors)
+            raise ValueError(f"armageddon completed with {len(errors)} error(s): {details}")

@@ -82,7 +82,12 @@ class Invoker(Checker):
                         errors.append(e)
 
         if errors:
-            raise Exception(errors)
+            # str(Exception(errors)) on a list of exception *objects* falls
+            # back to repr() of each (e.g. Py4JJavaError's repr, which is just
+            # "py4jjavaerror('an error occurred while calling o603.run.\n', ...)"
+            # -- str()'s actual message, with the real underlying cause, gets
+            # dropped entirely.
+            raise Exception("; ".join(str(e) for e in errors))
         return None
 
     def _invoke_step(self, position: str, schedule: str | None = None) -> None:
@@ -107,7 +112,12 @@ class Invoker(Checker):
                         errors.append(e)
 
         if errors:
-            raise Exception(errors)
+            # str(Exception(errors)) on a list of exception *objects* falls
+            # back to repr() of each (e.g. Py4JJavaError's repr, which is just
+            # "py4jjavaerror('an error occurred while calling o603.run.\n', ...)"
+            # -- str()'s actual message, with the real underlying cause, gets
+            # dropped entirely.
+            raise Exception("; ".join(str(e) for e in errors))
 
     def _run_notebook(
         self, path: GitPath, arguments: dict | None = None, timeout: int | None = None, schedule: str | None = None

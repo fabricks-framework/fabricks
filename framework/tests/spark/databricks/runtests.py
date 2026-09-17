@@ -1,8 +1,8 @@
 # Databricks notebook source
 
 # Sets up runtime (armageddon + raw fixture data), runs the schedule, then
-# the Databricks integration tests (test_schedule.py/test_notebook.py) --
-# see runtime/README.md and docs/superpowers/plans/2026-09-04-databricks-cut-list.md.
+# the Databricks integration tests (test_schedule.py and friends) -- see
+# runtime/README.md and docs/superpowers/plans/2026-09-04-databricks-cut-list.md.
 #
 # The "expected" database in conf.uc.fabricks.yml is scaffolding for parity
 # with production config shape only -- this suite asserts against
@@ -14,27 +14,35 @@
 # file parsing via the "dummy" parser plugin) is the one job that still
 # needs raw json files seeded.
 
+import logging
 from logging import INFO
+import sys
 
-from databricks.sdk.runtime import dbutils
-import pytest
+# tests/ lives on the Databricks workspace-files FUSE mount, which doesn't
+# support the filesystem ops CPython needs to write __pycache__ (OSError
+# [Errno 95] Operation not supported) -- disable bytecode caching entirely,
+# before anything under tests/ gets imported, rather than import-erroring
+# on the first conftest.py collected.
+sys.dont_write_bytecode = True
 
-from fabricks.context import CATALOG, IS_UNITY_CATALOG, PATH_RUNTIME, SPARK
-from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core import get_job
-from fabricks.deploy import Deploy
-from tests.spark.test_data import registered_delta_rows
+from databricks.sdk.runtime import dbutils  # noqa: E402
+import pytest  # noqa: E402
+
+from fabricks.context import CATALOG, IS_UNITY_CATALOG, SPARK  # noqa: E402
+from fabricks.context.log import DEFAULT_LOGGER  # noqa: E402
+
+# COMMAND ----------
 
 DEFAULT_LOGGER.setLevel(INFO)
 
 # COMMAND ----------
 
 Booleans = ["True", "False"]
-dbutils.widgets.dropdown("seed_raw", "True", Booleans)
+dbutils.widgets.dropdown("seed", "True", Booleans)
 dbutils.widgets.dropdown("armageddon", "True", Booleans)
 dbutils.widgets.dropdown("runtests", "True", Booleans)
 
-seed_raw = dbutils.widgets.get("seed_raw").lower() == "true"
+seed = dbutils.widgets.get("seed").lower() == "true"
 armageddon = dbutils.widgets.get("armageddon").lower() == "true"
 runtests = dbutils.widgets.get("runtests").lower() == "true"
 
@@ -53,43 +61,21 @@ if IS_UNITY_CATALOG:
 # COMMAND ----------
 
 
-def _seed_raw_fixtures() -> None:
-    """Copy the checked-in iter1 king fixtures into the real raw/king path
-    bronze.feature_parser reads from. ponytail: plain file copy, no
-    landing/parquet conversion stage like the old databricks-old pipeline --
-    the job's "dummy" parser reads it directly, so the git-checked-in
-    fixtures work as-is.
-    """
-    job = get_job(step="bronze", topic="feature", item="parser")
-    king_fixtures = PATH_RUNTIME.parent().parent().joinpath("fixtures", "iter1", "king")
-    job.data_path.rm()
-    for f in king_fixtures.walk(convert=True, file_format="jsonl"):
-        rel = f.string.removeprefix(f"{king_fixtures.string}/")
-        dbutils.fs.cp(f"file:{f.string}", job.data_path.joinpath(rel).string)
+if seed:
+    # Sibling-module import, not `tests.spark.*` -- this notebook runs from
+    # bundle-synced workspace files, not a Databricks Repo, so `tests`
+    # itself isn't importable here. Databricks does add a notebook's own
+    # containing folder to sys.path, so this works.
+    from fixtures import seed_raw_delta_fixtures, seed_raw_fixtures
 
-
-def _seed_raw_delta_fixtures() -> None:
-    """Write a small Delta table at king/queen's raw uri -- Bronze.
-    register_external_table() (bronze.py) selects from that uri directly, so
-    it needs a real table there, same shape as tests/spark/apache/conftest.py's
-    king_and_queen_registered_sources.
-    """
-    from pyspark.sql.functions import col, lit
-
-    for topic in ("king", "queen"):
-        job = get_job(step="bronze", topic=topic, item="scd1")
-        df = SPARK.createDataFrame(registered_delta_rows(topic))
-        df = df.withColumn("__source", lit(topic)).withColumn("__timestamp", col("__timestamp").cast("timestamp"))
-        df.write.format("delta").mode("overwrite").save(job.data_path.string)
-
-
-if seed_raw:
-    _seed_raw_fixtures()
-    _seed_raw_delta_fixtures()
+    seed_raw_fixtures()
+    seed_raw_delta_fixtures()
 
 # COMMAND ----------
 
 if armageddon:
+    from fabricks.deploy import Deploy
+
     Deploy.armageddon(nowait=True)
 
 # COMMAND ----------
@@ -100,11 +86,44 @@ if armageddon:
 # separate step.
 
 if runtests:
-    # -vv/--tb=long/-s: maximum detail (full assert diffs, full tracebacks,
-    # unsuppressed stdout/log output) since the only way to diagnose a failure
-    # here is whatever lands in this notebook run's captured output.
-    res = pytest.main([".", "-vv", "--tb=long", "-s", "-p", "no:cacheprovider"])
-    assert res == 0, "databricks integration tests failed"
+    # fabricks' own DEFAULT_LOGGER.info() output (set to INFO above, for
+    # seed/armageddon) is noise here -- pytest's own -vv/-s output plus
+    # _FailureCollector's summary are the useful signal during the test run.
+    # DagTerminator.terminate() logs each deliberately-failing job (e.g.
+    # check_fail, invoke_timeout) via a separate "dags" logger, not
+    # DEFAULT_LOGGER -- silence that one too.
+    DEFAULT_LOGGER.setLevel("CRITICAL")
+    logging.getLogger("dags").setLevel("CRITICAL")
+
+    class _FailureCollector:
+        def __init__(self) -> None:
+            self.failures: list[str] = []
+
+        def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
+            if report.failed and report.when != "teardown":
+                lines = report.longreprtext.splitlines()
+                detail = next((line for line in lines if line.startswith("E ")), lines[-1] if lines else "")
+                self.failures.append(f"{report.nodeid}: {detail}")
+
+        def pytest_collectreport(self, report: pytest.CollectReport) -> None:
+            # Collection errors (e.g. an ImportError in a test file/conftest)
+            # never reach pytest_runtest_logreport -- no test ran at all, so
+            # without this the summary would say "no failure detail" even
+            # though pytest never got past import.
+            if report.failed:
+                lines = report.longreprtext.splitlines()
+                detail = next((line for line in lines if line.startswith("E ")), lines[-1] if lines else "")
+                self.failures.append(f"{report.nodeid} (collection): {detail}")
+
+    # -vv/--tb=long/-s: maximum detail in the notebook's own stdout (not
+    # captured by the Jobs API for notebook tasks); _FailureCollector exists
+    # because of that same gap -- it puts a one-line-per-test summary into
+    # the raised AssertionError itself, which the API does surface.
+    collector = _FailureCollector()
+    res = pytest.main([".", "-vv", "--tb=long", "-s", "-p", "no:cacheprovider"], plugins=[collector])
+    if res != 0:
+        summary = "\n".join(collector.failures) or "(no per-test failure detail collected)"
+        raise AssertionError(f"databricks integration tests failed:\n{summary}")
 
 # COMMAND ----------
 
