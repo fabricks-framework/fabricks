@@ -31,10 +31,15 @@ def _for_each_stream_batch(
     item: str,
     schedule: str | None,
     reload: bool | None,
+    conf: dict,
 ) -> None:
-    from fabricks.core.jobs.get_job import get_job
+    from fabricks.core.jobs.get_job import get_job_internal
 
-    job = get_job(step=step, topic=topic, item=item)
+    # conf is the driver's already-resolved JobConf, serialized -- passing it
+    # through means get_job_conf() (fabricks/core/jobs/get_job_conf.py) skips
+    # its SPARK.sql(f"select * from fabricks.{step}_jobs") lookup and reuses
+    # this instead of re-querying the metastore on every stream start.
+    job = get_job_internal(step=step, topic=topic, item=item, conf=conf)
     job._for_each_batch(df, batch, schedule=schedule, reload=reload)
 
 
@@ -120,10 +125,9 @@ class Processor(Invoker):
                     item=self.item,
                     schedule=kwargs.get("schedule"),
                     reload=kwargs.get("reload"),
+                    conf=self.conf.model_dump(),
                 )
-                write_stream(
-                    df, checkpoints_path=self.paths.to_checkpoints, func=callback, timeout=self.timeout
-                )
+                write_stream(df, checkpoints_path=self.paths.to_checkpoints, func=callback, timeout=self.timeout)
             else:
                 self._for_each_batch(df, **kwargs)
 
