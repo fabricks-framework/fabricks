@@ -10,7 +10,13 @@ bundle:  # Required.
   name: fabricks_test
 artifacts:
   fabricks_tool:
-    build: uv build
+    # Pinned fake version (not pyproject's real version) so the wheel's
+    # filename, and thus its workspace path, is stable across deploys --
+    # the interactive cluster's cached library reference would otherwise
+    # point at a since-deleted, version-named wheel from a prior deploy and
+    # fail to reinstall (ERROR_NO_SUCH_FILE_OR_DIRECTORY). The real package
+    # version still lives in the wheel's METADATA, untouched.
+    build: rm -f dist/fabricks-*.whl && uv build --wheel && mv dist/fabricks-*.whl dist/fabricks-0.0.0-py3-none-any.whl
     type: whl
 variables:
   spark_version:
@@ -36,7 +42,7 @@ resources:
             notebook_path: fabricks/api/notebooks/cluster.py
           job_cluster_key: fabricks_test_cluster
           libraries:
-            - whl: ./dist/*.whl
+            - whl: ./dist/fabricks-0.0.0-py3-none-any.whl
             # Test-only deps; everything else init.sh used to pip install
             # is already a fabricks runtime dependency and rides along on
             # the whl above.
@@ -137,7 +143,7 @@ targets:
                 notebook_path: fabricks/api/notebooks/cluster.py
               existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
               libraries:
-                - whl: ./dist/*.whl
+                - whl: ./dist/fabricks-0.0.0-py3-none-any.whl
                 - pypi:
                     package: pytest
                 - pypi:
@@ -177,7 +183,7 @@ targets:
                 notebook_path: fabricks/api/notebooks/cluster.py
               existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
               libraries:
-                - whl: ./dist/*.whl
+                - whl: ./dist/fabricks-0.0.0-py3-none-any.whl
             - task_key: runjobs
               depends_on:
                 - task_key: cluster
