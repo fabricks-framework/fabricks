@@ -14,7 +14,7 @@ artifacts:
     type: whl
 variables:
   spark_version:
-    default: 18.x-scala2.13
+    default: 17.3.x-scala2.13
 resources:
   jobs:
     fabricks_test_job:

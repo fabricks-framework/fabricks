@@ -174,3 +174,11 @@ _archive/
 # Headroom
 .serena/
 .headroom_*
+
+# Docs
+docs/**
+!docs/
+!docs/ARCHITECTURE.md
+!docs/CONSTITUTION.md
+!docs/DEBUG.md
+!docs/TEST.md
