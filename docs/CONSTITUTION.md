@@ -1,71 +1,42 @@
 # Constitution
 
-Coding and repo-governance rules for `framework/`. [AGENTS.md](../AGENTS.md) is
-the entry point; this file is what it points to for "the rules."
+Rules for `framework/`. Direct user instruction takes precedence over these
+rules; [AGENTS.md](../AGENTS.md) is the entry point.
 
-## I. Precedence
+## 1. Databricks LTS
 
-Direct user instruction > this file > the skills listed in `AGENTS.md` >
-default agent behavior. If a rule here conflicts with what a skill would
-otherwise do, this file wins for anything inside `framework/`.
+Keep dependency minimums at or below the target Databricks LTS runtime. Check
+the runtime package list before raising a minimum version.
 
-## II. The Databricks LTS ceiling
+## 2. Style
 
-`framework/pyproject.toml` pins every dependency at or below the version
-shipped in the current Databricks LTS runtime (see the comment above
-`[project.dependencies]`) — e.g. PyYAML stays at `6.0.x` because that's what
-LTS ships. **Never bump a dependency's minimum past what LTS provides**,
-even to pick up a fix or a nicer API, without checking the target LTS
-runtime's preinstalled package list first. A version that's fine on your
-machine can break every runtime repo the moment it deploys to a cluster.
+Use the repository formatters and linters rather than hand formatting:
+`just format` and `just lint`, run from `framework/`. Non-test code needs
+explicit types. Prefer `pathlib` and the standard library over custom path
+handling. Run `just setup-hooks` once per checkout to enable the pre-commit
+format+lint hook. Keep each file to one purpose and a manageable size; split
+a file that has grown multiple responsibilities instead of extending it. See
+the `coding-guidelines-python` skill for typing, Pyright, dataclasses,
+enums, and other Python-specific conventions.
 
-## III. Code style
+## 3. Layers
 
-Enforced by `ruff` (`ruff.toml`, `[tool.ruff]` in `pyproject.toml`) and `ty`,
-run via `just lint` / `just format` — don't hand-format against a
-remembered style, run the tools and treat a clean pass as the bar. Two
-things worth knowing without reading the config:
+Runtime code imports from `api/`, not framework internals. `metastore/` never
+imports `core/`. See [ARCHITECTURE.md](./ARCHITECTURE.md) before crossing a
+layer boundary.
 
-- Explicit typing is expected on non-test code; `tests/*` is exempt.
-- Prefer the stdlib/`pathlib` over ad-hoc string path handling, and let a
-  simplify/bugbear finding change the control flow rather than silencing it.
+## 4. Tests
 
-> Note: a couple of `ruff.toml` entries are leftover from a template it was
-> copied from (a stray comment, an isort `known-first-party` that doesn't
-> name this package). Don't treat those specific lines as intentional
-> project convention.
+Choose the smallest tier that proves the behavior. See [TEST.md](./TEST.md).
+Do not modify or delete an existing test without explicit user approval —
+propose the change and wait. CDC tests (`test_cdc.py`, `test_gold_cdc.py`,
+`cdc_harness.py`, `test_cdc_harness.py`, `test_cdc_query_generation.py`,
+`test_cdc_context.py`) guard core framework behavior; treat changes to them
+with extra caution.
 
-## IV. Respect the layer boundary
+## 5. Documentation
 
-Import through `api/` from a runtime's own code (parsers, UDFs, extenders,
-notebooks) — never reach into `core`/`context`/`cdc`/`metastore` directly.
-Never import `core` from `metastore`; if that feels necessary, the change
-belongs in `core` instead. See [ARCHITECTURE.md](./ARCHITECTURE.md)'s
-package table for why each boundary exists and what a change on either side
-of it actually touches.
-
-## V. Testing discipline
-
-See [TEST.md § Rule of thumb](./TEST.md) for the unit-vs-integration
-decision and when a change needs a test at all.
-
-## VI. Where new documentation goes
-
-New documentation (a new integration, subsystem, or runbook topic) goes in
-`docs/`, never appended directly into `AGENTS.md` — `AGENTS.md` stays a
-pointer list. Pick the file by what the content *is*, not by what prompted
-it:
-
-- System structure, package layout, how a request flows through the code →
-  [ARCHITECTURE.md](./ARCHITECTURE.md).
-- A coding rule, a repo-governance rule, a "never do X" that should bind
-  future work → this file.
-- Test layout, fixtures, how to run a suite → [TEST.md](./TEST.md).
-- A bug's signature/symptom and root cause, once diagnosed, so the next
-  agent recognizes it faster → [DEBUG.md](./DEBUG.md). One entry per bug;
-  symptom first, root cause second, fix or workaround last.
-
-If none of the four fit — a new integration, a new subsystem with its own
-concerns — add a new focused file under `docs/` and add one line for it to
-the pointer list at the top of `AGENTS.md`. Don't fold unrelated content
-into one of the four existing files just to avoid creating a fifth.
+Only these four files are tracked under `docs/`: this file,
+[ARCHITECTURE.md](./ARCHITECTURE.md), [DEBUG.md](./DEBUG.md), and
+[TEST.md](./TEST.md). New documentation paths are ignored. Add concise content
+to the matching retained file; do not extend `AGENTS.md` beyond pointers.

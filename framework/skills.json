@@ -56,7 +56,7 @@
     "marketplace": "mattpocock",
     "plugin": "mattpocock-skills",
     "layout": "marketplace",
-    "version": "3cca18b",
+    "version": "74ca5fe",
     "skills": [
       {
         "src": "engineering/code-review",
@@ -82,6 +82,15 @@
         "src": "productivity/grilling",
         "dest": "grilling"
       }
+    ]
+  },
+  "coding": {
+    "marketplace": "bmsuisse-skills",
+    "plugin": "coding",
+    "layout": "marketplace",
+    "version": "c2e31a7",
+    "skills": [
+      "coding-guidelines-python"
     ]
   }
 }

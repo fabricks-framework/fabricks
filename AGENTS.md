@@ -2,28 +2,19 @@
 
 Agent-facing runbook for Fabricks — a pointer list, not a growing wiki. New
 documentation (a new integration, subsystem, or runbook topic) belongs in
-`docs/`, not appended here directly — see
+one of the tracked `docs/` files, not appended here directly — see
 [docs/CONSTITUTION.md § VI](./docs/CONSTITUTION.md) for the rule and how to
-pick which `docs/` file it belongs in.
+pick which retained `docs/` file it belongs in.
 
 - for system structure see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md);
 - for coding rules see [docs/CONSTITUTION.md](./docs/CONSTITUTION.md);
 - for testing see [docs/TEST.md](./docs/TEST.md);
-
 - for hard-won bug signatures see [docs/DEBUG.md](./docs/DEBUG.md);
-- for design decisions on subsystems not yet (or only partly) built see
-  [docs/adr/](./docs/adr/);
-
-
-## Inline documentation
-
-Keep comments and docstrings to the bare minimum — one line only when it
-explains a non-obvious *why* (a workaround, an invariant, a bug that would
-otherwise come back). Never restate what the code already says.
 
 ## Skills
 
-Checked into `.claude/skills/`. 
+Checked into `.claude/skills/`, synced from the plugin cache via
+`just update-skills` (run from `framework/`) per `framework/skills.json`.
 Each entry below gives **when** it fires:
 
 - `using-superpowers` (from the `superpowers-marketplace`) — at the start of
@@ -54,9 +45,11 @@ Each entry below gives **when** it fires:
   patterns (injection, hardcoded secrets, weak crypto, SSRF, XXE) and the
   bundled `scripts/security_scan.py` CI gate.
 - `research` — when a topic needs investigating against primary sources
-  (docs, source code, specs) rather than answered from memory. Delegates
-  to a background agent, writes findings to a cited Markdown file (e.g.
-  `docs/papers/`).
+  (docs, source code, specs) rather than answered from memory. Promote only
+  durable conclusions into the retained documentation.
+- `coding-guidelines-python` (from `bmsuisse-skills`) — when writing or
+  reviewing Python design/style beyond this repo's own formatter and lint
+  rules.
 
 Built-in (bundled with Claude Code, not checked into this repo):
 
