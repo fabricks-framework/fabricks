@@ -1,163 +1,26 @@
 # Testing
 
-Four tiers under `framework/tests/`, grouped by two questions: does a test
-need `fabricks.context` at all (**unit** vs. **integration**), and if so,
-how real does Spark need to be. Each tier is plain `pytest`, distinguished
-by marker (`plain` / `config` / `apache` / `databricks`, declared in
-`pyproject.toml` `[tool.pytest.ini_options]`); `tests/tier_policy.py`
-assigns markers from each test's path, so you don't need to tag tests by hand.
+Commands below run from `framework/` (`uv sync` once per checkout; the
+Apache tier also needs a local Java 17+). Run one tier per pytest invocation.
+Each tier configures global Spark/context state during collection, so mixing
+them makes results order-dependent.
 
-**Do not mix tiers in one `pytest` invocation.** Each tier's `conftest.py`
-mutates `sys.modules`/patches Spark at *module import time*, before any
-test file in that directory is collected — whichever tier's conftest runs
-first in a process wins for the rest of that process. Run each tier as its
-own separate `pytest` command; the shared tier policy rejects mixed runs.
+| Tier | Use for | Command |
+|---|---|---|
+| `tests/unit/plain/` | Pure Python, parsing, and SQL inspection. | `just test-plain` |
+| `tests/unit/config/` | Real runtime YAML with a fake Spark session. | `just test-config` |
+| `tests/spark/apache/` | Real local Spark and Delta behavior. | `just test-apache` |
+| `tests/spark/databricks/` | Databricks-only behavior: notebooks, UC, streaming, masks, and liquid clustering. | `just test-databricks` (deploys the bundle to the `test` workspace). |
 
-## Unit tests — `tests/unit/`
+Use the smallest tier that exercises the changed behavior. SQL generation and
+configuration decisions belong in unit tests. Delta correctness belongs in the
+Apache tier. A test requiring a live workspace, notebook, Unity Catalog, or
+Databricks execution engine belongs in the Databricks tier.
 
-Never execute against real Delta data — pure decision logic and SQL/DDL
-*generation*, checked without a real table. Split into two tiers by
-whether `fabricks.context` itself needs to be real.
+The Databricks suite uses `tests/spark/databricks/runtime/` as its fixture
+runtime. `runtests.py` seeds data, resets the runtime, and runs the suite.
+Deploy the bundle before running it; local runs cannot validate this tier.
 
-### Plain — `tests/unit/plain/`
-
-Pure Python, no `fabricks.context`/Spark dependency at all.
-`tests/unit/plain/conftest.py` mocks `fabricks.utils.spark` /
-`fabricks.context` wholesale at module level before any `fabricks` import
-happens, so code under test never touches a real `SparkSession` — and
-never sees real `STEPS`/`CONF_RUNTIME` either. Use these for logic that
-doesn't need Spark or real runtime config to prove itself: path handling
-(`test_git_path.py`), YAML/config parsing (`test_read_yaml.py`), variable
-substitution (`test_variable_substitution.py`), pure `sqlglot` SQL parsing
-(`test_sql_dependencies.py`).
-
-```
-uv run pytest tests/unit/plain
-```
-
-### Config-resolution — `tests/unit/config/`
-
-Real `fabricks.context`/`get_step()`/`get_job()` against real YAML config,
-with Spark faked out so no JVM (and therefore no Java installation) is
-needed. `tests/unit/config/conftest.py` patches two independent
-Spark-construction paths — `pyspark.sql.SparkSession.builder` and
-`fabricks.utils.spark`'s own eager `get_spark()` call — see that file's
-docstring for why both are necessary. Use these for job/step *decision
-logic* that reads real config but never needs to execute against real
-data: DDL/`table_options` mapping (`test_ddl_option_mapping.py`), the
-job-vs-step option-precedence mechanism (`test_option_hierarchy.py`),
-partition/cluster column auto-detection (`test_column_selection.py`),
-check comparison logic and messages (`test_checker.py`), CDC-context/
-generated-SQL decision logic (`test_cdc_context.py`,
-`test_cdc_query_generation.py`).
-
-Not `plain`, even though no real Spark session runs here either: this tier
-still needs real `fabricks.context`/`STEPS`/`CONF_RUNTIME` (which `plain`'s
-conftest mocks away wholesale, so `get_job()` there never sees real
-config) and real `pyspark` types for realistic mocking, since code under
-test does genuine `isinstance(x, DataFrameLike)` checks that a duck-typed
-stand-in can't satisfy.
-
-This tier reads real config from the same `tests/spark/runtime/` tree
-`tests/spark/apache/` uses (see below) — it only ever resolves
-`gold/fact/*` jobs there, never touching the CDC/Silver/Bronze/semantic
-config Apache's own tests exercise.
-
-```
-uv run pytest tests/unit/config
-```
-
-## Integration tests — `tests/spark/`
-
-Execute against a real Spark session and real Delta table state, at
-increasing fidelity. (Still under `tests/spark/` rather than a matching
-`tests/integration/` — only the `unit/` side has been regrouped so far.)
-
-### Apache Spark — `tests/spark/apache/`
-
-Real Spark+Delta (Apache Spark — stock open source, as opposed to
-Databricks Runtime), running natively on a local JVM — Java 17 or later.
-`tests/spark/apache/conftest.py`
-builds a real Delta-configured `SparkSession` at module-import time against
-a fixture runtime checked into this repo at
-`tests/spark/runtime/fabricks/conf.fabricks.yml`. Use these for CDC
-merge correctness and DDL that genuinely needs real Delta table state to
-verify (real row counts, real table features) — not just the DDL/config
-*generation* logic, which belongs in `tests/unit/config/` instead.
-
-The tier also covers representative Silver/Gold CDC wiring, focused
-truncate/reload recovery, and the `semantic` Gold-family step's physical
-properties, partitioning, compression, and Power BI-compatible Delta
-settings. CI runs this tier independently under Java 17.
-
-`tests/spark/runtime/` lives outside `tests/spark/apache/` because
-`tests/unit/config/` (above) shares it too — the tree is one fixture
-runtime, not two. Apache's tests exercise `bronze/`, `silver/`, `gold/cdc/`,
-and `semantic/fact/`; `unit/config`'s exercise `gold/fact/` only. Neither
-tier's tests overlap on the same job, so there's no risk of one tier's
-change silently breaking the other's fixtures — but a genuinely new job
-belongs under whichever tier will exercise it.
-
-```
-just test-apache   # needs Java 17 or later on PATH
-```
-
-### Databricks — `tests/spark/databricks/`
-
-Exercise the behavior that genuinely requires a live Databricks workspace:
-notebook invocation, schedule ordering/status propagation, Unity Catalog
-masks, liquid clustering, plugin loading, and type widening. The minimal
-fixture runtime lives under `tests/spark/databricks/runtime/`.
-
-- `runtests.py` seeds raw data, performs armageddon, and launches pytest.
-- `conftest.py`'s autouse, session-scoped `_schedule_run` fixture runs the
-  one tagged schedule before any test in this directory -- nearly every
-  job is tagged and runs there (parallelized where the DAG allows), not via
-  a direct `get_job(...).run()` in an individual test.
-- `test_schedule.py` asserts exact success, failure, skip, warning,
-  dependency-order, and timeout outcomes against the schedule's result --
-  one assertion per tagged job/feature, covering notebook invocation
-  (`invoke_*`, `dependency_notebook`), masks, liquid clustering, and
-  plugin/extender/UDF loading along with the DAG/status propagation.
-- `test_feature.py` holds the few jobs needing one deliberate action
-  *after* the schedule's run (checkpoint idempotency, physical type
-  widening) that a single schedule pass can't exercise on its own.
-- `test_dependencies.py`/`test_layers.py` read state the schedule already
-  materialized (`get_job(...)` for a handle, no `.run()`), for controlled
-  inspection of dependency-graph persistence and intermediate CDC state --
-  a different concern from "did the job succeed".
-- `pyproject.toml`'s `[tool.fabricks]` table configures the runtime on the
-  cluster; the job/cluster libraries in `databricks.yml` install `pytest`
-  and the wheel's own dependencies.
-
-There is no local way to run these — they need the fixture runtime
-deployed to an actual Databricks workspace/cluster, real notebook
-execution, or real multi-job wall-clock ordering. Keep this
-tier limited to exactly that: real notebooks (`invoke_*`, `*_notebook`),
-real schedule timing (`wait_for`, forced-failure/skip assertions), and real
-Unity Catalog integration. If a test here is actually decision logic or
-DDL generation with no real notebook/timing/UC dependency, it likely
-belongs in `tests/unit/config/` or `tests/spark/apache/` instead — see
-[docs/superpowers/plans/2026-09-04-test-inventory.md](superpowers/plans/2026-09-04-test-inventory.md)
-for the full per-test breakdown of what's already been moved and what's
-still a candidate (written before the `unit/` regroup — read `tests/spark/config/`
-there as `tests/unit/config/` and `tests/plain/` as `tests/unit/plain/`).
-
-The live suite retains one schedule run with representative pre-run,
-row-count, duplicate-key, timeout, skip, and warning outcomes. Direct feature
-tests cover notebook invocation, parser/extender/UDF loading, masks, liquid
-clustering, and type widening.
-
-## Rule of thumb
-
-Changed SQL generation → check whether an `expected/**/iter*.sql` snapshot
-needs regenerating. Otherwise, pick a tier by two questions: does it need
-`fabricks.context`/real config at all (no → `unit/plain`), and if so, does
-it need to actually execute against real Delta data (no → `unit/config`,
-yes → `apache`, unless it specifically needs a real cluster/notebook/UC
-feature → `databricks`). Expect to confirm a `databricks`-tier change on a
-cluster, not just by reading the diff.
-
-See [CONSTITUTION.md § V](./CONSTITUTION.md) for when a change requires a
-test at all, and [ARCHITECTURE.md](./ARCHITECTURE.md) for how the pieces
-under test fit together.
+For a new behavior, add the smallest regression test that would fail if the
+behavior regressed. Do not add a Databricks test when a unit or Apache test can
+prove the same behavior.

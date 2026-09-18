@@ -1,6 +1,6 @@
 [project]
 name = "fabricks"
-version = "4.0.24"
+version = "4.1.0"
 description = ""
 authors = [
     { name = "BMS DWH Team", email = "bi_support@bmsuisse.ch" },
@@ -17,7 +17,6 @@ dependencies = [
     "azure-storage-queue >=12.10.0,<13",
     "databricks-sdk >=0.20.0",
     "delta-spark>=4.4.0",
-    "deptry>=0.23.1",
     # pyspark.sql.connect (imported unconditionally by fabricks/utils/_types.py
     # for the DataFrameLike/SparkSessionLike unions) requires these four at
     # import time regardless of environment - previously pulled in
