@@ -8,7 +8,7 @@ rules; [AGENTS.md](../AGENTS.md) is the entry point.
 Keep dependency minimums at or below the target Databricks LTS runtime. Check
 the runtime package list before raising a minimum version.
 
-## 2. Style
+## 2. Coding Style
 
 Use the repository formatters and linters rather than hand formatting:
 `just format` and `just lint`, run from `framework/`. Non-test code needs
@@ -17,7 +17,8 @@ handling. Run `just setup-hooks` once per checkout to enable the pre-commit
 format+lint hook. Keep each file to one purpose and a manageable size; split
 a file that has grown multiple responsibilities instead of extending it. See
 the `coding-guidelines-python` skill for typing, Pyright, dataclasses,
-enums, and other Python-specific conventions.
+enums, and other Python-specific conventions, and the `code-quality` skill
+for ruff/mypy config and fail-loud/determinism anti-patterns.
 
 ## 3. Layers
 

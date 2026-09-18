@@ -49,6 +49,10 @@
       {
         "src": "python/testing-strategy",
         "dest": "testing-strategy"
+      },
+      {
+        "src": "python/code-quality",
+        "dest": "code-quality"
       }
     ]
   },
