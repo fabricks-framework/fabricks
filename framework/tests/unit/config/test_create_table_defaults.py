@@ -43,8 +43,7 @@ def _job(monkeypatch, *, table_options: TableOptions | None = None, columns: lis
 
     columns = columns or ["id", "name"]
     df = _FakeCreateTableDF(
-        columns=columns,
-        dtypes=[(column, "int" if column == "id" else "string") for column in columns],
+        columns=columns, dtypes=[(column, "int" if column == "id" else "string") for column in columns]
     )
     monkeypatch.setattr(job, "get_data", lambda **_kwargs: df)
     monkeypatch.setattr(job, "base_transform", lambda d: d)
@@ -113,9 +112,7 @@ def test_create_table_explicit_properties_win_over_defaults(monkeypatch):
 
 def test_create_table_liquid_clustering_auto(monkeypatch):
     job, captured = _job(
-        monkeypatch,
-        table_options=TableOptions(liquid_clustering=True),
-        columns=["id", "name", "__cluster_by_id"],
+        monkeypatch, table_options=TableOptions(liquid_clustering=True), columns=["id", "name", "__cluster_by_id"]
     )
 
     job.create_table()

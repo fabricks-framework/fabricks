@@ -14,10 +14,7 @@ def main() -> None:
             rows = derive_entity_rows(iteration, entity)
             if not rows:
                 continue
-            write_ndjson(
-                rows,
-                APACHE_FIXTURES_ROOT / f"iter{iteration}" / f"bronze_{entity}.jsonl",
-            )
+            write_ndjson(rows, APACHE_FIXTURES_ROOT / f"iter{iteration}" / f"bronze_{entity}.jsonl")
             combined += rows
         write_ndjson(combined, APACHE_FIXTURES_ROOT / f"iter{iteration}" / "king_queen.jsonl")
 

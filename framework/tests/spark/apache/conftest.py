@@ -50,6 +50,8 @@ _SPARK.conf.set("spark.databricks.delta.merge.repartitionBeforeWrite.enabled", "
 
 for _database in ("bronze", "silver", "gold", "semantic", "expected", "cdc", "fabricks"):
     _SPARK.sql(f"create database if not exists {_database}")
+
+
 @pytest.fixture(scope="session")
 def local_spark():
     yield _SPARK

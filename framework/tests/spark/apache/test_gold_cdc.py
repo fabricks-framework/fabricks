@@ -37,9 +37,7 @@ def test_gold_scd1_complete_wiring(local_spark):
     job.for_each_batch(source)
 
     rows = job.table.dataframe.orderBy("id").collect()
-    assert [(row.id, row.name) for row in rows] == [
-        (row.id, row.name) for row in source.orderBy("id").collect()
-    ]
+    assert [(row.id, row.name) for row in rows] == [(row.id, row.name) for row in source.orderBy("id").collect()]
     assert all(row["__is_current"] and not row["__is_deleted"] for row in rows)
 
 
@@ -72,12 +70,10 @@ def test_gold_persists_last_timestamp(local_spark, item, target_timestamp_column
     job = get_job(step="gold", topic="cdc", item=item)
     source_name = f"gold_cdc_{item}_source"
     first = local_spark.createDataFrame(
-        [("1", 1, "one", "upsert", "2024-01-01 00:00:00")],
-        ["__key", "id", "name", "__operation", "__timestamp"],
+        [("1", 1, "one", "upsert", "2024-01-01 00:00:00")], ["__key", "id", "name", "__operation", "__timestamp"]
     )
     second = local_spark.createDataFrame(
-        [("1", 1, "changed", "upsert", "2024-01-02 00:00:00")],
-        ["__key", "id", "name", "__operation", "__timestamp"],
+        [("1", 1, "changed", "upsert", "2024-01-02 00:00:00")], ["__key", "id", "name", "__operation", "__timestamp"]
     )
 
     first.createOrReplaceGlobalTempView(source_name)
@@ -88,9 +84,7 @@ def test_gold_persists_last_timestamp(local_spark, item, target_timestamp_column
 
     rows = job.cdc_last_timestamp.table.dataframe.collect()
     target_timestamp = job.table.dataframe.selectExpr(f"max({target_timestamp_column}) as value").collect()[0].value
-    assert [(row["__timestamp"], row.asDict().get("__source")) for row in rows] == [
-        (target_timestamp, None)
-    ]
+    assert [(row["__timestamp"], row.asDict().get("__source")) for row in rows] == [(target_timestamp, None)]
 
 
 def test_manual_gold_job_executes_when_run_directly(local_spark):
@@ -106,12 +100,10 @@ def test_gold_scd2_update_wiring(local_spark):
     update_job = get_job(step="gold", topic="cdc", item="scd2_update")
     complete_job = get_job(step="gold", topic="cdc", item="scd2_complete")
     first = local_spark.createDataFrame(
-        [("1", 1, "one", "upsert", "2024-01-01 00:00:00")],
-        ["__key", "id", "name", "__operation", "__timestamp"],
+        [("1", 1, "one", "upsert", "2024-01-01 00:00:00")], ["__key", "id", "name", "__operation", "__timestamp"]
     )
     second = local_spark.createDataFrame(
-        [("1", 1, "changed", "upsert", "2024-01-02 00:00:00")],
-        ["__key", "id", "name", "__operation", "__timestamp"],
+        [("1", 1, "changed", "upsert", "2024-01-02 00:00:00")], ["__key", "id", "name", "__operation", "__timestamp"]
     )
 
     update_job.for_each_batch(first)
