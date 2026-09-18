@@ -4,14 +4,14 @@ from fabricks.core.udfs import register_all_udfs
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-def deploy_udfs(overwrite=True):
+def deploy_udfs(overwrite: bool = True) -> None:
     DEFAULT_LOGGER.info("create or replace udfs", extra={"label": "fabricks"})
 
     register_all_udfs(extension="sql", overwrite=overwrite)
     create_or_replace_udf_job_id()
 
 
-def create_or_replace_udf_job_id():
+def create_or_replace_udf_job_id() -> None:
     sql = "create or replace function fabricks.udf_job_id(job string) returns string return md5(job)"
     sql = fix_sql(sql)
 

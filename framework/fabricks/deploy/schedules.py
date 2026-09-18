@@ -3,7 +3,7 @@ from fabricks.core.schedules import create_or_replace_views
 from fabricks.core.views import create_or_replace_views as create_or_replace_custom_views
 
 
-def deploy_schedules():
+def deploy_schedules() -> None:
     DEFAULT_LOGGER.info("create or replace schedules", extra={"label": "fabricks"})
 
     create_or_replace_custom_views()

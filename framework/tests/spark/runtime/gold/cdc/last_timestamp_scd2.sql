@@ -1,0 +1,1 @@
+select * from global_temp.gold_cdc_last_timestamp_scd2_source

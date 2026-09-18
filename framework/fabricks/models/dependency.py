@@ -1,5 +1,7 @@
 """Job dependency tracking models."""
 
+from typing import Self
+
 from pydantic import BaseModel, ConfigDict, model_validator
 from pyspark.sql.types import StringType, StructField, StructType
 
@@ -23,14 +25,14 @@ class JobDependency(BaseModel):
         return f"{self.job_id} -> {self.parent}"
 
     @model_validator(mode="after")
-    def check_no_circular_dependency(self):
+    def check_no_circular_dependency(self) -> Self:
         if self.job_id == self.parent_id:
             raise ValueError("Circular dependency detected")
 
         return self
 
     @staticmethod
-    def from_parts(job_id: str, parent: str, origin: AllowedOrigins):
+    def from_parts(job_id: str, parent: str, origin: AllowedOrigins) -> "JobDependency":
         parent = parent.removesuffix("__current")
         return JobDependency(
             job_id=job_id,

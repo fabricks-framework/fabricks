@@ -6,7 +6,7 @@ from fabricks.context.runtime import CONF_RUNTIME
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
-def deploy_runtime():
+def deploy_runtime() -> None:
     """
     Deploy runtime to the fabricks.runtime view.
     """

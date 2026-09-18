@@ -1,19 +1,21 @@
-import logging
-import sys
+from collections.abc import Callable, Iterable
 from functools import reduce
 from hashlib import md5 as hashlib_md5
+import logging
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Literal, Optional, Union
+import sys
+from types import ModuleType
+from typing import Any, Literal
 
-import pyspark.sql.functions as F
 from pyspark.sql import DataFrame
+import pyspark.sql.functions as F  # noqa: N812 - idiomatic PySpark alias
 from typing_extensions import deprecated
 
 from fabricks.utils._types import DataFrameLike
 from fabricks.utils.path import GitPath
 
 
-def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str:
+def concat_ws(fields: str | list[str], alias: str | None = None) -> str:
     if isinstance(fields, str):
         fields = [fields]
 
@@ -25,17 +27,16 @@ def concat_ws(fields: Union[str, List[str]], alias: Optional[str] = None) -> str
     return "concat_ws('*', " + ",".join(coalesce) + ")"
 
 
-def md5(s: Any) -> str:
+def md5(s: Any) -> str:  # noqa: ANN401 - generic hash of any stringifiable value, not restricted to str
     hash_obj = hashlib_md5(str(s).encode())
     return hash_obj.hexdigest()
 
 
-def add_hash(column: str, df: DataFrame, fields: Union[str, List[str]]):
-
+def add_hash(column: str, df: DataFrame, fields: str | list[str]) -> DataFrame:
     return df.withColumn(f"{column}", F.md5(F.expr(concat_ws(fields))))
 
 
-def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
+def concat_dfs(dfs: Iterable[DataFrame]) -> DataFrame | None:
     dfs = [df for df in dfs if df is not None]
     if len(dfs) == 0:
         return None
@@ -43,20 +44,20 @@ def concat_dfs(dfs: Iterable[DataFrame]) -> Optional[DataFrame]:
 
 
 @deprecated("use run_in_parallel instead")
-def run_threads(func: Callable, iter: Union[List, DataFrame, range, set], workers: int = 8) -> List[Any]:
+def run_threads(func: Callable, iter: list | DataFrame | range | set, workers: int = 8) -> list[Any]:
     return run_in_parallel(func, iter, workers)
 
 
 def run_in_parallel(
     func: Callable,
-    iterable: Union[List, DataFrame, range, set],
+    iterable: list | DataFrame | range | set,
     workers: int = 8,
-    progress_bar: Optional[bool] = False,
-    position: Optional[int] = None,
+    progress_bar: bool | None = False,
+    position: int | None = None,
     loglevel: int = logging.CRITICAL,
-    logger: Optional[logging.Logger] = None,
+    logger: logging.Logger | None = None,
     run_as: Literal["Thread", "Pool"] = "Thread",
-) -> List[Any]:
+) -> list[Any]:
     if logger is None:
         logger = logging.getLogger()
 
@@ -65,7 +66,7 @@ def run_in_parallel(
 
     items = list(iterable.collect() if isinstance(iterable, DataFrameLike) else iterable)
 
-    def _collect(mapped):
+    def _collect(mapped: Iterable[Any]) -> list[Any]:
         if progress_bar:
             from tqdm import tqdm
 
@@ -89,7 +90,7 @@ def run_in_parallel(
         logger.setLevel(current_loglevel)
 
 
-def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
+def run_notebook(path: GitPath, timeout: int | None = None, **kwargs: Any) -> None:  # noqa: ANN401 - forwarded straight to dbutils.notebook.run
     """
     Runs a notebook located at the given path.
 
@@ -109,7 +110,7 @@ def run_notebook(path: GitPath, timeout: Optional[int] = None, **kwargs):
     dbutils.notebook.run(path.get_notebook_path(), timeout, {**kwargs})  # type: ignore
 
 
-def load_module_from_path(name: str, path: GitPath):
+def load_module_from_path(name: str, path: GitPath) -> ModuleType:
     from importlib.util import module_from_spec, spec_from_file_location
 
     if path.parent not in sys.path:
@@ -125,10 +126,7 @@ def load_module_from_path(name: str, path: GitPath):
     return textwrap_module
 
 
-def find_upward(
-    filename: str,
-    root: Optional[Union[str, Path]] = None,
-) -> Optional[GitPath]:
+def find_upward(filename: str, root: str | Path | None = None) -> GitPath | None:
     """
     Find a file by searching upward through the directory hierarchy.
 
@@ -146,10 +144,7 @@ def find_upward(
         >>> # Search from a specific location
         >>> config = find_upward(".env", root="/path/to/start")
     """
-    if root is None:
-        current = Path.cwd()
-    else:
-        current = Path(root).resolve()
+    current = Path.cwd() if root is None else Path(root).resolve()
 
     if current.is_file():
         current = current.parent
@@ -166,7 +161,7 @@ def find_upward(
         current = parent
 
 
-def backticks(columns: Union[str, List[str]]) -> List[str]:
+def backticks(columns: str | list[str]) -> list[str]:
     if isinstance(columns, str):
         columns = [columns]
 

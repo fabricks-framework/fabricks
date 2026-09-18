@@ -1,23 +1,16 @@
+from pathlib import Path
 import re
 import subprocess
-import sys
-from pathlib import Path
-from typing import Dict, List, Literal, Optional, Union
+import tomllib
+from typing import Literal
 
 from fabricks.utils.helpers import find_upward
 from fabricks.utils.path import FileSharePath, GitPath
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
-
 
 def pip_package(
-    package: Union[str, List[str]],
-    whl_path: Optional[FileSharePath] = None,
-    tgt_path: Optional[FileSharePath] = None,
-):
+    package: str | list[str], whl_path: FileSharePath | None = None, tgt_path: FileSharePath | None = None
+) -> None:
     if isinstance(package, str):
         package = [package]
 
@@ -32,16 +25,14 @@ def pip_package(
         args += ["--target", t]
 
     for p in package:
-        out = subprocess.run(args + [p], capture_output=True)
+        out = subprocess.run([*args, p], capture_output=True)
         if out.returncode == 1:
             raise ValueError(p, out.stderr)
 
 
 def pip_requirements(
-    requirements_path: FileSharePath,
-    whl_path: Optional[FileSharePath] = None,
-    tgt_path: Optional[FileSharePath] = None,
-):
+    requirements_path: FileSharePath, whl_path: FileSharePath | None = None, tgt_path: FileSharePath | None = None
+) -> None:
     r = requirements_path.string
 
     args = ["pip", "install"]
@@ -54,12 +45,12 @@ def pip_requirements(
         t = tgt_path.get_dbfs_mnt_path()
         args += ["--target", t]
 
-    out = subprocess.run(args + ["-r", r], capture_output=True)
+    out = subprocess.run([*args, "-r", r], capture_output=True)
     if out.returncode == 1:
         raise ValueError(r, out.stderr)
 
 
-def pip_wheel(requirement_path: FileSharePath, whl_path: FileSharePath):
+def pip_wheel(requirement_path: FileSharePath, whl_path: FileSharePath) -> None:
     r = requirement_path.string
     w = whl_path.get_dbfs_mnt_path()
 
@@ -71,8 +62,8 @@ def pip_wheel(requirement_path: FileSharePath, whl_path: FileSharePath):
 def pip_list(
     format: Literal["freeze", "pretty", "dict", "pyproject"] = "freeze",
     pyproject: bool = True,
-    path: Optional[Union[str, Path, GitPath]] = None,
-) -> Union[str, Dict[str, str]]:
+    path: str | Path | GitPath | None = None,
+) -> str | dict[str, str]:
     """
     List installed packages and their versions.
 
@@ -111,7 +102,7 @@ def pip_list(
         if path is None:
             raise FileNotFoundError("pyproject.toml not found nor provided")
 
-        with open(str(path), "rb") as f:
+        with Path(str(path)).open("rb") as f:
             content = tomllib.load(f)
 
         dependencies = content.get("project", {}).get("dependencies", [])
@@ -127,21 +118,20 @@ def pip_list(
     if format == "freeze":
         return "\n".join(f"{pkg}=={ver}" for pkg, ver in installed.values())
 
-    elif format == "pretty":
+    if format == "pretty":
         lines = ["Package            Version", "------------------ -------"]
         for pkg, ver in sorted(installed.values()):
             lines.append(f"{pkg:<18} {ver}")
         return "\n".join(lines)
 
-    elif format == "dict":
-        return {pkg: ver for pkg, ver in installed.values()}
+    if format == "dict":
+        return dict(installed.values())
 
-    elif format == "pyproject":
+    if format == "pyproject":
         lines = ["dependencies = ["]
         for pkg, ver in sorted(installed.values()):
             lines.append(f'    "{pkg}=={ver}",')
         lines.append("]")
         return "\n".join(lines)
 
-    else:
-        raise ValueError(f'Invalid format: {format}. Supported formats are: "freeze", "pretty", "dict", "pyproject"')
+    raise ValueError(f'Invalid format: {format}. Supported formats are: "freeze", "pretty", "dict", "pyproject"')

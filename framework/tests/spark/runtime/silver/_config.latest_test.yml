@@ -1,0 +1,15 @@
+---
+- job:
+    step: silver
+    topic: latest_test
+    item: test
+    tags: [test]
+    options:
+      mode: latest
+      # NoCDC's dedup CTEs use a raw `qualify` clause regardless of mode --
+      # OSS Spark's parser rejects it (Databricks' does not). Real production
+      # "latest" jobs would normally rely on the default (dedup on), but
+      # deduplicate:false is a real, supported option -- setting it here
+      # keeps this job testable locally without faking anything, as long as
+      # each batch itself has no duplicate keys (true for this fixture).
+      deduplicate: false

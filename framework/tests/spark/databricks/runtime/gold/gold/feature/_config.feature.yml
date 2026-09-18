@@ -1,0 +1,56 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema.json
+# Databricks/Unity-Catalog-only features (docs/superpowers/plans/2026-09-04-
+# databricks-cut-list.md's Risks #1): no OSS Delta equivalent, so these can
+# never move to tests/spark/apache/ -- kept here deliberately, one job per
+# feature, so a failure names exactly which feature broke. Tagged so the
+# schedule runs them (in parallel where the DAG allows); test_schedule.py
+# asserts the resulting fabricks.last_schedule/table state after.
+- job:
+    step: gold
+    topic: feature
+    item: mask
+    tags: [test]
+    options:
+      mode: complete
+    table_options:
+      masks:
+        dummy: mask_dummy
+- job:
+    step: gold
+    topic: feature
+    item: cluster_by
+    tags: [test]
+    options:
+      mode: complete
+    table_options:
+      cluster_by: [dummy]
+- job:
+    step: gold
+    topic: feature
+    item: extender
+    tags: [test]
+    options:
+      mode: complete
+    extender_options:
+      - extender: dummy
+- job:
+    step: gold
+    topic: feature
+    item: udf
+    tags: [test]
+    options:
+      mode: complete
+# Tagged, unlike its siblings above: proves plain-SQL auto-detected
+# gold-depends-on-gold dependency on gold.dim_time still works (same
+# mechanism as gold.fact_dependency), isolating whether a dependency
+# failure is specific to notebook-mode's global-temp-view handoff
+# (gold.dependency_notebook) or a general dependency-resolution problem.
+- job:
+    step: gold
+    topic: feature
+    item: wait_for
+    tags: [test]
+    options:
+      mode: complete
+      wait_for: [gold.dim_time]

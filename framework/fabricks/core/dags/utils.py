@@ -1,5 +1,5 @@
 import os
-from typing import Optional, cast
+from typing import cast
 
 from fabricks.context import DBUTILS, FABRICKS_STORAGE, FABRICKS_STORAGE_CREDENTIAL, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.utils.azure_table import AzureTable
@@ -12,7 +12,7 @@ def _get_access_key_from_secret_scope(storage_account: str) -> str:
     return cast(AccessKey, secret).key
 
 
-def _get_access_key_from_os() -> Optional[str]:
+def _get_access_key_from_os() -> str | None:
     return os.environ.get("FABRICKS_ACCESS_KEY")
 
 
@@ -33,21 +33,14 @@ def get_connection_info(storage_account: str) -> dict:
 
         assert credential or access_key
 
-    return {
-        "storage_account": storage_account,
-        "access_key": access_key,
-        "credential": credential,
-    }
+    return {"storage_account": storage_account, "access_key": access_key, "credential": credential}
 
 
-def get_table():
+def get_table() -> AzureTable:
     storage_account = FABRICKS_STORAGE.get_storage_account()
 
     cx = get_connection_info(storage_account)
 
     return AzureTable(
-        "dags",
-        storage_account=storage_account,
-        access_key=cx["access_key"],
-        credential=cx["credential"],
+        "dags", storage_account=storage_account, access_key=cx["access_key"], credential=cx["credential"]
     )

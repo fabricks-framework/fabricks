@@ -1,7 +1,7 @@
-import re
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import List, Optional, Union
+import re
+from typing import Any, Self
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
@@ -46,11 +46,11 @@ class Configurator(ABC):
         self,
         expand: str,
         step: str,
-        topic: Optional[str] = None,
-        item: Optional[str] = None,
-        job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
-    ):
+        topic: str | None = None,
+        item: str | None = None,
+        job_id: str | None = None,
+        conf: dict | Row | None = None,
+    ) -> None:
         self.expand = expand
         self.step = step
 
@@ -68,8 +68,8 @@ class Configurator(ABC):
             self.conf = get_job_conf(step=self.step, topic=self.topic, item=self.item, row=conf)
             self.job_id = get_job_id(step=self.step, topic=self.topic, item=self.item)
 
-    _spark: Optional[SparkSession] = None  # Keep mutable - has side effects
-    _udf_registered: Optional[bool] = None  # Keep mutable - state flag
+    _spark: SparkSession | None = None  # Keep mutable - has side effects
+    _udf_registered: bool | None = None  # Keep mutable - state flag
 
     @property
     @abstractmethod
@@ -88,10 +88,12 @@ class Configurator(ABC):
     def virtual(self) -> bool: ...
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str): ...
+    @abstractmethod
+    def from_step_topic_item(cls, step: str, topic: str, item: str) -> Self: ...
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str): ...
+    @abstractmethod
+    def from_job_id(cls, step: str, job_id: str) -> Self: ...
 
     @property
     def spark(self) -> SparkSession:
@@ -128,7 +130,7 @@ class Configurator(ABC):
         return self._spark
 
     @cached_property
-    def base_step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
+    def base_step_conf(self) -> StepBronzeConf | StepSilverConf | StepGoldConf:
         return STEPS[self.step]
 
     @property
@@ -150,7 +152,7 @@ class Configurator(ABC):
         assert t is not None
         return int(t)
 
-    def pip(self):
+    def pip(self) -> None:  # noqa: B027 - intentional no-op default, not required to be overridden by subclasses
         pass
 
     @property
@@ -184,7 +186,7 @@ class Configurator(ABC):
         options instance (e.g. JobBronzeOptions, JobSilverOptions, or JobGoldOptions)
         corresponding to the job type.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @cached_property
     def runtime_conf(self) -> RuntimeConf:
@@ -195,17 +197,17 @@ class Configurator(ABC):
 
     @property
     @abstractmethod
-    def step_conf(self) -> Union[StepBronzeConf, StepSilverConf, StepGoldConf]:
+    def step_conf(self) -> StepBronzeConf | StepSilverConf | StepGoldConf:
         """Direct access to typed step conf from context configuration."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
-    def step_options(self) -> Union[StepBronzeOptions, StepSilverOptions, StepGoldOptions]:
+    def step_options(self) -> StepBronzeOptions | StepSilverOptions | StepGoldOptions:
         """Direct access to typed step-level options from context configuration."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @cached_property
-    def step_table_options(self) -> Optional[StepTableOptions]:
+    def step_table_options(self) -> StepTableOptions | None:
         """Direct access to typed step-level table options from context configuration."""
         return STEPS[self.step].table_options
 
@@ -215,38 +217,38 @@ class Configurator(ABC):
         return self.runtime_conf.options
 
     @property
-    def step_spark_options(self) -> Optional[SparkOptions]:
+    def step_spark_options(self) -> SparkOptions | None:
         """Direct access to typed step-level spark options from context configuration.
         Returns None if not configured at step level."""
         return self.step_conf.spark_options
 
     @property
-    def table_options(self) -> Optional[TableOptions]:
+    def table_options(self) -> TableOptions | None:
         """Direct access to typed table options."""
         return self.conf.table_options
 
     @property
-    def check_options(self) -> Optional[CheckOptions]:
+    def check_options(self) -> CheckOptions | None:
         """Direct access to typed check options."""
         return self.conf.check_options
 
     @property
-    def spark_options(self) -> Optional[SparkOptions]:
+    def spark_options(self) -> SparkOptions | None:
         """Direct access to typed spark options."""
         return self.conf.spark_options
 
     @property
-    def invoker_options(self) -> Optional[InvokerOptions]:
+    def invoker_options(self) -> InvokerOptions | None:
         """Direct access to typed invoker options."""
         return self.conf.invoker_options
 
     @property
-    def updater_options(self) -> Optional[UpdaterOptions]:
+    def updater_options(self) -> UpdaterOptions | None:
         """Direct access to typed updater options."""
         return self.conf.updater_options
 
     @property
-    def extender_options(self) -> Optional[List[ExtenderOptions]]:
+    def extender_options(self) -> list[ExtenderOptions] | None:
         """Direct access to typed extender options."""
         return self.conf.extender_options
 
@@ -255,31 +257,30 @@ class Configurator(ABC):
         return self.options.change_data_capture or "nocdc"
 
     @cached_property
-    def cdc(self) -> Union[NoCDC, SCD0, SCD1, SCD2]:
+    def cdc(self) -> NoCDC | SCD0 | SCD1 | SCD2:
         if self.change_data_capture == "nocdc":
             return NoCDC(self.step, self.topic, self.item, spark=self.spark)
-        elif self.change_data_capture == "scd0":
+        if self.change_data_capture == "scd0":
             return SCD0(self.step, self.topic, self.item, spark=self.spark)
-        elif self.change_data_capture == "scd1":
+        if self.change_data_capture == "scd1":
             return SCD1(self.step, self.topic, self.item, spark=self.spark)
-        elif self.change_data_capture == "scd2":
+        if self.change_data_capture == "scd2":
             return SCD2(self.step, self.topic, self.item, spark=self.spark)
-        else:
-            raise ValueError(f"{self.change_data_capture} not allowed")
+        raise ValueError(f"{self.change_data_capture} not allowed")
 
     @property
     def slowly_changing_dimension(self) -> bool:
         return self.change_data_capture in ["scd0", "scd1", "scd2"]
 
     @abstractmethod
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = False) -> dict: ...
+    def get_cdc_context(self, df: DataFrame, reload: bool | None = False) -> dict: ...
 
-    def get_cdc_data(self, stream: bool = False) -> Optional[DataFrame]:
+    def get_cdc_data(self, stream: bool = False) -> DataFrame | None:
         df = self.get_data(stream=stream)
         if df:
             cdc_context = self.get_cdc_context(df)
-            cdc_df = self.cdc.get_data(src=df, **cdc_context)
-            return cdc_df
+            return self.cdc.get_data(src=df, **cdc_context)
+        return None
 
     @cached_property
     def mode(self) -> AllowedModes:
@@ -287,7 +288,7 @@ class Configurator(ABC):
         assert _mode is not None
         return _mode
 
-    def get_udfs(self) -> Optional[list[str]]:
+    def get_udfs(self) -> list[str] | None:
         updated_columns = self.updater_options.columns if self.updater_options else {}
 
         if updated_columns:
@@ -298,8 +299,9 @@ class Configurator(ABC):
                     udfs += matches
 
             return list(set(udfs))
+        return None
 
-    def register_udfs(self, force: bool | None = False):
+    def register_udfs(self, force: bool | None = False) -> None:
         if not self._udf_registered or force:
             udfs = self.get_udfs()
             if udfs:
@@ -310,19 +312,30 @@ class Configurator(ABC):
 
             self._udf_registered = True
 
-    def _match_udfs(self, string: str) -> Optional[list[str]]:
+    def _match_udfs(self, string: str) -> list[str] | None:
         if UDF_PREFIX in string:
             matches = _UDF_PATTERN.findall(string)
             return list(set(matches)) if matches else None
+        return None
 
     @abstractmethod
-    def get_data(self, stream: bool = False, transform: Optional[bool] = None, **kwargs) -> Optional[DataFrame]: ...
+    def get_data(
+        self,
+        stream: bool = False,
+        transform: bool | None = None,
+        **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
+    ) -> DataFrame | None: ...
 
     @abstractmethod
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs): ...
+    def for_each_batch(
+        self,
+        df: DataFrame,
+        batch: int | None = None,
+        **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
+    ) -> None: ...
 
     @abstractmethod
-    def for_each_run(self, **kwargs): ...
+    def for_each_run(self, **kwargs: Any) -> None: ...  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
 
     @abstractmethod
     def base_transform(self, df: DataFrame) -> DataFrame: ...
@@ -330,31 +343,19 @@ class Configurator(ABC):
     @abstractmethod
     def run(
         self,
-        retry: Optional[bool] = True,
-        schedule: Optional[str] = None,
-        schedule_id: Optional[str] = None,
-        invoke: Optional[bool] = True,
-    ): ...
+        retry: bool | None = True,
+        schedule: str | None = None,
+        schedule_id: str | None = None,
+        invoke: bool | None = True,
+    ) -> None: ...
 
     @deprecated("use maintain instead")
-    def optimize(
-        self,
-        vacuum: Optional[bool] = True,
-        optimize: Optional[bool] = True,
-        analyze: Optional[bool] = True,
-    ):
-        return self.maintain(
-            vacuum=vacuum,
-            optimize=optimize,
-            compute_statistics=analyze,
-        )
+    def optimize(self, vacuum: bool | None = True, optimize: bool | None = True, analyze: bool | None = True) -> None:
+        return self.maintain(vacuum=vacuum, optimize=optimize, compute_statistics=analyze)
 
     def maintain(
-        self,
-        vacuum: Optional[bool] = True,
-        optimize: Optional[bool] = True,
-        compute_statistics: Optional[bool] = True,
-    ):
+        self, vacuum: bool | None = True, optimize: bool | None = True, compute_statistics: bool | None = True
+    ) -> None:
         if self.mode == "memory":
             DEFAULT_LOGGER.debug("could not maintain (memory)", extra={"label": self})
 
@@ -366,7 +367,7 @@ class Configurator(ABC):
             if compute_statistics:
                 self.table.compute_statistics()
 
-    def vacuum(self):
+    def vacuum(self) -> None:
         if self.mode == "memory":
             DEFAULT_LOGGER.debug("could not vacuum (memory)", extra={"label": self})
 
@@ -385,5 +386,5 @@ class Configurator(ABC):
 
             self.table.vacuum(retention_days=retention_days)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.step}.{self.topic}_{self.item}"

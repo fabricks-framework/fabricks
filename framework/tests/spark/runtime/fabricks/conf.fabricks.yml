@@ -1,0 +1,86 @@
+---
+- conf:
+    name: local-test
+    options:
+      secret_scope: none
+      timeouts:
+        step: 3600
+        job: 3600
+        pre_run: 3600
+        post_run: 3600
+    path_options:
+      # Absolute paths, not relative ("tests/spark/apache/.storage/..."): Table._create()
+      # (fabricks/metastore/table.py) issues `create table ... location '<this>'`
+      # with no `using delta`, relying on Delta's default-source config (set in
+      # tests/spark/apache/conftest.py) to make it a real Delta table. With a relative
+      # location, Spark resolves it two different, inconsistent ways: the
+      # initial commit is written CWD-relative, but the Hive metastore stores the
+      # table's location resolved relative to the *database's* default warehouse
+      # directory (spark-warehouse/<db>.db/tests/spark/apache/.storage/...) since
+      # Database.create() (fabricks/metastore/database.py) creates databases
+      # with no explicit location. Any later `insert into ... by name` or
+      # `merge into` (both used by every SCD1/SCD2/NoCDC call) resolves the
+      # table via the metastore's (mismatched) location and fails with
+      # DELTA_TABLE_NOT_FOUND / DELTA_PATH_DOES_NOT_EXIST -- reproduced
+      # empirically with plain `create table ... location '<relative>'` +
+      # `insert into ... by name` against this container's real Spark session;
+      # an absolute location has no such ambiguity (both resolution paths use
+      # the same absolute string as-is). Real production Databricks storage
+      # paths are always abfss:// URIs (absolute cloud URIs -- enforced by
+      # resolve_fileshare_path's own assertion for non-docker environments), so
+      # this ambiguity never arises there; it's unique to this local config's
+      # plain filesystem paths. conftest.py supplies the absolute storage root.
+      storage: $apache_storage/fabricks
+      udfs: fabricks/udfs
+      parsers: fabricks/parsers
+      schedules: fabricks/schedules
+      views: fabricks/views
+      requirements: fabricks/requirements.txt
+    bronze:
+      - name: bronze
+        path_options:
+          storage: $apache_storage/bronze
+          runtime: bronze
+        options:
+          order: 101
+    silver:
+      - name: silver
+        path_options:
+          storage: $apache_storage/silver
+          runtime: silver
+        options:
+          order: 201
+          parent: bronze
+    gold:
+      - name: gold
+        path_options:
+          storage: $apache_storage/gold
+          runtime: gold
+        options:
+          order: 301
+        table_options:
+          properties:
+            delta.minReaderVersion: 1
+            delta.minWriterVersion: 7
+            delta.columnMapping.mode: none
+      - name: semantic
+        path_options:
+          storage: $apache_storage/semantic
+          runtime: semantic
+        options:
+          order: 304
+          metadata: true
+          schema_drift: true
+        table_options:
+          properties:
+            delta.checkpointInterval: 11
+    databases:
+      - name: expected
+        path_options:
+          storage: $apache_storage/expected
+      # Neutral namespace for test_cdc.py's own throwaway target tables --
+      # CDC merge correctness doesn't depend on which layer a table lives in,
+      # so it's proven here rather than borrowing "silver"/"gold"'s name.
+      - name: cdc
+        path_options:
+          storage: $apache_storage/cdc

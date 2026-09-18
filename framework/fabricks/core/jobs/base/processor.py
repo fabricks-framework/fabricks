@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from functools import partial
+from typing import Any
 
 from pyspark.sql import DataFrame
 
@@ -12,13 +13,34 @@ from fabricks.core.jobs.base.exception import (
     PreRunCheckException,
     PreRunCheckWarning,
     PreRunInvokeException,
-    SchemaDriftException,
+    SchemaDriftError,
     SkipRunCheckWarning,
     SkipRunTimeWarning,
 )
 from fabricks.core.jobs.base.invoker import Invoker
 from fabricks.models import JobBronzeOptions, JobSilverOptions
 from fabricks.utils.write import write_stream
+
+
+def _for_each_stream_batch(
+    df: DataFrame,
+    batch: int,
+    *,
+    step: str,
+    topic: str,
+    item: str,
+    schedule: str | None,
+    reload: bool | None,
+    conf: dict,
+) -> None:
+    from fabricks.core.jobs.get_job import get_job_internal
+
+    # conf is the driver's already-resolved JobConf, serialized -- passing it
+    # through means get_job_conf() (fabricks/core/jobs/get_job_conf.py) skips
+    # its SPARK.sql(f"select * from fabricks.{step}_jobs") lookup and reuses
+    # this instead of re-querying the metastore on every stream start.
+    job = get_job_internal(step=step, topic=topic, item=item, conf=conf)
+    job._for_each_batch(df, batch, schedule=schedule, reload=reload)
 
 
 class Processor(Invoker):
@@ -32,12 +54,13 @@ class Processor(Invoker):
 
         return df
 
-    def restore(self, last_version: str | None = None, last_batch: str | None = None):
+    def restore(self, last_version: str | None = None, last_batch: str | None = None) -> None:
         """
         Restores the processor to a specific version and batch.
 
         Args:
-            last_version (Optional[str]): The last version to restore to. If None, no version restore will be performed.
+            last_version (Optional[str]): The last version to restore to. If None, no version restore
+                will be performed.
             last_batch (Optional[str]): The last batch to restore to. If None, no batch restore will be performed.
         """
         if self.persist:
@@ -46,15 +69,14 @@ class Processor(Invoker):
                 if self.table.get_last_version() > _last_version:
                     self.table.restore_to_version(_last_version)
 
-            if self.stream:
-                if last_batch is not None:
-                    current_batch = int(last_batch) + 1
-                    self.rm_commit(current_batch)
+            if self.stream and last_batch is not None:
+                current_batch = int(last_batch) + 1
+                self.rm_commit(current_batch)
 
-                    assert last_batch == self.table.get_property("fabricks.last_batch")
-                    assert self.paths.to_commits.joinpath(last_batch).exists()
+                assert last_batch == self.table.get_property("fabricks.last_batch")
+                assert self.paths.to_commits.joinpath(last_batch).exists()
 
-    def _for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs):
+    def _for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
         DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
         if batch is not None:
             DEFAULT_LOGGER.debug(f"batch {batch}", extra={"label": self})
@@ -72,7 +94,7 @@ class Processor(Invoker):
                 if only_type_widening_compatible and self.table.type_widening_enabled and IS_TYPE_WIDENING:
                     self.update_schema(df=df, widen_types=True)
                 else:
-                    raise SchemaDriftException.from_diffs(str(self), diffs)
+                    raise SchemaDriftError.from_diffs(str(self), diffs)
 
         self.for_each_batch(df, batch, **kwargs)
 
@@ -82,7 +104,7 @@ class Processor(Invoker):
         self.table.create_restore_point()
         DEFAULT_LOGGER.debug("end (for each batch)", extra={"label": self})
 
-    def for_each_run(self, **kwargs):
+    def for_each_run(self, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
         DEFAULT_LOGGER.debug("start (for each run)", extra={"label": self})
 
         if self.virtual:
@@ -94,16 +116,18 @@ class Processor(Invoker):
             df = self.get_data(stream=self.stream, **kwargs)
             assert df is not None, "no data"
 
-            partial(self._for_each_batch, **kwargs)
-
             if self.stream:
                 DEFAULT_LOGGER.debug("use streaming", extra={"label": self})
-                write_stream(
-                    df,
-                    checkpoints_path=self.paths.to_checkpoints,
-                    func=self._for_each_batch,
-                    timeout=self.timeout,
+                callback = partial(
+                    _for_each_stream_batch,
+                    step=self.step,
+                    topic=self.topic,
+                    item=self.item,
+                    schedule=kwargs.get("schedule"),
+                    reload=kwargs.get("reload"),
+                    conf=self.conf.model_dump(),
                 )
+                write_stream(df, checkpoints_path=self.paths.to_checkpoints, func=callback, timeout=self.timeout)
             else:
                 self._for_each_batch(df, **kwargs)
 
@@ -122,8 +146,8 @@ class Processor(Invoker):
         vacuum: bool | None = None,
         optimize: bool | None = None,
         compute_statistics: bool | None = None,
-        **kwargs,
-    ):
+        **_kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
+    ) -> None:
         """
         Run the processor.
 
@@ -196,11 +220,7 @@ class Processor(Invoker):
                 )
 
             if vacuum or optimize or compute_statistics:
-                self.maintain(
-                    compute_statistics=compute_statistics,
-                    optimize=optimize,
-                    vacuum=vacuum,
-                )
+                self.maintain(compute_statistics=compute_statistics, optimize=optimize, vacuum=vacuum)
 
             DEFAULT_LOGGER.info("end (run)", extra={"label": self})
 
@@ -236,9 +256,8 @@ class Processor(Invoker):
                 self.restore(last_version, last_batch)
                 raise e
 
-            else:
-                DEFAULT_LOGGER.warning("retry to run", extra={"label": self})
-                self.run(retry=False, schedule_id=schedule_id, schedule=schedule)
+            DEFAULT_LOGGER.warning("retry to run", extra={"label": self})
+            self.run(retry=False, schedule_id=schedule_id, schedule=schedule)
 
     @abstractmethod
     def overwrite(self) -> None: ...

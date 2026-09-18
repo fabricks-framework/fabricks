@@ -1,0 +1,10 @@
+---
+- job:
+    step: bronze
+    topic: queen
+    item: scd1
+    tags: [test]
+    options:
+      mode: register
+      uri: $apache_storage/bronze_external/queen
+      keys: [id]

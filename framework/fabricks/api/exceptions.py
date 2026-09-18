@@ -1,5 +1,5 @@
 from fabricks.core.jobs.base.exception import (
-    CheckException,
+    CheckError,
     CheckWarning,
     PostRunCheckException,
     PostRunCheckWarning,
@@ -9,11 +9,11 @@ from fabricks.core.jobs.base.exception import (
 )
 
 __all__ = [
-    "CheckException",
+    "CheckError",
     "CheckWarning",
-    "PreRunCheckException",
     "PostRunCheckException",
-    "PreRunCheckWarning",
     "PostRunCheckWarning",
+    "PreRunCheckException",
+    "PreRunCheckWarning",
     "SkipRunCheckWarning",
 ]

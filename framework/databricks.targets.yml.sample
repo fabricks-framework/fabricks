@@ -1,0 +1,31 @@
+---
+# Template for databricks.targets.yml, which is gitignored (see .gitignore)
+# because it's environment-specific: workspace host, run_as service
+# principal, and secret-scope references for this machine's Databricks
+# workspace. Copy this file to databricks.targets.yml and fill in the
+# placeholders below before running `databricks bundle deploy`/`validate`.
+#
+# Bundle variables can't fill workspace.host (an authentication field;
+# DABs rejects interpolation there), so it has to stay a literal here.
+# Everything else (modes, resource definitions) lives in the tracked
+# databricks.yml and merges with the matching targets.<name> block below.
+targets:
+  test:
+    workspace:
+      host: https://<your-workspace-id>.<region>.azuredatabricks.net/
+    run_as:
+      service_principal_name: <service-principal-application-id>
+    resources:
+      clusters:
+        fabricks_interactive_cluster:
+          spark_env_vars:
+            FABRICKS_ACCESS_KEY: '{{secrets/<scope>/<access-key-secret-name>}}'
+            FABRICKS_ENCRYPTION_KEY: '{{secrets/<scope>/<encryption-key-secret-name>}}'
+      jobs:
+        fabricks_test_job:
+          job_clusters:
+            - job_cluster_key: fabricks_test_cluster
+              new_cluster:
+                spark_env_vars:
+                  FABRICKS_ACCESS_KEY: '{{secrets/<scope>/<access-key-secret-name>}}'
+                  FABRICKS_ENCRYPTION_KEY: '{{secrets/<scope>/<encryption-key-secret-name>}}'

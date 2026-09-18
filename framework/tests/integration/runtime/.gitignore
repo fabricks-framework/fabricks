@@ -1,7 +1,0 @@
-# notebook are deployed via armageddon so we need to ignore them in git
-fabricks/notebooks/initialize.py
-fabricks/notebooks/process.py
-fabricks/notebooks/run.py
-fabricks/notebooks/standalone.py
-fabricks/notebooks/terminate.py
-fabricks/notebooks/cluster.py

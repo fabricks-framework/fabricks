@@ -1,0 +1,19 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema.json
+- job:
+    step: gold
+    topic: dependency
+    item: notebook
+    tags: [test]
+    options:
+      mode: complete
+      notebook: true
+    invoker_options:
+      run:
+        - notebook: fabricks/notebooks/dependency
+- job:
+    step: gold
+    topic: dependency
+    item: sql
+    options:
+      mode: complete

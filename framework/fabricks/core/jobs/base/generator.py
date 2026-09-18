@@ -1,5 +1,6 @@
 from abc import abstractmethod
-from typing import List, Literal, Optional, Sequence, Union, cast
+from collections.abc import Sequence
+from typing import Any, Literal, cast
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import lit
@@ -13,7 +14,12 @@ from fabricks.models import JobDependency
 
 
 class Generator(Configurator):
-    def _get_option_hierarchy(self, attribute: str, into: Literal["table", "spark"] = "table", default=None):
+    def _get_option_hierarchy(
+        self,
+        attribute: str,
+        into: Literal["table", "spark"] = "table",
+        default: Any = None,  # noqa: ANN401 - dynamic attribute lookup, return type depends on `attribute`
+    ) -> Any:  # noqa: ANN401 - dynamic attribute lookup, return type depends on `attribute`
         """
         Get a table option value with fallback priority: job options → step options → default.
 
@@ -49,7 +55,7 @@ class Generator(Configurator):
 
         return default
 
-    def update_dependencies(self):
+    def update_dependencies(self) -> None:
         DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
 
         deps = self.get_dependencies()
@@ -61,18 +67,19 @@ class Generator(Configurator):
     @abstractmethod
     def get_dependencies(self) -> Sequence[JobDependency]: ...
 
-    def rm(self):
+    def rm(self) -> None:
         """
         Removes the schema folder and checkpoints associated with the generator.
 
-        If the schema folder exists, it will be deleted. The method also calls the `rm_checkpoints` method to remove any checkpoints associated with the generator.
+        If the schema folder exists, it will be deleted. The method also calls the `rm_checkpoints`
+        method to remove any checkpoints associated with the generator.
         """
         if self.paths.to_schema.exists():
             DEFAULT_LOGGER.info("delete schema folder", extra={"label": self})
             self.paths.to_schema.rm()
         self.rm_checkpoints()
 
-    def rm_checkpoints(self):
+    def rm_checkpoints(self) -> None:
         """
         Removes the checkpoints folder if it exists.
 
@@ -82,7 +89,7 @@ class Generator(Configurator):
             DEFAULT_LOGGER.info("delete checkpoints folder", extra={"label": self})
             self.paths.to_checkpoints.rm()
 
-    def rm_commit(self, id: Union[str, int]):
+    def rm_commit(self, id: str | int) -> None:
         """
         Remove a commit with the given ID.
 
@@ -97,7 +104,7 @@ class Generator(Configurator):
             DEFAULT_LOGGER.warning(f"delete commit {id}", extra={"label": self})
             path.rm()
 
-    def truncate(self):
+    def truncate(self) -> None:
         """
         Truncates the job by removing all data associated with it.
 
@@ -112,7 +119,7 @@ class Generator(Configurator):
         if self.persist:
             self.table.truncate()
 
-    def drop(self):
+    def drop(self) -> None:
         """
         Drops the current job and its dependencies.
 
@@ -152,7 +159,7 @@ class Generator(Configurator):
         self.cdc.drop()
         self.rm()
 
-    def create(self):
+    def create(self) -> None:
         """
         Creates a table or view based on the specified mode.
 
@@ -171,7 +178,7 @@ class Generator(Configurator):
         else:
             raise ValueError(f"{self.mode} not allowed")
 
-    def register(self):
+    def register(self) -> None:
         """
         Register the job.
 
@@ -190,7 +197,7 @@ class Generator(Configurator):
         else:
             raise ValueError(f"{self.mode} not allowed")
 
-    def create_or_replace_view(self):
+    def create_or_replace_view(self) -> None:
         """
         Creates or replaces a view.
 
@@ -200,9 +207,8 @@ class Generator(Configurator):
         Raises:
             NotImplementedError: This method is meant to be overridden by subclasses.
         """
-        ...
 
-    def _get_partitioning_columns(self, df: DataFrame) -> Optional[List[str]]:
+    def _get_partitioning_columns(self, df: DataFrame) -> list[str] | None:
         columns = self.table_options.partition_by if self.table_options and self.table_options.partition_by else []
         if columns:
             return columns
@@ -210,16 +216,14 @@ class Generator(Configurator):
         columns = [c for c in df.columns if c.startswith("__partition")]
         if columns:
             DEFAULT_LOGGER.debug(
-                f"found {len(columns)} partitioning column(s) ({', '.join(columns)})",
-                extra={"label": self},
+                f"found {len(columns)} partitioning column(s) ({', '.join(columns)})", extra={"label": self}
             )
             return columns
 
-        else:
-            DEFAULT_LOGGER.debug("could not determine any partitioning column", extra={"label": self})
-            return None
+        DEFAULT_LOGGER.debug("could not determine any partitioning column", extra={"label": self})
+        return None
 
-    def _get_clustering_columns(self, df: DataFrame) -> Optional[List[str]]:
+    def _get_clustering_columns(self, df: DataFrame) -> list[str] | None:
         columns = self.table_options.cluster_by if self.table_options and self.table_options.cluster_by else []
         if columns:
             return columns
@@ -227,14 +231,13 @@ class Generator(Configurator):
         columns = []
         df_types = dict(df.dtypes)
 
-        def _add_if_allowed(column: str):
+        def _add_if_allowed(column: str) -> None:
             c_type = df_types[column]
             if c_type not in ["boolean"]:
                 columns.append(column)
             else:
                 DEFAULT_LOGGER.warning(
-                    f"{column} found but {c_type} not allowed for clustering column",
-                    extra={"label": self},
+                    f"{column} found but {c_type} not allowed for clustering column", extra={"label": self}
                 )
 
         if "__source" in df_types:
@@ -254,17 +257,15 @@ class Generator(Configurator):
 
         if columns:
             DEFAULT_LOGGER.debug(
-                f"found {len(columns)} clustering column(s) ({', '.join(columns)})",
-                extra={"label": self},
+                f"found {len(columns)} clustering column(s) ({', '.join(columns)})", extra={"label": self}
             )
             return columns
 
-        else:
-            DEFAULT_LOGGER.debug("could not determine any clustering column", extra={"label": self})
-            return None
+        DEFAULT_LOGGER.debug("could not determine any clustering column", extra={"label": self})
+        return None
 
-    def create_table(self):
-        def _create_table(df: DataFrame, batch: Optional[int] = 0):
+    def create_table(self) -> None:
+        def _create_table(df: DataFrame, _batch: int | None = 0) -> None:
             df = self.base_transform(df)
             cdc_options = self.get_cdc_context(df)
 
@@ -334,10 +335,7 @@ class Generator(Configurator):
                         liquid_clustering = None
                         cluster_by = None
 
-            if not powerbi:
-                properties = self._get_option_hierarchy("properties", into="table", default=None)
-            else:
-                properties = None
+            properties = self._get_option_hierarchy("properties", into="table", default=None) if not powerbi else None
 
             if properties is None:
                 properties = default_properties
@@ -348,9 +346,10 @@ class Generator(Configurator):
 
             generated_columns = self.table_options.generated_columns or {} if self.table_options else {}
             if generated_columns:
-                for key in generated_columns.keys():
+                for key in generated_columns:
                     assert key.startswith("__generated_"), (
-                        "generated column name must start with '__generated_' to avoid potential issue(s) with the CDC logic"
+                        "generated column name must start with '__generated_' "
+                        "to avoid potential issue(s) with the CDC logic"
                     )
 
             # if dataframe, reference is passed (BUG)
@@ -419,12 +418,9 @@ class Generator(Configurator):
             DEFAULT_LOGGER.debug("table already exists, skipped creation", extra={"label": self})
 
     def _update_schema(
-        self,
-        df: Optional[DataFrame] = None,
-        overwrite: Optional[bool] = False,
-        widen_types: Optional[bool] = False,
-    ):
-        def _update_schema(df: DataFrame, batch: Optional[int] = None):
+        self, df: DataFrame | None = None, overwrite: bool | None = False, widen_types: bool | None = False
+    ) -> None:
+        def _update_schema(df: DataFrame, _batch: int | None = None) -> None:
             context = self.get_cdc_context(df, reload=True)
             if overwrite:
                 self.cdc.overwrite_schema(df, **context)
@@ -460,13 +456,13 @@ class Generator(Configurator):
         else:
             raise ValueError(f"{self.mode} not allowed")
 
-    def update_schema(self, df: Optional[DataFrame] = None, widen_types: Optional[bool] = False):
+    def update_schema(self, df: DataFrame | None = None, widen_types: bool | None = False) -> None:
         self._update_schema(df=df, overwrite=False, widen_types=widen_types)
 
-    def overwrite_schema(self, df: Optional[DataFrame] = None):
+    def overwrite_schema(self, df: DataFrame | None = None) -> None:
         self._update_schema(df=df, overwrite=True)
 
-    def update_comments(self, table: Optional[bool] = True, columns: Optional[bool] = True):
+    def update_comments(self, table: bool | None = True, columns: bool | None = True) -> None:
         if self.virtual:
             return
 
@@ -484,7 +480,7 @@ class Generator(Configurator):
                     for col, comment in comments.items():
                         self.table.add_column_comment(column=col, comment=str(comment))
 
-    def get_differences_with_deltatable(self, df: Optional[DataFrame] = None):
+    def get_differences_with_deltatable(self, df: DataFrame | None = None) -> DataFrame:
         if df is None:
             df = self.get_data(stream=self.stream)
             assert df is not None
@@ -494,7 +490,7 @@ class Generator(Configurator):
 
         return self.cdc.get_differences_with_deltatable(df, **context)
 
-    def get_schema_differences(self, df: Optional[DataFrame] = None) -> Optional[Sequence[SchemaDiff]]:
+    def get_schema_differences(self, df: DataFrame | None = None) -> Sequence[SchemaDiff] | None:
         if df is None:
             df = self.get_data(stream=self.stream)
             assert df is not None
@@ -504,13 +500,13 @@ class Generator(Configurator):
 
         return self.cdc.get_schema_differences(df, **context)
 
-    def schema_drifted(self, df: Optional[DataFrame] = None) -> Optional[bool]:
+    def schema_drifted(self, df: DataFrame | None = None) -> bool | None:
         d = self.get_schema_differences(df)
         if d is None:
             return None
         return len(d) > 0
 
-    def _register_external_table(self, file_format: str, uri: str):
+    def _register_external_table(self, file_format: str, uri: str) -> None:
         try:
             self.spark.sql(f"create table if not exists {self.qualified_name} using {file_format} location '{uri}'")
 
@@ -518,6 +514,6 @@ class Generator(Configurator):
             DEFAULT_LOGGER.exception("could not register external table", extra={"label": self})
             raise e
 
-    def _drop_external_table(self):
+    def _drop_external_table(self) -> None:
         DEFAULT_LOGGER.warning("remove external table from metastore", extra={"label": self})
         self.spark.sql(f"drop table if exists {self.qualified_name}")

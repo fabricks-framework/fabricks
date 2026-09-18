@@ -1,0 +1,66 @@
+---
+- job:
+    step: gold
+    topic: cdc
+    item: scd0_update
+    options:
+      mode: update
+      change_data_capture: scd0
+- job:
+    step: gold
+    topic: cdc
+    item: scd1_complete
+    options:
+      mode: complete
+      change_data_capture: scd1
+- job:
+    step: gold
+    topic: cdc
+    item: scd2_update
+    options:
+      mode: update
+      change_data_capture: scd2
+- job:
+    step: gold
+    topic: cdc
+    item: scd2_complete
+    options:
+      mode: complete
+      change_data_capture: scd2
+- job:
+    step: gold
+    topic: cdc
+    item: recovery
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: gold
+    topic: cdc
+    item: nocdc_update
+    options:
+      mode: update
+      change_data_capture: nocdc
+- job:
+    step: gold
+    topic: cdc
+    item: last_timestamp_scd1
+    options:
+      mode: update
+      change_data_capture: scd1
+      persist_last_timestamp: true
+- job:
+    step: gold
+    topic: cdc
+    item: last_timestamp_scd2
+    options:
+      mode: update
+      change_data_capture: scd2
+      persist_last_timestamp: true
+- job:
+    step: gold
+    topic: cdc
+    item: manual
+    options:
+      mode: complete
+      type: manual

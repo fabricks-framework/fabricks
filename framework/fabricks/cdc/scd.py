@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Any
 
 from pyspark.sql import DataFrame
 
@@ -7,16 +7,16 @@ from fabricks.metastore.table import Table
 
 
 class SCD(BaseCDC):
-    def delete_missing(self, src: Union[DataFrame, Table, str], **kwargs):
+    def delete_missing(self, src: DataFrame | Table | str, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         kwargs["add_operation"] = "reload"
         kwargs["delete_missing"] = True
         kwargs["mode"] = "update"
         self.merge(src, **kwargs)
 
-    def complete(self, src: Union[DataFrame, Table, str], **kwargs):
+    def complete(self, src: DataFrame | Table | str, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         kwargs["mode"] = "complete"
         self.overwrite(src, **kwargs)
 
-    def update(self, src: Union[DataFrame, Table, str], **kwargs):
+    def update(self, src: DataFrame | Table | str, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         kwargs["mode"] = "update"
         self.merge(src, **kwargs)

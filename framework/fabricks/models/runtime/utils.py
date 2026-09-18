@@ -8,7 +8,7 @@ from fabricks.utils.read.read_yaml import _read_yaml_cached
 from fabricks.utils.variables import build_variable_lookup, substitute_value
 
 
-def _as_variables(data: Any, source: str) -> dict[str, Any]:
+def _as_variables(data: dict[str, Any] | list[Any] | str | None, source: str) -> dict[str, Any]:
     """Extract variables dictionary from various data structures."""
     if data is None:
         return {}
@@ -31,9 +31,7 @@ def _as_variables(data: Any, source: str) -> dict[str, Any]:
 
 
 def _resolve_variables_path(
-    conf_data: dict[str, Any],
-    config_path: Path,
-    external_variables_file: str | None,
+    conf_data: dict[str, Any], config_path: Path, external_variables_file: str | None
 ) -> Path | None:
     """Resolve the path to a variables file from config data."""
     variables_file = external_variables_file or conf_data.get("variables_file")
@@ -47,11 +45,7 @@ def _resolve_variables_path(
     return config_path.parent / path
 
 
-def load_variables(
-    data: dict[str, Any],
-    config_path: Path,
-    variables_path: str | None = None,
-) -> dict[str, Any]:
+def load_variables(data: dict[str, Any], config_path: Path, variables_path: str | None = None) -> dict[str, Any]:
     """
     Load variables from external file or inline dict.
 
@@ -79,7 +73,7 @@ def load_variables(
             return _as_variables(content, source=str(file_path))
         except FileNotFoundError as exc:
             raise FileNotFoundError(
-                f"variables file '{file_path}' referenced by config '{config_path}' was not found",
+                f"variables file '{file_path}' referenced by config '{config_path}' was not found"
             ) from exc
 
     if inline_variables:
@@ -88,10 +82,7 @@ def load_variables(
     return {}
 
 
-def perform_variable_substitution(
-    data: dict[str, Any],
-    variables: dict[str, Any],
-) -> dict[str, Any]:
+def perform_variable_substitution(data: dict[str, Any], variables: dict[str, Any]) -> dict[str, Any]:
     """
     Perform variable substitution on runtime config data.
 
@@ -112,7 +103,7 @@ def perform_variable_substitution(
 
 def resolve_runtime_paths(
     path_options: dict[str, Any],
-    variables: dict[str, Any] | None,
+    variables: dict[str, Any] | None,  # noqa: ARG001 - kept for backward compatibility, called with variables= by resolved_path_options
     bronze: list[Any] | None,
     silver: list[Any] | None,
     gold: list[Any] | None,
@@ -138,9 +129,7 @@ def resolve_runtime_paths(
         Dictionary with resolved storage and runtime paths
     """
     # Collect storage paths (variables already substituted in path_options)
-    storage_paths: dict[str, FileSharePath] = {
-        "fabricks": resolve_fileshare_path(path_options["storage"]),
-    }
+    storage_paths: dict[str, FileSharePath] = {"fabricks": resolve_fileshare_path(path_options["storage"])}
 
     # Add storage paths for bronze/silver/gold/databases
     for objects in [bronze, silver, gold, databases]:
@@ -153,10 +142,7 @@ def resolve_runtime_paths(
     for objects in [bronze, silver, gold]:
         if objects:
             for obj in objects:
-                runtime_paths[obj.name] = resolve_git_path(
-                    obj.path_options.runtime,
-                    base=base_runtime,
-                )
+                runtime_paths[obj.name] = resolve_git_path(obj.path_options.runtime, base=base_runtime)
 
     return {
         "storage": storage_paths["fabricks"],
@@ -166,15 +152,9 @@ def resolve_runtime_paths(
         "views": resolve_git_path(path=path_options["views"], base=base_runtime),
         "requirements": resolve_git_path(path=path_options["requirements"], base=base_runtime),
         "extenders": resolve_git_path(
-            path=path_options.get("extenders"),
-            base=base_runtime,
-            default="fabricks/extenders",
+            path=path_options.get("extenders"), base=base_runtime, default="fabricks/extenders"
         ),
-        "masks": resolve_git_path(
-            path=path_options.get("masks"),
-            base=base_runtime,
-            default="fabricks/masks",
-        ),
+        "masks": resolve_git_path(path=path_options.get("masks"), base=base_runtime, default="fabricks/masks"),
         "storages": storage_paths,
         "runtimes": runtime_paths,
     }

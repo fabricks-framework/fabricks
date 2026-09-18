@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pyspark.sql import SparkSession
 from pyspark.sql.catalog import Column, Table
 
@@ -8,7 +6,7 @@ from fabricks.metastore.database import Database
 
 
 class DbObject:
-    def __init__(self, database: str, *levels: str, spark: Optional[SparkSession] = None):
+    def __init__(self, database: str, *levels: str, spark: SparkSession | None = None) -> None:
         self.database = Database(database)
         self.levels = levels
 
@@ -45,10 +43,7 @@ class DbObject:
     def is_view(self) -> bool:
         try:
             table = self.get_spark_table()
-            if table.tableType == "VIEW":
-                return True
-
-            return False
+            return table.tableType == "VIEW"
 
         except Exception:
             return False
@@ -57,15 +52,12 @@ class DbObject:
     def is_table(self) -> bool:
         try:
             table = self.get_spark_table()
-            if table.tableType == "VIEW":
-                return False
-
-            return True
+            return table.tableType != "VIEW"
 
         except Exception:
             return False
 
-    def drop(self):
+    def drop(self) -> None:
         if self.is_view:
             DEFAULT_LOGGER.warning("drop view from metastore", extra={"label": self})
             self.spark.sql(f"drop view if exists {self}")
@@ -85,5 +77,5 @@ class DbObject:
             except Exception:
                 DEFAULT_LOGGER.debug("object not found in metastore, skipping drop", extra={"label": self})
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.qualified_name

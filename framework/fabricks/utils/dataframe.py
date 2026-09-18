@@ -1,6 +1,6 @@
-import pyspark.sql.functions as F
-import pyspark.sql.types as T
 from pyspark.sql import Column, DataFrame
+import pyspark.sql.functions as F  # noqa: N812 - idiomatic PySpark alias
+import pyspark.sql.types as T  # noqa: N812 - idiomatic PySpark alias
 
 
 def _value_to_none(col: Column) -> Column:
@@ -99,5 +99,4 @@ def clean(df: DataFrame) -> DataFrame:
     """
     df = trim(df)
     df = value_to_none(df)
-    df = decimal_to_double(df)
-    return df
+    return decimal_to_double(df)

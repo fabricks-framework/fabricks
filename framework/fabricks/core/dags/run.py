@@ -1,5 +1,6 @@
+from collections.abc import Callable
 import json
-from typing import Callable, overload
+from typing import Any, overload
 
 from databricks.sdk.runtime import dbutils
 from pyspark.errors.exceptions.base import IllegalArgumentException
@@ -20,7 +21,7 @@ def run(
     pre_run_callable: Callable | None = None,
     post_run_callable: Callable | None = None,
     data: dict | None = None,
-    **kwargs,
+    **kwargs: Any,  # noqa: ANN401 - heterogeneous kwargs forwarded to job.run and user callables
 ) -> None: ...
 
 
@@ -36,7 +37,7 @@ def run(
     pre_run_callable: Callable | None = None,
     post_run_callable: Callable | None = None,
     data: dict | None = None,
-    **kwargs,
+    **kwargs: Any,  # noqa: ANN401 - heterogeneous kwargs forwarded to job.run and user callables
 ) -> None: ...
 
 
@@ -50,7 +51,7 @@ def run(
     pre_run_callable: Callable | None = None,
     post_run_callable: Callable | None = None,
     data: dict | None = None,
-    **kwargs,
+    **kwargs: Any,  # noqa: ANN401 - heterogeneous kwargs forwarded to job.run and user callables
 ) -> None: ...
 
 
@@ -66,7 +67,7 @@ def run(
     pre_run_callable: Callable | None = None,
     post_run_callable: Callable | None = None,
     data: dict | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     if job is None:
         if step is not None and job_id is not None:

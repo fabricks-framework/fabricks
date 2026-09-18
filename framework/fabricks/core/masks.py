@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from pyspark.sql import SparkSession
 
@@ -9,7 +9,7 @@ MASK_SCHEMA = CONF_RUNTIME.mask_options.schema_name or "default" if CONF_RUNTIME
 MASK_PREFIX = CONF_RUNTIME.mask_options.prefix or "mask_" if CONF_RUNTIME.mask_options else "mask_"
 
 
-def register_all_masks(overwrite=False):
+def register_all_masks(overwrite: bool = False) -> None:
     """
     Register all masks.
     """
@@ -24,7 +24,7 @@ def register_all_masks(overwrite=False):
 
 
 def get_masks() -> list[str]:
-    return [os.path.basename(f) for f in PATH_MASKS.walk()]
+    return [Path(f).name for f in PATH_MASKS.walk()]
 
 
 def is_registered(mask: str, spark: SparkSession | None = None) -> bool:
@@ -42,7 +42,7 @@ def is_registered(mask: str, spark: SparkSession | None = None) -> bool:
     return not df.isEmpty()
 
 
-def register_mask(mask: str, overwrite: bool = False, spark: SparkSession | None = None):
+def register_mask(mask: str, overwrite: bool = False, spark: SparkSession | None = None) -> None:
     if spark is None:
         spark = SPARK
     assert spark is not None

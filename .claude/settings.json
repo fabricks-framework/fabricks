@@ -1,43 +1,95 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(./framework/format.sh:*)",
-      "Bash(pytest:*)",
-      "Bash(git status:)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(uv run:*)",
-      "Bash(ls:*)",
-      "Bash(cat:*)",
-      "Read",
-      "Grep",
-      "Glob",
-      "Bash(python test_*.py)"
-    ]
-  },
+  "outputStyle": "Concise",
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "codegraph",
+    "context7",
+    "github"
+  ],
   "hooks": {
-    "PostToolUse": [
+    "UserPromptSubmit": [
       {
-        "matcher": "edit",
         "hooks": [
           {
             "type": "command",
-            "command": "cd framework && ./format.sh ty {{toolUse.file_path}}"
-          },
+            "command": "echo 'Invoke the ponytail:ponytail skill before answering.'"
+          }
+        ]
+      },
+      {
+        "hooks": [
           {
             "type": "command",
-            "command": "cd framework && ./format.sh python {{toolUse.file_path}}"
-          },
+            "command": "codegraph prompt-hook"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
           {
             "type": "command",
-            "command": "cd framework && ./format.sh sql {{toolUse.file_path}}"
-          },
+            "command": "cat AGENTS.md"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
           {
             "type": "command",
-            "command": "cd framework && ./format.sh yaml {{toolUse.file_path}}"
+            "command": "file=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; d=json.load(sys.stdin); print(d.get('file_path',''))\" 2>/dev/null); if [[ \"$file\" == *\".env\"* && \"$file\" != *\".env.example\"* ]]; then echo 'Blocked: direct .env edits are not allowed. Update the .env file manually.'; exit 2; fi; true"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; d=json.load(sys.stdin); print(d.get('command',''))\" 2>/dev/null); if echo \"$cmd\" | grep -Eq 'git (commit|push).*(--no-verify|--no-gpg-sign|-c commit\\.gpgsign=false)'; then echo 'Blocked: do not bypass pre-commit/gpg hooks (--no-verify/--no-gpg-sign). Fix the underlying issue instead.'; exit 2; fi; true"
           }
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash scripts/statusline.sh"
+  },
+  "extraKnownMarketplaces": {
+    "bmsuisse-skills": {
+      "source": {
+        "source": "github",
+        "repo": "bmsuisse/skills"
+      }
+    },
+    "dev-skills": {
+      "source": {
+        "source": "github",
+        "repo": "wdm0006/python-skills"
+      }
+    },
+    "mattpocock": {
+      "source": {
+        "source": "github",
+        "repo": "mattpocock/skills"
+      }
+    },
+    "superpowers-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
+      }
+    }
   }
 }

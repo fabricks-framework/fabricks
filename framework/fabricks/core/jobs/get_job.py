@@ -1,4 +1,4 @@
-from typing import Optional, Union, overload
+from typing import overload
 
 from pyspark.sql.types import Row
 
@@ -26,12 +26,12 @@ def get_job(job: str) -> Bronze | Gold | Silver: ...
 
 
 def get_job(
-    job: Optional[str] = None,
-    step: Optional[str] = None,
-    topic: Optional[str] = None,
-    item: Optional[str] = None,
-    job_id: Optional[str] = None,
-    row: Optional[Row] = None,
+    job: str | None = None,
+    step: str | None = None,
+    topic: str | None = None,
+    item: str | None = None,
+    job_id: str | None = None,
+    row: Row | None = None,
 ) -> Bronze | Gold | Silver:
     """
     Retrieve a job based on the provided parameters.
@@ -88,11 +88,11 @@ def get_job(
 
 def get_job_internal(
     step: str,
-    topic: Optional[str] = None,
-    item: Optional[str] = None,
-    job_id: Optional[str] = None,
-    conf: Optional[Union[dict, Row]] = None,
-):
+    topic: str | None = None,
+    item: str | None = None,
+    job_id: str | None = None,
+    conf: dict | Row | None = None,
+) -> Bronze | Gold | Silver:
     if step in Bronzes:
         from fabricks.core.jobs.bronze import Bronze
 

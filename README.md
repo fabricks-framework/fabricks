@@ -1,13 +1,13 @@
 # Welcome to Fabricks 🏗️🧱
-## Framework for Databricks 
+## The framework for Databricks 
 
 [![PyPI version](https://badge.fury.io/py/fabricks.svg)](https://pypi.org/project/fabricks/)
 
-Fabricks is a Python framework developed to help create a Lakehouse in **Databricks**. It simplifies the process of building and maintaining data pipelines by providing a standardized approach to defining and managing data processing workflows. Fabricks is battle-proven, used in production environments running thousands of jobs. 💪🚀
+Fabricks is a Python framework developed to help create a Lakehouse in **Databricks**. It simplifies the process of building and maintaining data pipelines by providing a standardized approach to defining and managing data processing workflows. Fabricks is battle-proven, used in production environments running thousands of jobs.
 
-Currently, Fabricks is based on Azure **Databricks** and runs on Azure, utilizing Azure Blob Storage, Azure Table Storage, and Azure Queue Storage. Porting it to AWS or Google Cloud should not be a significant challenge. ☁️🔄
+Fabricks currently supports Azure **Databricks** and uses Azure Blob Storage, Azure Table Storage, and Azure Queue Storage. AWS and Google Cloud are not supported.
 
-Although Fabricks is primarily designed to run on **Databricks**, the code using Fabricks is highly portable. You'll predominantly write SQL-Select code, eliminating the need to manually write DDL/DML/Merge queries. In the future, we may add support for other platforms such as DuckDB or Open Source Spark. 🐍📊
+Although Fabricks is primarily designed to run on **Databricks**, the code using Fabricks is highly portable. You'll predominantly write SQL-Select code, eliminating the need to manually write DDL/DML/Merge queries. In the future, we may add support for other platforms such as DuckDB or Open Source Spark.
 
 ## Use Cases 🛠️
 - Data Ingestion using Python Notebooks, Jupyter-style
@@ -16,27 +16,20 @@ Although Fabricks is primarily designed to run on **Databricks**, the code using
 
 No need for magic here. It's all your Data Lakehouse/Data Warehouse code in one place. Simple and great! ✨ You don't need expensive Delta Live Tables, ETL Tools, or DBT. It's basically just writing SQL Queries and letting Fabricks do the magic 🧙‍♂️. 
 
-## About this repo 🕵️‍♂️
-We're just getting started with open-sourcing Fabricks! There are many areas where we want to improve:
-- Implement testing in GitHub Actions 🧪👨‍💻
-- Decouple Spark dependencies where possible ⚡🔓
-- Migrate YAML parsing to Pydantic 📄🔄
-- Enhance documentation with more examples and best practices 📚💡
-- Develop a comprehensive getting started guide 🚀📘
-- Create a contribution guide for the open-source community 🤝🌐
-
-## More Information ℹ️
-See [Fabricks Documentation](https://fabricks-framework.github.io/fabricks/)
-
 ### Release Notes
 
 For the latest releases and detailed changelogs, please visit the [Fabricks Releases page on GitHub](https://github.com/fabricks-framework/fabricks/releases).
 
+As of Fabricks 4.1, development is agentic: start with `AGENTS.md` and use
+the locally installed skills it references.
+
 ### Runtime Requirements
 
-[✔] `Fabricks 4.0.0` was successfully tested on Databricks Runtime `16.4 LTS`.
+[✔] `Fabricks 4.0.0` was successfully tested on Databricks Runtime `16 LTS`.
 
-[✔] `Fabricks 4.0.*` was successfully tested on Databricks Runtime `17.3 LTS` with the following dependencies:
+[✔] `Fabricks 4.1.*` was successfully tested on Databricks Runtime `17 LTS` with the following dependencies:
+
+[❌] `Fabricks 4.1.*` was not successfully tested on Databricks Runtime `18 LTS` for streaming workloads on `USER_ISOLATION` compute.
 
 ```yaml
 dependencies = [

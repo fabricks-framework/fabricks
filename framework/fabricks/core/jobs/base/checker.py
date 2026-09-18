@@ -15,13 +15,13 @@ from fabricks.core.jobs.base.generator import Generator
 
 
 class Checker(Generator):
-    def check_pre_run(self):
+    def check_pre_run(self) -> None:
         self._check("pre_run")
 
-    def check_post_run(self):
+    def check_post_run(self) -> None:
         self._check("post_run")
 
-    def _check(self, position: Literal["pre_run", "post_run"]):
+    def _check(self, position: Literal["pre_run", "post_run"]) -> None:
         if self.check_options and getattr(self.check_options, position):
             DEFAULT_LOGGER.debug(f"check {position}", extra={"label": self})
 
@@ -36,28 +36,22 @@ class Checker(Generator):
             rows = fail_df.collect()
             if rows:
                 for row in rows:
-                    DEFAULT_LOGGER.warning(
-                        f"check {position} failed due to {row['__message']}",
-                        extra={"label": self},
-                    )
+                    DEFAULT_LOGGER.warning(f"check {position} failed due to {row['__message']}", extra={"label": self})
 
                 if position == "pre_run":
                     raise PreRunCheckException(rows[-1]["__message"], dataframe=df)
-                elif position == "post_run":
+                if position == "post_run":
                     raise PostRunCheckException(rows[-1]["__message"], dataframe=df)
 
             # Collect once to avoid double scan
             rows = warning_df.collect()
             if rows:
                 for row in rows:
-                    DEFAULT_LOGGER.warning(
-                        f"check {position} failed due to {row['__message']}",
-                        extra={"label": self},
-                    )
+                    DEFAULT_LOGGER.warning(f"check {position} failed due to {row['__message']}", extra={"label": self})
 
                 if position == "pre_run":
                     raise PreRunCheckWarning(rows[-1]["__message"], dataframe=df)
-                elif position == "post_run":
+                if position == "post_run":
                     raise PostRunCheckWarning(rows[-1]["__message"], dataframe=df)
 
     def _check_batch_has_data(self, sql: str) -> bool:
@@ -72,7 +66,7 @@ class Checker(Generator):
 
         return True
 
-    def check_post_run_extra(self):
+    def check_post_run_extra(self) -> None:
         min_rows = self.check_options.min_rows if self.check_options else None
         max_rows = self.check_options.max_rows if self.check_options else None
         count_must_equal = self.check_options.count_must_equal if self.check_options else None
@@ -95,11 +89,10 @@ class Checker(Generator):
                 equals_rows = self.spark.read.table(count_must_equal).count()
                 if rows != equals_rows:
                     raise PostRunCheckException(
-                        f"count must equal check failed ({count_must_equal} - {rows} != {equals_rows})",
-                        dataframe=df,
+                        f"count must equal check failed ({count_must_equal} - {rows} != {equals_rows})", dataframe=df
                     )
 
-    def _check_duplicate_in_column(self, column: str):
+    def _check_duplicate_in_column(self, column: str) -> None:
         if column in self.table.columns:
             DEFAULT_LOGGER.debug(f"check duplicate in {column}", extra={"label": self})
 
@@ -124,24 +117,21 @@ class Checker(Generator):
             duplicate_rows = df.collect()
             if duplicate_rows:
                 duplicates = ",".join([str(row[column]) for row in duplicate_rows])
-                raise PostRunCheckException(
-                    f"duplicate {column} check failed ({duplicates})",
-                    dataframe=df,
-                )
+                raise PostRunCheckException(f"duplicate {column} check failed ({duplicates})", dataframe=df)
 
         else:
             DEFAULT_LOGGER.debug(f"could not find {column}", extra={"label": self})
 
-    def check_duplicate_key(self):
+    def check_duplicate_key(self) -> None:
         self._check_duplicate_in_column("__key")
 
-    def check_duplicate_hash(self):
+    def check_duplicate_hash(self) -> None:
         self._check_duplicate_in_column("__hash")
 
-    def check_duplicate_identity(self):
+    def check_duplicate_identity(self) -> None:
         self._check_duplicate_in_column("__identity")
 
-    def check_skip_run(self):
+    def check_skip_run(self) -> None:
         if self.check_options and self.check_options.skip:
             DEFAULT_LOGGER.debug("check if run should be skipped", extra={"label": self})
 
@@ -155,29 +145,26 @@ class Checker(Generator):
             skip_rows = skip_df.collect()
             if skip_rows:
                 for row in skip_rows:
-                    DEFAULT_LOGGER.warning(
-                        f"skip run due to {row['__message']}",
-                        extra={"label": self},
-                    )
+                    DEFAULT_LOGGER.warning(f"skip run due to {row['__message']}", extra={"label": self})
 
                 raise SkipRunCheckWarning(skip_rows[-1]["__message"], dataframe=df)
 
-    def check_run_before(self):
+    def check_run_before(self) -> None:
         if self.check_options and self.check_options.before:
             self._check_run_time(self.check_options.before, "before")
 
-    def check_run_after(self):
+    def check_run_after(self) -> None:
         if self.check_options and self.check_options.after:
             self._check_run_time(self.check_options.after, "after")
 
-    def _check_run_time(self, time: str, when: Literal["before", "after"]):
+    def _check_run_time(self, time: str, when: Literal["before", "after"]) -> None:
         now = datetime.datetime.now(tz=TIMEZONE)
-        time_as_time = datetime.datetime.strptime(time, "%H:%M:%S").time()
+        time_as_time = datetime.datetime.strptime(time, "%H:%M:%S").time()  # noqa: DTZ007 - only the naive time-of-day is used, combined with tzinfo below
         target = datetime.datetime.combine(now.date(), time_as_time, tzinfo=TIMEZONE)
 
         DEFAULT_LOGGER.debug(f"check {when} {target}", extra={"label": self})
 
         if when == "before" and now >= target:
             raise SkipRunTimeWarning(f"current time {now} is after {target}")
-        elif when == "after" and now <= target:
+        if when == "after" and now <= target:
             raise SkipRunTimeWarning(f"current time {now} is before {target}")

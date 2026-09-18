@@ -1,19 +1,13 @@
 """Utility functions for config loading and resolution."""
 
 import json
-import os
 import pathlib
-import sys
 from pathlib import Path as PathLibPath
+import tomllib
 from typing import Any
 
 from pydantic.fields import FieldInfo
 from pydantic_settings import PydanticBaseSettingsSource
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 
 class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
@@ -22,18 +16,17 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
     def get_field_value(self, field: FieldInfo, field_name: str) -> tuple[Any, str, bool]:
         return super().get_field_value(field, field_name)
 
-    def __call__(self):
+    def __call__(self) -> dict[str, Any]:
         """Load settings from hierarchical file search."""
-        data = self._load_hierarchical_file()
-        return data
+        return self._load_hierarchical_file()
 
-    def _load_hierarchical_file(self):
+    def _load_hierarchical_file(self) -> dict[str, Any]:
         """Search up directory hierarchy for configuration files."""
 
-        def pyproject_settings(base: PathLibPath):
+        def pyproject_settings(base: PathLibPath) -> dict[str, Any] | None:
             pyproject_path = base / "pyproject.toml"
             if pyproject_path.exists():
-                with open(pyproject_path, "rb") as f:
+                with pyproject_path.open("rb") as f:
                     data = tomllib.load(f)
 
                 data = data.get("tool", {}).get("fabricks", {})
@@ -43,10 +36,10 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
 
             return None
 
-        def json_settings(base: PathLibPath):
+        def json_settings(base: PathLibPath) -> dict[str, Any] | None:
             json_path = base / "fabricksconfig.json"
             if json_path.exists():
-                with open(json_path, "r") as f:
+                with json_path.open() as f:
                     data = json.load(f)
 
                 data["base"] = str(base)
@@ -55,7 +48,7 @@ class HierarchicalFileSettingsSource(PydanticBaseSettingsSource):
 
             return None
 
-        path = pathlib.Path(os.getcwd())
+        path = pathlib.Path.cwd()
         data = None
 
         while not data:

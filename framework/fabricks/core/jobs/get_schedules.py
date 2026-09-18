@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from pyspark.sql import DataFrame
 from sparkdantic import create_spark_schema
 
@@ -6,7 +8,7 @@ from fabricks.models.schedule import Schedule
 from fabricks.utils.read.read_yaml import read_yaml
 
 
-def get_schedules():
+def get_schedules() -> Iterable[dict]:
     return read_yaml(PATH_SCHEDULES, root="schedule")
 
 

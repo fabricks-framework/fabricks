@@ -1,8 +1,8 @@
 import time
 
 
-def print_atomic_bomb(nowait: bool = False):
-    def print_and_wait(message: str):
+def print_atomic_bomb(nowait: bool = False) -> None:
+    def print_and_wait(message: str) -> None:
         if not nowait:
             time.sleep(0.5)
         print(message)

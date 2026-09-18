@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any
 
 from jinja2 import Environment, PackageLoader
 from pyspark.sql import DataFrame
@@ -16,7 +16,7 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Processor(Generator):
-    def get_data(self, src: AllowedSources, **kwargs) -> DataFrame:
+    def get_data(self, src: AllowedSources, **kwargs: Any) -> DataFrame:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         if isinstance(src, DataFrameLike):
             name = f"{self.qualified_name}__data"
             global_temp_view = create_or_replace_global_temp_view(name, src, uuid=kwargs.get("uuid", False), job=self)
@@ -26,7 +26,7 @@ class Processor(Generator):
         DEFAULT_LOGGER.debug("exec query", extra={"label": self, "sql": sql})
         return self.spark.sql(sql)
 
-    def get_query_context(self, src: AllowedSources, **kwargs) -> dict:
+    def get_query_context(self, src: AllowedSources, **kwargs: Any) -> dict:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         DEFAULT_LOGGER.debug("deduce query context", extra={"label": self})
 
         if isinstance(src, DataFrameLike):
@@ -40,34 +40,29 @@ class Processor(Generator):
 
         inputs = self.get_columns(src, backtick=False, sort=False)
         fields = [c for c in inputs if not c.startswith("__")]
-        keys = kwargs.get("keys", None)
+        keys = kwargs.get("keys")
 
         mode = kwargs.get("mode", "complete")
-        if mode == "update":
-            tgt = str(self.table)
-        elif mode == "append" and "__timestamp" in inputs:
-            tgt = str(self.table)
-        else:
-            tgt = None
+        tgt = str(self.table) if mode == "update" or (mode == "append" and "__timestamp" in inputs) else None
 
         overwrite = []
         exclude = kwargs.get("exclude", [])  # used by silver to exclude __operation from output if not update
         cast = kwargs.get("cast", {})  # used by silver to cast columns to target types
 
-        order_duplicate_by = kwargs.get("order_duplicate_by", None)
+        order_duplicate_by = kwargs.get("order_duplicate_by")
         if order_duplicate_by:
             order_duplicate_by = [f"{key} {value}" for key, value in order_duplicate_by.items()]
 
-        add_source = kwargs.get("add_source", None)
+        add_source = kwargs.get("add_source")
         add_calculated_columns = kwargs.get("add_calculated_columns", [])
         if add_calculated_columns:
             raise ValueError("add_calculated_columns is not yet supported")
-        add_operation = kwargs.get("add_operation", None)
-        add_key = kwargs.get("add_key", None)
-        add_hash = kwargs.get("add_hash", None)
-        add_timestamp = kwargs.get("add_timestamp", None)
-        add_last_updated = kwargs.get("add_last_updated", None)
-        add_metadata = kwargs.get("add_metadata", None)
+        add_operation = kwargs.get("add_operation")
+        add_key = kwargs.get("add_key")
+        add_hash = kwargs.get("add_hash")
+        add_timestamp = kwargs.get("add_timestamp")
+        add_last_updated = kwargs.get("add_last_updated")
+        add_metadata = kwargs.get("add_metadata")
 
         has_order_by = None if not order_duplicate_by else True
 
@@ -82,14 +77,14 @@ class Processor(Generator):
         has_rescued_data = "__rescued_data" in inputs
         has_last_updated = add_last_updated or "__last_updated" in inputs
 
-        soft_delete = kwargs.get("soft_delete", None)
-        delete_missing = kwargs.get("delete_missing", None)
-        slice = kwargs.get("slice", None)
-        rectify = kwargs.get("rectify", None)
-        deduplicate = kwargs.get("deduplicate", None)
-        deduplicate_key = kwargs.get("deduplicate_key", None)
-        deduplicate_hash = kwargs.get("deduplicate_hash", None)
-        correct_valid_from = kwargs.get("correct_valid_from", None)
+        soft_delete = kwargs.get("soft_delete")
+        delete_missing = kwargs.get("delete_missing")
+        slice = kwargs.get("slice")
+        rectify = kwargs.get("rectify")
+        deduplicate = kwargs.get("deduplicate")
+        deduplicate_key = kwargs.get("deduplicate_key")
+        deduplicate_hash = kwargs.get("deduplicate_hash")
+        correct_valid_from = kwargs.get("correct_valid_from")
 
         try:
             rows = self.table.rows
@@ -106,9 +101,8 @@ class Processor(Generator):
             has_no_data = None
 
         # always deduplicate if not set for slowly changing dimensions
-        if self.slowly_changing_dimension:
-            if deduplicate is None:
-                deduplicate = True
+        if self.slowly_changing_dimension and deduplicate is None:
+            deduplicate = True
 
         # order duplicates by implies key deduplication
         if order_duplicate_by:
@@ -122,18 +116,16 @@ class Processor(Generator):
         deduplicate = deduplicate or deduplicate_key or deduplicate_hash
 
         # always rectify if not set
-        if self.slowly_changing_dimension:
-            if rectify is None:
-                rectify = True
+        if self.slowly_changing_dimension and rectify is None:
+            rectify = True
 
         # only correct valid_from on first load
         if self.slowly_changing_dimension and mode == "update":
             correct_valid_from = correct_valid_from and not has_rows
 
         # override slice for incremental load if timestamp and rows are present
-        if slice is None:
-            if mode == "update" and has_timestamp and has_rows:
-                slice = "update"
+        if slice is None and mode == "update" and has_timestamp and has_rows:
+            slice = "update"
 
         # override slice for full load if update and table is empty
         if slice == "update" and not has_rows:
@@ -191,7 +183,7 @@ class Processor(Generator):
                 exclude.append("__timestamp")
 
         if add_key:
-            keys = keys if keys is not None else [f for f in fields]
+            keys = keys if keys is not None else list(fields)
             if isinstance(keys, str):
                 keys = [keys]
             if has_source:
@@ -199,29 +191,25 @@ class Processor(Generator):
 
         hashes = None
         if add_hash:
-            hashes = [f for f in fields]
+            hashes = list(fields)
             if "__operation" in inputs or add_operation:
                 hashes.append("__operation")
 
         if self.change_data_capture == "nocdc":
-            intermediates = [i for i in inputs]
-            outputs = [i for i in inputs]
+            intermediates = list(inputs)
+            outputs = list(inputs)
         else:
-            intermediates = [f for f in fields]
-            outputs = [f for f in fields]
+            intermediates = list(fields)
+            outputs = list(fields)
 
-        if has_operation:
-            if "__operation" not in outputs:
-                outputs.append("__operation")
-        if has_timestamp:
-            if "__timestamp" not in outputs:
-                outputs.append("__timestamp")
-        if has_key:
-            if "__key" not in outputs:
-                outputs.append("__key")
-        if has_hash:
-            if "__hash" not in outputs:
-                outputs.append("__hash")
+        if has_operation and "__operation" not in outputs:
+            outputs.append("__operation")
+        if has_timestamp and "__timestamp" not in outputs:
+            outputs.append("__timestamp")
+        if has_key and "__key" not in outputs:
+            outputs.append("__key")
+        if has_hash and "__hash" not in outputs:
+            outputs.append("__hash")
 
         if has_metadata:
             if "__metadata" not in outputs:
@@ -285,10 +273,7 @@ class Processor(Generator):
 
         parent_deduplicate_key = None
         if deduplicate_key:
-            if slice:
-                parent_deduplicate_key = "__sliced"
-            else:
-                parent_deduplicate_key = "__base"
+            parent_deduplicate_key = "__sliced" if slice else "__base"
 
         parent_rectify = None
         if rectify:
@@ -405,7 +390,7 @@ class Processor(Generator):
             DEFAULT_LOGGER.exception("fail to fix sql query", extra={"label": self, "sql": sql})
             raise e
 
-    def fix_context(self, context: dict, fix: Optional[bool] = True, **kwargs) -> dict:
+    def fix_context(self, context: dict, fix: bool | None = True, **_kwargs: Any) -> dict:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
         template = environment.get_template("filter.sql.jinja")
 
@@ -430,7 +415,7 @@ class Processor(Generator):
 
         return context
 
-    def get_query(self, src: AllowedSources, fix: Optional[bool] = True, **kwargs) -> str:
+    def get_query(self, src: AllowedSources, fix: bool | None = True, **kwargs: Any) -> str:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
 
@@ -453,7 +438,7 @@ class Processor(Generator):
 
         return sql
 
-    def append(self, src: AllowedSources, **kwargs):
+    def append(self, src: AllowedSources, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         if not self.table.registered:
             self.create_table(src, **kwargs)
 
@@ -467,21 +452,15 @@ class Processor(Generator):
         DEFAULT_LOGGER.debug("exec append", extra={"label": self, "sql": append})
         self.spark.sql(append)
 
-    def overwrite(
-        self,
-        src: AllowedSources,
-        dynamic: Optional[bool] = False,
-        **kwargs,
-    ):
+    def overwrite(self, src: AllowedSources, dynamic: bool | None = False, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         if not self.table.registered:
             self.create_table(src, **kwargs)
 
         df = self.get_data(src, **kwargs)
         df = self.reorder_dataframe(df)
 
-        if not dynamic:
-            if kwargs.get("update_where"):
-                dynamic = True
+        if not dynamic and kwargs.get("update_where"):
+            dynamic = True
 
         if dynamic:
             self.spark.sql("set spark.sql.sources.partitionOverwriteMode = dynamic")

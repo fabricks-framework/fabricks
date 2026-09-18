@@ -1,6 +1,7 @@
 """Core YAML reading utilities with automatic variable substitution from context."""
 
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from fabricks.context import VARIABLES
 from fabricks.utils.path import BasePath
@@ -8,10 +9,7 @@ from fabricks.utils.read.read_yaml import read_yaml as _read_yaml
 
 
 def read_yaml(
-    path: BasePath,
-    root: Optional[str] = None,
-    preferred_file_name: Optional[str] = None,
-    strict: bool = False,
+    path: BasePath, root: str | None = None, preferred_file_name: str | None = None, strict: bool = False
 ) -> Iterable[dict[str, Any]]:
     """
     Read YAML files with automatic variable substitution from runtime context.
@@ -31,9 +29,5 @@ def read_yaml(
         ValueError: If strict=True and variables are not found in lookup
     """
     return _read_yaml(
-        path=path,
-        root=root,
-        preferred_file_name=preferred_file_name,
-        variables=VARIABLES,
-        strict=strict,
+        path=path, root=root, preferred_file_name=preferred_file_name, variables=VARIABLES, strict=strict
     )

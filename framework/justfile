@@ -1,0 +1,42 @@
+# Point git at the repo's tracked hooks (pre-commit: format+lint)
+setup-hooks:
+    git -C .. config core.hooksPath .githooks
+
+# Run linter
+lint:
+    uv run ruff check fabricks/
+    uv run ruff check tests/
+    uv run ty check fabricks/
+    uv run ty check tests/
+
+# Format code
+format:
+    uv run ruff format fabricks/
+    uv run ruff format tests/
+    uv run sqlfmt fabricks/ tests/
+    uv run yamlfix fabricks/ tests/
+
+# Refresh marketplaces, then re-sync .claude/skills/ from the plugin cache (per skills.json).
+update-skills:
+    uv run python scripts/update_skills.py
+
+# Run plain unit tests (tests/unit/plain/) -- no Spark/fabricks.context dependency
+test-plain:
+    uv run pytest tests/unit/plain
+
+# Run config-resolution unit tests (tests/unit/config/) -- real fabricks.context, Spark faked out
+test-config:
+    uv run pytest tests/unit/config
+
+# Run the Apache Spark integration tests (real Spark+Delta, needs Java 17+)
+test-apache:
+    uv run pytest tests/spark/apache -v
+
+# Deploy the bundle and run the Databricks test suite (tests/spark/databricks/) against the 'test' workspace
+test-databricks:
+    databricks bundle deploy -t test
+    # Disabled while the Databricks test job is unavailable.
+    # databricks bundle run fabricks_test_job -t test
+
+# Run every test tier: plain, config, apache, then databricks (deploy + run against the 'test' workspace)
+test-all: test-plain test-config test-apache test-databricks

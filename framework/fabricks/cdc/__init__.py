@@ -5,11 +5,4 @@ from fabricks.cdc.scd0 import SCD0
 from fabricks.cdc.scd1 import SCD1
 from fabricks.cdc.scd2 import SCD2
 
-__all__ = [
-    "BaseCDC",
-    "CDC",
-    "NoCDC",
-    "SCD0",
-    "SCD1",
-    "SCD2",
-]
+__all__ = ["CDC", "SCD0", "SCD1", "SCD2", "BaseCDC", "NoCDC"]

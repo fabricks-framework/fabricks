@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Formats and lints staged Python changes before commit.
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+staged="$(git -C "$repo_root" diff --name-only --cached --diff-filter=ACMR)"
+
+cd "$repo_root/framework"
+
+just format
+just lint
+
+# format/lint may have rewritten files -- only re-stage ones that were
+# already staged for this commit, not every dirty file in the tree.
+if [ -n "$staged" ]; then
+    echo "$staged" | (cd "$repo_root" && xargs -r git add --)
+fi

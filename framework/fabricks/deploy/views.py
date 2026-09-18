@@ -22,7 +22,7 @@ def _has_column(table: str, column: str, existing: set[str]) -> bool:
         return False
 
 
-def deploy_views():
+def deploy_views() -> None:
     DEFAULT_LOGGER.info("create or replace fabricks (default) views", extra={"label": "fabricks"})
 
     create_or_replace_jobs_view()
@@ -40,7 +40,7 @@ def deploy_views():
     create_or_replace_jobs_to_be_updated_view()
 
 
-def create_or_replace_jobs_view():
+def create_or_replace_jobs_view() -> None:
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
@@ -83,7 +83,11 @@ def create_or_replace_jobs_view():
                 when
                   s.expand == "gold"
                 then
-                  if(j.options.mode in ("update", "append", "complete", "register"), "table", if(j.options.mode in ("memory"), "view", null))
+                  if(
+                    j.options.mode in ("update", "append", "complete", "register"),
+                    "table",
+                    if(j.options.mode in ("memory"), "view", null)
+                  )
               end as object_type
             from
               fabricks.{table} j
@@ -105,7 +109,7 @@ def create_or_replace_jobs_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_tables_view():
+def create_or_replace_tables_view() -> None:
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
@@ -141,7 +145,7 @@ def create_or_replace_tables_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_views_view():
+def create_or_replace_views_view() -> None:
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
@@ -177,7 +181,7 @@ def create_or_replace_views_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_dependencies_view():
+def create_or_replace_dependencies_view() -> None:
     existing = _get_fabricks_tables()
     ctes = []
     selects = []
@@ -216,7 +220,7 @@ def create_or_replace_dependencies_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_dependencies_flat_view():
+def create_or_replace_dependencies_flat_view() -> None:
     parent = ",\n  ".join([f"d{i + 1}.parent_id as parent_{i + 1}" for i in range(10)])
     join = "\n  ".join(
         [f"left join fabricks.dependencies d{i + 1} on d{i}.parent_id = d{i + 1}.job_id" for i in range(10)]
@@ -228,8 +232,8 @@ def create_or_replace_dependencies_flat_view():
       d0.job_id,
       d0.parent_id as parent_0,
       {parent}
-    from 
-      fabricks.dependencies d0 
+    from
+      fabricks.dependencies d0
       {join}
     """
     sql = fix_sql(sql)
@@ -238,7 +242,7 @@ def create_or_replace_dependencies_flat_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_dependencies_unpivot_view():
+def create_or_replace_dependencies_unpivot_view() -> None:
     sql = """
     create or replace view fabricks.dependencies_unpivot with schema evolution as
     with unpvt as (
@@ -279,7 +283,7 @@ def create_or_replace_dependencies_unpivot_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_dependencies_circular_view():
+def create_or_replace_dependencies_circular_view() -> None:
     sql = """
     create or replace view fabricks.dependencies_circular with schema evolution as
     with d as (
@@ -320,7 +324,7 @@ def create_or_replace_dependencies_circular_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_logs_pivot_view():
+def create_or_replace_logs_pivot_view() -> None:
     sql = """
     create or replace view fabricks.logs_pivot with schema evolution as
     with groupby as (
@@ -354,10 +358,10 @@ def create_or_replace_logs_pivot_view():
         max(l.exception) as exception
       from
         fabricks.logs l
-      group by 
+      group by
         l.schedule, l.schedule_id, l.step, l.job, l.job_id
     )
-    select 
+    select
       g.schedule,
       g.schedule_id,
       g.job,
@@ -392,7 +396,7 @@ def create_or_replace_logs_pivot_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_last_schedule_view():
+def create_or_replace_last_schedule_view() -> None:
     sql = """
     create or replace view fabricks.last_schedule with schema evolution as
     with lst as (
@@ -419,7 +423,7 @@ def create_or_replace_last_schedule_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_last_status_view():
+def create_or_replace_last_status_view() -> None:
     sql = """
     create or replace view fabricks.last_status with schema evolution as
     select
@@ -446,7 +450,7 @@ def create_or_replace_last_status_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_previous_schedule_view():
+def create_or_replace_previous_schedule_view() -> None:
     sql = """
     create or replace view fabricks.previous_schedule with schema evolution as
     with lst_2 as (
@@ -485,7 +489,7 @@ def create_or_replace_previous_schedule_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_schedules_view():
+def create_or_replace_schedules_view() -> None:
     sql = """
     create or replace view fabricks.schedules with schema evolution as
     select
@@ -511,7 +515,7 @@ def create_or_replace_schedules_view():
     SPARK.sql(sql)
 
 
-def create_or_replace_jobs_to_be_updated_view():
+def create_or_replace_jobs_to_be_updated_view() -> None:
     sql = """
     create or replace view fabricks.jobs_to_be_updated with schema evolution as
     with base as (
@@ -555,12 +559,14 @@ def create_or_replace_jobs_to_be_updated_view():
       o.object_type as old_object_type,
       b.object_type as new_object_type,
       array(old_object_type, new_object_type) as object_types,
-      (old_object_type is not null and new_object_type is null) or (not old_object_type <=> new_object_type and old_object_type is not null ) as is_to_drop,
-      (is_to_drop and new_object_type is not null) or (old_object_type is null and new_object_type is not null) as is_to_register
+      (old_object_type is not null and new_object_type is null)
+        or (not old_object_type <=> new_object_type and old_object_type is not null) as is_to_drop,
+      (is_to_drop and new_object_type is not null)
+        or (old_object_type is null and new_object_type is not null) as is_to_register
     from
       base b
         left join objects o
-          on b.job_id = o.job_id    
+          on b.job_id = o.job_id
     """
     sql = fix_sql(sql)
 

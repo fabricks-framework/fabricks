@@ -1,0 +1,100 @@
+{
+  "superpowers": {
+    "marketplace": "superpowers-marketplace",
+    "plugin": "superpowers",
+    "version": "6.3.0",
+    "skills": [
+      "brainstorming",
+      "dispatching-parallel-agents",
+      "executing-plans",
+      "finishing-a-development-branch",
+      "receiving-code-review",
+      "requesting-code-review",
+      "subagent-driven-development",
+      "systematic-debugging",
+      "test-driven-development",
+      "using-git-worktrees",
+      "using-superpowers",
+      "verification-before-completion",
+      "writing-plans",
+      "writing-skills"
+    ]
+  },
+  "ponytail": {
+    "marketplace": "ponytail",
+    "plugin": "ponytail",
+    "version": "4.9.0",
+    "skills": [
+      "ponytail",
+      "ponytail-audit",
+      "ponytail-debt",
+      "ponytail-gain",
+      "ponytail-help",
+      "ponytail-review"
+    ]
+  },
+  "python-library-complete": {
+    "marketplace": "dev-skills",
+    "plugin": "python-library-complete",
+    "version": "81abccd68eb1",
+    "skills": [
+      {
+        "src": "python/documentation",
+        "dest": "documentation"
+      },
+      {
+        "src": "python/security-audit",
+        "dest": "security-audit"
+      },
+      {
+        "src": "python/testing-strategy",
+        "dest": "testing-strategy"
+      },
+      {
+        "src": "python/code-quality",
+        "dest": "code-quality"
+      }
+    ]
+  },
+  "mattpocock-skills": {
+    "marketplace": "mattpocock",
+    "plugin": "mattpocock-skills",
+    "layout": "marketplace",
+    "version": "74ca5fe",
+    "skills": [
+      {
+        "src": "engineering/code-review",
+        "dest": "code-review"
+      },
+      {
+        "src": "engineering/improve-codebase-architecture",
+        "dest": "improve-codebase-architecture"
+      },
+      {
+        "src": "engineering/codebase-design",
+        "dest": "codebase-design"
+      },
+      {
+        "src": "engineering/research",
+        "dest": "research"
+      },
+      {
+        "src": "productivity/grill-me",
+        "dest": "grill-me"
+      },
+      {
+        "src": "productivity/grilling",
+        "dest": "grilling"
+      }
+    ]
+  },
+  "coding": {
+    "marketplace": "bmsuisse-skills",
+    "plugin": "coding",
+    "layout": "marketplace",
+    "version": "c2e31a7",
+    "skills": [
+      "coding-guidelines-python"
+    ]
+  }
+}

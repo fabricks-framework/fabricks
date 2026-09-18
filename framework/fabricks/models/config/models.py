@@ -12,9 +12,8 @@ from fabricks.utils.path import GitPath, resolve_git_path
 
 # Clean environment variables set to "none" (case-insensitive)
 for var in os.environ:
-    if var.startswith("FABRICKS_"):
-        if os.environ[var].lower() == "none":
-            del os.environ[var]
+    if var.startswith("FABRICKS_") and os.environ[var].lower() == "none":
+        del os.environ[var]
 
 
 class ResolvedPathOptions(BaseModel):
@@ -34,62 +33,29 @@ class ConfigOptions(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    base: str = Field(
-        validation_alias=AliasChoices("FABRICKS_BASE", "base"),
-        default="none",
-    )
+    base: str = Field(validation_alias=AliasChoices("FABRICKS_BASE", "base"), default="none")
     path_to_config: str = Field(
-        validation_alias=AliasChoices("FABRICKS_PATH_TO_CONFIG", "path_to_config"),
-        default="none",
+        validation_alias=AliasChoices("FABRICKS_PATH_TO_CONFIG", "path_to_config"), default="none"
     )
-    config: str = Field(
-        validation_alias=AliasChoices("FABRICKS_CONFIG", "config"),
-        default="none",
-    )
-    runtime: str = Field(
-        validation_alias=AliasChoices("FABRICKS_RUNTIME", "runtime"),
-        default="none",
-    )
-    variable: str | None = Field(
-        validation_alias=AliasChoices("FABRICKS_VARIABLE", "variable"),
-        default=None,
-    )
-    notebooks: str = Field(
-        validation_alias=AliasChoices("FABRICKS_NOTEBOOKS", "notebooks"),
-        default="none",
-    )
+    config: str = Field(validation_alias=AliasChoices("FABRICKS_CONFIG", "config"), default="none")
+    runtime: str = Field(validation_alias=AliasChoices("FABRICKS_RUNTIME", "runtime"), default="none")
+    variable: str | None = Field(validation_alias=AliasChoices("FABRICKS_VARIABLE", "variable"), default=None)
+    notebooks: str = Field(validation_alias=AliasChoices("FABRICKS_NOTEBOOKS", "notebooks"), default="none")
     job_config_from_yaml: bool = Field(
-        validation_alias=AliasChoices("FABRICKS_IS_JOB_CONFIG_FROM_YAML", "job_config_from_yaml"),
-        default=False,
+        validation_alias=AliasChoices("FABRICKS_IS_JOB_CONFIG_FROM_YAML", "job_config_from_yaml"), default=False
     )
-    debugmode: bool = Field(
-        validation_alias=AliasChoices("FABRICKS_IS_DEBUGMODE", "debugmode"),
-        default=False,
-    )
-    funmode: bool = Field(
-        validation_alias=AliasChoices("FABRICKS_IS_FUNMODE", "funmode"),
-        default=False,
-    )
-    devmode: bool = Field(
-        validation_alias=AliasChoices("FABRICKS_IS_DEVMODE", "devmode"),
-        default=False,
-    )
-    testmode: bool = Field(
-        validation_alias=AliasChoices("FABRICKS_IS_TESTMODE", "testmode"),
-        default=False,
-    )
-    loglevel: int = Field(
-        validation_alias=AliasChoices("FABRICKS_LOGLEVEL", "loglevel"),
-        default=20,
-    )
+    debugmode: bool = Field(validation_alias=AliasChoices("FABRICKS_IS_DEBUGMODE", "debugmode"), default=False)
+    funmode: bool = Field(validation_alias=AliasChoices("FABRICKS_IS_FUNMODE", "funmode"), default=False)
+    devmode: bool = Field(validation_alias=AliasChoices("FABRICKS_IS_DEVMODE", "devmode"), default=False)
+    testmode: bool = Field(validation_alias=AliasChoices("FABRICKS_IS_TESTMODE", "testmode"), default=False)
+    loglevel: int = Field(validation_alias=AliasChoices("FABRICKS_LOGLEVEL", "loglevel"), default=20)
     extra_config: Literal["allow", "ignore", "forbid"] = Field(
-        validation_alias=AliasChoices("FABRICKS_EXTRA_CONFIG", "extra_config"),
-        default="ignore",
+        validation_alias=AliasChoices("FABRICKS_EXTRA_CONFIG", "extra_config"), default="ignore"
     )
 
     @field_validator("job_config_from_yaml", "debugmode", "funmode", "devmode", mode="before")
     @classmethod
-    def validate_bool(cls, v):
+    def validate_bool(cls, v: object) -> object:
         """
         Convert common string representations of boolean values to bool.
 
@@ -106,14 +72,14 @@ class ConfigOptions(BaseSettings):
             v_lower = str(v).lower()
             if v_lower in ("true", "1", "yes"):
                 return True
-            elif v_lower in ("false", "0", "no"):
+            if v_lower in ("false", "0", "no"):
                 return False
 
         return v
 
     @field_validator("loglevel", mode="before")
     @classmethod
-    def validate_loglevel(cls, v):
+    def validate_loglevel(cls, v: object) -> object:
         """Validate log level."""
         if isinstance(v, str):
             levels = {
@@ -133,7 +99,7 @@ class ConfigOptions(BaseSettings):
 
     @field_validator("notebooks", mode="before")
     @classmethod
-    def validate_notebooks(cls, v):
+    def validate_notebooks(cls, v: str | None) -> str:
         """Set default notebooks path if not provided."""
         if not v or v.lower() == "none":
             return "runtime/notebooks"
@@ -146,16 +112,11 @@ class ConfigOptions(BaseSettings):
         settings_cls: type[BaseSettings],
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
-        dotenv_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,  # noqa: ARG003 - required by pydantic-settings' settings_customise_sources interface (called with dotenv_settings=)
         file_secret_settings: PydanticBaseSettingsSource,
-    ):
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
         # Order: env vars > hierarchical file > defaults
-        return (
-            init_settings,
-            env_settings,
-            HierarchicalFileSettingsSource(settings_cls),
-            file_secret_settings,
-        )
+        return (init_settings, env_settings, HierarchicalFileSettingsSource(settings_cls), file_secret_settings)
 
     def _resolve_paths(self) -> ResolvedPathOptions:
         """

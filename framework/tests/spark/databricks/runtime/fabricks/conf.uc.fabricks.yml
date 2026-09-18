@@ -1,0 +1,78 @@
+---
+# The only runtime config for the Databricks test tier -- Unity Catalog,
+# no hive_metastore variant. A hive twin used to live at conf.fabricks.yml;
+# removed since the test clusters are USER_ISOLATION (shared), which
+# rejects the runtime spark.conf.set() calls that variant's `credentials`
+# block needed.
+#
+# No `credentials` block on purpose: build_spark_session skips
+# add_credentials_to_spark when unity_catalog is on
+# (fabricks/context/spark_session.py:67), so it would be dead config here --
+# the account key arrives via the cluster's FABRICKS_ACCESS_KEY env var.
+- conf:
+    name: test
+    options:
+      secret_scope: bmskv
+      type_widening: true
+      catalog: bms_dna_test
+      unity_catalog: true
+      timeouts:
+        step: 3600
+        job: 3600
+        pre_run: 3600
+        post_run: 3600
+      workers: 8
+      retention_days: 7
+      timezone: Europe/Paris
+    path_options:
+      storage: abfss://test@$standard
+      udfs: fabricks/udfs
+      extenders: fabricks/extenders
+      parsers: fabricks/parsers
+      schedules: fabricks/schedules
+      views: fabricks/views
+      # Required by RuntimeConf's path_options schema, but nothing reads
+      # PATH_REQUIREMENTS at runtime -- the file itself doesn't need to
+      # exist (resolve_git_path doesn't check), so it's not restored.
+      requirements: fabricks/requirements.txt
+      masks: fabricks/masks
+    bronze:
+      - name: bronze
+        path_options:
+          storage: abfss://test@$standard/bronze
+          runtime: bronze
+        options:
+          order: 101
+    silver:
+      - name: silver
+        path_options:
+          storage: abfss://test@$standard/silver
+          runtime: silver
+        options:
+          order: 201
+          parent: bronze
+          local_checkpoint: true
+    gold:
+      - name: transf
+        path_options:
+          storage: abfss://test@$standard/transf
+          runtime: gold/transf
+        options:
+          timeouts:
+            job: 1800
+          workers: 2
+          order: 301
+      - name: gold
+        path_options:
+          storage: abfss://test@$standard/gold
+          runtime: gold/gold
+        options:
+          timeouts:
+            job: 1800
+          order: 303
+    databases:
+      - name: expected
+        path_options:
+          storage: abfss://test@$standard/dummy
+    variables:
+      \$standard: bmsstatsteuwfabrickssnd.dfs.core.windows.net

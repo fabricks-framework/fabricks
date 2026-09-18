@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pyspark.sql import SparkSession
 from typing_extensions import deprecated
 
@@ -8,7 +6,7 @@ from fabricks.context.secret import add_secret_to_spark, get_secret_from_secret_
 from fabricks.utils.spark import get_dbutils, get_spark
 
 
-def add_catalog_to_spark(spark: Optional[SparkSession] = None):
+def add_catalog_to_spark(spark: SparkSession | None = None) -> None:
     if spark is None:
         spark = get_spark()
 
@@ -16,7 +14,7 @@ def add_catalog_to_spark(spark: Optional[SparkSession] = None):
         spark.sql(f"use catalog {CATALOG};")
 
 
-def add_credentials_to_spark(spark: Optional[SparkSession] = None):
+def add_credentials_to_spark(spark: SparkSession | None = None) -> None:
     if spark is None:
         spark = get_spark()
 
@@ -26,7 +24,7 @@ def add_credentials_to_spark(spark: Optional[SparkSession] = None):
         add_secret_to_spark(secret=s, uri=uri, spark=spark)
 
 
-def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
+def add_spark_options_to_spark(spark: SparkSession | None = None) -> None:
     if spark is None:
         spark = get_spark()
 
@@ -49,7 +47,7 @@ def add_spark_options_to_spark(spark: Optional[SparkSession] = None):
             spark.conf.set(key, value)
 
 
-def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional[str] = "default") -> SparkSession:
+def build_spark_session(spark: SparkSession | None = None, app_name: str | None = "default") -> SparkSession:
     if app_name is None:
         app_name = "default"
 
@@ -75,7 +73,7 @@ def build_spark_session(spark: Optional[SparkSession] = None, app_name: Optional
 
 
 @deprecated("use build_spark_session instead")
-def init_spark_session(spark: Optional[SparkSession] = None):
+def init_spark_session(spark: SparkSession | None = None) -> SparkSession:
     if spark is None:
         spark = get_spark()
 

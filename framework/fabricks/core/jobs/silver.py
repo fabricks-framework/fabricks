@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Self
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr
@@ -20,26 +21,19 @@ class Silver(BaseJob):
     def __init__(
         self,
         step: str,
-        topic: Optional[str] = None,
-        item: Optional[str] = None,
-        job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
-    ):
-        super().__init__(
-            "silver",
-            step=step,
-            topic=topic,
-            item=item,
-            job_id=job_id,
-            conf=conf,
-        )
+        topic: str | None = None,
+        item: str | None = None,
+        job_id: str | None = None,
+        conf: dict | Row | None = None,
+    ) -> None:
+        super().__init__("silver", step=step, topic=topic, item=item, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_job_id(cls, step: str, job_id: str, *, conf: dict | Row | None = None) -> Self:
         return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: dict | Row | None = None) -> Self:
         return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property
@@ -93,7 +87,7 @@ class Silver(BaseJob):
                     struct(
                         __metadata.file_path as file_path,
                         __metadata.file_name as file_name,
-                        __metadata.file_size as file_size,            
+                        __metadata.file_size as file_size,
                         __metadata.file_modification_time as file_modification_time,
                         __metadata.inserted as inserted,
                         cast(current_timestamp() as timestamp) as updated
@@ -106,16 +100,14 @@ class Silver(BaseJob):
 
     def base_transform(self, df: DataFrame) -> DataFrame:
         df = df.transform(self.extend)
-        df = self.update_metadata(df)
-
-        return df
+        return self.update_metadata(df)
 
     def get_data(
         self,
         stream: bool = False,
-        transform: Optional[bool] = False,
-        schema_only: Optional[bool] = False,
-        **kwargs,
+        transform: bool | None = False,
+        schema_only: bool | None = False,
+        **_kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
     ) -> DataFrame:
         lineage = self.get_dependencies_lineage()
 
@@ -202,7 +194,7 @@ class Silver(BaseJob):
         assert dependencies, "no dependency found"
         return dependencies
 
-    def create_or_replace_view(self):
+    def create_or_replace_view(self) -> None:
         assert self.mode in ["memory", "combine"], f"{self.mode} not allowed"
 
         lineage = self.get_dependencies_lineage()
@@ -236,7 +228,7 @@ class Silver(BaseJob):
             cdc_options = self.get_cdc_context(df)
             self.cdc.create_or_replace_view(sql, **cdc_options)
 
-    def create_or_replace_current_view(self):
+    def create_or_replace_current_view(self) -> None:
         from py4j.protocol import Py4JJavaError
 
         try:
@@ -256,26 +248,24 @@ class Silver(BaseJob):
               {self.qualified_name}
               {where_clause}
             """
-            # sql = fix_sql(sql)
-            # DEFAULT_LOGGER.debug("current view", extra={"label": self, "sql": sql})
             self.spark.sql(sql)
 
         except Py4JJavaError as e:
             DEFAULT_LOGGER.exception("fail to create nor replace view", extra={"label": self}, exc_info=e)
 
-    def overwrite(self, schedule: Optional[str] = None, invoke: Optional[bool] = False):
+    def overwrite(self, schedule: str | None = None, invoke: bool | None = False) -> None:
         self.truncate()
         self.run(schedule=schedule, invoke=invoke)
 
-    def overwrite_schema(self, df: Optional[DataFrame] = None):
+    def overwrite_schema(self, df: DataFrame | None = None) -> None:  # noqa: ARG002 - `df` kept to match Generator.overwrite_schema
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `reload` kept to match Configurator.get_cdc_context
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
 
-        not_append = not self.mode == "append"
+        not_append = self.mode != "append"
         nocdc = self.change_data_capture == "nocdc"
         order_duplicate_by = self.options.order_duplicate_by or {}
 
@@ -283,12 +273,15 @@ class Silver(BaseJob):
         if not_append and not nocdc:
             if not self.stream and self.mode == "update" and self.table.exists():
                 timestamp = "__valid_from" if self.change_data_capture == "scd2" else "__timestamp"
-                extra_check = f" and __timestamp > coalesce((select max({timestamp}) from {self}), cast('0001-01-01' as timestamp))"
+                extra_check = (
+                    f" and __timestamp > coalesce((select max({timestamp}) from {self}), "
+                    "cast('0001-01-01' as timestamp))"
+                )
             else:
                 extra_check = "-- no extra check"
 
             sql = f"""
-                select 
+                select
                   __operation
                 from
                   {global_temp_view}
@@ -296,7 +289,7 @@ class Silver(BaseJob):
                   true
                   and __operation == 'reload'
                   {extra_check}
-                limit 
+                limit
                   1
                 """
             sql = fix_sql(sql)
@@ -317,13 +310,11 @@ class Silver(BaseJob):
         if self.mode == "memory":
             context["mode"] = "complete"
 
-        if self.slowly_changing_dimension:
-            if "__key" not in df.columns:
-                context["add_key"] = True
+        if self.slowly_changing_dimension and "__key" not in df.columns:
+            context["add_key"] = True
 
-        if nocdc and self.mode == "memory":
-            if "__operation" not in df.columns:
-                context["add_operation"] = "upsert"
+        if nocdc and self.mode == "memory" and "__operation" not in df.columns:
+            context["add_operation"] = "upsert"
 
         if self.mode == "latest":
             context["slice"] = "latest"
@@ -340,7 +331,7 @@ class Silver(BaseJob):
 
         return context
 
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
+    def for_each_batch(self, df: DataFrame, batch: int | None = None, **_kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
         assert self.persist, f"{self.mode} not allowed"
 
         context = self.get_cdc_context(df)
@@ -367,7 +358,7 @@ class Silver(BaseJob):
             assert isinstance(self.cdc, NoCDC)
             check_df = self.spark.sql(
                 f"""
-                select 
+                select
                   __operation
                 from
                   {global_temp_view}
@@ -385,20 +376,20 @@ class Silver(BaseJob):
         else:
             raise ValueError(f"{self.mode} - not allowed")
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         self.create_or_replace_current_view()
 
-    def register(self):
+    def register(self) -> None:
         super().register()
         self.create_or_replace_current_view()
 
-    def drop(self):
+    def drop(self) -> None:
         super().drop()
         DEFAULT_LOGGER.debug("drop current view", extra={"label": self})
         self.spark.sql(f"drop view if exists {self.qualified_name}__current")
 
-    def rewrite__key(self, old_keys: list[str], new_keys: list[str]):
+    def rewrite__key(self, old_keys: list[str], new_keys: list[str]) -> None:
         from fabricks.utils.helpers import add_hash
 
         df = self.spark.sql(f"select * from {self.qualified_name}")

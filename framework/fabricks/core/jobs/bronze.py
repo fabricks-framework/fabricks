@@ -1,6 +1,7 @@
-import os
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Optional, Sequence, Union
+import os
+from typing import Any, Self
 
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import expr, lit
@@ -23,19 +24,12 @@ class Bronze(BaseJob):
     def __init__(
         self,
         step: str,
-        topic: Optional[str] = None,
-        item: Optional[str] = None,
-        job_id: Optional[str] = None,
-        conf: Optional[Union[dict, Row]] = None,
-    ):
-        super().__init__(
-            "bronze",
-            step=step,
-            topic=topic,
-            item=item,
-            job_id=job_id,
-            conf=conf,
-        )
+        topic: str | None = None,
+        item: str | None = None,
+        job_id: str | None = None,
+        conf: dict | Row | None = None,
+    ) -> None:
+        super().__init__("bronze", step=step, topic=topic, item=item, job_id=job_id, conf=conf)
 
     @property
     def stream(self) -> bool:
@@ -69,21 +63,20 @@ class Bronze(BaseJob):
         return self.base_step_conf.options  # type: ignore
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_job_id(cls, step: str, job_id: str, *, conf: dict | Row | None = None) -> Self:
         return cls(step=step, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: Optional[Union[dict, Row]] = None):
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: dict | Row | None = None) -> Self:
         return cls(step=step, topic=topic, item=item, conf=conf)
 
     @property
     def data_path(self) -> FileSharePath:
         uri = self.options.uri
         assert uri is not None, "no uri provided in options"
-        path = FileSharePath.from_uri(uri, regex=VARIABLES)
-        return path
+        return FileSharePath.from_uri(uri, regex=VARIABLES)
 
-    def get_dependencies(self, *s) -> Sequence[JobDependency]:
+    def get_dependencies(self) -> Sequence[JobDependency]:
         dependencies = []
 
         parents = self.options.parents or []
@@ -98,12 +91,9 @@ class Bronze(BaseJob):
 
         return dependencies
 
-    def register_external_table(self):
+    def register_external_table(self) -> None:
         options = self.conf.parser_options  # type: ignore
-        if options and options.file_format:
-            file_format = options.file_format
-        else:
-            file_format = "delta"
+        file_format = options.file_format if options and options.file_format else "delta"
 
         DEFAULT_LOGGER.debug(f"register external table ({self.data_path})", extra={"label": self})
 
@@ -122,11 +112,11 @@ class Bronze(BaseJob):
 
         self._register_external_table(file_format=file_format, uri=self.data_path.string)
 
-    def compute_statistics_external_table(self):
+    def compute_statistics_external_table(self) -> None:
         DEFAULT_LOGGER.debug("compute statistics (external table)", extra={"label": self})
         self.spark.sql(f"analyze table {self.qualified_name} compute statistics")
 
-    def vacuum_external_table(self, retention_hours: Optional[int] = 168):
+    def vacuum_external_table(self, retention_hours: int | None = 168) -> None:
         from delta import DeltaTable
 
         DEFAULT_LOGGER.debug("vacuum (external table)", extra={"label": self})
@@ -137,11 +127,7 @@ class Bronze(BaseJob):
         finally:
             self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
 
-    def maintain_external_table(
-        self,
-        vacuum: Optional[bool] = True,
-        compute_statistics: Optional[bool] = True,
-    ):
+    def maintain_external_table(self, vacuum: bool | None = True, compute_statistics: bool | None = True) -> None:
         DEFAULT_LOGGER.debug("maintain (external table)", extra={"label": self})
         if vacuum:
             self.vacuum_external_table()
@@ -170,12 +156,7 @@ class Bronze(BaseJob):
 
         if self.mode == "register":
             if stream:
-                df = read(
-                    stream=stream,
-                    path=self.data_path,
-                    file_format="delta",
-                    # spark=self.spark, (BUG)
-                )
+                df = read(stream=stream, path=self.data_path, file_format="delta")
             else:
                 df = self.spark.sql(f"select * from {self}")
 
@@ -204,12 +185,7 @@ class Bronze(BaseJob):
 
             parse = get_parser(self.parser, options)
 
-            df = parse(
-                stream=stream,
-                data_path=self.data_path,
-                schema_path=self.paths.to_schema,
-                spark=self.spark,
-            )
+            df = parse(stream=stream, data_path=self.data_path, schema_path=self.paths.to_schema, spark=self.spark)
 
         return df
 
@@ -220,13 +196,11 @@ class Bronze(BaseJob):
                 from databricks.sdk.runtime import dbutils
 
                 key = dbutils.secrets.get(
-                    scope=self.runtime_options.secret_scope,
-                    key=self.runtime_options.encryption_key,
+                    scope=self.runtime_options.secret_scope, key=self.runtime_options.encryption_key
                 )
                 if self.runtime_options.unity_catalog:
                     DEFAULT_LOGGER.warning(
-                        "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead",
-                        extra={"label": self},
+                        "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead", extra={"label": self}
                     )
 
             else:
@@ -243,10 +217,10 @@ class Bronze(BaseJob):
     def get_data(
         self,
         stream: bool = False,
-        transform: Optional[bool] = False,
-        schema_only: Optional[bool] = False,
-        **kwargs,
-    ) -> Optional[DataFrame]:
+        transform: bool | None = False,
+        schema_only: bool | None = False,
+        **_kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
+    ) -> DataFrame | None:
         df = self.parse(stream)
         df = self.filter_where(df)
         df = self.encrypt(df)
@@ -276,7 +250,7 @@ class Bronze(BaseJob):
                 DEFAULT_LOGGER.debug(f"add key ({', '.join(fields)})", extra={"label": self})
 
                 if "__source" in df.columns:
-                    fields = fields + ["__source"]
+                    fields = [*fields, "__source"]
 
                 fields = backticks(fields)
                 df = add_hash("__key", df, fields=fields)
@@ -332,7 +306,7 @@ class Bronze(BaseJob):
                         struct(
                             concat_ws('/', '{self.data_path}', __timestamp, __operation) as file_path,
                             __metadata.file_name as file_name,
-                            __metadata.file_size as file_size,            
+                            __metadata.file_size as file_size,
                             __metadata.file_modification_time as file_modification_time,
                             cast(current_date() as timestamp) as inserted
                         )
@@ -348,7 +322,7 @@ class Bronze(BaseJob):
                         struct(
                             __metadata.file_path as file_path,
                             __metadata.file_name as file_name,
-                            __metadata.file_size as file_size,            
+                            __metadata.file_size as file_size,
                             __metadata.file_modification_time as file_modification_time,
                             cast(current_date() as timestamp) as inserted
                         )
@@ -365,20 +339,18 @@ class Bronze(BaseJob):
         df = df.transform(self.add_operation)
         df = df.transform(self.add_source)
         df = df.transform(self.add_key)
-        df = df.transform(self.add_metadata)
+        return df.transform(self.add_metadata)
 
-        return df
-
-    def create_or_replace_view(self):
+    def create_or_replace_view(self) -> None:
         DEFAULT_LOGGER.warning("create or replace view not allowed", extra={"label": self})
 
-    def overwrite_schema(self, df: Optional[DataFrame] = None):
+    def overwrite_schema(self, df: DataFrame | None = None) -> None:  # noqa: ARG002 - `df` kept to match Generator.overwrite_schema
         DEFAULT_LOGGER.warning("schema overwrite not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: Optional[bool] = None) -> dict:
+    def get_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `df`/`reload` kept to match Configurator.get_cdc_context
         return {}
 
-    def for_each_batch(self, df: DataFrame, batch: Optional[int] = None, **kwargs):
+    def for_each_batch(self, df: DataFrame, batch: int | None = None, **_kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
         assert self.persist, f"{self.mode} not allowed"
 
         context = self.get_cdc_context(df)
@@ -395,7 +367,7 @@ class Bronze(BaseJob):
         if self.mode == "append":
             self.cdc.append(sql, **context)
 
-    def for_each_run(self, **kwargs):
+    def for_each_run(self, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
         if self.mode == "register":
             DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})
 
@@ -405,7 +377,7 @@ class Bronze(BaseJob):
         else:
             super().for_each_run(**kwargs)
 
-    def create(self):
+    def create(self) -> None:
         if self.mode == "register":
             self.register_external_table()
 
@@ -415,7 +387,7 @@ class Bronze(BaseJob):
         else:
             super().create()
 
-    def register(self):
+    def register(self) -> None:
         if self.mode == "register":
             self.register_external_table()
 
@@ -425,39 +397,36 @@ class Bronze(BaseJob):
         else:
             super().register()
 
-    def truncate(self):
+    def truncate(self) -> None:
         if self.mode == "register":
             DEFAULT_LOGGER.info("register (no truncate)", extra={"label": self})
 
         else:
             super().truncate()
 
-    def restore(self, last_version: Optional[str] = None, last_batch: Optional[str] = None):
+    def restore(self, last_version: str | None = None, last_batch: str | None = None) -> None:  # noqa: ARG002 - kept to match Processor.restore
         if self.mode == "register":
             DEFAULT_LOGGER.info("register (no restore)", extra={"label": self})
 
         else:
             super().restore()
 
-    def drop(self):
+    def drop(self) -> None:
         if self.mode == "register":
             self._drop_external_table()
 
         super().drop()
 
     def maintain(
-        self,
-        vacuum: Optional[bool] = True,
-        optimize: Optional[bool] = True,
-        compute_statistics: Optional[bool] = True,
-    ):
+        self, vacuum: bool | None = True, optimize: bool | None = True, compute_statistics: bool | None = True
+    ) -> None:
         if self.mode == "register":
             self.maintain_external_table(vacuum=vacuum, compute_statistics=compute_statistics)
 
         else:
             super().maintain(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
 
-    def vacuum(self):
+    def vacuum(self) -> None:
         if self.mode == "memory":
             DEFAULT_LOGGER.info("memory (no vacuum)", extra={"label": self})
 
@@ -467,6 +436,6 @@ class Bronze(BaseJob):
         else:
             super().vacuum()
 
-    def overwrite(self, schedule: Optional[str] = None, invoke: Optional[bool] = False):
+    def overwrite(self, schedule: str | None = None, invoke: bool | None = False) -> None:
         self.truncate()
         self.run(schedule=schedule, invoke=invoke)

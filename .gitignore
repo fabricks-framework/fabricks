@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.DS_Store
 
 # C extensions
 *.so
@@ -157,16 +158,27 @@ cython_debug/
 # Debug
 .debug
 
-# Claude
+# CodeGraph local index (per-machine, rebuilt via `codegraph init`)
+.codegraph/
+
+# Skills
 .claude/settings.local.json
 .claude/skills/*
-!.claude/skills/doc-coauthoring
-!.claude/skills/skill-creator
-!.claude/skills/fabricks
-!.claude/skills/python-performance-optimization
 
 # Reports
 .reports/
 
-# Issues
-.issues/
+# Local, uncommitted reference copies of retired code
+_archive/
+
+# Headroom
+.serena/
+.headroom_*
+
+# Docs
+docs/**
+!docs/
+!docs/ARCHITECTURE.md
+!docs/CONSTITUTION.md
+!docs/DEBUG.md
+!docs/TEST.md

@@ -1,10 +1,11 @@
+from collections.abc import Iterator
 from pathlib import Path as PathlibPath
 
 from fabricks.utils.path.base import BasePath
 
 
 class GitPath(BasePath):
-    def __init__(self, path: str | PathlibPath):
+    def __init__(self, path: str | PathlibPath) -> None:
         super().__init__(path=path)
 
     def exists(self) -> bool:
@@ -24,12 +25,7 @@ class GitPath(BasePath):
 
         return path
 
-    def walk(
-        self,
-        depth: int | None = None,
-        convert: bool | None = False,
-        file_format: str | None = None,
-    ) -> list:
+    def walk(self, depth: int | None = None, convert: bool | None = False, file_format: str | None = None) -> list:  # noqa: ARG002 - `depth` kept to match BasePath.walk
         if not self.exists():
             return []
 
@@ -45,7 +41,7 @@ class GitPath(BasePath):
 
         return out
 
-    def _yield(self, path: str | PathlibPath):
+    def _yield(self, path: str | PathlibPath) -> Iterator[str]:
         """Recursively yield all file paths in the git/local file system."""
         if isinstance(path, str):
             path = PathlibPath(path)

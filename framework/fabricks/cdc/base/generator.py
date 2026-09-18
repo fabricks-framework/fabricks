@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence, Union, cast
+from collections.abc import Sequence
+from typing import Any, cast
 
 from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
@@ -16,25 +17,25 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Generator(Configurator):
-    def drop(self):
+    def drop(self) -> None:
         self.table.drop()
 
     def create_table(
         self,
         src: AllowedSources,
-        partitioning: Optional[bool] = False,
-        partition_by: Optional[Union[List[str], str]] = None,
-        identity: Optional[bool] = False,
-        liquid_clustering: Optional[bool] = False,
-        cluster_by: Optional[Union[List[str], str]] = None,
-        properties: Optional[dict[str, str | bool | int]] = None,
-        masks: Optional[dict[str, str]] = None,
-        primary_key: Optional[dict[str, Any]] = None,
-        foreign_keys: Optional[dict[str, Any]] = None,
-        generated_columns: Optional[dict[str, str]] = None,
-        comments: Optional[dict[str, Any]] = None,
-        **kwargs,
-    ):
+        partitioning: bool | None = False,
+        partition_by: list[str] | str | None = None,
+        identity: bool | None = False,
+        liquid_clustering: bool | None = False,
+        cluster_by: list[str] | str | None = None,
+        properties: dict[str, str | bool | int] | None = None,
+        masks: dict[str, str] | None = None,
+        primary_key: dict[str, Any] | None = None,
+        foreign_keys: dict[str, Any] | None = None,
+        generated_columns: dict[str, str] | None = None,
+        comments: dict[str, Any] | None = None,
+        **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
+    ) -> None:
         kwargs["mode"] = "complete"
         kwargs["slice"] = False
         kwargs["rectify"] = False
@@ -65,7 +66,12 @@ class Generator(Configurator):
             comments=comments,
         )
 
-    def create_or_replace_view(self, src: Union[Table, str], schema_evolution: bool = True, **kwargs):
+    def create_or_replace_view(
+        self,
+        src: Table | str,
+        schema_evolution: bool = True,
+        **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
+    ) -> None:
         assert not isinstance(src, DataFrameLike), "dataframe not allowed"
 
         assert kwargs["mode"] == "complete", f"{kwargs['mode']} not allowed"
@@ -94,7 +100,7 @@ class Generator(Configurator):
         except Py4JJavaError as e:
             DEFAULT_LOGGER.exception("fail to execute sql query", extra={"label": self, "sql": sql}, exc_info=e)
 
-    def optimize_table(self):
+    def optimize_table(self) -> None:
         columns = None
 
         if self.change_data_capture == "scd1":
@@ -104,7 +110,7 @@ class Generator(Configurator):
 
         self.table.optimize(columns=columns)
 
-    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs) -> DataFrame:
+    def get_differences_with_deltatable(self, src: AllowedSources, **kwargs: Any) -> DataFrame:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         from pyspark.sql.types import StringType, StructField, StructType
 
         schema = StructType(
@@ -120,32 +126,28 @@ class Generator(Configurator):
         if self.is_view:
             return self.spark.createDataFrame([], schema=schema)
 
-        else:
-            kwargs["mode"] = "complete"
-            if "slice" in kwargs:
-                del kwargs["slice"]
+        kwargs["mode"] = "complete"
+        kwargs.pop("slice", None)
 
-            df = self.get_data(src, **kwargs)
-            df = self.reorder_dataframe(df)
+        df = self.get_data(src, **kwargs)
+        df = self.reorder_dataframe(df)
 
-            diffs = self.table.get_schema_differences(df)
-            return self.spark.createDataFrame([cast(Any, d.model_dump()) for d in diffs], schema=schema)
+        diffs = self.table.get_schema_differences(df)
+        return self.spark.createDataFrame([cast(Any, d.model_dump()) for d in diffs], schema=schema)
 
-    def get_schema_differences(self, src: AllowedSources, **kwargs) -> Optional[Sequence[SchemaDiff]]:
+    def get_schema_differences(self, src: AllowedSources, **kwargs: Any) -> Sequence[SchemaDiff] | None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         if self.is_view:
             return None
 
-        else:
-            kwargs["mode"] = "complete"
-            if "slice" in kwargs:
-                del kwargs["slice"]
+        kwargs["mode"] = "complete"
+        kwargs.pop("slice", None)
 
-            df = self.get_data(src, **kwargs)
-            df = self.reorder_dataframe(df)
+        df = self.get_data(src, **kwargs)
+        df = self.reorder_dataframe(df)
 
-            return self.table.get_schema_differences(df)
+        return self.table.get_schema_differences(df)
 
-    def schema_drifted(self, src: AllowedSources, **kwargs) -> Optional[bool]:
+    def schema_drifted(self, src: AllowedSources, **kwargs: Any) -> bool | None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         d = self.get_schema_differences(src, **kwargs)
         if d is None:
             return None
@@ -157,18 +159,16 @@ class Generator(Configurator):
         src: AllowedSources,
         overwrite: bool = False,
         widen_types: bool = False,
-        **kwargs,
-    ):
+        **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
+    ) -> None:
         if self.is_view:
-            assert not isinstance(src, DataFrameLike) and not isinstance(src, StructType), (
-                "dataframe and structtype not allowed"
-            )
+            assert not isinstance(src, DataFrameLike), "dataframe and structtype not allowed"
+            assert not isinstance(src, StructType), "dataframe and structtype not allowed"
             self.create_or_replace_view(src=src)
 
         else:
             kwargs["mode"] = "complete"
-            if "slice" in kwargs:
-                del kwargs["slice"]
+            kwargs.pop("slice", None)
 
             df = self.get_data(src, **kwargs)
             df = self.reorder_dataframe(df)
@@ -177,8 +177,8 @@ class Generator(Configurator):
             else:
                 self.table.update_schema(df, widen_types=widen_types)
 
-    def update_schema(self, src: AllowedSources, **kwargs):
+    def update_schema(self, src: AllowedSources, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         self._update_schema(src=src, **kwargs)
 
-    def overwrite_schema(self, src: AllowedSources, **kwargs):
+    def overwrite_schema(self, src: AllowedSources, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         self._update_schema(src=src, overwrite=True, **kwargs)

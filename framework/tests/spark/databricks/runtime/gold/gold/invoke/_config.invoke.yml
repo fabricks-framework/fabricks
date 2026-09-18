@@ -1,0 +1,51 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema.json
+# Real dbutils.notebook.run invocation status propagation -- all four
+# tagged, asserted in test_schedule.py against fabricks.last_schedule.
+- job:
+    step: gold
+    topic: invoke
+    item: timeout
+    tags: [test]
+    options:
+      mode: invoke
+      timeout: 10
+    invoker_options:
+      run:
+        - notebook: gold/gold/invoke/timeout
+- job:
+    step: gold
+    topic: invoke
+    item: notebook
+    tags: [test]
+    options:
+      mode: invoke
+    invoker_options:
+      run:
+        - notebook: gold/gold/invoke/notebook
+          arguments:
+            arg1: 1
+- job:
+    step: gold
+    topic: invoke
+    item: failed_pre_run
+    tags: [test]
+    options:
+      mode: memory
+    invoker_options:
+      pre_run:
+        - notebook: gold/gold/invoke/pre_run/notebook
+          arguments:
+            arg1: 1
+- job:
+    step: gold
+    topic: invoke
+    item: post_run
+    tags: [test]
+    options:
+      mode: memory
+    invoker_options:
+      post_run:
+        - notebook: gold/gold/invoke/post_run/notebook
+          arguments:
+            arg1: 1

@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 from fabricks.context import IS_UNITY_CATALOG, PATH_EXTENDERS
 from fabricks.context.log import DEFAULT_LOGGER
@@ -15,13 +15,11 @@ def get_extender(name: str) -> Callable:
         DEFAULT_LOGGER.debug(f"could not check if extender exists ({path.string})", extra={"label": "fabricks"})
 
     load_module_from_path(name, path)
-    e = EXTENDERS[name]
-
-    return e
+    return EXTENDERS[name]
 
 
-def extender(name: str):
-    def decorator(fn: Callable):
+def extender(name: str) -> Callable[[Callable], Callable]:
+    def decorator(fn: Callable) -> Callable:
         EXTENDERS[name] = fn
         return fn
 

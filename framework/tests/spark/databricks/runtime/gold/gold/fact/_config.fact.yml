@@ -1,0 +1,9 @@
+---
+# yaml-language-server: $schema=../../../../../../../job-schema.json
+- job:
+    step: gold
+    topic: fact
+    item: dependency
+    tags: [test]
+    options:
+      mode: complete

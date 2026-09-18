@@ -4,11 +4,11 @@ from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 
 
 class DagTerminator(BaseDags):
-    def __init__(self, schedule_id: str):
+    def __init__(self, schedule_id: str) -> None:
         self.schedule_id = schedule_id
         super().__init__(schedule_id=schedule_id)
 
-    def terminate(self):
+    def terminate(self) -> None:
         logs_df = self.get_logs()
         self.write_logs(logs_df)
 
