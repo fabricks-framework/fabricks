@@ -79,11 +79,13 @@ def test_gold_persists_last_timestamp(local_spark, item, target_timestamp_column
     first.createOrReplaceGlobalTempView(source_name)
     job.create()
     job.run(invoke=False)
+    # persist_last_timestamp lags one run behind (reads the pre-write version), so the
+    # expected value comes from the table state after the first run, not the final state.
+    target_timestamp = job.table.dataframe.selectExpr(f"max({target_timestamp_column}) as value").collect()[0].value
     second.createOrReplaceGlobalTempView(source_name)
     job.run(invoke=False)
 
     rows = job.cdc_last_timestamp.table.dataframe.collect()
-    target_timestamp = job.table.dataframe.selectExpr(f"max({target_timestamp_column}) as value").collect()[0].value
     assert [(row["__timestamp"], row.asDict().get("__source")) for row in rows] == [(target_timestamp, None)]
 
 

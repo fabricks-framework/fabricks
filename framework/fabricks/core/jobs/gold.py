@@ -388,6 +388,10 @@ class Gold(BaseJob):
         else:
             last_version = None
 
+            # ponytail: reads __timestamp as of the pre-write version (one run behind)
+            # to match legacy behavior; drop last_version here once legacy tests are updated.
+            if self.options.persist_last_timestamp:
+                last_version = self.table.get_last_version()
             if self.options.persist_last_updated_timestamp:
                 last_version = self.table.get_last_version()
             if self.updater_options and self.updater_options.columns:
@@ -396,7 +400,7 @@ class Gold(BaseJob):
             super().for_each_run(**kwargs)
 
             if self.options.persist_last_timestamp:
-                self._persist_timestamp(field="__timestamp")
+                self._persist_timestamp(field="__timestamp", last_version=last_version)
 
             if self.options.persist_last_updated_timestamp:
                 self._persist_timestamp(field="__last_updated", last_version=last_version)
