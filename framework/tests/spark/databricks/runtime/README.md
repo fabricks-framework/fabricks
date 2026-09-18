@@ -22,6 +22,13 @@ invocation to prove checkpoint idempotency, a hand-crafted follow-up batch
 to prove type widening) -- a job with no dedicated assertion anywhere is a
 gap, not implicit coverage via some other job's check.
 
+> [!WARNING]
+> DBR 18 LTS starts each streaming `foreachBatch` callback in an isolated
+> Python worker. Concurrent scheduled streams on USER_ISOLATION clusters can
+> contend for sandbox startup capacity, causing `SandboxClientTimeoutTracker`
+> failures and retry backoff; a test run may therefore take several minutes
+> longer than its normal duration.
+
 `feature_mask`/`feature_cluster_by` are Databricks/Unity-Catalog-only (see
 cut-list doc's Risks #1) and can never move to Apache; whichever table
 feature genuinely *is* portable lives in `tests/spark/apache/test_feature.py`

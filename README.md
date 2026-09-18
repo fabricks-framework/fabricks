@@ -34,9 +34,9 @@ For the latest releases and detailed changelogs, please visit the [Fabricks Rele
 
 ### Runtime Requirements
 
-[✔] `Fabricks 4.0.0` was successfully tested on Databricks Runtime `16.4 LTS`.
+[✔] `Fabricks 4.0.0` was successfully tested on Databricks Runtime `16 LTS`.
 
-[✔] `Fabricks 4.0.*` was successfully tested on Databricks Runtime `17.3 LTS` with the following dependencies:
+[✔] `Fabricks 4.0.*` was successfully tested on Databricks Runtime `17 LTS` with the following dependencies:
 
 ```yaml
 dependencies = [
@@ -63,6 +63,11 @@ dependencies = [
 
 > [!WARNING]
 > The `sqlglot[c]` extra (C-based parser with Cython optimizations) cannot be used with Fabricks.
+
+> [!WARNING]
+> Streaming performance can degrade on DBR 18 LTS, particularly when several
+> streaming jobs run at the same time. Expect some runs to take longer than
+> usual.
 
 ## Related Projects 🔗
 - We use [odbc2deltalake](https://github.com/bmsuisse/odbc2deltalake) for extensive SQL Server data ingestion in a pre_run notebook. 🔌🏊‍♂️
