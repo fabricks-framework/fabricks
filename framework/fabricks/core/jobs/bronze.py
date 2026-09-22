@@ -107,6 +107,10 @@ class Bronze(BaseJob):
         DEFAULT_LOGGER.debug("compute statistics (external table)", extra={"label": self})
         self.spark.sql(f"analyze table {self.qualified_name} compute statistics")
 
+    def optimize_external_table(self) -> None:
+        DEFAULT_LOGGER.debug("optimize (external table)", extra={"label": self})
+        self.spark.sql(f"optimize {self.qualified_name}")
+
     def vacuum_external_table(self, retention_hours: int | None = 168) -> None:
         from delta import DeltaTable
 
@@ -118,10 +122,15 @@ class Bronze(BaseJob):
         finally:
             self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = True")
 
-    def maintain_external_table(self, vacuum: bool | None = True, compute_statistics: bool | None = True) -> None:
+    def maintain_external_table(
+        self, vacuum: bool | None = True, optimize: bool | None = True, compute_statistics: bool | None = True
+    ) -> None:
         DEFAULT_LOGGER.debug("maintain (external table)", extra={"label": self})
         if vacuum:
             self.vacuum_external_table()
+
+        if optimize:
+            self.optimize_external_table()
 
         if compute_statistics:
             self.compute_statistics_external_table()
@@ -423,7 +432,7 @@ class Bronze(BaseJob):
         self, vacuum: bool | None = True, optimize: bool | None = True, compute_statistics: bool | None = True
     ) -> None:
         if self._resolver.mode == "register":
-            self.maintain_external_table(vacuum=vacuum, compute_statistics=compute_statistics)
+            self.maintain_external_table(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
 
         else:
             self._generator.maintain(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
