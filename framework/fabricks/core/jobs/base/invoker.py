@@ -17,6 +17,21 @@ if TYPE_CHECKING:
     from fabricks.core.jobs.base.job import BaseJob
 
 
+def _raise_invoke_errors(position: str, errors: list[Exception]) -> None:
+    # str(Exception(errors)) on a list of exception objects falls back to
+    # each one's repr, which drops the real message (e.g. Py4JJavaError's
+    # repr is just the bare gateway call description) -- join str() of each
+    # instead so the actual cause survives. Raise the typed exception (not a
+    # bare Exception) so job.py's run() can tell an invoker failure apart
+    # from a real run failure and skip the table restore for it.
+    message = "; ".join(str(e) for e in errors)
+    if position == "pre_run":
+        raise PreRunInvokeException(message)
+    if position == "post_run":
+        raise PostRunInvokeException(message)
+    raise Exception(message)
+
+
 class JobInvoker:
     """Notebook invocation (pre/post-run, per job and per step) and extenders."""
 
@@ -87,11 +102,7 @@ class JobInvoker:
                         errors.append(e)
 
         if errors:
-            # str(Exception(errors)) on a list of exception objects falls
-            # back to each one's repr, which drops the real message (e.g.
-            # Py4JJavaError's repr is just the bare gateway call description)
-            # -- join str() of each instead so the actual cause survives.
-            raise Exception("; ".join(str(e) for e in errors))
+            _raise_invoke_errors(position, errors)
         return None
 
     def _invoke_step(self, position: str, schedule: str | None = None) -> None:
@@ -118,11 +129,7 @@ class JobInvoker:
                         errors.append(e)
 
         if errors:
-            # str(Exception(errors)) on a list of exception objects falls
-            # back to each one's repr, which drops the real message (e.g.
-            # Py4JJavaError's repr is just the bare gateway call description)
-            # -- join str() of each instead so the actual cause survives.
-            raise Exception("; ".join(str(e) for e in errors))
+            _raise_invoke_errors(position, errors)
 
     def _run_notebook(
         self, path: GitPath, arguments: dict | None = None, timeout: int | None = None, schedule: str | None = None
