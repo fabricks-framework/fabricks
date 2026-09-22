@@ -39,6 +39,11 @@ TIMEZONE: Final[ZoneInfo] = ZoneInfo(CONF_RUNTIME.options.timezone)
 
 IS_TYPE_WIDENING: Final[bool] = CONF_RUNTIME.options.type_widening or False
 
+# ANALYZE TABLE ... COMPUTE STATISTICS (Table.compute_statistics) is a Hive-metastore
+# command that Databricks' Delta tables support but plain OSS Spark/Delta v2 tables do
+# not -- forcing it on a job's first write (BaseJob.run) is opt-in, off by default.
+IS_COMPUTE_STATISTICS_ON_FIRST_WRITE: Final[bool] = CONF_RUNTIME.options.compute_statistics_on_first_write or False
+
 # Resolve all paths at once
 PATHS_RESOLVED = CONF_RUNTIME.resolved_path_options
 

@@ -9,7 +9,7 @@ from typing_extensions import deprecated
 
 from fabricks.cdc import SCD1, SCD2, NoCDC
 from fabricks.cdc.scd0 import SCD0
-from fabricks.context import IS_TYPE_WIDENING, STEPS
+from fabricks.context import IS_COMPUTE_STATISTICS_ON_FIRST_WRITE, IS_TYPE_WIDENING, STEPS
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.checker import JobChecker
 from fabricks.core.jobs.base.exception import (
@@ -390,7 +390,8 @@ class BaseJob(ABC):
             else:
                 last_version = str(self.table.last_version)
 
-            is_first_write = not self.table.has_rows
+            if IS_COMPUTE_STATISTICS_ON_FIRST_WRITE:
+                is_first_write = not self.table.has_rows
 
             if self.is_stream:
                 last_batch = self.table.get_property("fabricks.last_batch")
