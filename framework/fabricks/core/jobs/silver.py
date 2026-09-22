@@ -18,6 +18,9 @@ from fabricks.utils.sqlglot import fix as fix_sql
 
 
 class Silver(BaseJob):
+    _table_modes = ("update", "append", "latest")
+    _view_modes = ("combine", "memory")
+
     def __init__(
         self,
         step: str,
@@ -52,23 +55,11 @@ class Silver(BaseJob):
         return self.base_step_conf.options  # type: ignore
 
     @cached_property
-    def stream(self) -> bool:
+    def is_stream(self) -> bool:
         _stream = self.options.stream
         if _stream is None:
             _stream = self.step_conf.options.stream
         return _stream if _stream is not None else True
-
-    @property
-    def schema_drift(self) -> bool:
-        return True
-
-    @property
-    def persist(self) -> bool:
-        return self.mode in ["update", "append", "latest"]
-
-    @property
-    def virtual(self) -> bool:
-        return self.mode in ["combine", "memory"]
 
     @cached_property
     def parent_step(self) -> str:
@@ -99,7 +90,7 @@ class Silver(BaseJob):
         return df
 
     def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extend)
+        df = df.transform(self._invoker.extend)
         return self.update_metadata(df)
 
     def get_data(
@@ -111,13 +102,13 @@ class Silver(BaseJob):
     ) -> DataFrame:
         lineage = self.get_dependencies_lineage()
 
-        if self.mode == "memory":
+        if self._resolver.mode == "memory":
             assert len(lineage) == 1, f"more than 1 dependency not allowed ({lineage})"
 
             parent = lineage[0].parent
             df = self.spark.sql(f"select * from {parent}")
 
-        elif self.mode == "combine":
+        elif self._resolver.mode == "combine":
             dfs = []
 
             for row in sorted(lineage, key=lambda x: x.parent_id):
@@ -133,7 +124,7 @@ class Silver(BaseJob):
             for item in sorted(lineage, key=lambda x: x.parent_id):
                 try:
                     bronze = Bronze.from_job_id(step=self.parent_step, job_id=item.parent_id)
-                    if bronze.mode in ["memory", "register"]:
+                    if bronze._resolver.mode in ["memory", "register"]:
                         # data already transformed if bronze is persisted
                         df = bronze.get_data(stream=stream, transform=True)
 
@@ -195,11 +186,11 @@ class Silver(BaseJob):
         return dependencies
 
     def create_or_replace_view(self) -> None:
-        assert self.mode in ["memory", "combine"], f"{self.mode} not allowed"
+        assert self._resolver.mode in ["memory", "combine"], f"{self._resolver.mode} not allowed"
 
         lineage = self.get_dependencies_lineage()
 
-        if self.mode == "combine":
+        if self._resolver.mode == "combine":
             queries = []
 
             for item in lineage:
@@ -225,7 +216,7 @@ class Silver(BaseJob):
             DEFAULT_LOGGER.debug("view", extra={"label": self, "sql": sql})
 
             df = self.spark.sql(sql)
-            cdc_options = self.get_cdc_context(df)
+            cdc_options = self.build_cdc_context(df)
             self.cdc.create_or_replace_view(sql, **cdc_options)
 
     def create_or_replace_current_view(self) -> None:
@@ -260,19 +251,19 @@ class Silver(BaseJob):
     def overwrite_schema(self, df: DataFrame | None = None) -> None:  # noqa: ARG002 - `df` kept to match Generator.overwrite_schema
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `reload` kept to match Configurator.get_cdc_context
+    def build_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `reload` kept to match Configurator.build_cdc_context
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
 
-        not_append = self.mode != "append"
-        nocdc = self.change_data_capture == "nocdc"
+        not_append = self._resolver.mode != "append"
+        nocdc = self._resolver.change_data_capture == "nocdc"
         order_duplicate_by = self.options.order_duplicate_by or {}
 
         rectify = False
         if not_append and not nocdc:
-            if not self.stream and self.mode == "update" and self.table.exists():
-                timestamp = "__valid_from" if self.change_data_capture == "scd2" else "__timestamp"
+            if not self.is_stream and self._resolver.mode == "update" and self.table.exists():
+                timestamp = "__valid_from" if self._resolver.change_data_capture == "scd2" else "__timestamp"
                 extra_check = (
                     f" and __timestamp > coalesce((select max({timestamp}) from {self}), "
                     "cast('0001-01-01' as timestamp))"
@@ -301,27 +292,27 @@ class Silver(BaseJob):
                 DEFAULT_LOGGER.debug("rectify enabled", extra={"label": self})
 
         context: dict[str, Any] = {
-            "soft_delete": self.slowly_changing_dimension,
+            "soft_delete": self._resolver.slowly_changing_dimension,
             "deduplicate": self.options.deduplicate if self.options.deduplicate is not None else not_append,
             "rectify": rectify,
             "order_duplicate_by": order_duplicate_by,
         }
 
-        if self.mode == "memory":
+        if self._resolver.mode == "memory":
             context["mode"] = "complete"
 
-        if self.slowly_changing_dimension and "__key" not in df.columns:
+        if self._resolver.slowly_changing_dimension and "__key" not in df.columns:
             context["add_key"] = True
 
-        if nocdc and self.mode == "memory" and "__operation" not in df.columns:
+        if nocdc and self._resolver.mode == "memory" and "__operation" not in df.columns:
             context["add_operation"] = "upsert"
 
-        if self.mode == "latest":
+        if self._resolver.mode == "latest":
             context["slice"] = "latest"
-        if not self.stream and self.mode == "update":
+        if not self.is_stream and self._resolver.mode == "update":
             context["slice"] = "update"
 
-        if self.change_data_capture == "scd2":
+        if self._resolver.change_data_capture == "scd2":
             context["correct_valid_from"] = True
 
         if "__operation" in df.columns:
@@ -332,9 +323,9 @@ class Silver(BaseJob):
         return context
 
     def for_each_batch(self, df: DataFrame, batch: int | None = None, **_kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
-        assert self.persist, f"{self.mode} not allowed"
+        assert self.is_table, f"{self._resolver.mode} not allowed"
 
-        context = self.get_cdc_context(df)
+        context = self.build_cdc_context(df)
 
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}"
@@ -343,18 +334,18 @@ class Silver(BaseJob):
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
 
-        if not self._check_batch_has_data(sql):
+        if not self._checker.batch_has_data(sql):
             return
 
-        if self.mode == "update":
+        if self._resolver.mode == "update":
             assert not isinstance(self.cdc, NoCDC)
             self.cdc.update(sql, **context)
 
-        elif self.mode == "append":
+        elif self._resolver.mode == "append":
             assert isinstance(self.cdc, NoCDC)
             self.cdc.append(sql, **context)
 
-        elif self.mode == "latest":
+        elif self._resolver.mode == "latest":
             assert isinstance(self.cdc, NoCDC)
             check_df = self.spark.sql(
                 f"""
@@ -374,18 +365,18 @@ class Silver(BaseJob):
             self.cdc.complete(sql, **context)
 
         else:
-            raise ValueError(f"{self.mode} - not allowed")
+            raise ValueError(f"{self._resolver.mode} - not allowed")
 
     def create(self) -> None:
-        super().create()
+        self._generator.create()
         self.create_or_replace_current_view()
 
     def register(self) -> None:
-        super().register()
+        self._generator.register()
         self.create_or_replace_current_view()
 
     def drop(self) -> None:
-        super().drop()
+        self._generator.drop()
         DEFAULT_LOGGER.debug("drop current view", extra={"label": self})
         self.spark.sql(f"drop view if exists {self.qualified_name}__current")
 

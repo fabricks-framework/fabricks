@@ -16,7 +16,7 @@ from fabricks.models.table import TableOptions
 def test_option_hierarchy_falls_back_to_step_level_when_job_omits_it():
     job = get_job(step="gold", topic="fact", item="step_option")
 
-    properties = job._get_option_hierarchy("properties", into="table")
+    properties = job._generator._get_option_hierarchy("properties", into="table")
 
     assert properties == {"delta.minReaderVersion": 1, "delta.minWriterVersion": 7, "delta.columnMapping.mode": "none"}
 
@@ -24,7 +24,7 @@ def test_option_hierarchy_falls_back_to_step_level_when_job_omits_it():
 def test_option_hierarchy_job_level_overrides_step_level():
     job = get_job(step="gold", topic="fact", item="job_option")
 
-    properties = job._get_option_hierarchy("properties", into="table")
+    properties = job._generator._get_option_hierarchy("properties", into="table")
 
     assert properties == {"delta.minReaderVersion": 2, "delta.minWriterVersion": 5, "delta.columnMapping.mode": "none"}
 
@@ -32,7 +32,7 @@ def test_option_hierarchy_job_level_overrides_step_level():
 def test_option_hierarchy_returns_default_when_neither_level_sets_it():
     job = get_job(step="gold", topic="fact", item="step_option")
 
-    result = job._get_option_hierarchy("masks", into="table", default="fallback")
+    result = job._generator._get_option_hierarchy("masks", into="table", default="fallback")
 
     assert result == "fallback"
 
@@ -50,6 +50,6 @@ def test_option_hierarchy_masks_job_level_wins_when_both_set():
 
     job.conf = job.conf.model_copy(update={"table_options": TableOptions(masks={"dummy": "job_mask"})})
 
-    masks = job._get_option_hierarchy("masks", into="table")
+    masks = job._generator._get_option_hierarchy("masks", into="table")
 
     assert masks == {"dummy": "job_mask"}

@@ -55,20 +55,20 @@ def test_check_post_run_extra_raises_on_max_rows_exceeded():
     job = _with_row_count(_job_with_check_options(max_rows=2), count=3)
 
     with pytest.raises(PostRunCheckException, match=r"max rows check failed \(3 > 2\)"):
-        job.check_post_run_extra()
+        job._checker.post_run_extra()
 
 
 def test_check_post_run_extra_raises_on_min_rows_not_met():
     job = _with_row_count(_job_with_check_options(min_rows=2), count=1)
 
     with pytest.raises(PostRunCheckException, match=r"min rows check failed \(1 < 2\)"):
-        job.check_post_run_extra()
+        job._checker.post_run_extra()
 
 
 def test_check_post_run_extra_passes_when_within_bounds():
     job = _with_row_count(_job_with_check_options(min_rows=1, max_rows=5), count=3)
 
-    job.check_post_run_extra()  # must not raise
+    job._checker.post_run_extra()  # must not raise
 
 
 def test_check_post_run_extra_skips_entirely_when_no_check_options_set():
@@ -80,7 +80,7 @@ def test_check_post_run_extra_skips_entirely_when_no_check_options_set():
     # check_post_run_extra() itself does.
     job.spark.sql.reset_mock()
 
-    job.check_post_run_extra()  # must not raise - and must not even query the count
+    job._checker.post_run_extra()  # must not raise - and must not even query the count
 
     job.spark.sql.assert_not_called()
 
@@ -90,7 +90,7 @@ def test_check_post_run_extra_raises_on_count_must_equal_mismatch():
     job.spark.read.table.return_value.count.return_value = 1
 
     with pytest.raises(PostRunCheckException, match=r"count must equal check failed \(fabricks\.dummy - 2 != 1\)"):
-        job.check_post_run_extra()
+        job._checker.post_run_extra()
 
 
 def test_check_run_time_before_raises_once_past_the_deadline():
@@ -98,14 +98,14 @@ def test_check_run_time_before_raises_once_past_the_deadline():
     past = (datetime.now(tz=TIMEZONE) - timedelta(hours=1)).strftime("%H:%M:%S")
 
     with pytest.raises(SkipRunTimeWarning):
-        job._check_run_time(past, "before")
+        job._checker._run_time(past, "before")
 
 
 def test_check_run_time_before_does_not_raise_ahead_of_the_deadline():
     job = get_job(step="gold", topic="fact", item="step_option")
     future = (datetime.now(tz=TIMEZONE) + timedelta(hours=1)).strftime("%H:%M:%S")
 
-    job._check_run_time(future, "before")  # must not raise
+    job._checker._run_time(future, "before")  # must not raise
 
 
 def test_check_run_time_after_raises_before_the_target_time():
@@ -113,7 +113,7 @@ def test_check_run_time_after_raises_before_the_target_time():
     future = (datetime.now(tz=TIMEZONE) + timedelta(hours=1)).strftime("%H:%M:%S")
 
     with pytest.raises(SkipRunTimeWarning):
-        job._check_run_time(future, "after")
+        job._checker._run_time(future, "after")
 
 
 # check_pre_run()/check_skip_run() (framework/fabricks/core/jobs/base/checker.py):
@@ -132,7 +132,7 @@ def test_check_pre_run_raises_on_fail_action():
     job.spark.sql.return_value.where.return_value.collect.return_value = [Row(__action="fail", __message="boom")]
 
     with pytest.raises(PreRunCheckException, match="boom"):
-        job.check_pre_run()
+        job._checker.pre_run()
 
 
 def test_check_pre_run_raises_warning_when_no_fail_rows():
@@ -143,14 +143,14 @@ def test_check_pre_run_raises_warning_when_no_fail_rows():
     ]
 
     with pytest.raises(PreRunCheckWarning, match="careful"):
-        job.check_pre_run()
+        job._checker.pre_run()
 
 
 def test_check_pre_run_passes_when_no_rows():
     job = _check_job(pre_run=True)
     job.spark.sql.return_value.where.return_value.collect.return_value = []
 
-    job.check_pre_run()  # must not raise
+    job._checker.pre_run()  # must not raise
 
 
 def test_check_skip_run_raises_when_skip_row_present():
@@ -158,14 +158,14 @@ def test_check_skip_run_raises_when_skip_row_present():
     job.spark.sql.return_value.where.return_value.collect.return_value = [Row(__skip=True, __message="skip me")]
 
     with pytest.raises(SkipRunCheckWarning, match="skip me"):
-        job.check_skip_run()
+        job._checker.skip_run()
 
 
 def test_check_skip_run_passes_when_no_skip_rows():
     job = _check_job(skip=True)
     job.spark.sql.return_value.where.return_value.collect.return_value = []
 
-    job.check_skip_run()  # must not raise
+    job._checker.skip_run()  # must not raise
 
 
 # check_post_run() (framework/fabricks/core/jobs/base/checker.py's Checker._check):
@@ -180,7 +180,7 @@ def test_check_post_run_raises_on_fail_action():
     ]
 
     with pytest.raises(PostRunCheckException, match="post run boom"):
-        job.check_post_run()
+        job._checker.post_run()
 
 
 def test_check_post_run_raises_warning_when_no_fail_rows():
@@ -191,14 +191,14 @@ def test_check_post_run_raises_warning_when_no_fail_rows():
     ]
 
     with pytest.raises(PostRunCheckWarning, match="post run careful"):
-        job.check_post_run()
+        job._checker.post_run()
 
 
 def test_check_post_run_passes_when_no_rows():
     job = _check_job(post_run=True)
     job.spark.sql.return_value.where.return_value.collect.return_value = []
 
-    job.check_post_run()  # must not raise
+    job._checker.post_run()  # must not raise
 
 
 def test_check_post_run_raises_when_check_file_not_found():
@@ -207,4 +207,4 @@ def test_check_post_run_raises_when_check_file_not_found():
     job = _job_with_check_options(post_run=True)
 
     with pytest.raises(AssertionError, match="post_run check not found"):
-        job.check_post_run()
+        job._checker.post_run()

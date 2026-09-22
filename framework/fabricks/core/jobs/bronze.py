@@ -21,6 +21,9 @@ from fabricks.utils.read import read
 
 
 class Bronze(BaseJob):
+    _table_modes = ("append", "register")
+    _view_modes = ()
+
     def __init__(
         self,
         step: str,
@@ -31,21 +34,9 @@ class Bronze(BaseJob):
     ) -> None:
         super().__init__("bronze", step=step, topic=topic, item=item, job_id=job_id, conf=conf)
 
-    @property
-    def stream(self) -> bool:
-        return self.mode not in ["register"]
-
-    @property
-    def schema_drift(self) -> bool:
-        return True
-
-    @property
-    def persist(self) -> bool:
-        return self.mode in ["append", "register"]
-
-    @property
-    def virtual(self) -> bool:
-        return False
+    @cached_property
+    def is_stream(self) -> bool:
+        return self._resolver.mode not in ["register"]
 
     @property
     def options(self) -> JobBronzeOptions:
@@ -110,7 +101,7 @@ class Bronze(BaseJob):
             DEFAULT_LOGGER.exception("read external table failed", extra={"label": self})
             raise e
 
-        self._register_external_table(file_format=file_format, uri=self.data_path.string)
+        self._generator.register_external_table(file_format=file_format, uri=self.data_path.string)
 
     def compute_statistics_external_table(self) -> None:
         DEFAULT_LOGGER.debug("compute statistics (external table)", extra={"label": self})
@@ -137,7 +128,7 @@ class Bronze(BaseJob):
 
     @cached_property
     def parser(self) -> str:
-        assert self.mode not in ["register"], f"{self.mode} not allowed"
+        assert self._resolver.mode not in ["register"], f"{self._resolver.mode} not allowed"
         parser = self.options.parser
         assert parser is not None, "parser not found"
         return parser
@@ -154,7 +145,7 @@ class Bronze(BaseJob):
         """
         options = self.conf.parser_options or None  # type: ignore
 
-        if self.mode == "register":
+        if self._resolver.mode == "register":
             if stream:
                 df = read(stream=stream, path=self.data_path, file_format="delta")
             else:
@@ -185,20 +176,23 @@ class Bronze(BaseJob):
 
             parse = get_parser(self.parser, options)
 
-            df = parse(stream=stream, data_path=self.data_path, schema_path=self.paths.to_schema, spark=self.spark)
+            df = parse(
+                stream=stream, data_path=self.data_path, schema_path=self._resolver.paths.to_schema, spark=self.spark
+            )
 
         return df
 
     def encrypt(self, df: DataFrame) -> DataFrame:
         encrypted_columns = self.options.encrypted_columns or []
         if encrypted_columns:
-            if self.runtime_options.encryption_key is not None:
+            if self._resolver.runtime_options.encryption_key is not None:
                 from databricks.sdk.runtime import dbutils
 
                 key = dbutils.secrets.get(
-                    scope=self.runtime_options.secret_scope, key=self.runtime_options.encryption_key
+                    scope=self._resolver.runtime_options.secret_scope,
+                    key=self._resolver.runtime_options.encryption_key,
                 )
-                if self.runtime_options.unity_catalog:
+                if self._resolver.runtime_options.unity_catalog:
                     DEFAULT_LOGGER.warning(
                         "Unity Catalog enabled, use FABRICKS_ENCRYPTION_KEY instead", extra={"label": self}
                     )
@@ -297,7 +291,7 @@ class Bronze(BaseJob):
         if "__metadata" in df.columns:
             DEFAULT_LOGGER.debug("add metadata", extra={"label": self})
 
-            if self.mode == "register":
+            if self._resolver.mode == "register":
                 #  https://github.com/delta-io/delta/issues/2014 (BUG)
                 df = df.withColumn(
                     "__metadata",
@@ -333,7 +327,7 @@ class Bronze(BaseJob):
         return df
 
     def base_transform(self, df: DataFrame) -> DataFrame:
-        df = df.transform(self.extend)
+        df = df.transform(self._invoker.extend)
         df = df.transform(self.add_calculated_columns)
         df = df.transform(self.add_hash)
         df = df.transform(self.add_operation)
@@ -347,94 +341,94 @@ class Bronze(BaseJob):
     def overwrite_schema(self, df: DataFrame | None = None) -> None:  # noqa: ARG002 - `df` kept to match Generator.overwrite_schema
         DEFAULT_LOGGER.warning("schema overwrite not allowed", extra={"label": self})
 
-    def get_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `df`/`reload` kept to match Configurator.get_cdc_context
+    def build_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `df`/`reload` kept to match Configurator.build_cdc_context
         return {}
 
     def for_each_batch(self, df: DataFrame, batch: int | None = None, **_kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
-        assert self.persist, f"{self.mode} not allowed"
+        assert self.is_table, f"{self._resolver.mode} not allowed"
 
-        context = self.get_cdc_context(df)
+        context = self.build_cdc_context(df)
 
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__{batch}"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)
         sql = f"select * from {global_temp_view}"
 
-        if not self._check_batch_has_data(sql):
+        if not self._checker.batch_has_data(sql):
             return
 
         assert isinstance(self.cdc, NoCDC)
-        if self.mode == "append":
+        if self._resolver.mode == "append":
             self.cdc.append(sql, **context)
 
     def for_each_run(self, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
-        if self.mode == "register":
+        if self._resolver.mode == "register":
             DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})
 
-        elif self.mode == "memory":
+        elif self._resolver.mode == "memory":
             DEFAULT_LOGGER.debug("memory (no run)", extra={"label": self})
 
         else:
             super().for_each_run(**kwargs)
 
     def create(self) -> None:
-        if self.mode == "register":
+        if self._resolver.mode == "register":
             self.register_external_table()
 
-        elif self.mode == "memory":
+        elif self._resolver.mode == "memory":
             DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
 
         else:
-            super().create()
+            self._generator.create()
 
     def register(self) -> None:
-        if self.mode == "register":
+        if self._resolver.mode == "register":
             self.register_external_table()
 
-        elif self.mode == "memory":
+        elif self._resolver.mode == "memory":
             DEFAULT_LOGGER.info("memory (no table nor view)", extra={"label": self})
 
         else:
-            super().register()
+            self._generator.register()
 
     def truncate(self) -> None:
-        if self.mode == "register":
+        if self._resolver.mode == "register":
             DEFAULT_LOGGER.info("register (no truncate)", extra={"label": self})
 
         else:
-            super().truncate()
+            self._generator.truncate()
 
     def restore(self, last_version: str | None = None, last_batch: str | None = None) -> None:  # noqa: ARG002 - kept to match Processor.restore
-        if self.mode == "register":
+        if self._resolver.mode == "register":
             DEFAULT_LOGGER.info("register (no restore)", extra={"label": self})
 
         else:
             super().restore()
 
     def drop(self) -> None:
-        if self.mode == "register":
-            self._drop_external_table()
+        if self._resolver.mode == "register":
+            self._generator.drop_external_table()
 
-        super().drop()
+        self._generator.drop()
 
     def maintain(
         self, vacuum: bool | None = True, optimize: bool | None = True, compute_statistics: bool | None = True
     ) -> None:
-        if self.mode == "register":
+        if self._resolver.mode == "register":
             self.maintain_external_table(vacuum=vacuum, compute_statistics=compute_statistics)
 
         else:
-            super().maintain(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
+            self._generator.maintain(vacuum=vacuum, optimize=optimize, compute_statistics=compute_statistics)
 
     def vacuum(self) -> None:
-        if self.mode == "memory":
+        if self._resolver.mode == "memory":
             DEFAULT_LOGGER.info("memory (no vacuum)", extra={"label": self})
 
-        elif self.mode == "register":
+        elif self._resolver.mode == "register":
             self.vacuum_external_table()
 
         else:
-            super().vacuum()
+            self._generator.vacuum()
 
     def overwrite(self, schedule: str | None = None, invoke: bool | None = False) -> None:
         self.truncate()

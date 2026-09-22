@@ -5,7 +5,7 @@ Table._create() DDL mapping (test_ddl_option_mapping.py): default
 resolution, the `__generated_*` dunder-prefix assertion, and primary_key/
 foreign_keys passthrough.
 
-self.get_data/base_transform/get_cdc_context and job.cdc.create_table are
+self.get_data/base_transform/build_cdc_context and job.cdc.create_table are
 all monkeypatched so the real chain (a real .sql fixture file, real
 CDC-context derivation, real DDL rendering - all already covered by other
 tests in this tier/test_ddl_option_mapping.py) never runs; only
@@ -47,7 +47,7 @@ def _job(monkeypatch, *, table_options: TableOptions | None = None, columns: lis
     )
     monkeypatch.setattr(job, "get_data", lambda **_kwargs: df)
     monkeypatch.setattr(job, "base_transform", lambda d: d)
-    monkeypatch.setattr(job, "get_cdc_context", lambda _d: {})
+    monkeypatch.setattr(job, "build_cdc_context", lambda _d: {})
     # register_udfs() (unpatched) would read self.sql -> a real runtime .sql
     # fixture file step_option has none of, since it exists only for the
     # option-hierarchy/timeout/check tests - out of scope here.
@@ -63,7 +63,7 @@ def _job(monkeypatch, *, table_options: TableOptions | None = None, columns: lis
 def test_create_table_default_properties(monkeypatch):
     job, captured = _job(monkeypatch)
 
-    job.create_table()
+    job._generator.create_table()
 
     assert captured["properties"] == {
         "delta.enableTypeWidening": "true",
@@ -79,7 +79,7 @@ def test_create_table_default_properties(monkeypatch):
 def test_create_table_powerbi_properties(monkeypatch):
     job, captured = _job(monkeypatch, table_options=TableOptions(powerbi=True))
 
-    job.create_table()
+    job._generator.create_table()
 
     assert captured["properties"] == {
         "delta.columnMapping.mode": "name",
@@ -92,7 +92,7 @@ def test_create_table_powerbi_properties(monkeypatch):
 def test_create_table_maximum_compatibility_properties(monkeypatch):
     job, captured = _job(monkeypatch, table_options=TableOptions(maximum_compatibility=True))
 
-    job.create_table()
+    job._generator.create_table()
 
     assert captured["properties"] == {
         "delta.minReaderVersion": "1",
@@ -105,7 +105,7 @@ def test_create_table_maximum_compatibility_properties(monkeypatch):
 def test_create_table_explicit_properties_win_over_defaults(monkeypatch):
     job, captured = _job(monkeypatch, table_options=TableOptions(properties={"delta.appendOnly": "true"}))
 
-    job.create_table()
+    job._generator.create_table()
 
     assert captured["properties"] == {"delta.appendOnly": "true"}
 
@@ -115,7 +115,7 @@ def test_create_table_liquid_clustering_auto(monkeypatch):
         monkeypatch, table_options=TableOptions(liquid_clustering=True), columns=["id", "name", "__cluster_by_id"]
     )
 
-    job.create_table()
+    job._generator.create_table()
 
     assert captured["liquid_clustering"] is True
     assert captured["cluster_by"] == ["__cluster_by_id"]
@@ -124,7 +124,7 @@ def test_create_table_liquid_clustering_auto(monkeypatch):
 def test_create_table_liquid_clustering_explicit_list(monkeypatch):
     job, captured = _job(monkeypatch, table_options=TableOptions(cluster_by=["monarch"]))
 
-    job.create_table()
+    job._generator.create_table()
 
     assert captured["liquid_clustering"] is True
     assert captured["cluster_by"] == ["monarch"]
@@ -133,7 +133,7 @@ def test_create_table_liquid_clustering_explicit_list(monkeypatch):
 def test_create_table_liquid_clustering_disabled_when_option_false(monkeypatch):
     job, captured = _job(monkeypatch, table_options=TableOptions(liquid_clustering=False))
 
-    job.create_table()
+    job._generator.create_table()
 
     assert captured["liquid_clustering"] is False
 
@@ -141,7 +141,7 @@ def test_create_table_liquid_clustering_disabled_when_option_false(monkeypatch):
 def test_create_table_generated_columns_dunder_prefix_required(monkeypatch):
     job, captured = _job(monkeypatch, table_options=TableOptions(generated_columns={"__generated_foo": "id + 1"}))
 
-    job.create_table()
+    job._generator.create_table()
 
     assert captured["generated_columns"] == {"__generated_foo": "id + 1"}
 
@@ -150,7 +150,7 @@ def test_create_table_generated_columns_reject_non_prefixed_key(monkeypatch):
     job, _captured = _job(monkeypatch, table_options=TableOptions(generated_columns={"foo": "id + 1"}))
 
     with pytest.raises(AssertionError, match="__generated_"):
-        job.create_table()
+        job._generator.create_table()
 
 
 def test_create_table_primary_and_foreign_keys_passthrough(monkeypatch):
@@ -164,7 +164,7 @@ def test_create_table_primary_and_foreign_keys_passthrough(monkeypatch):
         ),
     )
 
-    job.create_table()
+    job._generator.create_table()
 
     assert captured["primary_key"]["pk"].keys == ["id"]
     assert captured["foreign_keys"]["fk"].keys == ["name"]
