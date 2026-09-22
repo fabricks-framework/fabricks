@@ -79,7 +79,7 @@ def do(job: str) -> tuple:
                 todos["register"] = j.register
 
             if "pre-run-invoke" in actions:
-                todos["pre-run-invoke"] = j._invoker.invoke_pre_run
+                todos["pre-run-invoke"] = j.invoke_pre_run
 
             if "pre-run-check" in actions:
                 todos["pre-run-check"] = j.check_pre_run
@@ -91,7 +91,7 @@ def do(job: str) -> tuple:
                 todos["update-schema"] = j.update_schema
 
             if "update-dependencies" in actions:
-                todos["update-dependencies"] = j._generator.update_dependencies
+                todos["update-dependencies"] = j.update_dependencies
 
             if "overwrite-schema" in actions:
                 todos["overwrite-schema"] = j.overwrite_schema
@@ -112,7 +112,7 @@ def do(job: str) -> tuple:
                 todos["post-run-check"] = j.check_post_run
 
             if "post-run-invoke" in actions:
-                todos["post-run-invoke"] = j._invoker.invoke_post_run
+                todos["post-run-invoke"] = j.invoke_post_run
 
             optimize = "optimize" in actions
             vacuum = "vacuum" in actions

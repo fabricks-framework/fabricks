@@ -235,6 +235,9 @@ class BaseJob(ABC):
     def overwrite_schema(self, df: DataFrame | None = None) -> None:
         self._generator.overwrite_schema(df=df)
 
+    def update_dependencies(self) -> None:
+        self._generator.update_dependencies()
+
     # --- facades: checks (JobChecker) -----------------------------------------------------
 
     def check_pre_run(self) -> None:
@@ -242,6 +245,14 @@ class BaseJob(ABC):
 
     def check_post_run(self) -> None:
         self._checker.post_run()
+
+    # --- facades: invocation (JobInvoker) -------------------------------------------------
+
+    def invoke_pre_run(self, schedule: str | None = None) -> None:
+        self._invoker.invoke_pre_run(schedule=schedule)
+
+    def invoke_post_run(self, schedule: str | None = None) -> None:
+        self._invoker.invoke_post_run(schedule=schedule)
 
     # --- composition root: run orchestration (stays directly on Job) ---------------------
 
