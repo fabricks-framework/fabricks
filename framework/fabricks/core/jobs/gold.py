@@ -93,11 +93,23 @@ class Gold(BaseJob):
         return fix(sql, keep_comments=False)
 
     def get_udfs(self) -> list[str] | None:
+        updated_columns = getattr(self._resolver.updater_options, "columns", None)
+
+        udfs = None
+        if updated_columns:
+            udfs = list({match for value in updated_columns.values() for match in (_match_udfs(value) or [])})
+
         # udf not allowed in invoke or register
         if self._resolver.mode in ["invoke", "register"] or self.options.notebook or self.options.table:
-            return None
+            return udfs
 
-        return _match_udfs(self.get_sql())
+        matches = _match_udfs(self.get_sql()) or []
+        if udfs:
+            matches += udfs
+
+        if len(matches) > 0:
+            return list(set(matches))
+        return None
 
     def register_udfs(self, force: bool | None = False) -> None:
         if not self._udf_registered or force:
