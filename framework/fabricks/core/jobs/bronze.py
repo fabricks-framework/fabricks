@@ -208,6 +208,14 @@ class Bronze(BaseJob):
 
         return df
 
+    def filter_where(self, df: DataFrame) -> DataFrame:
+        f = self.options.filter_where
+        if f:
+            DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
+            df = df.where(f"{f}")
+
+        return df
+
     def get_data(
         self,
         stream: bool = False,
@@ -341,7 +349,7 @@ class Bronze(BaseJob):
     def overwrite_schema(self, df: DataFrame | None = None) -> None:  # noqa: ARG002 - `df` kept to match Generator.overwrite_schema
         DEFAULT_LOGGER.warning("schema overwrite not allowed", extra={"label": self})
 
-    def build_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `df`/`reload` kept to match Configurator.build_cdc_context
+    def build_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `df`/`reload` kept to match BaseJob.build_cdc_context
         return {}
 
     def for_each_batch(self, df: DataFrame, batch: int | None = None, **_kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
@@ -398,7 +406,7 @@ class Bronze(BaseJob):
         else:
             self._generator.truncate()
 
-    def restore(self, last_version: str | None = None, last_batch: str | None = None) -> None:  # noqa: ARG002 - kept to match Processor.restore
+    def restore(self, last_version: str | None = None, last_batch: str | None = None) -> None:  # noqa: ARG002 - kept to match BaseJob.restore
         if self._resolver.mode == "register":
             DEFAULT_LOGGER.info("register (no restore)", extra={"label": self})
 

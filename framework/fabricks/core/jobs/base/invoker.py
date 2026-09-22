@@ -23,17 +23,12 @@ class JobInvoker:
     def __init__(self, job: BaseJob) -> None:
         self.job = job
 
-    def invoke(self, schedule: str | None = None, **kwargs: Any) -> str | None:  # noqa: ANN401 - heterogeneous options bag forwarded to notebook invokers
-        return self._invoke_job(
-            position="run", schedule=schedule, **kwargs
-        )  # kwargs and return needed for get_data in gold
-
     def invoke_pre_run(self, schedule: str | None = None) -> None:
-        self._invoke_job(position="pre_run", schedule=schedule)
+        self.invoke_job(position="pre_run", schedule=schedule)
         self._invoke_step(position="pre_run", schedule=schedule)
 
     def invoke_post_run(self, schedule: str | None = None) -> None:
-        self._invoke_job(position="post_run", schedule=schedule)
+        self.invoke_job(position="post_run", schedule=schedule)
         self._invoke_step(position="post_run", schedule=schedule)
 
     def _invoke_notebook(
@@ -60,7 +55,7 @@ class JobInvoker:
 
         return self._run_notebook(path=path, arguments=arguments, schedule=schedule, timeout=timeout)
 
-    def _invoke_job(
+    def invoke_job(
         self,
         position: str,
         schedule: str | None = None,

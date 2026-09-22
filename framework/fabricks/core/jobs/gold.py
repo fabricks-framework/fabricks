@@ -44,11 +44,11 @@ class Gold(BaseJob):
         super().__init__("gold", step=step, topic=topic, item=item, job_id=job_id, conf=conf)
 
     @classmethod
-    def from_job_id(cls, step: str, job_id: str, *, conf: dict | Row | None = None) -> Self:  # noqa: ARG003 - `conf` kept to match Configurator.from_job_id, called with conf= by get_job.py
+    def from_job_id(cls, step: str, job_id: str, *, conf: dict | Row | None = None) -> Self:  # noqa: ARG003 - `conf` kept to match BaseJob.from_job_id, called with conf= by get_job.py
         return cls(step=step, job_id=job_id)
 
     @classmethod
-    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: dict | Row | None = None) -> Self:  # noqa: ARG003 - `conf` kept to match Configurator.from_step_topic_item, called with conf= by get_job.py
+    def from_step_topic_item(cls, step: str, topic: str, item: str, *, conf: dict | Row | None = None) -> Self:  # noqa: ARG003 - `conf` kept to match BaseJob.from_step_topic_item, called with conf= by get_job.py
         return cls(step=step, topic=topic, item=item)
 
     @property
@@ -115,7 +115,7 @@ class Gold(BaseJob):
 
     def get_data(
         self,
-        stream: bool = False,  # noqa: ARG002 - kept to match Configurator.get_data, called with stream= by the base class
+        stream: bool = False,  # noqa: ARG002 - kept to match BaseJob.get_data, called with stream= by the base class
         transform: bool | None = False,
         schema_only: bool | None = False,
         **kwargs: Any,  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
@@ -141,7 +141,7 @@ class Gold(BaseJob):
 
             assert path is not None, "path could not be resolved"
 
-            global_temp_view = self._invoker.invoke(path=path, schema_only=schema_only, **kwargs)
+            global_temp_view = self._invoker.invoke_job(position="run", path=path, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"
 
             df = self.spark.sql(f"select * from global_temp.{global_temp_view}")
@@ -345,7 +345,7 @@ class Gold(BaseJob):
 
         return context
 
-    def for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs: Any) -> None:  # noqa: ARG002, ANN401 - `batch` kept to match Configurator.for_each_batch; heterogeneous options bag
+    def for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs: Any) -> None:  # noqa: ARG002, ANN401 - `batch` kept to match BaseJob.for_each_batch; heterogeneous options bag
         assert self.is_table, f"{self._resolver.mode} not allowed"
 
         reload = kwargs.get("reload")
@@ -384,7 +384,7 @@ class Gold(BaseJob):
     def for_each_run(self, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
         if self._resolver.mode == "invoke":
             schedule = kwargs.get("schedule")
-            self._invoker.invoke(schedule=schedule)
+            self._invoker.invoke_job(position="run", schedule=schedule)
 
         elif self._resolver.mode == "register":
             DEFAULT_LOGGER.debug("register (no run)", extra={"label": self})

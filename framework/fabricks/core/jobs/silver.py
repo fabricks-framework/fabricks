@@ -93,6 +93,14 @@ class Silver(BaseJob):
         df = df.transform(self._invoker.extend)
         return self.update_metadata(df)
 
+    def filter_where(self, df: DataFrame) -> DataFrame:
+        f = self.options.filter_where
+        if f:
+            DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
+            df = df.where(f"{f}")
+
+        return df
+
     def get_data(
         self,
         stream: bool = False,
@@ -251,7 +259,7 @@ class Silver(BaseJob):
     def overwrite_schema(self, df: DataFrame | None = None) -> None:  # noqa: ARG002 - `df` kept to match Generator.overwrite_schema
         DEFAULT_LOGGER.warning("overwrite schema not allowed", extra={"label": self})
 
-    def build_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `reload` kept to match Configurator.build_cdc_context
+    def build_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:  # noqa: ARG002 - `reload` kept to match BaseJob.build_cdc_context
         # if dataframe, reference is passed (BUG)
         name = f"{self.step}_{self.topic}_{self.item}__check"
         global_temp_view = create_or_replace_global_temp_view(name=name, df=df, job=self)

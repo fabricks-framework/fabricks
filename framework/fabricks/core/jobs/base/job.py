@@ -5,6 +5,7 @@ from typing import Any, ClassVar, Self
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
+from typing_extensions import deprecated
 
 from fabricks.cdc import SCD1, SCD2, NoCDC
 from fabricks.cdc.scd0 import SCD0
@@ -24,13 +25,11 @@ from fabricks.core.jobs.base.exception import (
 )
 from fabricks.core.jobs.base.generator import JobGenerator
 from fabricks.core.jobs.base.invoker import JobInvoker
-from fabricks.core.jobs.base.resolver import JobResolver
+from fabricks.core.jobs.base.resolver import JobResolver, resolve_option
 from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.metastore.table import Table
 from fabricks.models import (
-    JobBronzeOptions,
     JobDependency,
-    JobSilverOptions,
     StepBronzeConf,
     StepBronzeOptions,
     StepGoldConf,
@@ -203,6 +202,7 @@ class BaseJob(ABC):
 
     # --- facades: DDL mechanics (JobGenerator) --------------------------------------------
 
+    @deprecated("use maintain instead")
     def optimize(self, vacuum: bool | None = True, optimize: bool | None = True, analyze: bool | None = True) -> None:
         return self.maintain(vacuum=vacuum, optimize=optimize, compute_statistics=analyze)
 
@@ -244,16 +244,6 @@ class BaseJob(ABC):
         self._checker.post_run()
 
     # --- composition root: run orchestration (stays directly on Job) ---------------------
-
-    def filter_where(self, df: DataFrame) -> DataFrame:
-        assert isinstance(self.options, (JobBronzeOptions, JobSilverOptions))
-
-        f = self.options.filter_where
-        if f:
-            DEFAULT_LOGGER.debug(f"filter where {f}", extra={"label": self})
-            df = df.where(f"{f}")
-
-        return df
 
     def restore(self, last_version: str | None = None, last_batch: str | None = None) -> None:
         """
@@ -415,15 +405,11 @@ class BaseJob(ABC):
                 raise exception
 
             if vacuum is None:
-                vacuum = self.options.vacuum if self.options and self.options.vacuum is not None else False
+                vacuum = resolve_option(self.options.vacuum, default=False)
             if optimize is None:
-                optimize = self.options.optimize if self.options and self.options.optimize is not None else False
+                optimize = resolve_option(self.options.optimize, default=False)
             if compute_statistics is None:
-                compute_statistics = (
-                    self.options.compute_statistics
-                    if self.options and self.options.compute_statistics is not None
-                    else False
-                )
+                compute_statistics = resolve_option(self.options.compute_statistics, default=False)
 
             if vacuum or optimize or compute_statistics:
                 self.maintain(compute_statistics=compute_statistics, optimize=optimize, vacuum=vacuum)
