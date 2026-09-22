@@ -263,10 +263,10 @@ class BaseJob(ABC):
     # --- facades: invocation (JobInvoker) -------------------------------------------------
 
     def invoke_pre_run(self, schedule: str | None = None) -> None:
-        self._invoker.invoke_pre_run(schedule=schedule)
+        self._invoker.pre_run(schedule=schedule)
 
     def invoke_post_run(self, schedule: str | None = None) -> None:
-        self._invoker.invoke_post_run(schedule=schedule)
+        self._invoker.post_run(schedule=schedule)
 
     # --- composition root: run orchestration (stays directly on Job) ---------------------
 
@@ -381,6 +381,7 @@ class BaseJob(ABC):
         last_version = None
         last_batch = None
         exception = None
+        is_first_write = False
 
         if self.is_table:
             last_version = self.table.get_property("fabricks.last_version")
@@ -388,6 +389,8 @@ class BaseJob(ABC):
                 DEFAULT_LOGGER.debug(f"last version {last_version}", extra={"label": self})
             else:
                 last_version = str(self.table.last_version)
+
+            is_first_write = not self.table.has_rows
 
             if self.is_stream:
                 last_batch = self.table.get_property("fabricks.last_batch")
@@ -407,7 +410,7 @@ class BaseJob(ABC):
                 self._checker.skip_run()
 
             if invoke:
-                self._invoker.invoke_pre_run(schedule=schedule)
+                self._invoker.pre_run(schedule=schedule)
 
             try:
                 self._checker.pre_run()
@@ -424,7 +427,7 @@ class BaseJob(ABC):
             self._checker.post_run_extra()
 
             if invoke:
-                self._invoker.invoke_post_run(schedule=schedule)
+                self._invoker.post_run(schedule=schedule)
 
             if exception:
                 raise exception
@@ -435,6 +438,8 @@ class BaseJob(ABC):
                 optimize = resolve_option(self.options.optimize, default=False)
             if compute_statistics is None:
                 compute_statistics = resolve_option(self.options.compute_statistics, default=False)
+            if is_first_write:
+                compute_statistics = True
 
             if vacuum or optimize or compute_statistics:
                 self.maintain(compute_statistics=compute_statistics, optimize=optimize, vacuum=vacuum)
