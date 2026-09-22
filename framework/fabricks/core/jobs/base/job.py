@@ -29,6 +29,7 @@ from fabricks.core.jobs.base.resolver import JobResolver, resolve_option
 from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.metastore.table import Table
 from fabricks.models import (
+    AllowedModes,
     JobDependency,
     Paths,
     StepBronzeConf,
@@ -201,6 +202,14 @@ class BaseJob(ABC):
     @property
     def cdc(self) -> NoCDC | SCD0 | SCD1 | SCD2:
         return self._resolver.cdc
+
+    @property
+    def mode(self) -> AllowedModes:
+        return self._resolver.mode
+
+    @property
+    def timeout(self) -> int:
+        return self._resolver.timeout
 
     def get_udfs(self) -> list[str] | None:
         return None
