@@ -30,6 +30,7 @@ from fabricks.core.jobs.get_job_conf import get_job_conf
 from fabricks.metastore.table import Table
 from fabricks.models import (
     JobDependency,
+    Paths,
     StepBronzeConf,
     StepBronzeOptions,
     StepGoldConf,
@@ -192,6 +193,10 @@ class BaseJob(ABC):
     @property
     def table(self) -> Table:
         return self._resolver.table
+
+    @property
+    def paths(self) -> Paths:
+        return self._resolver.paths
 
     @property
     def cdc(self) -> NoCDC | SCD0 | SCD1 | SCD2:
