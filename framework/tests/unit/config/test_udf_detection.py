@@ -4,9 +4,9 @@ for a real bug: the updater_options.columns path was dropped during the
 job-composition refactor on the (wrong) assumption that no job's updated
 columns ever call a UDF -- fabricks.legacy's gold.scd1.updated_column job
 does (`udf_add_now(monarch)`), so the UDF never got registered before the
-update expression ran. mode="invoke" is used below to isolate the
-updater_options path from SQL-based matching, which needs a real runtime
-.sql fixture this test doesn't have.
+update expression ran. mode="invoke" is used for the updater_options-only
+tests to isolate that path from SQL-based matching; the SQL tests below
+monkeypatch get_sql() instead of relying on a real runtime .sql fixture.
 """
 
 from fabricks.core import get_job
@@ -49,3 +49,34 @@ def test_get_udfs_none_when_no_updater_options_set():
     job.conf = job.conf.model_copy(update={"options": job.conf.options.model_copy(update={"mode": "invoke"})})
 
     assert job.get_udfs() is None
+
+
+def test_get_udfs_detects_udf_call_in_job_sql(monkeypatch):
+    job = get_job(step="gold", topic="fact", item="step_option")
+    monkeypatch.setattr(job, "get_sql", lambda: "select udf_add_now(monarch) as ts from silver.monarch")
+
+    assert job.get_udfs() == ["add_now"]
+
+
+def test_get_udfs_detects_multiple_udfs_in_job_sql(monkeypatch):
+    job = get_job(step="gold", topic="fact", item="step_option")
+    monkeypatch.setattr(job, "get_sql", lambda: "select udf_add_now(monarch), udf_slugify(name) from silver.monarch")
+
+    assert set(job.get_udfs() or []) == {"add_now", "slugify"}
+
+
+def test_get_udfs_none_when_job_sql_has_no_udf_call(monkeypatch):
+    job = get_job(step="gold", topic="fact", item="step_option")
+    monkeypatch.setattr(job, "get_sql", lambda: "select monarch, name from silver.monarch")
+
+    assert job.get_udfs() is None
+
+
+def test_get_udfs_merges_updater_options_and_sql_udfs(monkeypatch):
+    job = get_job(step="gold", topic="fact", item="step_option")
+    job.conf = job.conf.model_copy(
+        update={"updater_options": UpdaterOptions(columns={"__updated_extra_column": "udf_add_now(monarch)"})}
+    )
+    monkeypatch.setattr(job, "get_sql", lambda: "select udf_slugify(name) from silver.monarch")
+
+    assert set(job.get_udfs() or []) == {"add_now", "slugify"}
