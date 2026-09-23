@@ -1,0 +1,15 @@
+---
+# Paired with tests/spark/runtime/silver/_config.extender_test.yml for
+# https://github.com/fabricks-framework/fabricks/issues/177: a bronze
+# job with an extender configured, referenced (by the default topic/item
+# naming convention) as the sole parent of a mode:memory silver job.
+- job:
+    step: bronze
+    topic: extender_test
+    item: source
+    tags: [test]
+    options:
+      mode: append
+      uri: dummy://not-used
+    extender_options:
+      - extender: dummy

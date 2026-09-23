@@ -113,6 +113,7 @@ class Silver(BaseJob):
         if self._resolver.mode == "memory":
             assert len(lineage) == 1, f"more than 1 dependency not allowed ({lineage})"
 
+            self._assert_bronze_parent_has_no_extender(lineage[0])
             parent = lineage[0].parent
             df = self.spark.sql(f"select * from {parent}")
 
@@ -193,6 +194,20 @@ class Silver(BaseJob):
         assert dependencies, "no dependency found"
         return dependencies
 
+    def _assert_bronze_parent_has_no_extender(self, dependency: JobDependency) -> None:
+        # only called where mode:memory already reads its parent via a plain
+        # `select * from {parent}` -- no Python execution step -- so a
+        # bronze parent's extender(s) could never actually run against it,
+        # see https://github.com/fabricks-framework/fabricks/issues/177
+        if not dependency.parent.startswith(f"{self.parent_step}."):
+            return
+
+        bronze_parent = Bronze.from_job_id(step=self.parent_step, job_id=dependency.parent_id)
+        has_extender = bool(bronze_parent._resolver.extender_options) or bool(bronze_parent.step_conf.extender_options)
+        assert not has_extender, (
+            f"{dependency.parent} has extender(s) configured, not supported for mode:memory silver"
+        )
+
     def create_or_replace_view(self) -> None:
         assert self._resolver.mode in ["memory", "combine"], f"{self._resolver.mode} not allowed"
 
@@ -218,6 +233,7 @@ class Silver(BaseJob):
         else:
             assert len(lineage) == 1, "only one dependency allowed"
 
+            self._assert_bronze_parent_has_no_extender(lineage[0])
             parent = lineage[0].parent
             sql = f"select * from {parent}"
             sql = fix_sql(sql)
