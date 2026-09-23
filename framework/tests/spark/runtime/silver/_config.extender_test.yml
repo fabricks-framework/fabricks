@@ -1,0 +1,14 @@
+---
+# https://github.com/fabricks-framework/fabricks/issues/177: mode:memory
+# silver is a plain `select * from {parent}` view (Silver.create_or_
+# replace_view()) with no Python execution step, so a bronze parent's
+# extender_options can never actually run -- this job's bronze parent
+# (tests/spark/runtime/bronze/_config.extender_test.yml) has one
+# configured, on purpose, to prove that combination is rejected.
+- job:
+    step: silver
+    topic: extender_test
+    item: source
+    tags: [test]
+    options:
+      mode: memory
