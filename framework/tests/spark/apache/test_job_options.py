@@ -64,7 +64,11 @@ def test_latest_mode_replaces_target_with_each_batchs_full_snapshot(local_spark)
 # https://github.com/fabricks-framework/fabricks/issues/182: an empty batch
 # for a "latest" mode job used to raise a PARSE_SYNTAX_ERROR (see
 # tests/unit/config/test_empty_slice_invalid_sql.py for the SQL-shape
-# regression test) instead of being a no-op.
+# regression test) instead of being a valid full-replace-with-nothing
+# batch. The fixture's check_options.min_rows:0 is required to reach
+# this: without it, for_each_batch's batch_has_data() guard returns
+# early on an empty batch and the CDC layer -- where the bug lives --
+# is never reached.
 def test_latest_mode_accepts_an_empty_batch(local_spark):
     job = get_job(step="silver", topic="latest_test", item="test")
     columns = ["id", "name", "__operation", "__timestamp"]
@@ -73,8 +77,12 @@ def test_latest_mode_accepts_an_empty_batch(local_spark):
     job.for_each_batch(batch)
     assert job.table.dataframe.count() == 1
 
+    # "latest" mode is a full replace (see test_latest_mode_replaces_target_
+    # with_each_batchs_full_snapshot above) -- an empty batch is a valid
+    # "current snapshot is empty" and correctly empties the target too; the
+    # bug was that this raised instead.
     job.for_each_batch(local_spark.createDataFrame([], schema=batch.schema))
-    assert job.table.dataframe.count() == 1
+    assert job.table.dataframe.count() == 0
 
 
 def test_silver_scd1_handles_incremental_schema_drift(local_spark, cdc_oracles):
