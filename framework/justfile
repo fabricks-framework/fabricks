@@ -20,7 +20,7 @@ format:
 update-skills:
     uv run python scripts/update_skills.py
 
-# Regenerate job-schema.json from the Pydantic job config models (fabricks/models/job_schema.py)
+# Regenerate job-schema*.json (repo root) from the Pydantic job config models (fabricks/models/job_schema.py)
 generate-schema:
     uv run python scripts/generate_job_schema.py
 

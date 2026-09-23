@@ -33,13 +33,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -238,13 +238,13 @@
                 "source": {
                     "anyOf": [
                         {
+                            "type": "string"
+                        },
+                        {
                             "type": "boolean"
                         },
                         {
                             "type": "integer"
-                        },
-                        {
-                            "type": "string"
                         },
                         {
                             "type": "null"
@@ -737,13 +737,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -835,13 +835,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -860,13 +860,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -1000,13 +1000,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -1025,13 +1025,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -1062,13 +1062,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -1117,13 +1117,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },

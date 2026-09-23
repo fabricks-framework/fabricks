@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=../../../../../job-schema.json
+# yaml-language-server: $schema=../../../../../../job-schema-bronze.json
 # king/queen use register mode -- proves external-table registration
 # (Bronze.create()/register(), bronze.py), each reading its own real Delta
 # table under raw/delta/<topic>, seeded per run by runtests.py's

@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=../../../../../job-schema.json
+# yaml-language-server: $schema=../../../../../../job-schema-silver.json
 # Downstream of bronze.king_scd1 (register mode) -- proves real cross-layer
 # dependency ordering (bronze -> silver), not just config shape.
 - job:

@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=../../../../../../../job-schema.json
+# yaml-language-server: $schema=../../../../../../../../job-schema-gold.json
 # Real dbutils.notebook.run invocation status propagation -- all four
 # tagged, asserted in test_schedule.py against fabricks.last_schedule.
 - job:
