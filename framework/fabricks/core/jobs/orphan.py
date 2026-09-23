@@ -11,12 +11,11 @@ generator.py's Generator.drop()), no_drop is not honored, since the
 config that would have set it no longer exists.
 """
 
-from functools import cached_property
 from typing import cast
 
-from fabricks.cdc import NoCDC
 from fabricks.context import PATHS_STORAGE, SPARK
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.metastore.table import Table
 from fabricks.models.utils import get_job_id
 
 
@@ -26,21 +25,16 @@ class OrphanJob:
         self.topic = topic
         self.item = item
         self.job_id = get_job_id(step=step, topic=topic, item=item)
-        self.spark = SPARK
 
     def __str__(self) -> str:
+        # NOT self.job_id -- that's an md5 hash (get_job_id()), but the
+        # children-check query below matches fabricks.dependencies.parent,
+        # which stores this readable "step.topic_item" form.
         return f"{self.step}.{self.topic}_{self.item}"
-
-    @cached_property
-    def cdc(self) -> NoCDC:
-        # NoCDC.table.drop() drops whichever the metastore actually has --
-        # table or view -- so the job's original cdc type doesn't matter
-        # for a drop, only its step/topic/item identity.
-        return NoCDC(self.step, self.topic, self.item, spark=self.spark)
 
     def drop(self) -> None:
         try:
-            row = self.spark.sql(
+            row = SPARK.sql(
                 f"""
                 select
                     count(*) as count,
@@ -58,9 +52,12 @@ class OrphanJob:
                 )
 
         except Exception:
-            pass
+            DEFAULT_LOGGER.debug("could not check for children", extra={"label": str(self)}, exc_info=True)
 
-        self.cdc.drop()
+        # Table.drop() drops whichever the metastore actually has -- table
+        # or view -- so the job's original cdc type doesn't matter, only
+        # its step/topic/item identity.
+        Table(self.step, self.topic, self.item, spark=SPARK).drop()
 
         storage = PATHS_STORAGE.get(self.step)
         assert storage, f"no storage configured for step {self.step}"
