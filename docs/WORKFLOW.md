@@ -22,3 +22,4 @@ workflows must stay inside.
    caller of the code you're changing.
 4. Run the full tier(s) the new test(s) belong to and confirm everything
    passes before considering the fix done.
+5. Run `/simplify` against the diff and apply what it finds.
