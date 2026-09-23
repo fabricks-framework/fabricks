@@ -18,21 +18,20 @@ framework/fabricks/cdc/templates/ctes/slice.sql.jinja's
 double-nested empty parens, which Databricks rejects with
 PARSE_SYNTAX_ERROR.
 
-This mirrors test_cdc_query_generation.py's pattern: construct a CDC
-object directly with a mocked spark, and mock the fix_context probe's
-own `spark.sql(...).collect()` result to the exact broken row Spark
-returns for an empty slice (confirmed by rendering the real templates,
-not guessed).
-
-This test encodes the *expected* (fixed) behavior, not the current
-broken one: it currently FAILS, and should turn green once fix_context
-stops letting an empty slice through as invalid SQL.
+Fix: mirrors the existing `if slice == "update" and not has_rows: slice
+= None` guard in Processor.get_query_context() -- a "latest" slice is
+reset to None *before* fix_context() (and the parent_* CTE-chain
+derivation that follows it) ever runs, whenever the source itself has
+no rows. This avoids the fix_context probe query and its broken-string
+defect entirely, rather than trying to detect and patch the broken
+string after the fact (which would also need to retroactively fix up
+every parent_rectify/parent_deduplicate_hash/parent_cdc reference that
+already assumed "__sliced" exists).
 """
 
 from unittest.mock import MagicMock
 
 from pyspark.sql import DataFrame
-from pyspark.sql.types import Row
 
 from fabricks.cdc import NoCDC
 
@@ -41,27 +40,23 @@ def _fake_spark():
     return MagicMock(name="fake_spark")
 
 
-def _src(columns):
+def _empty_src(columns):
     df = MagicMock(spec=DataFrame)
     df.columns = columns
+    df.isEmpty.return_value = True
     return df
 
 
 def test_empty_latest_slice_does_not_generate_invalid_sql():
     spark = _fake_spark()
-    # The row fix_context()'s probe query actually returns when the
-    # source has no rows: __latest's ungrouped MAX(__timestamp) is NULL,
-    # and concat_ws drops it, leaving bare parens with nothing between.
-    spark.sql.return_value.collect.return_value = [Row(slices=" (  )", sources=None)]
     cdc = NoCDC("silver", "empty_slice", spark=spark)
 
-    sql = cdc.get_query(_src(["id", "name"]), slice="latest")
+    sql = cdc.get_query(_empty_src(["id", "name"]), slice="latest")
 
-    # Expected/fixed behavior: an empty slice must never produce
-    # double-nested empty parens (invalid SQL Databricks rejects with
-    # PARSE_SYNTAX_ERROR). Currently fails: fix_context()'s
-    # `assert row.slices` passes (" (  )" is truthy), so the broken
-    # value survives into the final query unchanged.
+    # No __sliced CTE at all: get_query_context() reset slice=None
+    # before rendering, so filter.sql.jinja's broken-empty-parens probe
+    # never runs, and there's nothing left to produce invalid SQL from.
+    assert "__sliced" not in sql
     normalized = " ".join(sql.split())
     assert "AND ( ()" not in normalized, (
         f"empty slice produced the known-broken double-nested-empty-parens shape:\n{sql}"

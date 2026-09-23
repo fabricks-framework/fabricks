@@ -131,6 +131,14 @@ class Processor(Generator):
         if slice == "update" and not has_rows:
             slice = None
 
+        # a "latest" slice is meaningless -- and generates invalid SQL, see
+        # https://github.com/fabricks-framework/fabricks/issues/182 -- when
+        # the source itself has no rows: there is nothing to take the
+        # latest of, and an aggregate MAX() over zero rows still produces
+        # one NULL-valued row rather than none.
+        if slice == "latest" and not self.has_data(src):
+            slice = None
+
         # override operation if added and found in df
         if add_operation and "__operation" in inputs:
             overwrite.append("__operation")
