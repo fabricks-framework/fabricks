@@ -7,11 +7,10 @@ This directory contains Jinja2 SQL templates used by the Fabricks CDC (Change Da
 ```
 templates/
 ├── ctes/           # Common Table Expression templates
-├── filters/        # Filter logic for slicing and updating data
 ├── macros/         # Reusable Jinja2 macros
 ├── merges/         # MERGE statement templates for each CDC type
 ├── queries/        # Query assembly templates for each CDC type
-├── filter.sql.jinja    # Main filter orchestration
+├── probe.sql.jinja  # Incremental-filter probe (Processor.fix_context())
 ├── merge.sql.jinja     # Main merge orchestration
 └── query.sql.jinja     # Main query orchestration
 ```
@@ -57,20 +56,25 @@ Main template for generating MERGE statements to apply changes to target tables.
 
 - `cdc`: CDC type determining which merge template to use
 
-### filter.sql.jinja
+### probe.sql.jinja
 
-Main template for generating filter queries to determine which data slices to process.
-
-**Included Components:**
-
-- Base CTE (via `ctes/base.sql.jinja`)
-- Update filter (via `filters/update.sql.jinja`)
-- Latest filter (via `filters/latest.sql.jinja`)
-- Final aggregation (via `filters/final.sql.jinja`)
+Used by `Processor.fix_context()` to compute the incremental-slice filter
+string (`slices`/`sources`) for `mode: update` and `mode: latest` jobs.
+Reads only `__source` (when `has_source`) and the relevant timestamp
+column -- never the whole row. This replaced an earlier version that
+always built `ctes/base.sql.jinja`'s `__base` CTE (`select *, md5(<every
+field>) as __hash, ...`) just for this probe; when `has_source` is true,
+the join between `__base` and the target blocks Spark from pruning that
+hash computation away, which could OOM executors on wide batches (see
+[issue #184](https://github.com/fabricks-framework/fabricks/issues/184)).
 
 **Parameters:**
 
 - `slice`: Type of slice ("update" or "latest")
+- `has_source`: Whether source tracking is enabled
+- `src_ref`: Source reference, pre-built in Python (`Processor._probe_source_ref`)
+- `tgt`: Target table name (update mode)
+- `timestamp_col`: `__valid_from` for scd2, `__timestamp` otherwise
 
 ## CTEs (Common Table Expressions)
 
@@ -190,48 +194,6 @@ Corrects historical data inconsistencies, particularly handling deleted records 
 - `parent_rectify`: Parent CTE to rectify
 - `intermediates`: List of intermediate columns
 - `has_rows`: Whether target has existing rows
-- `has_source`: Whether source tracking is enabled
-
-## Filters
-
-### filters/update.sql.jinja
-
-Generates filter conditions to select only new or updated records since the last load.
-
-**Features:**
-
-- Determines maximum timestamp from target table
-- Generates slice conditions for records newer than max timestamp
-- Handles different timestamp columns per CDC type
-- Supports multi-source filtering
-
-**Parameters:**
-
-- `parent_slice`: Parent CTE name
-- `tgt`: Target table name
-- `cdc`: CDC type
-- `has_source`: Whether source tracking is enabled
-
-### filters/latest.sql.jinja
-
-Generates filter conditions to select only the most recent timestamp per source.
-
-**Features:**
-
-- Finds maximum timestamp per source
-- Creates slice conditions for latest data only
-
-**Parameters:**
-
-- `parent_slice`: Parent CTE name
-- `has_source`: Whether source tracking is enabled
-
-### filters/final.sql.jinja
-
-Aggregates slice and source filter conditions using OR logic.
-
-**Parameters:**
-
 - `has_source`: Whether source tracking is enabled
 
 ## Macros
@@ -548,8 +510,10 @@ merge = cdc.render_merge()
 3. Define WHEN MATCHED and WHEN NOT MATCHED clauses
 4. Specify UPDATE, DELETE, and INSERT operations
 
-### Filter Rendering (filter.sql.jinja)
+### Probe Rendering (probe.sql.jinja)
 
-1. **Base CTE** - Load source metadata
-2. **Update/Latest Filter CTE** - Determine slice conditions
-3. **Final CTE** - Aggregate filter expressions
+1. **Update/Latest branch** - per `slice`, aggregate directly from the
+   source (`latest`) or target (`update`), grouped by `__source` when
+   `has_source`
+2. **Slices/sources strings** - built in the same query via
+   `concat`/`concat_ws`/`array_join`, no separate final CTE needed

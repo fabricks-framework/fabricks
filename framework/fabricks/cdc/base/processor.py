@@ -398,12 +398,49 @@ class Processor(Generator):
             DEFAULT_LOGGER.exception("fail to fix sql query", extra={"label": self, "sql": sql})
             raise e
 
-    def fix_context(self, context: dict, fix: bool | None = True, **_kwargs: Any) -> dict:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
-        environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
-        template = environment.get_template("filter.sql.jinja")
+    def _probe_source_ref(self, context: dict) -> str:
+        # Mirrors ctes/base.sql.jinja's FROM-clause branches exactly. In
+        # practice fix_context only ever sees format "table" or "query" --
+        # both real callers (Processor.get_data(), Generator.
+        # create_or_replace_view()) convert a raw DataFrame to a "query"
+        # global-temp-view string or reject DataFrames outright -- but the
+        # "dataframe" placeholder is kept for parity with the template and
+        # with existing tests that call get_query() directly with a mock
+        # DataFrame.
+        format = context["format"]
+        if format == "query":
+            src_ref = f"({context['src']})"
+        elif format == "dataframe":
+            src_ref = "{src}"
+        else:
+            src_ref = str(context["src"])
 
+        filter_where = context["filter_where"]
+        if filter_where:
+            src_ref = f"(select * from {src_ref} where {filter_where})"
+
+        return src_ref
+
+    def _probe_sql(self, context: dict) -> str:
+        # __timestamp always needs a real timestamp type for slice="latest"
+        # (matches ctes/base.sql.jinja's `cast["__timestamp"] = "timestamp"`,
+        # the only cast get_query_context ever sets) -- add_timestamp
+        # combined with slice="latest" would mean no real per-row timestamp
+        # to take the latest of, and no real caller does that, so it's not
+        # handled here.
+        environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
+        template = environment.get_template("probe.sql.jinja")
+        return template.render(
+            slice=context["slice"],
+            has_source=context["has_source"],
+            src_ref=self._probe_source_ref(context),
+            tgt=context["tgt"],
+            timestamp_col="__valid_from" if context["cdc"] == "scd2" else "__timestamp",
+        )
+
+    def fix_context(self, context: dict, fix: bool | None = True, **_kwargs: Any) -> dict:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         try:
-            sql = template.render(**context)
+            sql = self._probe_sql(context)
             if fix:
                 sql = self.fix_sql(sql)
             else:
