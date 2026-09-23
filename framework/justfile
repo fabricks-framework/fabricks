@@ -20,6 +20,10 @@ format:
 update-skills:
     uv run python scripts/update_skills.py
 
+# Regenerate job-schema.json from the Pydantic job config models (fabricks/models/job_schema.py)
+generate-schema:
+    uv run python scripts/generate_job_schema.py
+
 # Run plain unit tests (tests/unit/plain/) -- no Spark/fabricks.context dependency
 # TARGET can narrow to a file or a single test, e.g. `just test-plain tests/unit/plain/test_x.py::test_y`
 test-plain TARGET="tests/unit/plain":
