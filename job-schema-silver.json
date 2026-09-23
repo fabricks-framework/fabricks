@@ -33,13 +33,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -712,13 +712,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -737,13 +737,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -877,13 +877,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -902,13 +902,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -939,13 +939,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },
@@ -994,13 +994,13 @@
                             "additionalProperties": {
                                 "anyOf": [
                                     {
+                                        "type": "string"
+                                    },
+                                    {
                                         "type": "boolean"
                                     },
                                     {
                                         "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
                                     }
                                 ]
                             },

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Fails the push if any job-schema*.json (at the repo root) is stale
+# relative to the Pydantic job config models they're generated from.
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+(cd "$repo_root/framework" && just generate-schema >/dev/null)
+
+if ! git -C "$repo_root" diff --quiet -- 'job-schema*.json'; then
+    echo "error: job-schema.json (or a per-layer job-schema-*.json) was stale (job config models changed since it was last generated)." >&2
+    echo "Regenerated in place -- review, commit, then push again." >&2
+    exit 1
+fi
