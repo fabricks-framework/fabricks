@@ -61,6 +61,22 @@ def test_latest_mode_replaces_target_with_each_batchs_full_snapshot(local_spark)
     assert job.table.dataframe.count() == 2
 
 
+# https://github.com/fabricks-framework/fabricks/issues/182: an empty batch
+# for a "latest" mode job used to raise a PARSE_SYNTAX_ERROR (see
+# tests/unit/config/test_empty_slice_invalid_sql.py for the SQL-shape
+# regression test) instead of being a no-op.
+def test_latest_mode_accepts_an_empty_batch(local_spark):
+    job = get_job(step="silver", topic="latest_test", item="test")
+    columns = ["id", "name", "__operation", "__timestamp"]
+
+    batch = local_spark.createDataFrame([(1, "a", "reload", "2022-01-01 00:00:00")], columns)
+    job.for_each_batch(batch)
+    assert job.table.dataframe.count() == 1
+
+    job.for_each_batch(local_spark.createDataFrame([], schema=batch.schema))
+    assert job.table.dataframe.count() == 1
+
+
 def test_silver_scd1_handles_incremental_schema_drift(local_spark, cdc_oracles):
     job = get_job(step="silver", topic="king_and_queen", item="scd1")
 
