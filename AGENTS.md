@@ -9,6 +9,7 @@ pick which retained `docs/` file it belongs in.
 - for system structure see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md);
 - for coding rules see [docs/CONSTITUTION.md](./docs/CONSTITUTION.md);
 - for testing see [docs/TEST.md](./docs/TEST.md);
+- for recurring task runbooks (e.g. bugfixes) see [docs/WORKFLOW.md](./docs/WORKFLOW.md);
 - for hard-won bug signatures see [docs/DEBUG.md](./docs/DEBUG.md);
 - for format/lint/test commands see [framework/justfile](./framework/justfile) —
   run `just --list` from `framework/` for the full recipe list.

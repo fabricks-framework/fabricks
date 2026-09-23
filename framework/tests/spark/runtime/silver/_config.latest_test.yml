@@ -13,3 +13,10 @@
       # keeps this job testable locally without faking anything, as long as
       # each batch itself has no duplicate keys (true for this fixture).
       deduplicate: false
+    # min_rows:0 makes an empty batch tolerated rather than skipped --
+    # without it, for_each_batch's batch_has_data() guard would return
+    # early and an empty batch would never even reach the CDC layer,
+    # so this option is what makes the empty-batch integration test in
+    # test_job_options.py actually exercise issue  # 182's code path.
+    check_options:
+      min_rows: 0
