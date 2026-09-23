@@ -1,5 +1,5 @@
-"""Gold.get_cdc_context() (framework/fabricks/core/jobs/gold.py:243-342) and
-Silver.get_cdc_context() (framework/fabricks/core/jobs/silver.py:263-332):
+"""Gold.build_cdc_context() (framework/fabricks/core/jobs/gold.py:243-342) and
+Silver.build_cdc_context() (framework/fabricks/core/jobs/silver.py:263-332):
 the pure decision layer that turns job options + the incoming dataframe's
 columns into the kwargs dict passed to cdc.get_query()/.complete()/.update().
 
@@ -34,7 +34,7 @@ def _gold_job(*, mode="complete", change_data_capture="nocdc", **option_override
 def test_gold_deduplicate_option_maps_directly_to_context(deduplicate):
     job = _gold_job(deduplicate=deduplicate)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     if deduplicate is None:
         assert context["deduplicate"] is False
@@ -49,7 +49,7 @@ def test_gold_deduplicate_option_maps_directly_to_context(deduplicate):
 def test_gold_rectify_as_upserts_option_maps_directly_to_context(rectify):
     job = _gold_job(rectify_as_upserts=rectify)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert context["rectify"] is (rectify if rectify is not None else False)
 
@@ -60,7 +60,7 @@ def test_gold_rectify_as_upserts_option_maps_directly_to_context(rectify):
 def test_gold_soft_delete_unset_for_nocdc_when_hard_delete_unset():
     job = _gold_job(change_data_capture="nocdc")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["soft_delete"] is None
 
@@ -68,7 +68,7 @@ def test_gold_soft_delete_unset_for_nocdc_when_hard_delete_unset():
 def test_gold_soft_delete_defaults_true_for_scd_when_hard_delete_unset():
     job = _gold_job(change_data_capture="scd1")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert context["soft_delete"] is True
 
@@ -76,7 +76,7 @@ def test_gold_soft_delete_defaults_true_for_scd_when_hard_delete_unset():
 def test_gold_hard_delete_true_overrides_scd_default_to_soft_delete_false():
     job = _gold_job(change_data_capture="scd1", hard_delete=True)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert context["soft_delete"] is False
 
@@ -84,7 +84,7 @@ def test_gold_hard_delete_true_overrides_scd_default_to_soft_delete_false():
 def test_gold_hard_delete_false_forces_soft_delete_true():
     job = _gold_job(change_data_capture="nocdc", hard_delete=False)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["soft_delete"] is True
 
@@ -95,7 +95,7 @@ def test_gold_hard_delete_false_forces_soft_delete_true():
 def test_gold_metadata_job_level_true_wins():
     job = _gold_job(metadata=True)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_metadata"] is True
 
@@ -107,7 +107,7 @@ def test_gold_metadata_falls_back_to_step_level_when_job_unset():
         update={"options": step_conf.options.model_copy(update={"metadata": True})}
     )
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_metadata"] is True
 
@@ -119,7 +119,7 @@ def test_gold_metadata_defaults_false_when_neither_level_sets_it():
         update={"options": step_conf.options.model_copy(update={"metadata": None})}
     )
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_metadata"] is False
 
@@ -130,7 +130,7 @@ def test_gold_metadata_defaults_false_when_neither_level_sets_it():
 def test_gold_scd_adds_key_hash_operation_when_absent():
     job = _gold_job(change_data_capture="scd1")  # mode="complete" -> add_operation="upsert"
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_key"] is True
     assert context["add_hash"] is True
@@ -143,7 +143,7 @@ def test_gold_scd_adds_key_hash_operation_when_absent():
 def test_gold_scd_skips_add_key_hash_operation_when_already_present():
     job = _gold_job(change_data_capture="scd1")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__key", "__hash", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__key", "__hash", "__operation"]))
 
     assert "add_key" not in context
     assert "add_hash" not in context
@@ -156,7 +156,7 @@ def test_gold_scd_skips_add_key_hash_operation_when_already_present():
 def test_gold_scd_update_mode_forces_rectify_when_operation_missing():
     job = _gold_job(change_data_capture="scd2", mode="update")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_operation"] == "reload"
     assert context["rectify"] is True  # forced True despite rectify_as_upserts unset
@@ -165,7 +165,7 @@ def test_gold_scd_update_mode_forces_rectify_when_operation_missing():
 def test_gold_nocdc_update_mode_adds_key_hash_when_absent():
     job = _gold_job(change_data_capture="nocdc", mode="update")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_key"] is True
     assert context["add_hash"] is True
@@ -177,7 +177,7 @@ def test_gold_nocdc_update_mode_adds_key_hash_when_absent():
 def test_gold_scd2_update_mode_slices_update():
     job = _gold_job(change_data_capture="scd2", mode="update")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert context["slice"] == "update"
 
@@ -185,7 +185,7 @@ def test_gold_scd2_update_mode_slices_update():
 def test_gold_nocdc_update_mode_slices_update_when_timestamp_present():
     job = _gold_job(change_data_capture="nocdc", mode="update")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__timestamp"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__timestamp"]))
 
     assert context["slice"] == "update"
 
@@ -193,7 +193,7 @@ def test_gold_nocdc_update_mode_slices_update_when_timestamp_present():
 def test_gold_nocdc_update_mode_no_slice_when_timestamp_absent():
     job = _gold_job(change_data_capture="nocdc", mode="update")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert "slice" not in context
 
@@ -201,7 +201,7 @@ def test_gold_nocdc_update_mode_no_slice_when_timestamp_absent():
 def test_gold_append_mode_slices_update_when_timestamp_present():
     job = _gold_job(change_data_capture="nocdc", mode="append")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__timestamp"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__timestamp"]))
 
     assert context["slice"] == "update"
 
@@ -209,7 +209,7 @@ def test_gold_append_mode_slices_update_when_timestamp_present():
 def test_gold_memory_mode_sets_context_mode_complete():
     job = _gold_job(change_data_capture="nocdc", mode="memory")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["mode"] == "complete"
 
@@ -217,7 +217,7 @@ def test_gold_memory_mode_sets_context_mode_complete():
 def test_gold_reload_true_suppresses_slice_override():
     job = _gold_job(change_data_capture="scd2", mode="update")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]), reload=True)
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]), reload=True)
 
     assert "slice" not in context
 
@@ -228,7 +228,7 @@ def test_gold_reload_true_suppresses_slice_override():
 def test_gold_scd2_correct_valid_from_defaults_true_when_unset():
     job = _gold_job(change_data_capture="scd2")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert context["correct_valid_from"] is True
 
@@ -236,7 +236,7 @@ def test_gold_scd2_correct_valid_from_defaults_true_when_unset():
 def test_gold_scd2_correct_valid_from_explicit_false_respected():
     job = _gold_job(change_data_capture="scd2", correct_valid_from=False)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert context["correct_valid_from"] is False
 
@@ -244,7 +244,7 @@ def test_gold_scd2_correct_valid_from_explicit_false_respected():
 def test_gold_scd1_has_no_correct_valid_from_key():
     job = _gold_job(change_data_capture="scd1")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert "correct_valid_from" not in context
 
@@ -255,7 +255,7 @@ def test_gold_scd1_has_no_correct_valid_from_key():
 def test_gold_persist_last_timestamp_scd1_adds_timestamp_when_absent():
     job = _gold_job(change_data_capture="scd1", persist_last_timestamp=True)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert context["add_timestamp"] is True
 
@@ -263,7 +263,7 @@ def test_gold_persist_last_timestamp_scd1_adds_timestamp_when_absent():
 def test_gold_persist_last_timestamp_scd1_skipped_when_timestamp_present():
     job = _gold_job(change_data_capture="scd1", persist_last_timestamp=True)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation", "__timestamp"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation", "__timestamp"]))
 
     assert "add_timestamp" not in context
 
@@ -271,7 +271,7 @@ def test_gold_persist_last_timestamp_scd1_skipped_when_timestamp_present():
 def test_gold_persist_last_timestamp_scd2_gated_on_valid_from():
     job = _gold_job(change_data_capture="scd2", persist_last_timestamp=True)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert context["add_timestamp"] is True
 
@@ -279,7 +279,7 @@ def test_gold_persist_last_timestamp_scd2_gated_on_valid_from():
 def test_gold_persist_last_updated_timestamp_adds_last_updated_when_absent():
     job = _gold_job(change_data_capture="nocdc", persist_last_updated_timestamp=True)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_last_updated"] is True
 
@@ -287,7 +287,7 @@ def test_gold_persist_last_updated_timestamp_adds_last_updated_when_absent():
 def test_gold_last_updated_option_also_adds_last_updated():
     job = _gold_job(change_data_capture="nocdc", last_updated=True)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_last_updated"] is True
 
@@ -295,7 +295,7 @@ def test_gold_last_updated_option_also_adds_last_updated():
 def test_gold_add_last_updated_skipped_when_already_present():
     job = _gold_job(change_data_capture="nocdc", persist_last_updated_timestamp=True)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__last_updated"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__last_updated"]))
 
     assert "add_last_updated" not in context
 
@@ -306,7 +306,7 @@ def test_gold_add_last_updated_skipped_when_already_present():
 def test_gold_order_duplicate_by_asc_from_column_presence():
     job = _gold_job()
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__order_duplicate_by_asc"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__order_duplicate_by_asc"]))
 
     assert context["order_duplicate_by"] == {"__order_duplicate_by_asc": "asc"}
 
@@ -314,7 +314,7 @@ def test_gold_order_duplicate_by_asc_from_column_presence():
 def test_gold_order_duplicate_by_desc_from_column_presence():
     job = _gold_job()
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__order_duplicate_by_desc"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__order_duplicate_by_desc"]))
 
     assert context["order_duplicate_by"] == {"__order_duplicate_by_desc": "desc"}
 
@@ -322,7 +322,7 @@ def test_gold_order_duplicate_by_desc_from_column_presence():
 def test_gold_order_duplicate_by_absent_when_neither_column_present():
     job = _gold_job()
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert "order_duplicate_by" not in context
 
@@ -351,7 +351,7 @@ def _silver_job(*, mode="update", change_data_capture="nocdc", stream=True, **op
 def test_silver_deduplicate_defaults_to_not_append():
     job = _silver_job(mode="update", change_data_capture="nocdc")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["deduplicate"] is True  # mode != "append"
 
@@ -359,7 +359,7 @@ def test_silver_deduplicate_defaults_to_not_append():
 def test_silver_deduplicate_false_for_append_mode():
     job = _silver_job(mode="append", change_data_capture="nocdc")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["deduplicate"] is False
 
@@ -367,7 +367,7 @@ def test_silver_deduplicate_false_for_append_mode():
 def test_silver_deduplicate_explicit_option_wins_over_mode_default():
     job = _silver_job(mode="append", change_data_capture="nocdc", deduplicate=True)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["deduplicate"] is True
 
@@ -381,7 +381,7 @@ def test_silver_rectify_true_when_reload_probe_finds_rows():
     job = _silver_job(mode="update", change_data_capture="scd1", stream=True)
     job.spark.sql.return_value.isEmpty.return_value = False
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__key"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
 
     assert context["rectify"] is True
 
@@ -390,7 +390,7 @@ def test_silver_rectify_false_when_reload_probe_finds_no_rows():
     job = _silver_job(mode="update", change_data_capture="scd1", stream=True)
     job.spark.sql.return_value.isEmpty.return_value = True
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__key"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
 
     assert context["rectify"] is False
 
@@ -401,7 +401,7 @@ def test_silver_rectify_stays_false_for_nocdc_without_probing():
     job = _silver_job(mode="update", change_data_capture="nocdc")
     job.spark.sql.reset_mock()
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["rectify"] is False
 
@@ -409,7 +409,7 @@ def test_silver_rectify_stays_false_for_nocdc_without_probing():
 def test_silver_scd_adds_key_when_absent():
     job = _silver_job(mode="update", change_data_capture="scd1")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_key"] is True
 
@@ -417,7 +417,7 @@ def test_silver_scd_adds_key_when_absent():
 def test_silver_scd_skips_add_key_when_present():
     job = _silver_job(mode="update", change_data_capture="scd1")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__key"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
 
     assert "add_key" not in context
 
@@ -425,7 +425,7 @@ def test_silver_scd_skips_add_key_when_present():
 def test_silver_memory_mode_sets_context_mode_complete():
     job = _silver_job(mode="memory", change_data_capture="nocdc")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["mode"] == "complete"
 
@@ -433,7 +433,7 @@ def test_silver_memory_mode_sets_context_mode_complete():
 def test_silver_nocdc_memory_mode_adds_operation_when_absent():
     job = _silver_job(mode="memory", change_data_capture="nocdc")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["add_operation"] == "upsert"
 
@@ -441,7 +441,7 @@ def test_silver_nocdc_memory_mode_adds_operation_when_absent():
 def test_silver_latest_mode_slices_latest():
     job = _silver_job(mode="latest", change_data_capture="nocdc")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["slice"] == "latest"
 
@@ -449,7 +449,7 @@ def test_silver_latest_mode_slices_latest():
 def test_silver_non_stream_update_mode_slices_update():
     job = _silver_job(mode="update", change_data_capture="nocdc", stream=False)
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["slice"] == "update"
 
@@ -458,7 +458,7 @@ def test_silver_scd2_always_corrects_valid_from():
     job = _silver_job(mode="update", change_data_capture="scd2")
     job.spark.sql.return_value.isEmpty.return_value = True
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__key"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
 
     assert context["correct_valid_from"] is True
 
@@ -467,7 +467,7 @@ def test_silver_excludes_operation_when_present_in_columns():
     job = _silver_job(mode="update", change_data_capture="scd1")
     job.spark.sql.return_value.isEmpty.return_value = True
 
-    context = job.get_cdc_context(_FakeDF(columns=["id", "__key", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id", "__key", "__operation"]))
 
     assert context["exclude"] == ["__operation"]
 
@@ -475,6 +475,6 @@ def test_silver_excludes_operation_when_present_in_columns():
 def test_silver_nocdc_always_excludes_operation():
     job = _silver_job(mode="update", change_data_capture="nocdc")
 
-    context = job.get_cdc_context(_FakeDF(columns=["id"]))
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["exclude"] == ["__operation"]

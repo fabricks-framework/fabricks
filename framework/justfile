@@ -32,11 +32,13 @@ test-config:
 test-apache:
     uv run pytest tests/spark/apache -v
 
-# Deploy the bundle and run the Databricks test suite (tests/spark/databricks/) against the 'test' workspace
-test-databricks:
+# Deploy the bundle to the 'test' workspace
+deploy:
     databricks bundle deploy -t test
-    # Disabled while the Databricks test job is unavailable.
-    # databricks bundle run fabricks_test_job -t test
+
+# Deploy the bundle and run the Databricks test suite (tests/spark/databricks/) against the 'test' workspace
+test-databricks: deploy
+    databricks bundle run fabricks_test_job -t test
 
 # Run every test tier: plain, config, apache, then databricks (deploy + run against the 'test' workspace)
 test-all: test-plain test-config test-apache test-databricks

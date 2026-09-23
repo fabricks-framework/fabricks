@@ -112,7 +112,7 @@ def test_get_query_scd2_update_mode_takes_incremental_branch():
     # mode="update" always renders scd2's __merge_condition branch instead
     # of the complete-mode __complete branch, regardless of has_rows (which
     # only gates an inner sub-CTE) - forcing slice="update" directly as a
-    # kwarg (mirroring what Gold/Silver's own get_cdc_context would compute)
+    # kwarg (mirroring what Gold/Silver's own build_cdc_context would compute)
     # sidesteps needing Table.rows/registered to behave like a real table.
     # fix_context()'s own spark.sql(...).collect()[0] probe (the
     # slice-filter's row/source count) is what needs a deterministic Row.

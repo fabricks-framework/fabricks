@@ -15,4 +15,4 @@ class _FakeDF:
     dtypes: list[tuple[str, str]] = field(default_factory=list)
 
     def createOrReplaceGlobalTempView(self, _name: str) -> None:  # noqa: N802 - matches pyspark's DataFrame API
-        """No-op: Silver.get_cdc_context() registers a global temp view unconditionally."""
+        """No-op: Silver.build_cdc_context() registers a global temp view unconditionally."""

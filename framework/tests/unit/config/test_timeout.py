@@ -19,7 +19,7 @@ def test_timeout_job_level_wins():
     job = _job()
     job.conf = job.conf.model_copy(update={"options": job.conf.options.model_copy(update={"timeout": 42})})
 
-    assert job.timeout == 42
+    assert job._resolver.timeout == 42
 
 
 def test_timeout_falls_back_to_step_level_when_job_level_unset():
@@ -28,10 +28,10 @@ def test_timeout_falls_back_to_step_level_when_job_level_unset():
     new_options = step_conf.options.model_copy(update={"timeouts": StepTimeoutOptions(job=1800)})
     job.base_step_conf = step_conf.model_copy(update={"options": new_options})
 
-    assert job.timeout == 1800
+    assert job._resolver.timeout == 1800
 
 
 def test_timeout_falls_back_to_runtime_when_neither_job_nor_step_set():
     job = _job()
 
-    assert job.timeout == 3600
+    assert job._resolver.timeout == 3600

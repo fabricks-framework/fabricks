@@ -84,6 +84,7 @@ class RuntimeOptions(BaseModel):
     timeouts: RuntimeTimeoutOptions
     retention_days: int = 7
     timezone: str = str(UTC)
+    compute_statistics_on_first_write: bool | None = None
 
 
 class RuntimeConf(BaseModel):

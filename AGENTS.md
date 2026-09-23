@@ -10,6 +10,8 @@ pick which retained `docs/` file it belongs in.
 - for coding rules see [docs/CONSTITUTION.md](./docs/CONSTITUTION.md);
 - for testing see [docs/TEST.md](./docs/TEST.md);
 - for hard-won bug signatures see [docs/DEBUG.md](./docs/DEBUG.md);
+- for format/lint/test commands see [framework/justfile](./framework/justfile) —
+  run `just --list` from `framework/` for the full recipe list.
 
 ## Skills
 

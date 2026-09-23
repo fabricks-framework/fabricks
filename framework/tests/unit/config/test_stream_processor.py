@@ -1,7 +1,7 @@
 import importlib
 from unittest.mock import MagicMock
 
-from fabricks.core.jobs.base.processor import _for_each_stream_batch
+from fabricks.core.jobs.base.job import _for_each_stream_batch
 
 
 def test_stream_batch_recreates_job_inside_worker(monkeypatch):

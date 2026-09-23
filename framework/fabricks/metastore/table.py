@@ -68,6 +68,15 @@ class Table(DbObject):
         return self.spark.sql(f"select count(*) from {self}").collect()[0][0]
 
     @property
+    def has_rows(self) -> bool:
+        """Whether the table has at least one row. Cheaper than `rows > 0`:
+        stops after the first row instead of aggregating a count across every
+        file."""
+        assert self.registered, f"{self} not registered"
+
+        return self.spark.sql(f"select exists(select 1 from {self}) as has_rows").collect()[0][0]
+
+    @property
     def last_version(self) -> int:
         assert self.registered, f"{self} not registered"
 
