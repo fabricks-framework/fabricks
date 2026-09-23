@@ -1,10 +1,11 @@
-from typing import overload
+from typing import Literal, overload
 
 from pyspark.sql.types import Row
 
 from fabricks.context import Bronzes, Golds, Silvers
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.core.jobs.gold import Gold
+from fabricks.core.jobs.orphan import OrphanJob
 from fabricks.core.jobs.silver import Silver
 from fabricks.models import get_job_id
 
@@ -14,7 +15,11 @@ def get_job(*, step: str, job_id: str) -> Bronze | Gold | Silver: ...
 
 
 @overload
-def get_job(*, step: str, topic: str, item: str) -> Bronze | Gold | Silver: ...
+def get_job(*, step: str, topic: str, item: str, orphan: Literal[False] = False) -> Bronze | Gold | Silver: ...
+
+
+@overload
+def get_job(*, step: str, topic: str, item: str, orphan: Literal[True]) -> OrphanJob: ...
 
 
 @overload
@@ -32,7 +37,8 @@ def get_job(
     item: str | None = None,
     job_id: str | None = None,
     row: Row | None = None,
-) -> Bronze | Gold | Silver:
+    orphan: bool = False,
+) -> Bronze | Gold | Silver | OrphanJob:
     """
     Retrieve a job based on the provided parameters.
 
@@ -43,6 +49,12 @@ def get_job(
         job_id (Optional[str]): The ID of the job.
         job (Optional[str]): The job string.
         row (Optional[Row]): The row object containing job information.
+        orphan (bool): If True, return an OrphanJob built from step/topic/item
+            alone, with no config lookup -- for a job that's been removed
+            from the runtime, see https://github.com/fabricks-framework/
+            fabricks/issues/198. Requires step, topic and item; incompatible
+            with job, job_id and row, since those all need a resolvable
+            config to look the job up by.
 
     Returns:
         BaseJob: The retrieved job.
@@ -51,6 +63,15 @@ def get_job(
         ValueError: If the required parameters are not provided.
 
     """
+    if orphan:
+        assert step, "step mandatory"
+        assert topic, "topic mandatory"
+        assert item, "item mandatory"
+        assert job is None, "orphan jobs are only resolved from step/topic/item, not job"
+        assert job_id is None, "orphan jobs are only resolved from step/topic/item, not job_id"
+        assert row is None, "orphan jobs are only resolved from step/topic/item, not row"
+        return OrphanJob(step=step, topic=topic, item=item)
+
     if row:
         if "step" in row and "topic" in row and "item" in row:
             j = get_job_internal(step=row.step, topic=row.topic, item=row.item)

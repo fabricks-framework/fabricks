@@ -20,7 +20,7 @@ _FRAMEWORK_ROOT = Path(__file__).resolve().parents[3]
 _API_ROOT = _FRAMEWORK_ROOT / "fabricks" / "api"
 
 EXPECTED_ALL = {
-    "fabricks.api": ["Deploy", "get_job", "get_jobs", "get_step", "init_spark_session"],
+    "fabricks.api": ["Deploy", "get_job", "get_jobs", "get_orphan_job", "get_step", "init_spark_session"],
     "fabricks.api.cdc": ["CDC", "NoCDC", "SCD0", "SCD1", "SCD2"],
     "fabricks.api.cdc.nocdc": ["NoCDC"],
     "fabricks.api.cdc.scd0": ["SCD0"],
@@ -43,7 +43,17 @@ EXPECTED_ALL = {
         "init_spark_session",
         "pprint_runtime",
     ],
-    "fabricks.api.core": ["BaseJob", "Bronze", "Gold", "Silver", "get_job", "get_jobs", "get_step"],
+    "fabricks.api.core": [
+        "BaseJob",
+        "Bronze",
+        "Gold",
+        "OrphanJob",
+        "Silver",
+        "get_job",
+        "get_jobs",
+        "get_orphan_job",
+        "get_step",
+    ],
     "fabricks.api.deploy": ["Deploy"],
     "fabricks.api.exceptions": [
         "CheckError",
