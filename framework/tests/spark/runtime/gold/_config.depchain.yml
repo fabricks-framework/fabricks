@@ -1,0 +1,39 @@
+---
+# Reproduces https://github.com/fabricks-framework/fabricks/issues/183:
+# four mode:memory views -- a linear chain (view_a -> view_b -> view_c)
+# plus view_d, which depends on two of them directly (view_b AND
+# view_c), to prove a view blocked on more than one still-missing
+# sibling resolves once each blocker is retried in turn, not just a
+# single-parent chain. Listed dependency-first (view_d last) so that a
+# naive dispatch (get_jobs() row order) attempts each view before what
+# it references exists -- the same failure a real first deployment
+# hits, deterministically instead of relying on a real parallel-worker
+# race to happen to land in the wrong order.
+- job:
+    step: gold
+    topic: depchain
+    item: view_a
+    tags: [test]
+    options:
+      mode: memory
+- job:
+    step: gold
+    topic: depchain
+    item: view_b
+    tags: [test]
+    options:
+      mode: memory
+- job:
+    step: gold
+    topic: depchain
+    item: view_c
+    tags: [test]
+    options:
+      mode: memory
+- job:
+    step: gold
+    topic: depchain
+    item: view_d
+    tags: [test]
+    options:
+      mode: memory

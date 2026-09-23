@@ -2,6 +2,7 @@ from collections.abc import Iterable
 import contextlib
 from functools import cached_property
 import logging
+import re
 from typing import Any, Literal
 
 from pyspark.sql import DataFrame
@@ -128,6 +129,7 @@ class BaseStep:
         update_dependencies: bool | None = True,
         progress_bar: bool | None = False,
         incremental: bool | None = False,
+        max_registration_attempts: int = 3,
     ) -> None:
         if not self.runtime.exists():
             DEFAULT_LOGGER.warning(f"could not find {self.name} in runtime")
@@ -141,7 +143,9 @@ class BaseStep:
         all_errors = []
 
         # Collect errors from create_db_objects
-        _, create_errors = self._create_db_objects_internal(incremental=incremental, update_lists=False)
+        _, create_errors = self._create_db_objects_internal(
+            incremental=incremental, update_lists=False, max_attempts=max_registration_attempts
+        )
         all_errors.extend(create_errors)
 
         # Collect errors from update_dependencies
@@ -207,14 +211,24 @@ class BaseStep:
         return df, errors
 
     def _create_db_objects_internal(
-        self, retry: bool | None = True, update_lists: bool | None = True, incremental: bool | None = False
+        self,
+        retry: bool | None = True,
+        update_lists: bool | None = True,
+        incremental: bool | None = False,
+        max_attempts: int = 3,
+        parallel: bool | None = True,
     ) -> tuple[DataFrame | None, list[dict]]:
         """Private version that returns (df, errors) instead of raising."""
 
-        def _create_db_objects(df: DataFrame) -> list[dict]:
+        def _create_db_objects(df: DataFrame, *, workers: int) -> list[dict]:
             DEFAULT_LOGGER.info("create db objects", extra={"label": self})
             results = run_in_parallel(
-                _create_db_object, df, workers=16, progress_bar=True, logger=DEFAULT_LOGGER, loglevel=logging.CRITICAL
+                _create_db_object,
+                df,
+                workers=workers,
+                progress_bar=True,
+                logger=DEFAULT_LOGGER,
+                loglevel=logging.CRITICAL,
             )
             errors = [res for res in results if res.get("error")]
             DEFAULT_LOGGER.debug(
@@ -231,21 +245,68 @@ class BaseStep:
             df = df.join(table_df, "job_id", how="left_anti")
             df = df.join(view_df, "job_id", how="left_anti")
 
+        df = df.cache()
+
         errors = []
         if df:
-            errors = _create_db_objects(df)
+            errors = _create_db_objects(df, workers=16 if parallel else 1)
 
+        # Batches with inter-item dependencies (e.g. memory-mode views
+        # referencing each other) race when dispatched together: an item
+        # can be attempted before the item it depends on has been
+        # registered. See https://github.com/fabricks-framework/fabricks/
+        # issues/183. Each failure's error message names the missing
+        # table/view, which tells us which sibling it's actually blocked
+        # on -- so retries are ordered by that instead of blindly
+        # re-dispatching the whole failing set again and hoping. Computing
+        # the real dependency graph up front (Job.get_dependencies()) would
+        # be more precise, but it's expensive for notebook-backed jobs
+        # (needs a real `spark.sql("explain extended...")` per job) and
+        # would pay that cost on every run just to guard a rare race --
+        # this stays reactive, only doing extra work when a race actually
+        # happens. An item whose blocker is itself still failing is left
+        # for a later pass; a chain of depth N resolves within N passes.
+        # Items ready in the same pass aren't blocked on each other, so
+        # they're still dispatched together, in parallel.
+        if errors and retry:
+            DEFAULT_LOGGER.warning("retry enabled", extra={"label": self})
+            name_to_job_id = {
+                f"{row['topic']}_{row['item']}": row["job_id"]
+                for row in df.select("topic", "item", "job_id").collect()
+            }
+
+            prev_failed_ids: frozenset[str] | None = None
+            attempt = 1
+            while errors and attempt < max_attempts:
+                failed_ids = frozenset(e["job_id"] for e in errors if e.get("job_id"))
+                if failed_ids == prev_failed_ids:
+                    break
+                prev_failed_ids = failed_ids
+
+                blocked = {
+                    e["job_id"]
+                    for e in errors
+                    if e.get("job_id") and _referenced_job_id(e.get("error"), name_to_job_id) in failed_ids
+                }
+                ready_ids = failed_ids - blocked
+                if not ready_ids:
+                    break  # every remaining failure is blocked on another failure: circular or stuck
+
+                retry_df = df.where(df["job_id"].isin(list(ready_ids)))
+                workers = 16 if parallel else 1
+                new_errors = _create_db_objects(retry_df, workers=workers)
+                errors = new_errors + [e for e in errors if e.get("job_id") in blocked]
+                attempt += 1
+
+        df.unpersist()
+
+        # Runs after retries so objects created on a retry pass are still
+        # picked up (see https://github.com/fabricks-framework/fabricks/
+        # issues/183) -- listing before retries resolved would silently
+        # drop anything the retry loop had to register.
         if update_lists:
             self.update_tables_list()
             self.update_views_list()
-
-        if errors and retry:
-            DEFAULT_LOGGER.warning("retry enabled", extra={"label": self})
-            errors_ids = [e["job_id"] for e in errors if e.get("job_id")]
-
-            errors_df = df.where(df["job_id"].isin(errors_ids))
-            if errors_df:
-                errors = _create_db_objects(errors_df)
 
         return df, errors
 
@@ -346,9 +407,20 @@ class BaseStep:
         return df
 
     def create_db_objects(
-        self, retry: bool | None = True, update_lists: bool | None = True, incremental: bool | None = False
+        self,
+        retry: bool | None = True,
+        update_lists: bool | None = True,
+        incremental: bool | None = False,
+        max_attempts: int = 3,
+        parallel: bool | None = True,
     ) -> None:
-        _, errors = self._create_db_objects_internal(retry=retry, update_lists=update_lists, incremental=incremental)
+        _, errors = self._create_db_objects_internal(
+            retry=retry,
+            update_lists=update_lists,
+            incremental=incremental,
+            max_attempts=max_attempts,
+            parallel=parallel,
+        )
         _log_and_raise_errors(errors, "create db objects", "objects")
 
     def update_dependencies(
@@ -449,6 +521,19 @@ def _log_and_raise_errors(errors: list[dict], action: str, object_type: str = "o
             logs.append(f"  {e['job']}: {type(e['error']).__name__}: {str(e['error']).splitlines()[0]}")
 
         raise ValueError(f"could not {action} - {len(errors)} {object_type} failed:\n" + "\n".join(logs))
+
+
+_MISSING_VIEW_RE = re.compile(r"TABLE_OR_VIEW_NOT_FOUND[^`]*`\w+`\.`(\w+)`", re.IGNORECASE | re.DOTALL)
+
+
+def _referenced_job_id(error: object, name_to_job_id: dict[str, str]) -> str | None:
+    """The job_id a TABLE_OR_VIEW_NOT_FOUND error is blocked on, if any."""
+    if error is None:
+        return None
+    match = _MISSING_VIEW_RE.search(str(error))
+    if not match:
+        return None
+    return name_to_job_id.get(match.group(1))
 
 
 # to avoid AttributeError: can't pickle local object

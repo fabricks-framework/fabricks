@@ -35,6 +35,34 @@ def test_create_db_objects_materializes_runnable_semantic_jobs(local_spark):
     assert local_spark.catalog.tableExists("semantic.fact_table")
 
 
+# https://github.com/fabricks-framework/fabricks/issues/183: mode:memory
+# views with an inter-view dependency chain (view_a -> view_b -> view_c)
+# plus view_d, which depends on two of them at once (view_b AND view_c --
+# see tests/spark/runtime/gold/_config.depchain.yml) used to fail with
+# TABLE_OR_VIEW_NOT_FOUND on first deployment, since dispatch order
+# wasn't guaranteed to create a view's dependencies before the view
+# itself. parallel=False forces the same row order get_jobs() returns
+# (view_a, view_b, view_c, view_d -- deliberately listed dependency-first
+# in the fixture), so the first pass deterministically fails view_a,
+# view_b, and view_d exactly like an unlucky real parallel race would,
+# and the retry logic must resolve all three -- including view_d, whose
+# single recorded blocker only clears once both of its dependencies
+# exist -- before returning.
+def test_create_db_objects_resolves_a_memory_view_dependency_chain(local_spark, monkeypatch):
+    step = get_step("gold")
+    get_depchain_jobs = step.get_jobs
+    monkeypatch.setattr(step, "get_jobs", lambda topic=None: get_depchain_jobs(topic="depchain"))
+
+    step.create_db_objects(parallel=False)
+
+    assert local_spark.catalog.tableExists("gold.depchain_view_a")
+    assert local_spark.catalog.tableExists("gold.depchain_view_b")
+    assert local_spark.catalog.tableExists("gold.depchain_view_c")
+    assert local_spark.catalog.tableExists("gold.depchain_view_d")
+    assert local_spark.sql("select * from gold.depchain_view_a").collect() == [(1,)]
+    assert local_spark.sql("select * from gold.depchain_view_d").collect() == [(1, 1)]
+
+
 def test_update_dependencies_persists_stable_semantic_ids(local_spark):
     step = get_step("semantic")
     job_id = get_job_id(step="semantic", topic="fact", item="dependency")
