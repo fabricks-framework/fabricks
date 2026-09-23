@@ -180,5 +180,6 @@ docs/**
 !docs/
 !docs/ARCHITECTURE.md
 !docs/CONSTITUTION.md
+!docs/WORKFLOW.md
 !docs/DEBUG.md
 !docs/TEST.md
