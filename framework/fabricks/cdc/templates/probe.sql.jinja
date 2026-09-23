@@ -1,0 +1,50 @@
+{# Minimal probe for Processor.fix_context(): reads only __source (when
+   has_source) + the relevant timestamp column, never the whole row -- see
+   https://github.com/fabricks-framework/fabricks/issues/184. Replaces
+   filter.sql.jinja/ctes/base.sql.jinja for this purpose -- that path
+   always builds __base (`select *, md5(<every field>) as __hash, ...`)
+   over the whole batch, which Spark's optimizer can prune away when
+   nothing downstream references it (has_source=False; confirmed
+   empirically via .explain()) but not when a has_source=True join sits
+   between __base and the final aggregate.
+   src_ref/timestamp_col are computed in Python (Processor._probe_
+   source_ref/_probe_sql), same as every other *_ref/derived value the
+   other templates in this directory take as context. #}
+{% macro slice_row(op, ts_expr, source_col=none) -%}
+    {% if source_col -%} concat('t.__source == \'', {{ source_col }}, '\'') as sources, {% endif -%}
+    concat_ws(
+        ' ',
+        ' (',
+        concat('s.__timestamp {{ op }} \'', {{ ts_expr }}, '\''),
+        {% if source_col -%} concat('and s.__source == \'', {{ source_col }}, '\''), {% endif -%}
+        ' )'
+    ) as slices
+{%- endmacro %}
+{% if slice == "update" %}
+    {% if has_source %}
+        with __sources as (select distinct __source from {{ src_ref }})
+        select array_join(collect_list(slices), ' or ') as slices, array_join(collect_list(sources), ' or ') as sources
+        from
+            (
+                select
+                    {{ slice_row('>', "coalesce(max(t." ~ timestamp_col ~ "), cast('0001-01-01' as timestamp))", 's.__source') }}
+                from {{ tgt }} t
+                right join __sources s on s.__source = t.__source
+                group by s.__source
+            )
+    {% else %}
+        select {{ slice_row('>', "coalesce(max(" ~ timestamp_col ~ "), cast('0001-01-01' as timestamp))") }}
+        from {{ tgt }}
+    {% endif %}
+{% elif slice == "latest" %}
+    {% if has_source %}
+        select array_join(collect_list(slices), ' or ') as slices, array_join(collect_list(sources), ' or ') as sources
+        from
+            (
+                select {{ slice_row('==', 'max(cast(__timestamp as timestamp))', '__source') }}
+                from {{ src_ref }}
+                group by __source
+            )
+    {% else %} select {{ slice_row('==', 'max(cast(__timestamp as timestamp))') }} from {{ src_ref }}
+    {% endif %}
+{% endif %}
