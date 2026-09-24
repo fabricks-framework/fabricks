@@ -183,3 +183,4 @@ docs/**
 !docs/WORKFLOW.md
 !docs/DEBUG.md
 !docs/TEST.md
+!docs/SPARK.md
