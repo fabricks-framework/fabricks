@@ -38,22 +38,39 @@ __rectified_timestamps as (
     from __rectified_next_operation
     group by {% if has_source %} __source, {% endif %} __timestamp
 ),
+__rectified_reload_candidates as (
+    -- nxt below only ever matches rows at a "next reload" timestamp (the
+    -- join's own equality condition) -- reload batches are periodic/rare
+    -- compared to incremental batches, so this is normally a small subset
+    -- of __rectified_next_operation regardless of target size, safe to
+    -- broadcast. See https://github.com/fabricks-framework/fabricks/issues/203.
+    select *
+    from __rectified_next_operation
+    where
+        __timestamp in (
+            select __rectified_next_timestamp_reload
+            from __rectified_timestamps
+            where __rectified_next_timestamp_reload is not null
+        )
+),
 __rectified_is_deleted_next as (
-    select
+    select  /*+ BROADCAST(__rectify_t), BROADCAST(__rectify_nxt) */
         cur.*,
-        t.* except ({% if has_source %}t.__source, {% endif %} t.__timestamp),
+        __rectify_t.* except ({% if has_source %}__rectify_t.__source, {% endif %} __rectify_t.__timestamp),
         -- there is more reload
         __rectified_next_timestamp_reload is not null as __rectify_more_reload,
         -- the next operation is bedore the next reload
         if(
-            __rectify_more_reload, t.__rectified_next_timestamp < t.__rectified_next_timestamp_reload, true
+            __rectify_more_reload,
+            __rectify_t.__rectified_next_timestamp < __rectify_t.__rectified_next_timestamp_reload,
+            true
         ) as __rectify_key_next_operation_before_next_reload,
         -- the record is deleted
         cur.__operation == 'delete' as __rectified_key_is_deleted,
         -- the record is not found in next reload
-        __rectify_more_reload and nxt.__timestamp is null as __rectified_key_not_found_in_next_reload,
+        __rectify_more_reload and __rectify_nxt.__timestamp is null as __rectified_key_not_found_in_next_reload,
         -- there is no more operation
-        t.__rectified_next_timestamp is null as __rectified_no_more_operation,
+        __rectify_t.__rectified_next_timestamp is null as __rectified_no_more_operation,
         -- the record is deleted before next reload
         __rectify_key_next_operation_before_next_reload
         and cur.__rectified_next_operation <=> 'delete' as __rectified_key_is_deleted_next,
@@ -75,13 +92,19 @@ __rectified_is_deleted_next as (
         end as __rectified_is_deleted_next
     from __rectified_next_operation cur
     left join
-        __rectified_timestamps t on cur.__timestamp = t.__timestamp
-        {% if has_source %} and cur.__source == t.__source {% endif %}
+        -- aliased __rectify_t/__rectify_nxt (not the shorter t/nxt) so the
+        -- BROADCAST hints above can't collide with ctes/current.sql.jinja's
+        -- own `t` alias elsewhere in the same overall query -- a same-named
+        -- alias in a sibling CTE was silently defeating hint resolution
+        -- here even though the two are in different scopes (confirmed
+        -- empirically: renaming fixed it, see #203).
+        __rectified_timestamps __rectify_t on cur.__timestamp = __rectify_t.__timestamp
+        {% if has_source %} and cur.__source == __rectify_t.__source {% endif %}
     left join
-        __rectified_next_operation nxt
-        on t.__rectified_next_timestamp_reload = nxt.__timestamp
-        and cur.__key == nxt.__key
-        {% if has_source %} and cur.__source == nxt.__source {% endif %}
+        __rectified_reload_candidates __rectify_nxt
+        on __rectify_t.__rectified_next_timestamp_reload = __rectify_nxt.__timestamp
+        and cur.__key == __rectify_nxt.__key
+        {% if has_source %} and cur.__source == __rectify_nxt.__source {% endif %}
 ),
 {% if mode == "complete" %} __rectified as ( {% else %} __rectified_operation as (
 {% endif %}

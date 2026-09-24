@@ -196,3 +196,34 @@ targets:
                   stop_on_fail: '{{job.parameters.stop_on_fail}}'
                   jobs: '{{job.parameters.jobs}}'
               existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
+        # Ad-hoc single-test runner (tests/spark/databricks/runtest.py) on
+        # the same persistent cluster -- for checking a scratch pytest file
+        # (e.g. a real physical plan) without paying for a full runtests.py
+        # pass (seed + armageddon + the whole suite, ~20-25 min).
+        fabricks_runtest_interactive:
+          name: fabricks_runtest_interactive
+          tags:
+            tag: fabricks-test
+          parameters:
+            - name: test_path
+              default: test_scratch.py
+          tasks:
+            - task_key: cluster
+              notebook_task:
+                notebook_path: fabricks/api/notebooks/cluster.py
+              existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
+              libraries:
+                - whl: ./dist/fabricks-0.0.0-py3-none-any.whl
+                - pypi:
+                    package: pytest
+                - pypi:
+                    package: pytest-order
+            - task_key: runtest
+              depends_on:
+                - task_key: cluster
+              notebook_task:
+                notebook_path: tests/spark/databricks/runtest.py
+                source: WORKSPACE
+                base_parameters:
+                  test_path: '{{job.parameters.test_path}}'
+              existing_cluster_id: ${resources.clusters.fabricks_interactive_cluster.id}
