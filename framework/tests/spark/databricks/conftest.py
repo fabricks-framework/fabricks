@@ -3,6 +3,7 @@ this directory reads its state from.
 """
 
 import contextlib
+import os
 
 import pytest
 from tier_policy import activate_tier
@@ -11,6 +12,13 @@ from fabricks.core.schedules import standalone
 from fabricks.deploy import Deploy
 
 activate_tier("databricks")
+
+# Both fixtures below are expensive (notebook deploy + a full schedule run)
+# and only needed by tests that read state the schedule produced. Ad-hoc
+# scoped runs (tests/spark/databricks/runtest.py, for a self-contained
+# scratch test that doesn't touch schedule state) can skip both by setting
+# this env var before invoking pytest.
+_SKIP_SCHEDULE_FIXTURES = os.environ.get("FABRICKS_SKIP_FIXTURES") == "true"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -21,6 +29,8 @@ def _notebooks_deployed():
     # FABRICKS_NOTEBOOKS -- a real Databricks notebook object each time,
     # not however `databricks bundle sync` happens to have converted the
     # matching .py file most recently.
+    if _SKIP_SCHEDULE_FIXTURES:
+        return
     Deploy.notebooks(overwrite=True)
 
 
@@ -39,5 +49,7 @@ def _schedule_run(_notebooks_deployed):
     # deliberate). test_no_unforced_failures/test_no_unforced_skips do the
     # real, precise validation against the expected job sets; this fixture
     # shouldn't also fail the whole session on the expected case.
+    if _SKIP_SCHEDULE_FIXTURES:
+        return
     with contextlib.suppress(ValueError):
         standalone(schedule="test")

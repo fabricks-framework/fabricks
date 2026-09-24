@@ -68,5 +68,62 @@ the joined data is non-trivial in size. Unlike a per-batch-source-filtered
 scan (bounded by the incremental batch), a self-join over the merge's full
 candidate row set scales with the **target's** size. Look for `Exchange` and
 `SortMergeJoin` node counts in the plan, not just scan counts, when
-investigating a merge query's cost on a large target (see #203, point 2,
-not yet fixed).
+investigating a merge query's cost on a large target.
+
+Fixed for #203 point 2 (the `nxt` self-join in `ctes/rectify.sql.jinja`,
+looking up whether a key has a row at the next "reload" batch timestamp):
+that candidate set is implicitly restricted by the join's own equality
+condition to rows at a small, periodic set of reload-batch timestamps.
+Pre-filtering to that set explicitly (a valid pushdown, zero semantic
+change) and adding `/*+ BROADCAST(...) */` hints converts the join from
+`SortMergeJoin` to `BroadcastHashJoin` -- no shuffle of the large side at
+all. Two gotchas hit along the way, both worth checking first next time:
+
+- **A same-named alias elsewhere in the query can silently defeat hint
+  resolution**, even from an unrelated, differently-scoped CTE. `t`/`nxt`
+  didn't work until renamed to `__rectify_t`/`__rectify_nxt` -- `ctes/
+  current.sql.jinja` also aliases its target read as `t`. Give broadcast
+  hint targets a name that's unique across the whole query, not just
+  within its own CTE.
+- **`.explain(mode="formatted")` on an AQE query prints two plans**: `==
+  Initial Plan ==` (Spark's static pre-execution guess -- can still show
+  `SortMergeJoin` even with an explicit broadcast hint present) and `==
+  Final Plan ==` (what actually ran, only populated after the query has
+  executed at least once, e.g. via `.collect()`). Always check the Final
+  Plan section for the real physical strategy; a hint's presence in the
+  Initial Plan doesn't confirm it was honored, and its absence there
+  doesn't mean it wasn't.
+
+```python
+df.collect()  # force execution so "Final Plan" is populated
+plan = <captured explain(mode="formatted") text>
+final = plan.split("== Final Plan ==", 1)[1].split("== Initial Plan ==", 1)[0]
+```
+
+## Photon renames the operators it accelerates
+
+This project runs on Photon most of the time. Photon doesn't change *which*
+physical join strategy Catalyst picks (that happens before Photon gets
+involved -- the mechanisms above, including the broadcast-hint fix, apply
+the same either way), only *how* the chosen operator executes. But it does
+rename the operators it accelerates with a `Photon` prefix in the plan
+(`PhotonBroadcastHashJoin`, `PhotonShuffleExchangeSink`, ...), falling back
+to the plain non-Photon name only for operators it doesn't support. A
+literal `"BroadcastHashJoin" in plan` check still matches (`Photon
+BroadcastHashJoin` contains it as a substring), but an exact/anchored match
+(`r"^BroadcastHashJoin"`, or parsing the node-type token directly) would
+miss it -- prefer a substring check, or explicitly account for the
+`Photon` prefix, when checking a Photon-enabled plan.
+
+Confirmed empirically (`tests/spark/databricks`, via `runtest.py`, against
+the #203 point 2 rectify fix): the executed plan showed 14
+`PhotonBroadcastHashJoin` nodes, 0 `SortMergeJoin`, 0 `PhotonSortMergeJoin`
+-- the fix holds fully under real Photon. Also confirmed: the `== Final
+Plan ==` / `== Initial Plan ==` split is conditional, not guaranteed --
+this particular plan never needed a second AQE pass and printed as a single
+un-split plan, so code that assumes the split marker is always present
+(like the snippet above) needs a fallback:
+
+```python
+final = plan.split("== Final Plan ==", 1)[1] if "== Final Plan ==" in plan else plan
+```
