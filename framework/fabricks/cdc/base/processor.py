@@ -460,6 +460,30 @@ class Processor(Generator):
 
         return context
 
+    def _materialize_current_view(self, context: dict) -> str:
+        # ctes/current.sql.jinja's `{{ tgt }}` is referenced by name from
+        # multiple downstream consumers (rectify, the scd1/scd2 merge-key
+        # anti-join), each pruning it to a different column subset -- which
+        # defeats Spark's CTE-reuse detection and re-reads the target table
+        # from storage once per consumer instead of once overall. See
+        # https://github.com/fabricks-framework/fabricks/issues/202.
+        #
+        # Caching the same source-filtered subset __current would read
+        # anyway, once, under a stable global temp view name, means every
+        # consumer hits the same cached blocks instead of re-scanning
+        # storage. The `sources` predicate (already computed by
+        # fix_context(), same as __current's own `and ({{ sources }})`
+        # filter) keeps this from ever caching more than the batch's
+        # relevant target rows.
+        short_name = f"{self.qualified_name}__current"
+        where = f"where {context['sources']}" if context.get("sources") else ""
+        self.spark.sql(f"uncache table if exists global_temp.{short_name}")
+        view = create_or_replace_global_temp_view(
+            short_name, self.spark.sql(f"select * from {context['tgt']} as t {where}"), job=self
+        )
+        self.spark.sql(f"cache table {view}")
+        return view
+
     def get_query(self, src: AllowedSources, fix: bool | None = True, **kwargs: Any) -> str:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         context = self.get_query_context(src=src, **kwargs)
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
@@ -467,6 +491,12 @@ class Processor(Generator):
         try:
             if context.get("slice"):
                 context = self.fix_context(context, fix=fix, **kwargs)
+
+            # mirrors query.sql.jinja's own `{% if mode == "update" %}{% if
+            # has_rows %}` gate for including ctes/current.sql.jinja -- keep
+            # these two conditions in sync.
+            if context.get("mode") == "update" and context.get("has_rows"):
+                context["tgt"] = self._materialize_current_view(context)
 
             template = environment.get_template("query.sql.jinja")
 
