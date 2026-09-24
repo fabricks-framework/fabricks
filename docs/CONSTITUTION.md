@@ -37,8 +37,9 @@ with extra caution.
 
 ## 5. Documentation
 
-Only these five files are tracked under `docs/`: this file,
+Only these six files are tracked under `docs/`: this file,
 [ARCHITECTURE.md](./ARCHITECTURE.md), [DEBUG.md](./DEBUG.md),
-[TEST.md](./TEST.md), and [WORKFLOW.md](./WORKFLOW.md). New documentation
-paths are ignored. Add concise content to the matching retained file; do not
-extend `AGENTS.md` beyond pointers.
+[TEST.md](./TEST.md), [WORKFLOW.md](./WORKFLOW.md), and
+[SPARK.md](./SPARK.md). New documentation paths are ignored. Add concise
+content to the matching retained file; do not extend `AGENTS.md` beyond
+pointers.
