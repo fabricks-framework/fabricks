@@ -29,13 +29,15 @@ always `select * from {parent}` under the hood.
 
 Whatever produces the rows a SCD1/SCD2 merge reads — gold's own SQL, or
 the parent table a config-only silver job selects from — needs three
-system columns, plus whatever data fields the table needs:
+system columns (plus a fourth, optional one), and whatever data fields
+the table needs:
 
 | Column | Meaning |
 |---|---|
 | `__key` | Unique key for the row (any type) — auto-derived on bronze from `keys:` if absent |
 | `__timestamp` | When the row changed or was deleted |
 | `__operation` | `'upsert'`, `'delete'`, or `'reload'` |
+| `__source` | Optional — which upstream feed the row came from, when a target merges more than one |
 
 **On gold**, you write this yourself:
 
@@ -71,6 +73,37 @@ for the whole batch if the invoker doesn't provide it.
 
 SCD2 additionally derives `__valid_from`/`__valid_to`/`__is_current` from
 consecutive `__timestamp`s per `__key` — never set those columns yourself.
+
+**`__source`** is only needed when one target merges rows from **more
+than one upstream feed with independent change cadences** (typically
+`mode: combine`). On gold, add it as a literal per `union` branch:
+
+```sql
+select customer_id as __key, ..., updated_at as __timestamp, 'crm' as __source
+from silver.crm_customers
+union all
+select customer_id as __key, ..., changed_at as __timestamp, 'billing' as __source
+from silver.billing_customers
+```
+
+On bronze, set `options.source: crm` instead —
+same auto-fill pattern as `__operation`/`options.operation`, a no-op if
+the invoker/parser already produced `__source` itself.
+
+**On silver `mode: combine`, you don't need to set it at all** —
+Fabricks auto-fills `__source` per parent as `'{parent}' as __source`
+(e.g. `'bronze.crm_customer'`) for any parent that doesn't already have
+it. A silver job with `parents:` under any *other* mode is stricter:
+`__source` must already exist on every parent if there's more than
+one, or it hard-fails.
+
+Without it, Fabricks tracks one global `max(__timestamp)` for
+incremental pulls, so a busy feed (`crm`) drags the watermark past a
+quiet feed's (`billing`) genuinely-new-but-older rows, silently
+skipping them. With `__source`, the watermark and the target-table
+`__current` cache are both tracked per-source instead, and on bronze
+it also joins the `__key`/`__hash` computation so identical natural
+keys from different feeds don't collide into one row.
 
 ## Job Config
 
