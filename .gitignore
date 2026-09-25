@@ -164,6 +164,7 @@ cython_debug/
 # Skills
 .claude/settings.local.json
 .claude/skills/*
+.claude/worktrees/
 
 # Reports
 .reports/
