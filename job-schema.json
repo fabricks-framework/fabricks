@@ -51,6 +51,18 @@
                     ],
                     "default": null,
                     "title": "Arguments"
+                },
+                "warn_on_error": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Warn On Error"
                 }
             },
             "title": "BaseInvokerOptions",

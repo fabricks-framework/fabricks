@@ -44,6 +44,7 @@ class BaseInvokerOptions(BaseModel):
     notebook: str | None = None
     timeout: int | None = None
     arguments: dict[str, str | bool | int] | None = None
+    warn_on_error: bool | None = None
 
 
 class InvokerOptions(BaseModel):
