@@ -147,8 +147,11 @@ class Processor(Generator):
         # is rewritten to 'reload' so it reuses rectify's existing per-key
         # "not found in next reload" reconciliation instead of a new code
         # path -- moot when add_operation forces the column to a constant
-        # anyway
-        truncate_as_reload = "__operation" in inputs and not add_operation
+        # anyway, and meaningless outside scd1/scd2 (nocdc/scd0 have no
+        # rectify pipeline and don't always carry a __key output at all)
+        truncate_as_reload = (
+            "__operation" in inputs and not add_operation and self.change_data_capture in ["scd1", "scd2"]
+        )
         if truncate_as_reload:
             overwrite.append("__operation")
 
