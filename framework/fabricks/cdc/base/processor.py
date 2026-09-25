@@ -143,6 +143,18 @@ class Processor(Generator):
         if add_operation and "__operation" in inputs:
             overwrite.append("__operation")
 
+        # a 'truncate' row (https://github.com/fabricks-framework/fabricks/issues/66)
+        # is rewritten to 'reload' so it reuses rectify's existing per-key
+        # "not found in next reload" reconciliation instead of a new code
+        # path -- moot when add_operation forces the column to a constant
+        # anyway, and meaningless outside scd1/scd2 (nocdc/scd0 have no
+        # rectify pipeline and don't always carry a __key output at all)
+        truncate_as_reload = (
+            "__operation" in inputs and not add_operation and self.change_data_capture in ["scd1", "scd2"]
+        )
+        if truncate_as_reload:
+            overwrite.append("__operation")
+
         # override timestamp if added and found in df
         if add_timestamp and "__timestamp" in inputs:
             overwrite.append("__timestamp")
@@ -361,6 +373,7 @@ class Processor(Generator):
             "add_hash": add_hash,
             # value add
             "add_operation": add_operation,
+            "truncate_as_reload": truncate_as_reload,
             "add_source": add_source,
             "add_calculated_columns": add_calculated_columns,
             # extra

@@ -302,7 +302,7 @@ class Silver(BaseJob):
                   {global_temp_view}
                 where
                   true
-                  and __operation == 'reload'
+                  and __operation in ('reload', 'truncate')
                   {extra_check}
                 limit
                   1
