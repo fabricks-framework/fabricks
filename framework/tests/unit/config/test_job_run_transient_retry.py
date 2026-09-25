@@ -12,19 +12,15 @@ notebook invoker recovers on retry.
 """
 
 import sys
-import time
 
 import pytest
 
 from fabricks.core import get_job
 from fabricks.models.common import BaseInvokerOptions, InvokerOptions
 
+pytestmark = pytest.mark.usefixtures("no_real_sleep")
+
 dbr = sys.modules["databricks.sdk.runtime"]  # faked by tests/unit/config/conftest.py
-
-
-@pytest.fixture(autouse=True)
-def _no_real_sleep(monkeypatch):
-    monkeypatch.setattr(time, "sleep", lambda *_a, **_kw: None)
 
 
 def _job_with_flaky_pre_run(monkeypatch, retry: bool, calls: dict):

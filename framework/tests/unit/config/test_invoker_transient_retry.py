@@ -15,7 +15,6 @@ fires only on those named type(s).
 """
 
 import sys
-import time
 from unittest.mock import MagicMock
 
 from py4j.protocol import Py4JJavaError
@@ -24,13 +23,9 @@ import pytest
 from fabricks.core import get_job
 from fabricks.utils.path import GitPath
 
+pytestmark = pytest.mark.usefixtures("no_real_sleep")
+
 dbr = sys.modules["databricks.sdk.runtime"]  # faked by tests/unit/config/conftest.py
-
-
-@pytest.fixture(autouse=True)
-def _no_real_sleep(monkeypatch):
-    # invoker.py's retry uses wait_fixed(60) for real; skip the actual wait here.
-    monkeypatch.setattr(time, "sleep", lambda *_a, **_kw: None)
 
 
 def _py4j_error() -> Py4JJavaError:

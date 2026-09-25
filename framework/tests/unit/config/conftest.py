@@ -62,7 +62,10 @@ replaced it. Run each tier as its own separate pytest invocation.
 import os
 from pathlib import Path
 import sys
+import time
 from unittest.mock import MagicMock
+
+import pytest
 
 _FRAMEWORK_ROOT = Path(__file__).resolve().parents[3]
 
@@ -105,3 +108,9 @@ _fake_builder.config.return_value = _fake_builder
 _fake_builder.enableHiveSupport.return_value = _fake_builder
 _fake_builder.getOrCreate.return_value = _fake_spark_session
 SparkSession.builder = _fake_builder
+
+
+@pytest.fixture
+def no_real_sleep(monkeypatch):
+    """Skip a real tenacity retry wait (e.g. invoker.py's wait_fixed(60))."""
+    monkeypatch.setattr(time, "sleep", lambda *_a, **_kw: None)

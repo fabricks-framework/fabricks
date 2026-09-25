@@ -43,10 +43,6 @@ def _is_transient(include_names: list[str] | None) -> retry_if_exception:
     return retry_if_exception(lambda e: isinstance(e, include_types))
 
 
-def _warn_on_error(invoker: dict | BaseInvokerOptions) -> bool | None:
-    return invoker.get("warn_on_error") if isinstance(invoker, dict) else invoker.warn_on_error
-
-
 def _get_invoker_option(invoker: dict | BaseInvokerOptions, key: str) -> Any:  # noqa: ANN401 - heterogeneous options bag
     return invoker.get(key) if isinstance(invoker, dict) else getattr(invoker, key)
 
@@ -136,7 +132,7 @@ class JobInvoker:
                     self._invoke_notebook(invoker=invoker, schedule=schedule, **kwargs)
 
                 except Exception as e:
-                    if _warn_on_error(invoker) is True:
+                    if _get_invoker_option(invoker, "warn_on_error") is True:
                         DEFAULT_LOGGER.warning(f"invoker failed, ignored ({i}, {position})", extra={"label": self.job})
                         continue
 
@@ -167,7 +163,7 @@ class JobInvoker:
                     self._invoke_notebook(invoker=invoker, schedule=schedule)
 
                 except Exception as e:
-                    if _warn_on_error(invoker) is True:
+                    if _get_invoker_option(invoker, "warn_on_error") is True:
                         DEFAULT_LOGGER.warning(
                             f"invoker by step failed, ignored ({i}, {position})", extra={"label": self.job}
                         )
