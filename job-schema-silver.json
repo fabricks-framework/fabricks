@@ -63,6 +63,33 @@
                     ],
                     "default": null,
                     "title": "Warn On Error"
+                },
+                "retry": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Retry"
+                },
+                "retry_on_error": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Retry On Error"
                 }
             },
             "title": "BaseInvokerOptions",
