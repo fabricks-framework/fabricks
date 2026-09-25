@@ -45,6 +45,10 @@ class BaseInvokerOptions(BaseModel):
     timeout: int | None = None
     arguments: dict[str, str | bool | int] | None = None
     warn_on_error: bool | None = None
+    retry: bool | None = None  # retry a failed dbutils.notebook.run() once; see invoker.py's _is_transient
+    # names of the exception types to retry on (e.g. ["Py4JJavaError", "TimeoutError"]); unset
+    # retries on any exception. See invoker.py's _KNOWN_RETRY_EXCEPTIONS for the allowed names.
+    retry_on_error: list[str] | None = None
 
 
 class InvokerOptions(BaseModel):

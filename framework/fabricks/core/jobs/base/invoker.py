@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
+from py4j.protocol import Py4JJavaError
 from pyspark.sql import DataFrame
+from tenacity import Retrying, retry_if_exception, stop_after_attempt, wait_fixed
 
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
@@ -16,9 +18,37 @@ from fabricks.utils.path import GitPath
 if TYPE_CHECKING:
     from fabricks.core.jobs.base.job import BaseJob
 
+# Exception names a `retry_on_error` invoker option can pick from to retry
+# only on those types. See _is_transient below.
+_KNOWN_RETRY_EXCEPTIONS: dict[str, type[BaseException]] = {
+    "Py4JJavaError": Py4JJavaError,
+    "ConnectionError": ConnectionError,
+    "TimeoutError": TimeoutError,
+    "OSError": OSError,
+    "RuntimeError": RuntimeError,
+}
+
+
+def _is_transient(include_names: list[str] | None) -> retry_if_exception:
+    # No names given: retry on any exception, transient or not. Named:
+    # retry ONLY on those types.
+    if not include_names:
+        return retry_if_exception(lambda _e: True)
+
+    unknown = [name for name in include_names if name not in _KNOWN_RETRY_EXCEPTIONS]
+    allowed = sorted(_KNOWN_RETRY_EXCEPTIONS)
+    assert not unknown, f"retry_on_error: unknown exception name(s) {unknown}, must be one of {allowed}"
+
+    include_types = tuple(_KNOWN_RETRY_EXCEPTIONS[name] for name in include_names)
+    return retry_if_exception(lambda e: isinstance(e, include_types))
+
 
 def _warn_on_error(invoker: dict | BaseInvokerOptions) -> bool | None:
     return invoker.get("warn_on_error") if isinstance(invoker, dict) else invoker.warn_on_error
+
+
+def _get_invoker_option(invoker: dict | BaseInvokerOptions, key: str) -> Any:  # noqa: ANN401 - heterogeneous options bag
+    return invoker.get(key) if isinstance(invoker, dict) else getattr(invoker, key)
 
 
 def _raise_invoke_errors(position: str, errors: list[Exception]) -> None:
@@ -72,7 +102,17 @@ class JobInvoker:
         if schema_only is not None:
             arguments["schema_only"] = schema_only
 
-        return self._run_notebook(path=path, arguments=arguments, schedule=schedule, timeout=timeout)
+        retry = _get_invoker_option(invoker, "retry")
+        retry_on_error = _get_invoker_option(invoker, "retry_on_error")
+
+        return self._run_notebook(
+            path=path,
+            arguments=arguments,
+            schedule=schedule,
+            timeout=timeout,
+            retry=retry,
+            retry_on_error=retry_on_error,
+        )
 
     def invoke_job(
         self,
@@ -146,7 +186,13 @@ class JobInvoker:
             _raise_invoke_errors(position, errors)
 
     def _run_notebook(
-        self, path: GitPath, arguments: dict | None = None, timeout: int | None = None, schedule: str | None = None
+        self,
+        path: GitPath,
+        arguments: dict | None = None,
+        timeout: int | None = None,
+        schedule: str | None = None,
+        retry: bool | None = None,
+        retry_on_error: list[str] | None = None,
     ) -> str:
         """
         Invokes a notebook job.
@@ -157,6 +203,11 @@ class JobInvoker:
             arguments (Optional[dict]): Additional arguments to pass to the notebook job. If not
                 provided, it will be retrieved from the invoker options.
             schedule (Optional[str]): The schedule for the job. If provided, schedule variables will be retrieved.
+            retry (Optional[bool]): Retry once on a failure instead of raising immediately. Off by
+                default. With no `retry_on_error`, retries on any exception; with it, retries only
+                on the named exception type(s).
+            retry_on_error (Optional[list[str]]): Names of exception types to retry on (e.g.
+                ["Py4JJavaError", "TimeoutError"]). See _KNOWN_RETRY_EXCEPTIONS for the allowed names.
 
         Raises:
             AssertionError: If the specified path does not exist.
@@ -185,18 +236,27 @@ class JobInvoker:
         if arguments is None:
             arguments = {}
 
-        return dbutils.notebook.run(
-            path=path.get_notebook_path(),  # type: ignore
-            timeout_seconds=timeout,  # type: ignore
-            arguments={  # type: ignore
-                "step": self.job.step,
-                "topic": self.job.topic,
-                "item": self.job.item,
-                **arguments,
-                "job_options": json.dumps(self.job.options.model_dump()),
-                "schedule_variables": json.dumps(variables),
-            },
+        def call() -> str:
+            return dbutils.notebook.run(
+                path=path.get_notebook_path(),  # type: ignore
+                timeout_seconds=timeout,  # type: ignore
+                arguments={  # type: ignore
+                    "step": self.job.step,
+                    "topic": self.job.topic,
+                    "item": self.job.item,
+                    **arguments,
+                    "job_options": json.dumps(self.job.options.model_dump()),
+                    "schedule_variables": json.dumps(variables),
+                },
+            )
+
+        if not retry:
+            return call()
+
+        retrying = Retrying(
+            stop=stop_after_attempt(2), wait=wait_fixed(60), retry=_is_transient(retry_on_error), reraise=True
         )
+        return retrying(call)
 
     def extend_job(self, df: DataFrame) -> DataFrame:
         extenders = self.job._resolver.extender_options or []
