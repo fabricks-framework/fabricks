@@ -1,1 +1,3 @@
-select * {% if all_except %} except ({% for e in all_except %}{{ e }}, {% endfor %}), {% endif %} from __final
+select * {% if all_except %} except ({% for e in all_except %}{{ e }}, {% endfor %}), {% endif %}
+from __final
+{% if truncate_as_reload %} where __key <> '__truncated__' {% endif %}

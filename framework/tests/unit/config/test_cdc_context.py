@@ -386,6 +386,22 @@ def test_silver_rectify_true_when_reload_probe_finds_rows():
     assert context["rectify"] is True
 
 
+def test_silver_reload_probe_also_matches_truncate():
+    # https://github.com/fabricks-framework/fabricks/issues/66: a 'truncate'
+    # sentinel row is rewritten to 'reload' inside the CDC query template
+    # (fabricks/cdc/templates/ctes/base.sql.jinja), but this probe runs
+    # against the raw incoming batch *before* that template renders -- it
+    # must recognize 'truncate' directly, or rectify never turns on and the
+    # truncate row is never reconciled.
+    job = _silver_job(mode="update", change_data_capture="scd1", stream=True)
+    job.spark.sql.return_value.isEmpty.return_value = False
+
+    job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
+
+    rendered_sql = job.spark.sql.call_args[0][0]
+    assert "truncate" in rendered_sql
+
+
 def test_silver_rectify_false_when_reload_probe_finds_no_rows():
     job = _silver_job(mode="update", change_data_capture="scd1", stream=True)
     job.spark.sql.return_value.isEmpty.return_value = True
