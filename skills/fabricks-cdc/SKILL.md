@@ -76,78 +76,34 @@ consecutive `__timestamp`s per `__key` — never set those columns yourself.
 
 **`__source`** is only needed when one target merges rows from **more
 than one upstream feed with independent change cadences** (typically
-`mode: combine`, unioning several parent tables) — see "Resulting
-behavior" below for why.
+`mode: combine`). On gold, add it as a literal per `union` branch:
 
 ```sql
-select
-    customer_id as __key,
-    name,
-    email,
-    updated_at as __timestamp,
-    if(is_deleted, 'delete', 'upsert') as __operation,
-    'crm' as __source
-from raw.crm_customers
-
+select customer_id as __key, ..., updated_at as __timestamp, 'crm' as __source
+from silver.crm_customers
 union all
-
-select
-    customer_id as __key,
-    name,
-    email,
-    changed_at as __timestamp,
-    'upsert' as __operation,
-    'billing' as __source
-from raw.billing_customers
+select customer_id as __key, ..., changed_at as __timestamp, 'billing' as __source
+from silver.billing_customers
 ```
 
-Any literal or column works as `__source` as long as it's stable per
-feed (a constant string per branch of the `union`, as above, is the
-common case) — Fabricks only uses it to partition the watermark lookup,
-it doesn't interpret the value.
+On bronze, set `options.source: crm` instead —
+same auto-fill pattern as `__operation`/`options.operation`, a no-op if
+the invoker/parser already produced `__source` itself.
 
-**On bronze**, there's no SQL to add the literal in, so set
-`options.source` instead — Fabricks stamps every row with it as
-`__source` automatically, the same way `__operation` falls back to
-`options.operation`:
+**On silver `mode: combine`, you don't need to set it at all** —
+Fabricks auto-fills `__source` per parent as `'{parent}' as __source`
+(e.g. `'bronze.crm_customer'`) for any parent that doesn't already have
+it. A silver job with `parents:` under any *other* mode is stricter:
+`__source` must already exist on every parent if there's more than
+one, or it hard-fails.
 
-```yaml
-- job:
-    step: bronze
-    topic: crm
-    item: customer
-    options:
-      mode: append
-      source: crm
-```
-
-`options.source` is bronze-only (`BronzeOptions.source`) and a no-op if
-the invoker/parser already produced an `__source` column itself —
-Fabricks only fills it in when it's missing.
-
-**Resulting behavior** — `__source` isn't cosmetic metadata, it changes
-two things:
-
-1. **The incremental watermark becomes per-source.** In `mode: update`,
-   Fabricks normally computes one `max(__timestamp)` across the whole
-   target to decide "what's new since last run." With `__source`
-   present, it instead computes that max separately per source and
-   filters each feed's rows against its own last-merged timestamp
-   (`t.__timestamp > <per-source max> and t.__source == <source>`,
-   OR'd across sources). Without this, a busy feed (e.g. `crm` updating
-   hourly) drags the one global watermark forward, and a quiet feed's
-   (`billing`) next change — genuinely new for `billing` — falls below
-   that global max and is silently skipped on the next incremental
-   pull. That's the specific failure `__source` exists to prevent, and
-   why it's only needed when feeds have independent change cadences.
-2. **`__source` joins the `__key`/`__hash` computation on bronze.** If
-   two feeds happen to emit the same natural key, they're kept as
-   distinct rows/keys instead of colliding into one merged identity.
-
-As a side effect, the same per-source filter also scopes the cached
-`__current` view to just the sources present in the current batch,
-instead of the whole target table — a performance benefit, not a
-correctness requirement.
+Without it, Fabricks tracks one global `max(__timestamp)` for
+incremental pulls, so a busy feed (`crm`) drags the watermark past a
+quiet feed's (`billing`) genuinely-new-but-older rows, silently
+skipping them. With `__source`, the watermark and the target-table
+`__current` cache are both tracked per-source instead, and on bronze
+it also joins the `__key`/`__hash` computation so identical natural
+keys from different feeds don't collide into one row.
 
 ## Job Config
 
