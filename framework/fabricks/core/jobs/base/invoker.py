@@ -17,6 +17,10 @@ if TYPE_CHECKING:
     from fabricks.core.jobs.base.job import BaseJob
 
 
+def _warn_on_error(invoker: dict | BaseInvokerOptions) -> bool | None:
+    return invoker.get("warn_on_error") if isinstance(invoker, dict) else invoker.warn_on_error
+
+
 def _raise_invoke_errors(position: str, errors: list[Exception]) -> None:
     # str(Exception(errors)) on a list of exception objects falls back to
     # each one's repr, which drops the real message (e.g. Py4JJavaError's
@@ -92,6 +96,10 @@ class JobInvoker:
                     self._invoke_notebook(invoker=invoker, schedule=schedule, **kwargs)
 
                 except Exception as e:
+                    if _warn_on_error(invoker) is True:
+                        DEFAULT_LOGGER.warning(f"invoker failed, ignored ({i}, {position})", extra={"label": self.job})
+                        continue
+
                     DEFAULT_LOGGER.warning(f"fail to run invoker ({i}, {position})", extra={"label": self.job})
 
                     if position == "pre_run":
@@ -119,6 +127,12 @@ class JobInvoker:
                     self._invoke_notebook(invoker=invoker, schedule=schedule)
 
                 except Exception as e:
+                    if _warn_on_error(invoker) is True:
+                        DEFAULT_LOGGER.warning(
+                            f"invoker by step failed, ignored ({i}, {position})", extra={"label": self.job}
+                        )
+                        continue
+
                     DEFAULT_LOGGER.warning(f"fail to run invoker by step ({i}, {position})", extra={"label": self.job})
 
                     if position == "pre_run":
