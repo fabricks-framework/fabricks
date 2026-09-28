@@ -7,16 +7,13 @@ from fabricks.core.jobs.base.exception import PreRunCheckException, UnchangedWar
 
 
 def _stubbed_silver_job(monkeypatch):
+    # job.run()'s exception handling around for_each_run is the one thing
+    # under test here -- checks/invokers/restore are all no-ops so a new
+    # method added to either later doesn't silently need its own line here.
     job = get_job(step="silver", topic="append_test", item="test")
 
-    monkeypatch.setattr(job._checker, "run_before", lambda: None)
-    monkeypatch.setattr(job._checker, "run_after", lambda: None)
-    monkeypatch.setattr(job._checker, "skip_run", lambda: None)
-    monkeypatch.setattr(job._checker, "pre_run", lambda: None)
-    monkeypatch.setattr(job._checker, "post_run", lambda: None)
-    monkeypatch.setattr(job._checker, "post_run_extra", lambda: None)
-    monkeypatch.setattr(job._invoker, "pre_run", lambda schedule=None: None)
-    monkeypatch.setattr(job._invoker, "post_run", lambda schedule=None: None)
+    monkeypatch.setattr(job, "_checker", MagicMock())
+    monkeypatch.setattr(job, "_invoker", MagicMock())
     monkeypatch.setattr(job, "restore", MagicMock())
 
     return job

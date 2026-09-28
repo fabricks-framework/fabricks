@@ -10,6 +10,7 @@ from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.exception import UnchangedWarning
 from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.base.resolver import resolve_option
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobSilverOptions, StepSilverConf, StepSilverOptions
@@ -64,10 +65,7 @@ class Silver(BaseJob):
 
     @property
     def skip_if_stale(self) -> bool:
-        _skip = self.options.skip_if_stale
-        if _skip is None:
-            _skip = self.step_conf.options.skip_if_stale
-        return _skip if _skip is not None else True
+        return resolve_option(self.options.skip_if_stale, self.step_conf.options.skip_if_stale, default=True)
 
     @cached_property
     def parent_step(self) -> str:

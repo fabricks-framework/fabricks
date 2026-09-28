@@ -67,6 +67,12 @@ class DagProcessor(BaseDags):
         with self.get_azure_table() as azure_table:
             azure_table.delete(data)
 
+    def _propagate_status(self, azure_table: AzureTable, job_id: str, status: RunStatus) -> None:
+        dependencies = azure_table.query(f"PartitionKey eq 'dependencies' and ParentId eq '{job_id}'")
+        for dependency in dependencies:
+            dependency["Status"] = status
+        azure_table.upsert(dependencies)
+
     def extra(self, d: dict) -> dict:
         return {
             "partition_key": self.schedule_id,
@@ -137,14 +143,7 @@ class DagProcessor(BaseDags):
                         LOGGER.info("skip (unchanged upstream)", extra=self.extra(j))
                         j["Status"] = "stale"
                         azure_table.upsert(j)
-
-                        dependencies = azure_table.query(
-                            f"PartitionKey eq 'dependencies' and ParentId eq '{j.get('JobId')}'"
-                        )
-                        for dependency in dependencies:
-                            dependency["Status"] = "stale"
-                        azure_table.upsert(dependencies)
-
+                        self._propagate_status(azure_table, j.get("JobId"), "stale")
                         continue
 
                     status: RunStatus = "stale"
@@ -165,12 +164,7 @@ class DagProcessor(BaseDags):
                             status = result  # ty:ignore[invalid-assignment]
 
                         else:
-                            status = run(
-                                step=str(self.step),
-                                job_id=j.get("JobId"),
-                                schedule_id=self.schedule_id,
-                                schedule=self.schedule,
-                            )
+                            status = run(job=job, schedule_id=self.schedule_id, schedule=self.schedule)
 
                     except Exception:
                         LOGGER.warning("fail", extra={"label": j.get("Job")})
@@ -183,12 +177,7 @@ class DagProcessor(BaseDags):
                         LOGGER.info("end", extra=self.extra(j))
                         TABLE_LOG_HANDLER.flush()
 
-                    dependencies = azure_table.query(
-                        f"PartitionKey eq 'dependencies' and ParentId eq '{j.get('JobId')}'"
-                    )
-                    for dependency in dependencies:
-                        dependency["Status"] = status
-                    azure_table.upsert(dependencies)
+                    self._propagate_status(azure_table, j.get("JobId"), status)
 
     def get_scheduled(self, azure_table: AzureTable | None = None) -> list[dict]:
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
