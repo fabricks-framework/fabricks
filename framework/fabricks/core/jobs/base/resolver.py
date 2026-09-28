@@ -7,9 +7,15 @@ from pyspark.sql import DataFrame, SparkSession
 
 from fabricks.cdc import SCD1, SCD2, NoCDC
 from fabricks.cdc.scd0 import SCD0
-from fabricks.context import PATHS_RUNTIME, PATHS_STORAGE
+from fabricks.context import IS_UNITY_CATALOG, PATHS_RUNTIME, PATHS_STORAGE
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.context.spark_session import build_spark_session
+from fabricks.context.spark_session import (
+    SPARK,
+    add_catalog_to_spark,
+    add_credentials_to_spark,
+    add_spark_options_to_spark,
+    apply_spark_options,
+)
 from fabricks.metastore.table import Table
 from fabricks.models import (
     AllowedChangeDataCaptures,
@@ -38,6 +44,33 @@ def resolve_option(*tiers: Any, default: Any = None) -> Any:  # noqa: ANN401 - o
     return default
 
 
+# one derived session per step, built lazily and only when a step actually
+# configures spark_options -- SparkSession.newSession() shares the JVM/
+# SparkContext but isolates SQL-conf mutations from here on, unlike
+# .builder.getOrCreate() (which just returns the ambient default session,
+# so a job's own spark_options used to leak into every other job).
+_STEP_SESSIONS: dict[str, SparkSession] = {}
+
+
+def build_step_spark_session(step: str, options: SparkOptions | None) -> SparkSession:
+    if not options:
+        return SPARK
+
+    if step not in _STEP_SESSIONS:
+        session = SPARK.newSession()
+        # newSession() only reliably carries forward a handful of built-in
+        # SQL confs (e.g. timezone) -- reapply the runtime baseline
+        # explicitly rather than trust inheritance for the rest.
+        add_catalog_to_spark(spark=session)
+        if not IS_UNITY_CATALOG:
+            add_credentials_to_spark(spark=session)
+        add_spark_options_to_spark(spark=session)
+        apply_spark_options(session, options)
+        _STEP_SESSIONS[step] = session
+
+    return _STEP_SESSIONS[step]
+
+
 class JobResolver:
     """Config/option resolution (job -> step -> runtime) and the spark/cdc/table handles built from it."""
 
@@ -48,34 +81,26 @@ class JobResolver:
 
     @property
     def spark(self) -> SparkSession:
+        # runtime -> step -> job, each tier only deriving a new (isolated)
+        # session via newSession() when it actually configures spark_options
+        # -- otherwise it reuses its parent's session instead of every job
+        # building (and mutating) one of its own.
         if not self._spark:
-            spark = build_spark_session(app_name=str(self.job))
+            step_session = build_step_spark_session(self.job.step, self.step_spark_options)
 
-            # Apply step-level spark options if configured
-            step_spark = self.step_spark_options
-            if step_spark:
-                sql_options = step_spark.sql or {}
-                for key, value in sql_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.job.step})
-                    spark.sql(f"set {key} = {value}")
-
-                conf_options = step_spark.conf or {}
-                for key, value in conf_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.job.step})
-                    spark.conf.set(f"{key}", f"{value}")
-
-            # Apply job-level spark options if configured
             job_spark = self.spark_options
             if job_spark:
-                sql_options = job_spark.sql or {}
-                for key, value in sql_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.job})
-                    spark.sql(f"set {key} = {value}")
-
-                conf_options = job_spark.conf or {}
-                for key, value in conf_options.items():
-                    DEFAULT_LOGGER.debug(f"add {key} = {value}", extra={"label": self.job})
-                    spark.conf.set(f"{key}", f"{value}")
+                DEFAULT_LOGGER.debug("derive job-level spark session", extra={"label": self.job})
+                spark = step_session.newSession()
+                # newSession() doesn't reliably carry forward the parent's
+                # own settings (see build_step_spark_session) -- reapply the
+                # full chain explicitly so "job extends step extends
+                # runtime" holds regardless.
+                add_spark_options_to_spark(spark)
+                apply_spark_options(spark, self.step_spark_options)
+                apply_spark_options(spark, job_spark)
+            else:
+                spark = step_session
 
             self._spark = spark
         return self._spark
