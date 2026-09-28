@@ -3,7 +3,10 @@
 
 # Vendored marketplace/plugin content, not code this team writes or owns --
 # see docs/SKILLS.md for how .claude/skills/ gets synced.
-extend-exclude = [".claude/skills", ".claude/worktrees"]
+# tests/unit/plain/fixtures/notebooks/: synthetic notebook fixtures read as raw text by
+# fabricks.utils.notebook's parser under test -- deliberately contain undefined names
+# (`spark`) and non-Python magic-cell syntax (`%sql`), not real code meant to run or lint.
+extend-exclude = [".claude/skills", ".claude/worktrees", "tests/unit/plain/fixtures/notebooks"]
 
 line-length = 119
 
