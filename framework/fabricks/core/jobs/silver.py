@@ -8,6 +8,7 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.jobs.base.exception import UnchangedWarning
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -359,7 +360,7 @@ class Silver(BaseJob):
         sql = f"select * from {global_temp_view}"
 
         if not self._checker.batch_has_data(sql):
-            return
+            raise UnchangedWarning("no data")
 
         if self._resolver.mode == "update":
             assert not isinstance(self.cdc, NoCDC)

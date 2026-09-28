@@ -11,6 +11,7 @@ from pyspark.sql.types import Row
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.cdc.scd0 import SCD0
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.jobs.base.exception import UnchangedWarning
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -369,7 +370,7 @@ class Gold(BaseJob):
         sql = f"select * from {global_temp_view}"
 
         if not self._checker.batch_has_data(sql):
-            return
+            raise UnchangedWarning("no data")
 
         if reload:
             DEFAULT_LOGGER.warning("force reload", extra={"label": self})
