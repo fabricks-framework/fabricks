@@ -3,6 +3,7 @@ from typing_extensions import deprecated
 
 from fabricks.context import CATALOG, CONF_RUNTIME, IS_UNITY_CATALOG, SECRET_SCOPE
 from fabricks.context.secret import add_secret_to_spark, get_secret_from_secret_scope
+from fabricks.models import SparkOptions
 from fabricks.utils.spark import get_dbutils, get_spark
 
 
@@ -24,6 +25,17 @@ def add_credentials_to_spark(spark: SparkSession | None = None) -> None:
         add_secret_to_spark(secret=s, uri=uri, spark=spark)
 
 
+def apply_spark_options(spark: SparkSession, options: SparkOptions | None) -> None:
+    if not options:
+        return
+
+    for key, value in (options.sql or {}).items():
+        spark.sql(f"set {key} = {value};")
+
+    for key, value in (options.conf or {}).items():
+        spark.conf.set(key, value)
+
+
 def add_spark_options_to_spark(spark: SparkSession | None = None) -> None:
     if spark is None:
         spark = get_spark()
@@ -35,16 +47,7 @@ def add_spark_options_to_spark(spark: SparkSession | None = None) -> None:
     # timezone configuration
     spark.conf.set("spark.sql.session.timeZone", CONF_RUNTIME.options.timezone)
 
-    # runtime options
-    spark_options = CONF_RUNTIME.spark_options
-    if spark_options:
-        sql_options = spark_options.sql or {}
-        for key, value in sql_options.items():
-            spark.sql(f"set {key} = {value};")
-
-        conf_options = spark_options.conf or {}
-        for key, value in conf_options.items():
-            spark.conf.set(key, value)
+    apply_spark_options(spark, CONF_RUNTIME.spark_options)
 
 
 def build_spark_session(spark: SparkSession | None = None, app_name: str | None = "default") -> SparkSession:

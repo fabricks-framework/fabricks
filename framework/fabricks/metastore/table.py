@@ -326,6 +326,7 @@ class Table(DbObject):
         {ddl_primary_key}
         {ddl_generated_columns}
         )
+        using delta
         {ddl_tblproperties}
         {ddl_partition_by}
         {ddl_cluster_by}

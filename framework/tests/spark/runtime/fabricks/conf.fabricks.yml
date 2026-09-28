@@ -74,6 +74,9 @@
         table_options:
           properties:
             delta.checkpointInterval: 11
+        spark_options:
+          conf:
+            fabricks.test.step_marker: semantic_step
     databases:
       - name: expected
         path_options:
