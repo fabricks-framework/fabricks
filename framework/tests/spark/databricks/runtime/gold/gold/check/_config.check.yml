@@ -49,3 +49,21 @@
       mode: complete
     check_options:
       pre_run: true
+- job:
+    # Job-level spark_options force JobResolver.spark (resolver.py) to
+    # derive a session via _derive_session -- on this cluster's Spark
+    # Connect session, newSession() isn't supported, so it falls back to
+    # the parent session instead of crashing (issue  # 215). Uses a real
+    # option (parquet compression codec, same as the apache tier's
+    # semantic.fact.zstd) so the job also proves spark_options are
+    # actually applied, not just that it didn't crash -- see
+    # test_gold_check_zstd.
+    step: gold
+    topic: check
+    item: zstd
+    tags: [test]
+    options:
+      mode: complete
+    spark_options:
+      conf:
+        spark.sql.parquet.compression.codec: zstd

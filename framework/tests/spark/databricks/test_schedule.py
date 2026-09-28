@@ -158,6 +158,26 @@ def test_forced_failure():
     assert _row("gold.check_fail").failed
 
 
+def test_gold_check_zstd():
+    # gold.check_zstd: job-level spark_options (spark.sql.parquet.
+    # compression.codec: zstd) forces JobResolver.spark to derive a session
+    # via _derive_session (resolver.py) -- on this cluster's Spark Connect
+    # session, newSession() isn't supported, so it falls back to the parent
+    # session instead of crashing (issue #215). Checks the physical parquet
+    # file name (Delta's writer embeds the codec there), same as the
+    # pre-reorg test_semantic_fact_zstd, rather than just the session conf
+    # -- proves the option was actually applied, not just propagated.
+    assert _succeeded("gold.check_zstd")
+    job = get_job(step="gold", topic="check", item="zstd")
+    file_names = [
+        str(f["name"])
+        for f in job.table.delta_path.get_file_info()
+        if int(f["size"]) > 0 and str(f["name"]).endswith(".parquet")
+    ]
+    assert file_names, "no data files written"
+    assert all("zstd" in name for name in file_names), "codec <> zstd"
+
+
 def test_failure_causes():
     assert _row("gold.check_fail").exception.message == "Please don't fail on me :("
     assert _row("gold.check_max_rows").exception.message == "max rows check failed (3 > 2)"

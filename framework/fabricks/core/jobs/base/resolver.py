@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
+from pyspark.errors.exceptions.base import PySparkAttributeError
 from pyspark.sql import DataFrame, SparkSession
 
 from fabricks.cdc import SCD1, SCD2, NoCDC
@@ -52,12 +53,26 @@ def resolve_option(*tiers: Any, default: Any = None) -> Any:  # noqa: ANN401 - o
 _STEP_SESSIONS: dict[str, SparkSession] = {}
 
 
+def _derive_session(parent: SparkSession) -> SparkSession:
+    """Isolate spark_options mutations onto a new session, same JVM/SparkContext.
+
+    Spark Connect (e.g. USER_ISOLATION/shared clusters) doesn't support
+    newSession() -- falls back to mutating the parent session directly,
+    same as before tiered sessions existed (pre-#214), rather than crashing.
+    See https://github.com/fabricks-framework/fabricks/issues/215.
+    """
+    try:
+        return parent.newSession()
+    except PySparkAttributeError:
+        return parent
+
+
 def build_step_spark_session(step: str, options: SparkOptions | None) -> SparkSession:
     if not options:
         return SPARK
 
     if step not in _STEP_SESSIONS:
-        session = SPARK.newSession()
+        session = _derive_session(SPARK)
         # newSession() only reliably carries forward a handful of built-in
         # SQL confs (e.g. timezone) -- reapply the runtime baseline
         # explicitly rather than trust inheritance for the rest.
@@ -91,7 +106,7 @@ class JobResolver:
             job_spark = self.spark_options
             if job_spark:
                 DEFAULT_LOGGER.debug("derive job-level spark session", extra={"label": self.job})
-                spark = step_session.newSession()
+                spark = _derive_session(step_session)
                 # newSession() doesn't reliably carry forward the parent's
                 # own settings (see build_step_spark_session) -- reapply the
                 # full chain explicitly so "job extends step extends
