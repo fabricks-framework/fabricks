@@ -7,7 +7,7 @@ from pyspark.errors.exceptions.base import IllegalArgumentException
 
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 from fabricks.core.jobs import Bronze, Gold, Silver, get_job
-from fabricks.core.jobs.base.exception import CheckError
+from fabricks.core.jobs.base.exception import CheckError, SkipWarning, UnchangedWarning
 
 RunStatus = Literal["ok", "stale"]
 
@@ -164,6 +164,19 @@ def run(
             # logged, or it would wrongly report every unchanged job as
             # failed.
             LOGGER.info("done", extra=extra)
+
+            # A second, also-separate mechanism (fabricks/deploy/views.py's
+            # logs_pivot/last_schedule views) derives its own skipped/warned
+            # columns from these same log messages via array_contains --
+            # SkipWarning and "real" CheckWarning (not UnchangedWarning,
+            # which is a routine no-new-data outcome, not a problem worth
+            # flagging) must keep logging their own distinct literal
+            # message, or that reporting silently loses the distinction.
+            if isinstance(e, SkipWarning):
+                LOGGER.exception("skipped", extra=extra)
+            elif not isinstance(e, UnchangedWarning):
+                LOGGER.exception("warned", extra=extra)
+
             LOGGER.debug(f"stale: {e}", extra=extra)
             return "stale"
 
