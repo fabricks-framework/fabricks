@@ -15,6 +15,8 @@ from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobGoldOptions, RegisterOptions, StepGoldConf, StepGoldOptions
+from fabricks.utils.notebook import get_notebook_dependencies
+from fabricks.utils.path.git import GitPath
 from fabricks.utils.sqlglot import fix, get_tables, parse_script
 
 _UDF_PATTERN = re.compile(rf"(?<={UDF_PREFIX})\w*(?=\()")
@@ -139,20 +141,7 @@ class Gold(BaseJob):
             df = self.spark.createDataFrame([{}])
 
         elif self.options.notebook:
-            invokers = self._resolver.invoker_options.run or [] if self._resolver.invoker_options else []
-            assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
-
-            path = None
-            if invokers:
-                from fabricks.context import PATH_RUNTIME
-
-                path = PATH_RUNTIME.joinpath(invokers[0].notebook) if invokers[0].notebook else None
-
-            if path is None:
-                path = self._resolver.paths.to_runtime
-
-            assert path is not None, "path could not be resolved"
-
+            path = self._notebook_path()
             global_temp_view = self._invoker.invoke_job(position="run", path=path, schema_only=schema_only, **kwargs)
             assert global_temp_view is not None, "global_temp_view not found"
 
@@ -233,7 +222,48 @@ class Gold(BaseJob):
         steps = [str(s) for s in Steps]
         return get_tables(self.get_sql(), allowed_databases=steps)
 
+    def _notebook_path(self) -> GitPath:
+        invokers = self._resolver.invoker_options.run or [] if self._resolver.invoker_options else []
+        assert len(invokers) <= 1, "at most one invoker allowed when notebook is true"
+
+        path = None
+        if invokers:
+            from fabricks.context import PATH_RUNTIME
+
+            path = PATH_RUNTIME.joinpath(invokers[0].notebook) if invokers[0].notebook else None
+
+        if path is None:
+            path = self._resolver.paths.to_runtime
+
+        assert path is not None, "path could not be resolved"
+        return path
+
+    def _use_static_notebook_parser(self) -> bool:
+        """Opt-in via runtime.yml's options.static_notebook_dependencies -- see
+        fabricks/models/runtime/models.py:RuntimeOptions. Off by default."""
+        return bool(self._resolver.runtime_options.static_notebook_dependencies)
+
     def _get_notebook_dependencies(self) -> list[str]:
+        from fabricks.context import Steps
+
+        if self._use_static_notebook_parser():
+            base_path = self._notebook_path()
+            # invoker._run_notebook resolves file format as [None, ".py", ".ipynb"], preferring
+            # ".py" -- match that precedence so a ".py" notebook always falls back to execution
+            # instead of silently parsing a stale/unrelated ".ipynb" sibling.
+            ipynb_path = base_path.append(".ipynb")
+            if not base_path.append(".py").exists() and ipynb_path.exists():
+                steps = [str(s) for s in Steps]
+                parsed = get_notebook_dependencies(ipynb_path.pathlibpath.read_text(), allowed_databases=steps)
+                if parsed is not None:
+                    return parsed
+
+        return self._get_notebook_dependencies_by_execution()
+
+    def _get_notebook_dependencies_by_execution(self) -> list[str]:
+        """Falls back to executing the notebook and inspecting the resolved query plan of its
+        global-temp-view output -- catches dependencies a static parse can't resolve (dynamic
+        SQL, %run, DataFrame-API-only notebooks) at the cost of actually running the job."""
         from fabricks.context import CATALOG
 
         dependencies = []
