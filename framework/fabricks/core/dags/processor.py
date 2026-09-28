@@ -12,7 +12,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.core.dags.base import BaseDags
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
-from fabricks.core.dags.run import run
+from fabricks.core.dags.run import RunStatus, run
 from fabricks.core.steps.get_step import get_step
 from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable
@@ -116,10 +116,11 @@ class DagProcessor(BaseDags):
                     azure_table.upsert(j)
                     LOGGER.info("start", extra=self.extra(j))
 
+                    status: RunStatus = "stale"
                     try:
                         if self.notebook:
                             path: str = PATH_NOTEBOOKS.joinpath("run").get_notebook_path()
-                            dbutils.notebook.run(
+                            result = dbutils.notebook.run(
                                 path=path,  # ty:ignore[unknown-argument]
                                 timeout_seconds=self.step.timeouts.job,  # ty:ignore[unknown-argument]
                                 arguments={
@@ -130,9 +131,10 @@ class DagProcessor(BaseDags):
                                     "job": j.get("Job"),
                                 },  # ty:ignore[unknown-argument]
                             )
+                            status = result  # ty:ignore[invalid-assignment]
 
                         else:
-                            run(
+                            status = run(
                                 step=str(self.step),
                                 job_id=j.get("JobId"),
                                 schedule_id=self.schedule_id,
@@ -141,9 +143,10 @@ class DagProcessor(BaseDags):
 
                     except Exception:
                         LOGGER.warning("fail", extra={"label": j.get("Job")})
+                        status = "stale"
 
                     finally:
-                        j["Status"] = "ok"
+                        j["Status"] = status
                         azure_table.upsert(j)
 
                         LOGGER.info("end", extra=self.extra(j))
@@ -152,7 +155,9 @@ class DagProcessor(BaseDags):
                     dependencies = azure_table.query(
                         f"PartitionKey eq 'dependencies' and ParentId eq '{j.get('JobId')}'"
                     )
-                    azure_table.delete(dependencies)
+                    for dependency in dependencies:
+                        dependency["Status"] = status
+                    azure_table.upsert(dependencies)
 
     def get_scheduled(self, azure_table: AzureTable | None = None) -> list[dict]:
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"
