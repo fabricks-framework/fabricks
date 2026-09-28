@@ -13,6 +13,7 @@ from fabricks.context import PATH_NOTEBOOKS
 from fabricks.core.dags.base import BaseDags
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 from fabricks.core.dags.run import RunStatus, run
+from fabricks.core.jobs import get_job
 from fabricks.core.steps.get_step import get_step
 from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable
@@ -115,6 +116,36 @@ class DagProcessor(BaseDags):
                     j["Status"] = "starting"
                     azure_table.upsert(j)
                     LOGGER.info("start", extra=self.extra(j))
+
+                    job = get_job(step=str(self.step), job_id=j.get("JobId"))
+
+                    incoming = azure_table.query(f"PartitionKey eq 'dependencies' and JobId eq '{j.get('JobId')}'")
+                    # send()'s readiness gate and the skip check right below
+                    # are the only two consumers of a job's own incoming
+                    # edges -- both are done with them by this point, so
+                    # delete now rather than let this partition grow
+                    # forever (Task 7 changed *outgoing* edge writes from
+                    # delete to update, since a child now needs to read its
+                    # parent's real status; this is the matching cleanup on
+                    # the read side). AzureTable.delete()/.upsert() both
+                    # reduce to submit(), which iterates zero times over an
+                    # empty operations list -- an empty `incoming` is
+                    # already a safe no-op, no `if incoming:` guard needed.
+                    azure_table.delete(incoming)
+
+                    if job.skip_if_stale and incoming and not any(edge.get("Status") == "ok" for edge in incoming):
+                        LOGGER.info("skip (unchanged upstream)", extra=self.extra(j))
+                        j["Status"] = "stale"
+                        azure_table.upsert(j)
+
+                        dependencies = azure_table.query(
+                            f"PartitionKey eq 'dependencies' and ParentId eq '{j.get('JobId')}'"
+                        )
+                        for dependency in dependencies:
+                            dependency["Status"] = "stale"
+                        azure_table.upsert(dependencies)
+
+                        continue
 
                     status: RunStatus = "stale"
                     try:
