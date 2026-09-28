@@ -62,6 +62,13 @@ class Silver(BaseJob):
             _stream = self.step_conf.options.stream
         return _stream if _stream is not None else True
 
+    @property
+    def skip_if_stale(self) -> bool:
+        _skip = self.options.skip_if_stale
+        if _skip is None:
+            _skip = self.step_conf.options.skip_if_stale
+        return _skip if _skip is not None else True
+
     @cached_property
     def parent_step(self) -> str:
         _parent_step = self.step_conf.options.parent

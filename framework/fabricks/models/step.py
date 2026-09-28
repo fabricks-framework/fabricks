@@ -58,6 +58,7 @@ class SilverOptions(StepOptions):
     parent: str
     stream: bool | None = None
     local_checkpoint: bool | None = None
+    skip_if_stale: bool | None = None
 
 
 class GoldOptions(StepOptions):

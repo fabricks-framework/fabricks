@@ -116,6 +116,10 @@ class BaseJob(ABC):
     def is_view(self) -> bool:
         return self._resolver.mode in self._view_modes
 
+    @property
+    def skip_if_stale(self) -> bool:
+        return False
+
     @classmethod
     @abstractmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str) -> Self: ...
