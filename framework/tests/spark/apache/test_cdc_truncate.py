@@ -56,3 +56,20 @@ def test_truncate_interleaves_with_incremental_upserts(local_spark):
     assert all(not row["__is_current"] for row in rows), "the truncate must not be undone by a later batch"
     row_3 = scd2.table.dataframe.where("id = 3").collect()[0]
     assert row_3["__is_current"], "an upsert after the truncate must open a new current row"
+
+
+def test_truncate_with_numeric_key_cast_repro(local_spark):
+    # https://github.com/fabricks-framework/fabricks/issues/217
+    scd2 = SCD2("cdc", "truncate_cast_repro", "test", spark=local_spark)
+    columns = ["id", "name", "__operation", "__timestamp", "__key"]
+    df1 = local_spark.createDataFrame(
+        [(1, "a", "upsert", "2022-01-01 00:00:00", "1"), (2, "b", "upsert", "2022-01-01 00:00:00", "2")], columns
+    )
+    scd2.update(df1, keys="id", add_key=False, cast={"__key": "bigint"})
+
+    df2 = local_spark.createDataFrame([(None, None, "truncate", "2022-01-02 00:00:00", None)], df1.schema)
+    scd2.update(df2, keys="id", add_key=False, cast={"__key": "bigint"})
+
+    rows = scd2.table.dataframe.collect()
+    assert len(rows) == 2, "the truncate sentinel row itself must not become a new record"
+    assert all(not row["__is_current"] for row in rows), "every prior row must be closed"
