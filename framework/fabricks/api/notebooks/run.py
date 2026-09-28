@@ -18,8 +18,8 @@ job_id = dbutils.widgets.get("job_id")
 
 # COMMAND ----------
 
-run(step=step, job_id=job_id)
+status = run(step=step, job_id=job_id)
 
 # COMMAND ----------
 
-dbutils.notebook.exit(value="exit (0)")  # type: ignore
+dbutils.notebook.exit(value=status)  # type: ignore

@@ -1,13 +1,15 @@
 from collections.abc import Callable
 import json
-from typing import Any, overload
+from typing import Any, Literal, overload
 
 from databricks.sdk.runtime import dbutils
 from pyspark.errors.exceptions.base import IllegalArgumentException
 
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 from fabricks.core.jobs import Bronze, Gold, Silver, get_job
-from fabricks.core.jobs.base.exception import CheckWarning, SkipWarning
+from fabricks.core.jobs.base.exception import CheckError
+
+RunStatus = Literal["ok", "stale"]
 
 
 @overload
@@ -22,7 +24,7 @@ def run(
     post_run_callable: Callable | None = None,
     data: dict | None = None,
     **kwargs: Any,  # noqa: ANN401 - heterogeneous kwargs forwarded to job.run and user callables
-) -> None: ...
+) -> RunStatus: ...
 
 
 @overload
@@ -38,7 +40,7 @@ def run(
     post_run_callable: Callable | None = None,
     data: dict | None = None,
     **kwargs: Any,  # noqa: ANN401 - heterogeneous kwargs forwarded to job.run and user callables
-) -> None: ...
+) -> RunStatus: ...
 
 
 @overload
@@ -52,7 +54,7 @@ def run(
     post_run_callable: Callable | None = None,
     data: dict | None = None,
     **kwargs: Any,  # noqa: ANN401 - heterogeneous kwargs forwarded to job.run and user callables
-) -> None: ...
+) -> RunStatus: ...
 
 
 def run(
@@ -68,7 +70,7 @@ def run(
     post_run_callable: Callable | None = None,
     data: dict | None = None,
     **kwargs: Any,
-) -> None:
+) -> RunStatus:
     if job is None:
         if step is not None and job_id is not None:
             job = get_job(step=step, job_id=job_id)
@@ -148,11 +150,25 @@ def run(
             LOGGER.debug("invoke post-run callable", extra=extra)
             post_run_callable(**kwargs)
 
-    except SkipWarning:
-        LOGGER.exception("skipped", extra=extra)
+        return "ok"
 
-    except CheckWarning:
-        LOGGER.exception("warned", extra=extra)
+    except CheckError as e:
+        if e.is_stale:
+            # DagTerminator's terminate method (fabricks/core/dags/terminator.py)
+            # decides whether a job ever completed successfully purely by
+            # scanning this same LOGGER's own log messages for the literal
+            # string "done" -- see get_logs in fabricks/core/dags/base.py --
+            # a mechanism entirely separate from this function's own
+            # RunStatus return value. Stale is not a failure from that
+            # mechanism's point of view, so it still needs to see "done"
+            # logged, or it would wrongly report every unchanged job as
+            # failed.
+            LOGGER.info("done", extra=extra)
+            LOGGER.debug(f"stale: {e}", extra=extra)
+            return "stale"
+
+        LOGGER.exception("failed", extra=extra)
+        raise e
 
     except Exception as e:
         LOGGER.exception("failed", extra=extra)
