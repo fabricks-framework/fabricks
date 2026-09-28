@@ -10,6 +10,8 @@ pick which retained `docs/` file it belongs in.
 - for coding rules see [docs/CONSTITUTION.md](./docs/CONSTITUTION.md);
 - for testing see [docs/TEST.md](./docs/TEST.md);
 - for recurring task runbooks (e.g. bugfixes) see [docs/WORKFLOW.md](./docs/WORKFLOW.md);
+- for CodeGraph, Serena, and Headroom usage see
+  [docs/WORKFLOW.md](./docs/WORKFLOW.md#code-navigation);
 - for hard-won bug signatures see [docs/DEBUG.md](./docs/DEBUG.md);
 - for reading Spark physical plans / CDC performance investigations see
   [docs/SPARK.md](./docs/SPARK.md);
