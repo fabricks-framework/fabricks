@@ -89,7 +89,9 @@ class DagProcessor(BaseDags):
 
                 sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
                 for s in sorted_scheduled:
-                    dependencies = azure_table.query(f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'")
+                    dependencies = azure_table.query(
+                        f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}' and Status eq 'pending'"
+                    )
 
                     if len(dependencies) == 0:
                         s["Status"] = "waiting"

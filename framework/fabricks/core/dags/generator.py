@@ -66,7 +66,8 @@ class DagGenerator(BaseDags):
               j.JobId as JobId,
               p.Step as ParentStep,
               p.Job as Parent,
-              p.JobId as ParentId
+              p.JobId as ParentId,
+              'pending' as Status
             from
               fabricks.dependencies d
               inner join {job} j on d.job_id = j.JobId
