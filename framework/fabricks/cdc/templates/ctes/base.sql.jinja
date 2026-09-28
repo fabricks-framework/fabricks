@@ -24,7 +24,9 @@ with
             {% if add_hash %} {{ h.add_hash(fields=hashes) }} as __hash, {% endif %}
             {% if add_key %}
                 {% if truncate_as_reload %}
-                    if(__operation == 'truncate', '__truncated__', {{ h.add_hash(fields=keys) }}) as __key,
+                    -- null, not a string sentinel, so a job's `cast` config can never
+                    -- fail trying to cast it to a numeric type (see issue #217)
+                    if(__operation == 'truncate', null, {{ h.add_hash(fields=keys) }}) as __key,
                 {% else %} {{ h.add_hash(fields=keys) }} as __key,
                 {% endif %}
             {% endif %}
