@@ -13,15 +13,11 @@ from fabricks.context import IS_COMPUTE_STATISTICS_ON_FIRST_WRITE, IS_TYPE_WIDEN
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.jobs.base.checker import JobChecker
 from fabricks.core.jobs.base.exception import (
-    PostRunCheckException,
+    CheckError,
+    InvokeException,
     PostRunCheckWarning,
-    PostRunInvokeException,
-    PreRunCheckException,
     PreRunCheckWarning,
-    PreRunInvokeException,
     SchemaDriftError,
-    SkipRunCheckWarning,
-    SkipRunTimeWarning,
 )
 from fabricks.core.jobs.base.generator import JobGenerator
 from fabricks.core.jobs.base.invoker import JobInvoker
@@ -447,25 +443,19 @@ class BaseJob(ABC):
 
             DEFAULT_LOGGER.info("end (run)", extra={"label": self})
 
-        except SkipRunCheckWarning as e:
-            DEFAULT_LOGGER.warning("skip run", extra={"label": self})
-            raise e
-
-        except SkipRunTimeWarning as e:
-            DEFAULT_LOGGER.warning("fail to pass time check", extra={"label": self})
-            raise e
-
-        except (PreRunCheckWarning, PostRunCheckWarning) as e:
-            DEFAULT_LOGGER.warning("fail to pass warning check", extra={"label": self})
-            raise e
-
-        except (PreRunInvokeException, PostRunInvokeException) as e:
+        except InvokeException as e:
             DEFAULT_LOGGER.exception("fail to run invoker", extra={"label": self})
             raise e
 
-        except (PreRunCheckException, PostRunCheckException) as e:
-            DEFAULT_LOGGER.exception("fail to pass check", extra={"label": self})
-            self.restore(last_version, last_batch)
+        except CheckError as e:
+            if e.is_stale:
+                DEFAULT_LOGGER.debug(f"stale: {e}", extra={"label": self})
+            else:
+                DEFAULT_LOGGER.exception("fail to pass check", extra={"label": self})
+
+            if e.should_restore:
+                self.restore(last_version, last_batch)
+
             raise e
 
         except AssertionError as e:
