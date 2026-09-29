@@ -8,7 +8,9 @@ from pyspark.sql.types import Row
 
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.jobs.base.exception import UnchangedWarning
 from fabricks.core.jobs.base.job import BaseJob
+from fabricks.core.jobs.base.resolver import resolve_option
 from fabricks.core.jobs.bronze import Bronze
 from fabricks.metastore.view import create_or_replace_global_temp_view
 from fabricks.models import JobDependency, JobSilverOptions, StepSilverConf, StepSilverOptions
@@ -60,6 +62,10 @@ class Silver(BaseJob):
         if _stream is None:
             _stream = self.step_conf.options.stream
         return _stream if _stream is not None else True
+
+    @property
+    def skip_if_stale(self) -> bool:
+        return resolve_option(self.options.skip_if_stale, self.step_conf.options.skip_if_stale, default=True)
 
     @cached_property
     def parent_step(self) -> str:
@@ -359,7 +365,7 @@ class Silver(BaseJob):
         sql = f"select * from {global_temp_view}"
 
         if not self._checker.batch_has_data(sql):
-            return
+            raise UnchangedWarning("no data")
 
         if self._resolver.mode == "update":
             assert not isinstance(self.cdc, NoCDC)

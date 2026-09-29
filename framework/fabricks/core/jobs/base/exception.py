@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import ClassVar
 
 from pyspark.sql import DataFrame
 
@@ -10,6 +11,9 @@ class CustomError(Exception):
 
 
 class CheckError(Exception):
+    is_stale: ClassVar[bool] = False
+    should_restore: ClassVar[bool] = False
+
     def __init__(self, message: str, dataframe: DataFrame | None = None) -> None:
         self.message = message
         self.dataframe = dataframe
@@ -18,15 +22,15 @@ class CheckError(Exception):
 
 
 class CheckWarning(CheckError):  # noqa: N818 - warning, not an error; kept as-is (widely used name, not part of this cleanup)
-    pass
+    is_stale: ClassVar[bool] = True
 
 
 class PreRunCheckException(CheckError):  # noqa: N818 - widely used name across the codebase, not part of this cleanup
-    pass
+    should_restore: ClassVar[bool] = True
 
 
 class PostRunCheckException(CheckError):  # noqa: N818 - widely used name across the codebase, not part of this cleanup
-    pass
+    should_restore: ClassVar[bool] = True
 
 
 class PreRunCheckWarning(CheckWarning):
@@ -37,16 +41,20 @@ class PostRunCheckWarning(CheckWarning):
     pass
 
 
-class PreRunInvokeException(CustomError):  # noqa: N818 - widely used name across the codebase, not part of this cleanup
+class InvokeException(CustomError):  # noqa: N818 - matches CustomError/CheckError's naming, not part of this cleanup
     pass
 
 
-class PostRunInvokeException(CustomError):  # noqa: N818 - widely used name across the codebase, not part of this cleanup
+class PreRunInvokeException(InvokeException):
+    pass
+
+
+class PostRunInvokeException(InvokeException):
     pass
 
 
 class SkipWarning(CheckError):  # noqa: N818 - warning, not an error; kept as-is (widely used name, not part of this cleanup)
-    pass
+    is_stale: ClassVar[bool] = True
 
 
 class SkipRunCheckWarning(SkipWarning):
@@ -55,6 +63,12 @@ class SkipRunCheckWarning(SkipWarning):
 
 class SkipRunTimeWarning(SkipWarning):
     pass
+
+
+class UnchangedWarning(CheckWarning):
+    """Raised when a job ran (or would have run) but found no new upstream
+    data -- distinct from SkipWarning, which means the job was explicitly
+    configured not to run at all (check_options.skip / time-window)."""
 
 
 class SchemaDriftError(Exception):

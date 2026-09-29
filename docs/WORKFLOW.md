@@ -4,6 +4,17 @@ Agent-facing runbooks for recurring tasks. See [TEST.md](./TEST.md) for tier
 details and [CONSTITUTION.md](./CONSTITUTION.md) for the rules these
 workflows must stay inside.
 
+## Code Navigation
+
+1. When a `.codegraph/` index is available and the task needs code discovery,
+   call-path tracing, dependency analysis, or cross-file impact assessment,
+   use CodeGraph first.
+2. When available, use Serena for precise symbol inspection, diagnostics, and
+   edits.
+3. When available, use Headroom to compress large retrieved context; it does
+   not replace code navigation.
+4. If CodeGraph or Serena is unavailable, use the standard file-search tools.
+
 ## Bugfix
 
 1. Branch from `main`, named `bugfix-issue-<NR>` for GitHub issue `<NR>`.

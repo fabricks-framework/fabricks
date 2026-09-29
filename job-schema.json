@@ -1663,6 +1663,18 @@
                     ],
                     "default": null,
                     "title": "Order Duplicate By"
+                },
+                "skip_if_stale": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Skip If Stale"
                 }
             },
             "required": [

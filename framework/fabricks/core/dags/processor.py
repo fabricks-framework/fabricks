@@ -12,10 +12,12 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 from fabricks.context import PATH_NOTEBOOKS
 from fabricks.core.dags.base import BaseDags
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
-from fabricks.core.dags.run import run
+from fabricks.core.dags.run import RunStatus, run
+from fabricks.core.jobs import get_job
 from fabricks.core.steps.get_step import get_step
 from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable
+from fabricks.utils.log import LogStatus
 
 
 class DagProcessor(BaseDags):
@@ -66,6 +68,12 @@ class DagProcessor(BaseDags):
         with self.get_azure_table() as azure_table:
             azure_table.delete(data)
 
+    def _propagate_status(self, azure_table: AzureTable, job_id: str, status: RunStatus) -> None:
+        dependencies = azure_table.query(f"PartitionKey eq 'dependencies' and ParentId eq '{job_id}'")
+        for dependency in dependencies:
+            dependency["Status"] = status
+        azure_table.upsert(dependencies)
+
     def extra(self, d: dict) -> dict:
         return {
             "partition_key": self.schedule_id,
@@ -89,7 +97,9 @@ class DagProcessor(BaseDags):
 
                 sorted_scheduled = sorted(scheduled, key=lambda x: x.get("Rank"))
                 for s in sorted_scheduled:
-                    dependencies = azure_table.query(f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}'")
+                    dependencies = azure_table.query(
+                        f"PartitionKey eq 'dependencies' and JobId eq '{s.get('JobId')}' and Status eq 'pending'"
+                    )
 
                     if len(dependencies) == 0:
                         s["Status"] = "waiting"
@@ -114,10 +124,37 @@ class DagProcessor(BaseDags):
                     azure_table.upsert(j)
                     LOGGER.info("start", extra=self.extra(j))
 
+                    job = get_job(step=str(self.step), job_id=j.get("JobId"))
+
+                    incoming = azure_table.query(f"PartitionKey eq 'dependencies' and JobId eq '{j.get('JobId')}'")
+                    # send()'s readiness gate and the skip check right below
+                    # are the only two consumers of a job's own incoming
+                    # edges -- both are done with them by this point, so
+                    # delete now rather than let this partition grow
+                    # forever (Task 7 changed *outgoing* edge writes from
+                    # delete to update, since a child now needs to read its
+                    # parent's real status; this is the matching cleanup on
+                    # the read side). AzureTable.delete()/.upsert() both
+                    # reduce to submit(), which iterates zero times over an
+                    # empty operations list -- an empty `incoming` is
+                    # already a safe no-op, no `if incoming:` guard needed.
+                    azure_table.delete(incoming)
+
+                    if job.skip_if_stale and incoming and not any(edge.get("Status") == "ok" for edge in incoming):
+                        # same pair run() logs for a stale job: DagTerminator only counts
+                        # a job as not failed if it sees DONE, last_schedule.stale reads STALE
+                        LOGGER.info(LogStatus.DONE, extra=self.extra(j))
+                        LOGGER.info(LogStatus.STALE, extra=self.extra(j))
+                        j["Status"] = "stale"
+                        azure_table.upsert(j)
+                        self._propagate_status(azure_table, j.get("JobId"), "stale")
+                        continue
+
+                    status: RunStatus = "stale"
                     try:
                         if self.notebook:
                             path: str = PATH_NOTEBOOKS.joinpath("run").get_notebook_path()
-                            dbutils.notebook.run(
+                            result = dbutils.notebook.run(
                                 path=path,  # ty:ignore[unknown-argument]
                                 timeout_seconds=self.step.timeouts.job,  # ty:ignore[unknown-argument]
                                 arguments={
@@ -128,29 +165,23 @@ class DagProcessor(BaseDags):
                                     "job": j.get("Job"),
                                 },  # ty:ignore[unknown-argument]
                             )
+                            status = result  # ty:ignore[invalid-assignment]
 
                         else:
-                            run(
-                                step=str(self.step),
-                                job_id=j.get("JobId"),
-                                schedule_id=self.schedule_id,
-                                schedule=self.schedule,
-                            )
+                            status = run(job=job, schedule_id=self.schedule_id, schedule=self.schedule)
 
                     except Exception:
-                        LOGGER.warning("fail", extra={"label": j.get("Job")})
+                        LOGGER.warning(LogStatus.FAILED, extra={"label": j.get("Job")})
+                        status = "stale"
 
                     finally:
-                        j["Status"] = "ok"
+                        j["Status"] = status
                         azure_table.upsert(j)
 
                         LOGGER.info("end", extra=self.extra(j))
                         TABLE_LOG_HANDLER.flush()
 
-                    dependencies = azure_table.query(
-                        f"PartitionKey eq 'dependencies' and ParentId eq '{j.get('JobId')}'"
-                    )
-                    azure_table.delete(dependencies)
+                    self._propagate_status(azure_table, j.get("JobId"), status)
 
     def get_scheduled(self, azure_table: AzureTable | None = None) -> list[dict]:
         query = f"PartitionKey eq 'statuses' and Status eq 'scheduled' and Step eq '{self.step}'"

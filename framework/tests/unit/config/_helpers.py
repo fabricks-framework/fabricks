@@ -7,6 +7,7 @@ test_create_table_defaults.py.
 """
 
 from dataclasses import dataclass, field
+from unittest.mock import MagicMock
 
 
 @dataclass
@@ -16,3 +17,9 @@ class _FakeDF:
 
     def createOrReplaceGlobalTempView(self, _name: str) -> None:  # noqa: N802 - matches pyspark's DataFrame API
         """No-op: Silver.build_cdc_context() registers a global temp view unconditionally."""
+
+
+def stub_table(monkeypatch, job) -> None:
+    """job.run() reads table state up front; no real Spark in this tier."""
+    table = MagicMock(get_last_version=lambda: 0, get_property=lambda _k: None)
+    monkeypatch.setattr(type(job), "table", table)

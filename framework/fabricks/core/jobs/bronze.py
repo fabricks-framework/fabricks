@@ -10,6 +10,7 @@ from pyspark.sql.types import Row, TimestampType
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.context import VARIABLES
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.jobs.base.exception import UnchangedWarning
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.parsers.get_parser import get_parser
 from fabricks.core.parsers.utils import clean
@@ -372,7 +373,7 @@ class Bronze(BaseJob):
         sql = f"select * from {global_temp_view}"
 
         if not self._checker.batch_has_data(sql):
-            return
+            raise UnchangedWarning("no data")
 
         assert isinstance(self.cdc, NoCDC)
         if self._resolver.mode == "append":

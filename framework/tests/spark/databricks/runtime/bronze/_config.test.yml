@@ -2,20 +2,28 @@
 # yaml-language-server: $schema=../../../../../../job-schema-bronze.json
 # king/queen use register mode -- proves external-table registration
 # (Bronze.create()/register(), bronze.py), each reading its own real Delta
-# table under raw/delta/<topic>, seeded per run by runtests.py's
-# _seed_raw_delta_fixtures(). Register mode never calls get_parser()
-# (Bronze.parser asserts mode != "register"), so it can't prove the "dummy"
-# custom parser plugin -- that's covered separately by the feature/parser
-# job below.
+# table under raw/delta/<topic>, created empty by runtests.py's
+# seed_raw_delta_fixtures() and then written by each job's own pre_run
+# notebook -- register mode's for_each_run() never writes anything itself,
+# so that notebook is the (simulated) external producer that makes the
+# post-run "did anything change" check meaningful. The notebook reads
+# schedule.yml's `variables.iter`: unset (the "test" schedule) writes the
+# real rows, 0 (the "skip_unchanged" schedule) writes an empty commit.
+# Register mode never calls get_parser() (Bronze.parser asserts
+# mode != "register"), so it can't prove the "dummy" custom parser plugin --
+# that's covered separately by the feature/parser job below.
 - job:
     step: bronze
     topic: king
     item: scd1
-    tags: [test]
+    tags: [test, skip_unchanged]
     options:
       mode: register
       uri: abfss://test@$standard/raw/delta/king
       keys: [id]
+    invoker_options:
+      pre_run:
+        - notebook: bronze/bronze/pre_run/notebook
 - job:
     step: bronze
     topic: queen
@@ -25,6 +33,9 @@
       mode: register
       uri: abfss://test@$standard/raw/delta/queen
       keys: [id]
+    invoker_options:
+      pre_run:
+        - notebook: bronze/bronze/pre_run/notebook
 # Tagged so the schedule provides its first run (silver.feature_parser
 # depends on it, and needs real data, not just an empty table shell from
 # armageddon's create-only pass). test_feature.py's checkpoint-idempotency

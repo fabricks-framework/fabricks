@@ -17,6 +17,7 @@ import pytest
 
 from fabricks.core import get_job
 from fabricks.models.common import BaseInvokerOptions, InvokerOptions
+from tests.unit.config._helpers import stub_table
 
 pytestmark = pytest.mark.usefixtures("no_real_sleep")
 
@@ -51,6 +52,7 @@ def _job_with_flaky_pre_run(monkeypatch, retry: bool, calls: dict):
     monkeypatch.setattr(job._checker, "post_run", lambda: None)
     monkeypatch.setattr(job._checker, "post_run_extra", lambda: None)
     monkeypatch.setattr(job._invoker, "post_run", lambda schedule=None: None)
+    stub_table(monkeypatch, job)
 
     return job
 

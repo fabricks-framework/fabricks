@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from fabricks.context import SPARK, Steps
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.utils.log import LogStatus
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
@@ -325,7 +326,7 @@ def create_or_replace_dependencies_circular_view() -> None:
 
 
 def create_or_replace_logs_pivot_view() -> None:
-    sql = """
+    sql = f"""
     create or replace view fabricks.logs_pivot with schema evolution as
     with groupby as (
       select
@@ -334,25 +335,27 @@ def create_or_replace_logs_pivot_view() -> None:
         l.step,
         l.job,
         l.job_id,
-        -- flags
+        -- statuses
         collect_set(l.status) as statuses,
-        array_contains(statuses, 'skipped') as skipped,
-        array_contains(statuses, 'warned') as warned,
-        array_contains(statuses, 'done') or warned as done,
-        array_contains(statuses, 'failed') or (not done and not skipped) as failed,
-        not done and not failed and not skipped and array_contains(statuses, 'running') as timed_out,
-        not array_contains(statuses, 'running') as cancelled,
+        -- flags
+        array_contains(statuses, '{LogStatus.SKIPPED}') as skipped,
+        array_contains(statuses, '{LogStatus.WARNED}') as warned,
+        array_contains(statuses, '{LogStatus.STALE}') as stale,
+        array_contains(statuses, '{LogStatus.DONE}') or warned or skipped or stale as done,
+        array_contains(statuses, '{LogStatus.FAILED}') or (not done and not skipped) as failed,
+        not done and not failed and not skipped and array_contains(statuses, '{LogStatus.RUNNING}') as timed_out,
+        not array_contains(statuses, '{LogStatus.RUNNING}') as cancelled,
         --
         max(l.notebook_id) as notebook_id,
         --
-        max(l.timestamp) filter (where l.status = 'running') as start_time,
-        max(l.timestamp) filter (where l.status in ('done', 'ok')) as end_time,
+        max(l.timestamp) filter (where l.status = '{LogStatus.RUNNING}') as start_time,
+        max(l.timestamp) filter (where l.status in ('{LogStatus.DONE}', 'ok')) as end_time,
         --
         max(l.timestamp) filter (where l.status = 'scheduled' ) as scheduled_time,
         max(l.timestamp) filter (where l.status = 'waiting' ) as waiting_time,
-        max(l.timestamp) filter (where l.status = 'running' ) as running_time,
-        max(l.timestamp) filter (where l.status = 'done' ) as done_time,
-        max(l.timestamp) filter (where l.status = 'failed' ) as failed_time,
+        max(l.timestamp) filter (where l.status = '{LogStatus.RUNNING}' ) as running_time,
+        max(l.timestamp) filter (where l.status = '{LogStatus.DONE}' ) as done_time,
+        max(l.timestamp) filter (where l.status = '{LogStatus.FAILED}' ) as failed_time,
         max(l.timestamp) filter (where l.status = 'ok') as ok_time,
         --
         max(l.exception) as exception
@@ -375,6 +378,7 @@ def create_or_replace_logs_pivot_view() -> None:
       g.cancelled,
       g.skipped,
       g.warned,
+      g.stale,
       g.notebook_id,
       g.start_time,
       g.end_time,

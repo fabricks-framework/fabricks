@@ -118,6 +118,7 @@ class JobGenerator:
         DEFAULT_LOGGER.warning("truncate", extra={"label": self.job})
         self.rm()
         if self.job.is_table:
+            self.job._create_restore_point()
             self.job.table.truncate()
 
     def maintain(
@@ -148,6 +149,7 @@ class JobGenerator:
             )
             assert retention_days is not None
 
+            self.job._create_restore_point()
             self.job.table.vacuum(retention_days=retention_days)
 
     def drop(self) -> None:

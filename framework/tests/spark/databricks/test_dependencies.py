@@ -1,8 +1,12 @@
-"""Live notebook-derived Gold dependency persistence.
+"""Live Gold/Silver dependency persistence, read back from
+fabricks.<step>_dependencies.
 
-gold.dim_time is already tagged and run by the schedule (conftest.py's
-_schedule_run) -- update_dependencies() just needs it and
-gold.dependency_notebook (also tagged) to already exist, not a fresh run.
+The gold test reads what the schedule already persisted (gold.dim_time and
+gold.dependency_notebook are tagged and run by conftest.py's _schedule_run).
+The silver test re-runs update_dependencies() twice to prove it's
+idempotent, and pins every edge, including both origins: explicit `parents`
+("parent") and the default same-name bronze parent ("parser", used by
+silver.queen_scd1, which sets no `parents`).
 """
 
 from fabricks.context import SPARK
@@ -14,13 +18,12 @@ from fabricks.models import get_dependency_id, get_job_id
 def test_notebook_derived_gold_dependency_is_persisted():
     job = get_job(step="gold", topic="dependency", item="notebook")
 
-    get_step("gold").update_dependencies()
-    get_step("gold").update_dependencies()
-
     rows = SPARK.sql(
-        f"""select dependency_id, job_id, parent_id, parent, origin
+        f"""
+        select dependency_id, job_id, parent_id, parent, origin
         from fabricks.gold_dependencies
-        where job_id = '{job.job_id}'"""
+        where job_id = '{job.job_id}'
+        """
     ).collect()
     assert [(row.dependency_id, row.job_id, row.parent_id, row.parent, row.origin) for row in rows] == [
         (
@@ -31,3 +34,22 @@ def test_notebook_derived_gold_dependency_is_persisted():
             "parser",
         )
     ]
+
+
+def test_silver_dependency_is_persisted():
+    get_step("silver").update_dependencies()
+    get_step("silver").update_dependencies()
+
+    rows = SPARK.sql("select job_id, parent, origin from fabricks.silver_dependencies").collect()
+
+    expected = {
+        ("silver.king_scd1", "bronze.king_scd1", "parser"),
+        ("silver.king_and_queen_scd1", "bronze.queen_scd1", "parent"),
+        ("silver.king_and_queen_scd1", "bronze.king_scd1", "parent"),
+        ("silver.feature_parser", "bronze.feature_parser", "parser"),
+        ("silver.queen_scd1", "bronze.queen_scd1", "parser"),
+    }
+    assert len(rows) == len(expected), "duplicate silver dependency rows"
+    assert {(row.job_id, row.parent, row.origin) for row in rows} == {
+        (get_job_id(job=job), parent, origin) for job, parent, origin in expected
+    }

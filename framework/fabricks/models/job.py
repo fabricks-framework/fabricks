@@ -94,6 +94,7 @@ class SilverOptions(BaseOptions):
     deduplicate: bool | None = None
     stream: bool | None = None
     order_duplicate_by: dict[str, str] | None = None
+    skip_if_stale: bool | None = None
 
 
 class GoldOptions(BaseOptions):
