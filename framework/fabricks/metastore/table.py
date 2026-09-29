@@ -370,7 +370,6 @@ class Table(DbObject):
         assert self.registered, f"{self} not registered"
 
         DEFAULT_LOGGER.warning("truncate table", extra={"label": self})
-        self.create_restore_point()
         self.spark.sql(f"truncate table {self.qualified_name}")
 
     def schema_drifted(
@@ -553,7 +552,6 @@ class Table(DbObject):
         self.spark.sql("SET self.spark.databricks.delta.retentionDurationCheck.enabled = False")
 
         try:
-            self.create_restore_point()
             retention_hours = retention_days * 24
             self.delta_table.vacuum(retention_hours)
         finally:
@@ -869,10 +867,6 @@ class Table(DbObject):
             for columns ({cols})
             """
         )
-
-    def create_restore_point(self) -> None:
-        last_version = self.get_last_version() + 1
-        self.set_property("fabricks.last_version", last_version)
 
     def show_properties(self) -> DataFrame:
         assert self.registered, f"{self} not registered"

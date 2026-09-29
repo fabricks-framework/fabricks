@@ -292,6 +292,10 @@ class BaseJob(ABC):
                 assert last_batch == self.table.get_property("fabricks.last_batch")
                 assert self._resolver.paths.to_commits.joinpath(last_batch).exists()
 
+    def _create_restore_point(self) -> None:
+        last_version = self.table.get_last_version() + 1
+        self.table.set_property("fabricks.last_version", last_version)
+
     def _for_each_batch(self, df: DataFrame, batch: int | None = None, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
         DEFAULT_LOGGER.debug("start (for each batch)", extra={"label": self})
         if batch is not None:
@@ -317,7 +321,7 @@ class BaseJob(ABC):
         if batch is not None:
             self.table.set_property("fabricks.last_batch", batch)
 
-        self.table.create_restore_point()
+        self._create_restore_point()
         DEFAULT_LOGGER.debug("end (for each batch)", extra={"label": self})
 
     def for_each_run(self, **kwargs: Any) -> None:  # noqa: ANN401 - heterogeneous options bag forwarded through the job run pipeline
@@ -380,15 +384,18 @@ class BaseJob(ABC):
         """
         last_version = None
         last_batch = None
+        version_before_run = None
         exception = None
         is_first_write = False
 
         if self.is_table:
+            version_before_run = self.table.get_last_version()
+
             last_version = self.table.get_property("fabricks.last_version")
             if last_version is not None:
                 DEFAULT_LOGGER.debug(f"last version {last_version}", extra={"label": self})
             else:
-                last_version = str(self.table.last_version)
+                last_version = str(version_before_run)
 
             if IS_COMPUTE_STATISTICS_ON_FIRST_WRITE:
                 is_first_write = not self.table.has_rows
@@ -419,7 +426,6 @@ class BaseJob(ABC):
                 exception = e
 
             self.for_each_run(schedule=schedule, reload=reload)
-
             try:
                 self._checker.post_run()
             except PostRunCheckWarning as e:
@@ -444,6 +450,9 @@ class BaseJob(ABC):
 
             if vacuum or optimize or compute_statistics:
                 self.maintain(compute_statistics=compute_statistics, optimize=optimize, vacuum=vacuum)
+
+            if version_before_run is not None:
+                self._checker.post_run_unchanged(version_before_run)
 
             DEFAULT_LOGGER.info("end (run)", extra={"label": self})
 

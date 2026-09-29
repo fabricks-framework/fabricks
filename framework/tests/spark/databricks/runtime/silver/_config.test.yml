@@ -4,22 +4,12 @@
 # dependency ordering (bronze -> silver), not just config shape.
 - job:
     step: silver
-    topic: king
-    item: scd1
-    tags: [test]
-    options:
-      mode: update
-      change_data_capture: scd1
-      parents: [bronze.king_scd1]
-- job:
-    step: silver
     topic: queen
     item: scd1
     tags: [test]
     options:
       mode: update
       change_data_capture: scd1
-      parents: [bronze.queen_scd1]
 - job:
     step: silver
     topic: feature
@@ -28,4 +18,20 @@
     options:
       mode: update
       change_data_capture: scd1
-      parents: [bronze.feature_parser]
+- job:
+    step: silver
+    topic: king
+    item: scd1
+    tags: [test, skip_unchanged]
+    options:
+      mode: update
+      change_data_capture: scd1
+- job:
+    step: silver
+    topic: king_and_queen
+    item: scd1
+    tags: [test, skip_unchanged]
+    options:
+      mode: update
+      change_data_capture: scd1
+      parents: [bronze.queen_scd1, bronze.king_scd1]

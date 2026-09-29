@@ -15,5 +15,6 @@
     step: gold
     topic: dependency
     item: sql
+    tags: [test]
     options:
       mode: complete

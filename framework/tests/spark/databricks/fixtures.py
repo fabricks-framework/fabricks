@@ -42,10 +42,12 @@ def seed_raw_fixtures() -> None:
 
 
 def seed_raw_delta_fixtures() -> None:
-    """Write a small Delta table at king/queen's raw uri -- Bronze.
-    register_external_table() (bronze.py) selects from that uri directly, so
-    it needs a real table there, same shape as tests/spark/apache/conftest.py's
-    king_and_queen_registered_sources.
+    """Write an empty (schema-only) Delta table at king/queen's raw uri --
+    Bronze.register_external_table() (bronze.py) selects from that uri
+    directly, so it needs a real table there at deploy time, same shape as
+    tests/spark/apache/conftest.py's king_and_queen_registered_sources. Real
+    rows land later, per run, via bronze.king_scd1/queen_scd1's post_run
+    notebook (runtime/bronze/bronze/post_run/notebook.py).
     """
     from pyspark.sql.functions import col, lit
 
@@ -54,6 +56,6 @@ def seed_raw_delta_fixtures() -> None:
 
     for topic in ("king", "queen"):
         job = get_job(step="bronze", topic=topic, item="scd1")
-        df = SPARK.createDataFrame(registered_delta_rows(topic))
+        df = SPARK.createDataFrame(registered_delta_rows(topic)).where("1 = 2")
         df = df.withColumn("__source", lit(topic)).withColumn("__timestamp", col("__timestamp").cast("timestamp"))
         df.write.format("delta").mode("overwrite").save(job.data_path.string)

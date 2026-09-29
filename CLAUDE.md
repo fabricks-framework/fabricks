@@ -1,1 +1,1 @@
-see AGENTS.md
+Read AGENTS.md in full before doing any work in this repo. Confirm you've read it by saying so in your first reply of the session.

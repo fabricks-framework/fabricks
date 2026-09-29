@@ -8,6 +8,7 @@ from pyspark.errors.exceptions.base import IllegalArgumentException
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
 from fabricks.core.jobs import Bronze, Gold, Silver, get_job
 from fabricks.core.jobs.base.exception import CheckError, SkipWarning, UnchangedWarning
+from fabricks.utils.log import LogStatus
 
 RunStatus = Literal["ok", "stale"]
 
@@ -119,7 +120,7 @@ def run(
         if k not in kwargs:
             kwargs[k] = v
 
-    LOGGER.info("running", extra=extra)
+    LOGGER.info(LogStatus.RUNNING, extra=extra)
 
     try:
         if pre_run_callable is not None:
@@ -144,7 +145,7 @@ def run(
             optimize=optimize,
             compute_statistics=compute_statistics,
         )
-        LOGGER.info("done", extra=extra)
+        LOGGER.info(LogStatus.DONE, extra=extra)
 
         if post_run_callable is not None:
             LOGGER.debug("invoke post-run callable", extra=extra)
@@ -163,7 +164,7 @@ def run(
             # mechanism's point of view, so it still needs to see "done"
             # logged, or it would wrongly report every unchanged job as
             # failed.
-            LOGGER.info("done", extra=extra)
+            LOGGER.info(LogStatus.DONE, extra=extra)
 
             # A second, also-separate mechanism (fabricks/deploy/views.py's
             # logs_pivot/last_schedule views) derives its own skipped/warned
@@ -173,18 +174,20 @@ def run(
             # flagging) must keep logging their own distinct literal
             # message, or that reporting silently loses the distinction.
             if isinstance(e, SkipWarning):
-                LOGGER.exception("skipped", extra=extra)
-            elif not isinstance(e, UnchangedWarning):
-                LOGGER.exception("warned", extra=extra)
+                LOGGER.exception(LogStatus.SKIPPED, extra=extra)
+            elif isinstance(e, UnchangedWarning):
+                LOGGER.info(LogStatus.STALE, extra=extra)
+            else:
+                LOGGER.exception(LogStatus.WARNED, extra=extra)
 
             LOGGER.debug(f"stale: {e}", extra=extra)
             return "stale"
 
-        LOGGER.exception("failed", extra=extra)
+        LOGGER.exception(LogStatus.FAILED, extra=extra)
         raise e
 
     except Exception as e:
-        LOGGER.exception("failed", extra=extra)
+        LOGGER.exception(LogStatus.FAILED, extra=extra)
         raise e
 
     finally:

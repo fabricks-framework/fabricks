@@ -4,3 +4,15 @@
     options:
       tag: test
       steps: [bronze, silver, transf, gold]
+- schedule:
+    name: skip_unchanged
+    options:
+      tag: skip_unchanged
+      steps: [bronze, silver]
+      # bronze.king_scd1's post_run notebook (runtime/bronze/bronze/post_run/notebook.py)
+      # reads this: iter 0 means "write an empty commit", simulating no new
+      # external data since the previous ("test" schedule's) run -- proves
+      # the unchanged-check flags this run and marks silver.king_scd1 stale
+      # (test_dependency_status.py).
+      variables:
+        iter: 0

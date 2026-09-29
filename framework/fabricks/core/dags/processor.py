@@ -17,6 +17,7 @@ from fabricks.core.jobs import get_job
 from fabricks.core.steps.get_step import get_step
 from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable
+from fabricks.utils.log import LogStatus
 
 
 class DagProcessor(BaseDags):
@@ -140,7 +141,10 @@ class DagProcessor(BaseDags):
                     azure_table.delete(incoming)
 
                     if job.skip_if_stale and incoming and not any(edge.get("Status") == "ok" for edge in incoming):
-                        LOGGER.info("skip (unchanged upstream)", extra=self.extra(j))
+                        # same pair run() logs for a stale job: DagTerminator only counts
+                        # a job as not failed if it sees DONE, last_schedule.stale reads STALE
+                        LOGGER.info(LogStatus.DONE, extra=self.extra(j))
+                        LOGGER.info(LogStatus.STALE, extra=self.extra(j))
                         j["Status"] = "stale"
                         azure_table.upsert(j)
                         self._propagate_status(azure_table, j.get("JobId"), "stale")
@@ -167,7 +171,7 @@ class DagProcessor(BaseDags):
                             status = run(job=job, schedule_id=self.schedule_id, schedule=self.schedule)
 
                     except Exception:
-                        LOGGER.warning("fail", extra={"label": j.get("Job")})
+                        LOGGER.warning(LogStatus.FAILED, extra={"label": j.get("Job")})
                         status = "stale"
 
                     finally:

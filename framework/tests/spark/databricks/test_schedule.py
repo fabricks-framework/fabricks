@@ -76,6 +76,17 @@ def test_auto_detected_gold_dependency():
     assert _row("silver.king_scd1").end_time < _row("gold.fact_dependency").start_time
 
 
+def test_gold_dependency_multi_parent_status_propagation():
+    # gold.dependency_sql joins 4 parents across 3 steps (bronze-derived
+    # gold.dim_time, two silver __current views, transf.fact_memory) --
+    # proves DagProcessor._propagate_status() sets Status "ok" on every
+    # incoming edge, not just the first, before dispatching a job with
+    # more than one parent.
+    assert _succeeded("gold.dependency_sql")
+    for parent in ("gold.dim_time", "silver.king_scd1", "silver.queen_scd1", "transf.fact_memory"):
+        assert _row(parent).end_time < _row("gold.dependency_sql").start_time
+
+
 def test_feature_wait_for_dependency():
     # gold.feature_wait_for: explicit wait_for=[gold.dim_time], no notebook
     # invocation involved -- isolates plain dependency ordering from

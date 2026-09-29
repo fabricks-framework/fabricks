@@ -14,6 +14,13 @@ test_truncate_interleaves_with_incremental_upserts below.
 
 from fabricks.cdc import SCD2
 
+# TODO(ADO #30280): add a test combining truncate_as_reload with a `cast` kwarg
+# targeting the id/key column. base.sql.jinja:15 does a plain cast() on the
+# job's `cast` dict, and a truncate sentinel row sets __key to the literal
+# string '__truncated__' (base.sql.jinja:27) -- casting that to a numeric type
+# throws CAST_INVALID_INPUT in production. No existing test passes `cast=`
+# together with truncate_as_reload against real Spark execution.
+
 
 def test_truncate_closes_all_current_rows(local_spark):
     scd2 = SCD2("cdc", "truncate", "test", spark=local_spark)

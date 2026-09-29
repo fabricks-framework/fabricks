@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+from fabricks.utils.log import LogStatus
 from tests.unit.config._dag_processor_helpers import fake_processor
 
 
@@ -14,10 +15,14 @@ def test_receive_skips_dispatch_when_every_dependency_is_not_ok():
     with (
         patch("fabricks.core.dags.processor.get_job", return_value=fake_job),
         patch("fabricks.core.dags.processor.run") as fake_run,
+        patch("fabricks.core.dags.processor.LOGGER") as fake_logger,
     ):
         processor.receive()
 
     fake_run.assert_not_called()
+    logged = [call.args[0] for call in fake_logger.info.call_args_list]
+    assert LogStatus.DONE in logged
+    assert LogStatus.STALE in logged
 
 
 def test_receive_dispatches_when_any_dependency_is_ok():

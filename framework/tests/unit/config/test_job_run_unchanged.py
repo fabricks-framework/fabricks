@@ -4,6 +4,7 @@ import pytest
 
 from fabricks.core import get_job
 from fabricks.core.jobs.base.exception import PreRunCheckException, UnchangedWarning
+from tests.unit.config._helpers import stub_table
 
 
 def _stubbed_silver_job(monkeypatch):
@@ -15,6 +16,7 @@ def _stubbed_silver_job(monkeypatch):
     monkeypatch.setattr(job, "_checker", MagicMock())
     monkeypatch.setattr(job, "_invoker", MagicMock())
     monkeypatch.setattr(job, "restore", MagicMock())
+    stub_table(monkeypatch, job)
 
     return job
 

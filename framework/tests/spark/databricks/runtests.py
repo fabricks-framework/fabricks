@@ -99,11 +99,21 @@ if runtests:
         def __init__(self) -> None:
             self.failures: list[str] = []
 
+        def _detail(self, report: pytest.TestReport | pytest.CollectReport) -> str:
+            # The single "first E line" this used to keep was too thin to
+            # debug anything beyond a plain assertion -- for a real
+            # exception (e.g. from an SDK call several frames down), the
+            # useful "raise ... from" line, chained-cause "E" lines, and
+            # the file:line of the actual failing call all land further
+            # down/up in longreprtext. Keep the last ~25 lines instead of
+            # just one: enough to see the real call site and every "E "
+            # line without dumping the entire traceback into the summary.
+            lines = report.longreprtext.splitlines()
+            return "\n    ".join(lines[-25:]) if lines else ""
+
         def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
             if report.failed and report.when != "teardown":
-                lines = report.longreprtext.splitlines()
-                detail = next((line for line in lines if line.startswith("E ")), lines[-1] if lines else "")
-                self.failures.append(f"{report.nodeid}: {detail}")
+                self.failures.append(f"{report.nodeid}:\n    {self._detail(report)}")
 
         def pytest_collectreport(self, report: pytest.CollectReport) -> None:
             # Collection errors (e.g. an ImportError in a test file/conftest)
@@ -111,9 +121,7 @@ if runtests:
             # without this the summary would say "no failure detail" even
             # though pytest never got past import.
             if report.failed:
-                lines = report.longreprtext.splitlines()
-                detail = next((line for line in lines if line.startswith("E ")), lines[-1] if lines else "")
-                self.failures.append(f"{report.nodeid} (collection): {detail}")
+                self.failures.append(f"{report.nodeid} (collection):\n    {self._detail(report)}")
 
     # -vv/--tb=long/-s: maximum detail in the notebook's own stdout (not
     # captured by the Jobs API for notebook tasks); _FailureCollector exists

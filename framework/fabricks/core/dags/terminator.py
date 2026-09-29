@@ -1,6 +1,7 @@
 from fabricks.context import SPARK
 from fabricks.core.dags.base import BaseDags
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
+from fabricks.utils.log import LogStatus
 
 
 class DagTerminator(BaseDags):
@@ -13,13 +14,13 @@ class DagTerminator(BaseDags):
         self.write_logs(logs_df)
 
         not_done_df = SPARK.sql(
-            """
+            f"""
             with base as (
               select
                 job,
-                not array_contains(collect_list(status), 'done') as not_done
+                not array_contains(collect_list(status), '{LogStatus.DONE}') as not_done
               from
-                {logs}
+                {{logs}}
               group by
                 job
             )

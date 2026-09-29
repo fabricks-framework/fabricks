@@ -14,6 +14,7 @@ from fabricks.core.jobs.base.exception import (
     PreRunCheckWarning,
     SkipRunCheckWarning,
     SkipRunTimeWarning,
+    UnchangedWarning,
 )
 
 if TYPE_CHECKING:
@@ -88,6 +89,21 @@ class JobChecker:
             return False
 
         return True
+
+    def post_run_unchanged(self, version_before_run: int) -> None:
+        current_version = self.job.table.get_last_version()
+        if current_version == version_before_run:
+            return  # nothing written this run (e.g. Bronze register mode) -- nothing to judge
+
+        if not self._rows_affected_since(current_version - version_before_run):
+            raise UnchangedWarning("no data")
+
+    def _rows_affected_since(self, commits: int) -> bool:
+        # a MERGE/WRITE bumps the Delta version even with zero net changes, so read the real row metrics
+        keys = ("numTargetRowsInserted", "numTargetRowsUpdated", "numTargetRowsDeleted", "numOutputRows")
+        rows = self.job.table.get_history(limit=commits).select("operationMetrics").collect()
+
+        return any(int(m[key]) > 0 for row in rows if (m := row["operationMetrics"]) for key in keys if key in m)
 
     def post_run_extra(self) -> None:
         check_options = self.job._resolver.check_options

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from enum import StrEnum
 import hashlib
 import json
 import logging
@@ -8,6 +9,17 @@ from typing import IO, ClassVar
 from zoneinfo import ZoneInfo
 
 from fabricks.utils.azure_table import AzureTable
+
+
+class LogStatus(StrEnum):
+    """Message literals that logs/logs_pivot and the dag terminator read back as the job status."""
+
+    RUNNING = "running"
+    DONE = "done"
+    SKIPPED = "skipped"
+    WARNED = "warned"
+    STALE = "stale"
+    FAILED = "failed"
 
 
 class LogFormatter(logging.Formatter):
