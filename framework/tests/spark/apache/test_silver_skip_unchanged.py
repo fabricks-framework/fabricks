@@ -12,6 +12,11 @@ this tier's FABRICKS_ENVIRONMENT=docker uses (see tests/unit/config/
 conftest.py's own docstring for the same issue in that tier). Faking that
 one module out, the same way that tier does, is the smallest fix -- no
 real Azure Table is needed for this test, only LOGGER/TABLE_LOG_HANDLER.
+
+fabricks.core.dags.run/processor also do a top-level
+`from databricks.sdk.runtime import dbutils`, whose import tries to
+authenticate against a real workspace -- fine on a machine with a
+~/.databrickscfg, a collection error on CI. Faked the same way.
 """
 
 import sys
@@ -23,6 +28,9 @@ if "fabricks.core.dags.log" not in sys.modules:
         LOGGER=MagicMock(name="fake_dags_logger"),
         TABLE_LOG_HANDLER=MagicMock(name="fake_table_log_handler"),
     )
+
+if "databricks.sdk.runtime" not in sys.modules:
+    sys.modules["databricks.sdk.runtime"] = MagicMock(name="fake_databricks_sdk_runtime")
 
 from fabricks.core import get_job  # must follow the sys.modules fake above
 from fabricks.core.dags.run import run
