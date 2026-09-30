@@ -14,7 +14,7 @@ def _fake_dags_log_table():
 
 def test_first_test_dirties_everything(semblance):
     SPARK.sql.return_value = 42  # the shared bootstrap mocks: reset, not replaced, between tests
-    DBUTILS.credentials.getServiceCredentialsProvider.return_value = "leak"
+    DBUTILS.credentials.getServiceCredentialsProvider.return_value = "leak"  # ty: ignore[invalid-assignment]
     LOGGER.info(
         "start",
         extra={
