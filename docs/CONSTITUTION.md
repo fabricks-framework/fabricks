@@ -26,6 +26,13 @@ to authenticate against a workspace, so a module-level import makes the module
 impossible to import in tests. `tests/unit/plain/test_seams.py` enforces this;
 only the notebook entry points in `fabricks/api/notebooks/` are exempt.
 
+Comment only the why, never the what, and only when a future reader would
+misread the intent without it. Put longer context somewhere else: the commit
+message or PR description for a decision, a note in
+[decisions/](./decisions/README.md) for why a design is the way it is,
+[DEBUG.md](./DEBUG.md) for a bug signature,
+[ARCHITECTURE.md](./ARCHITECTURE.md) for a design constraint.
+
 ## 3. Layers
 
 Runtime code imports from `api/`, not framework internals. `metastore/` never
@@ -43,9 +50,9 @@ with extra caution.
 
 ## 5. Documentation
 
-Only these six files are tracked under `docs/`: this file,
-[ARCHITECTURE.md](./ARCHITECTURE.md), [DEBUG.md](./DEBUG.md),
-[TEST.md](./TEST.md), [WORKFLOW.md](./WORKFLOW.md), and
-[SPARK.md](./SPARK.md). New documentation paths are ignored. Add concise
+Only these six files and the [decisions/](./decisions/README.md) folder are
+tracked under `docs/`: this file, [ARCHITECTURE.md](./ARCHITECTURE.md),
+[DEBUG.md](./DEBUG.md), [TEST.md](./TEST.md), [WORKFLOW.md](./WORKFLOW.md),
+and [SPARK.md](./SPARK.md). Other new documentation paths are ignored. Add concise
 content to the matching retained file; do not extend `AGENTS.md` beyond
 pointers.
