@@ -5,8 +5,7 @@ Java installation) is needed. See docs/superpowers/plans/
 this tier still lived at tests/spark/config/ - see docs/TEST.md for the
 current tests/unit/config/ path).
 
-Three independent real-Spark/Databricks-construction paths have to be
-defused, not one:
+Two independent real-Spark construction paths have to be defused:
 
 1. fabricks/context/spark_session.py's `SPARK = build_spark_session(...)`
    calls `pyspark.sql.SparkSession.builder...getOrCreate()` directly - so
@@ -22,24 +21,11 @@ defused, not one:
    sys.modules first, the same seam tests/unit/plain/conftest.py uses -
    but WITHOUT also replacing fabricks.context itself, since this tier
    wants fabricks.context's real STEPS/CONF_RUNTIME parsing to run.
-3. fabricks/core/schedules/dags.py does `from databricks.sdk.runtime import
-   dbutils, spark` at ITS OWN import time (reached transitively via
-   fabricks.api -> fabricks.api.deploy -> fabricks.deploy ->
-   fabricks.deploy.schedules -> fabricks.core.schedules ->
-   fabricks.core.schedules.dags). Outside a real Databricks cluster,
-   databricks-sdk's runtime shim tries to fall back to a real
-   WorkspaceClient/default-credentials auth and raises ValueError. Every
-   other `databricks.sdk.runtime` import in fabricks/ is inside a function
-   body (lazy, only triggered by a call), so dags.py's module-level import
-   is the one seam that needs defusing here too.
-4. fabricks/core/dags/log.py does `table = get_table()` at ITS OWN import
-   time (reached via the same fabricks.api chain, one hop further:
-   fabricks.core.dags.generator/base/processor/run/terminator all import
-   LOGGER/TABLE_LOG_HANDLER from it), and get_table() calls
-   `FABRICKS_STORAGE.get_storage_account()` - only implemented on the real
-   Azure FileSharePath, not the LocalFileSharePath this docker/local
-   environment uses. Only LOGGER/TABLE_LOG_HANDLER are ever consumed from
-   this module, so it's faked wholesale too.
+
+`databricks.sdk.runtime` is still replaced in sys.modules below, as a tripwire: nothing imports it at
+module level any more (Step 0 seam), but a stray real import would try to authenticate against a
+workspace. Per-test runtime fakes come from the `semblance` fixture (tests/semblance/).
+`fabricks.core.dags.log` is NOT faked: its table is resolved lazily, so it imports safely.
 
 IMPORTANT: same import-order rule as tests/spark/apache/conftest.py - the
 env vars and both patches below must execute before fabricks.context is
@@ -92,12 +78,6 @@ sys.modules["fabricks.utils.spark"] = MagicMock(
 
 sys.modules["databricks.sdk.runtime"] = MagicMock(
     name="fake_databricks_sdk_runtime", spark=_fake_spark_session, dbutils=_fake_dbutils
-)
-
-sys.modules["fabricks.core.dags.log"] = MagicMock(
-    name="fake_dags_log",
-    LOGGER=MagicMock(name="fake_dags_logger"),
-    TABLE_LOG_HANDLER=MagicMock(name="fake_table_log_handler"),
 )
 
 from pyspark.sql import SparkSession  # noqa: E402 - must follow the setup above
