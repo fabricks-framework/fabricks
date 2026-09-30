@@ -1,3 +1,6 @@
+# Load framework/.env (gitignored), e.g. FABRICKS_REMOTE for test-apache-remote
+set dotenv-load
+
 # Point git at the repo's tracked hooks (pre-commit: format+lint)
 setup-hooks:
     git -C .. config core.hooksPath .githooks
@@ -28,15 +31,17 @@ update-skills:
 generate-schema:
     uv run python scripts/generate_job_schema.py
 
+# Every test recipe tees its output to framework/.logs/<category>/<timestamp>.log (gitignored; latest.log links to the newest; FABRICKS_TEST_LOG=off disables)
+
 # Run plain unit tests (tests/unit/plain/) -- no Spark/fabricks.context dependency
 # TARGET can narrow to a file or a single test, e.g. `just test-plain tests/unit/plain/test_x.py::test_y`
 test-plain TARGET="tests/unit/plain":
-    uv run pytest {{TARGET}}
+    scripts/run_logged.sh plain uv run pytest {{TARGET}}
 
 # Run config-resolution unit tests (tests/unit/config/) -- real fabricks.context, Spark faked out
 # TARGET can narrow to a file or a single test, e.g. `just test-config tests/unit/config/test_x.py::test_y`
 test-config TARGET="tests/unit/config":
-    uv run pytest {{TARGET}}
+    scripts/run_logged.sh config uv run pytest {{TARGET}}
 
 # Run the Apache Spark integration tests (real Spark+Delta, needs Java 17+)
 # TARGET can narrow to a file or a single test, e.g. `just test-apache tests/spark/apache/test_x.py::test_y`
@@ -44,7 +49,13 @@ test-apache TARGET="tests/spark/apache":
     # a killed run can leave a worker's Derby metastore half-created, which
     # fails to reopen (ERROR XBM0A) on the next run
     rm -rf tests/spark/apache/.worker_cwd
-    uv run pytest {{TARGET}} -v
+    scripts/run_logged.sh apache uv run pytest {{TARGET}} -v
+
+# Run the Apache tier on a remote machine over ssh (rsyncs the working tree first); logged locally
+# Needs FABRICKS_REMOTE=<ssh host>; FABRICKS_REMOTE_DIR defaults to ~/Fabricks; FABRICKS_REMOTE_JAVA_HOME optionally picks the remote JDK. Remote needs Java 17-21, uv, just.
+# TARGET narrows as in test-apache
+test-apache-remote TARGET="tests/spark/apache":
+    scripts/run_logged.sh apache-remote scripts/test_apache_remote.sh {{TARGET}}
 
 # Deploy the bundle to the 'test' workspace
 deploy:
@@ -52,7 +63,7 @@ deploy:
 
 # Deploy the bundle and run the Databricks test suite (tests/spark/databricks/) against the 'test' workspace
 test-databricks: deploy
-    databricks bundle run fabricks_test_job -t test
+    scripts/run_logged.sh databricks databricks bundle run fabricks_test_job -t test
 
 # Run every test tier: plain, config, apache, then databricks (deploy + run against the 'test' workspace)
 test-all: test-plain test-config test-apache test-databricks
