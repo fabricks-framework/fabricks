@@ -9,9 +9,9 @@ include:
 bundle:  # Required.
   name: fabricks_test
 sync:
-  # dependency.py and dependency.ipynb map to the same remote notebook path,
-  # which fails the sync; unit fixtures are not used by the Databricks job.
   exclude:
+    # Plain-tier fixtures include an .ipynb/.py notebook pair that bundle sync
+    # maps to the same remote path and rejects.
     - tests/unit/**
 artifacts:
   fabricks_tool:
