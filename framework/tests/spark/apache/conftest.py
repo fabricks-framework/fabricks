@@ -12,9 +12,10 @@ activate_tier("apache")
 
 _FRAMEWORK_ROOT = Path(__file__).resolve().parents[3]
 _WORKER = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
-_LOCAL_STORAGE = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".storage"
 _EXPECTED_CACHE = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".expected-cache"
 _WORKER_ROOT = _FRAMEWORK_ROOT / "tests" / "spark" / "apache" / ".worker_cwd" / _WORKER
+# per worker: two xdist workers sharing Delta table paths collide on commits and schemas
+_LOCAL_STORAGE = _WORKER_ROOT / "storage"
 _WORKER_ROOT.mkdir(parents=True, exist_ok=True)
 _VARIABLES_FILE = _WORKER_ROOT / "variables.yml"
 _VARIABLES_FILE.write_text(f"$apache_storage: {_LOCAL_STORAGE}\n")

@@ -1,18 +1,8 @@
 """Reproduces https://github.com/fabricks-framework/fabricks/issues/202:
-a single `mode: update` merge query (SCD1) reads the target table many
-times from storage instead of once, because __current -- although only
-referenced once in the SQL text -- gets pruned to a different column
-subset at each consumption site, defeating Spark's CTE-reuse detection.
-
-Counts distinct physical `Scan parquet` node *definitions* for the target
-table in the real physical plan (captured via explain(mode="formatted"),
-same technique used to diagnose the issue) after a real
-`cdc.get_data(..., mode="update")` call against a seeded Delta table. A node
-definition line looks like `(14) Scan parquet ...target_scan_count`; the
-same node is then referenced by id (`+- Scan parquet ...target_scan_count
-(14)`) wherever the plan reuses it, so counting definitions -- not every
-textual mention -- is what actually measures physical re-reads from
-storage. Currently red: 28 definitions for this scenario, not 1.
+one `mode: update` SCD1 merge query must read the target
+table once, not once per pruned `__current` consumer (28 scans measured before the fix). Counts
+distinct `Scan parquet` node definitions in `explain(mode="formatted")` for the target table after a
+real `cdc.get_data(..., mode="update")` on a seeded Delta table.
 """
 
 import contextlib

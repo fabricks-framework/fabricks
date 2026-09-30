@@ -1,18 +1,7 @@
-"""fabricks/cdc/templates/macros/hash.sql.jinja's add_key/add_hash macros:
-the __key/__hash formula every CDC merge relies on to decide whether a row
-changed. Rendered and executed for real via this tier's real Spark session
-(md5 evaluation isn't something worth mocking).
-
-The actual risk this guards against: __key/__hash silently changing for a
-row whose business content didn't change between two updates, which the
-merge then reads as "this row changed" and rewrites/upserts unnecessarily —
-a mass update triggered by an incorrect hash, not a real data change. The
-macro's own md5() is deterministic by construction; what can actually break
-that guarantee is a caller passing a different, differently-ordered, or
-differently-cased field list across two calls for what should be the same
-row shape (framework/fabricks/cdc/base/processor.py's `get_query_context()`
-builds that field list from `self.get_columns(...)` at call time — not
-covered here, this file only pins the macro's own contract).
+"""The `add_key`/`add_hash` macros in cdc/templates/macros/hash.sql.jinja: the __key/__hash formula every
+CDC merge uses to decide a row changed. Executed on real Spark. Guards against __key/__hash changing
+for a row whose business content did not change (a mass rewrite from a wrong hash). Only the macro's
+own contract is pinned here, not the field list `get_query_context()` builds at call time.
 """
 
 from jinja2 import Environment, PackageLoader

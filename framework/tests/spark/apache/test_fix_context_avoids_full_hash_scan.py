@@ -1,24 +1,7 @@
-"""Reproduces https://github.com/fabricks-framework/fabricks/issues/184:
-Processor.fix_context's incremental-filter probe, for has_source=True
-jobs (multiple sources feeding one target -- e.g. multiple bronze
-parents), used to render the full filter.sql.jinja template chain,
-which builds ctes/base.sql.jinja's __base CTE -- `select *, md5(<every
-field>) as __hash, ...` over the whole batch -- even though the probe
-only ever needs __source + a timestamp column. Confirmed directly
-(outside this suite, not committed) that this blocks Spark's optimizer
-from pruning __base away: a 2000-row, 32-column batch alone was enough
-to OOM the driver from `.explain()`.
-
-This runs the real fix_context() SQL (tests/unit/config/test_fix_context_
-avoids_full_hash_scan.py checks the SQL shape with a mocked spark; this
-checks it actually executes correctly against real Spark/Delta) for a
-multi-source `mode: update` scenario and asserts the resulting
-incremental filter is correct: a per-source slice that only lets through
-rows newer than that source's own already-merged max timestamp. Kept
-narrow (not wide/many-column) on purpose -- the actual merge step that
-follows the probe still legitimately hashes every field for change
-detection (unrelated to #184, and real work this tier's small test JVM
-heap doesn't have room to spare on top of proving a separate point).
+"""Real-Spark counterpart of tests/unit/config/test_fix_context_avoids_full_hash_scan.py (https://github.com/fabricks-framework/fabricks/issues/184):
+runs the real `fix_context()` for a multi-source `mode: update` scenario and asserts the incremental
+filter is a correct per-source slice (only rows newer than that source's own merged max timestamp).
+Kept narrow on purpose: the merge after the probe legitimately hashes every field.
 """
 
 from pyspark.sql.types import Row

@@ -1,51 +1,21 @@
-"""Reproduces https://github.com/fabricks-framework/fabricks/issues/186:
-Processor.fix_context's incremental-filter probe (cdc/templates/
-probe.sql.jinja's has_source=False "update" branch) computes
-MAX(target.__timestamp) directly `FROM <target>` with no predicate at
-all -- no lower-bound/watermark narrows which target rows get read
-before the aggregate. On a table with hundreds of millions of rows this
-single probe query is itself large enough to OOM executors, regardless
-of how few new source rows actually need processing.
-
-This captures the exact SQL fix_context sends to Spark (mirroring
-test_cdc_query_generation.py's test_get_query_scd2_update_mode_takes_
-incremental_branch pattern) and asserts it has that unbounded shape: the
-target-table scan has no lower-bound/watermark predicate at all. It does
-not attempt to reproduce the OOM itself (impractical at unit-test scale) --
-the point is the query *shape* that causes it, which is independent of
-target size.
-
-NOT fixed by https://github.com/fabricks-framework/fabricks/issues/184's
-fix (also to fix_context, but a different defect -- has_source=True
-reading every column of the source unnecessarily): #184 replaced the
-probe's SQL text (probe.sql.jinja instead of the old filter.sql.
-jinja/filters/update.sql.jinja template chain), so this test's exact
-regex assertions needed updating to match the new shape, but the
-underlying defect this test documents -- no watermark on the target
-scan -- is unchanged and still present in the new query too.
+"""Characterization test for https://github.com/fabricks-framework/fabricks/issues/186:
+the `has_source=False` "update" probe
+(`probe.sql.jinja`) computes MAX(target.__timestamp) with no predicate, so it scans the whole target.
+Asserts the SQL shape only (the OOM is not reproducible at unit scale). Still current after #184
+changed the probe's SQL text; delete when the probe gets a watermark.
 """
 
 import re
 from unittest.mock import MagicMock
 
-from pyspark.sql import DataFrame
 from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
-
-
-def _fake_spark():
-    return MagicMock(name="fake_spark")
-
-
-def _src(columns):
-    df = MagicMock(spec=DataFrame)
-    df.columns = columns
-    return df
+from tests.unit.config._helpers import fake_spark, src
 
 
 def test_fix_context_update_slice_probe_scans_full_target_unconditionally():
-    spark = _fake_spark()
+    spark = fake_spark()
 
     def _sql(sql):
         result = MagicMock()
@@ -62,7 +32,7 @@ def test_fix_context_update_slice_probe_scans_full_target_unconditionally():
     spark.sql.side_effect = _sql
     cdc = SCD1("cdc", "query_gen", spark=spark)
 
-    cdc.get_query(_src(["id", "name"]), mode="update", slice="update")
+    cdc.get_query(src(["id", "name"]), mode="update", slice="update")
 
     # call 0 is Table.rows' "select count(*) ..."; call 1 is fix_context's probe
     probe_sql = spark.sql.call_args_list[1].args[0]
