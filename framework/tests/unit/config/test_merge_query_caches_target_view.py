@@ -1,34 +1,17 @@
-"""https://github.com/fabricks-framework/fabricks/issues/202: the merge
-query's target-side CTE (__current) is referenced by name from multiple
-downstream consumers, each pruned to a different column subset -- which
-defeats Spark's CTE-reuse detection and re-reads the target table from
-storage once per consumer (14 times, measured) instead of once overall.
-
-Processor._materialize_current_view() caches the batch-relevant (source-
-filtered, when available) subset of the target under a stable global temp
-view, once, and swaps `context["tgt"]` to point at it before query.sql.jinja
-renders -- so every consumer of __current hits the same cached data instead
-of re-scanning storage (see test_merge_query_target_scan_count.py in
-tests/spark/apache for the real-Spark proof of that).
-
-This checks the SQL-shape/plumbing with a mocked spark: the right
-"uncache table" / "cache table" statements get issued, and the final query
-references the cached view -- not the raw target table -- as its target.
+"""https://github.com/fabricks-framework/fabricks/issues/202:
+the merge query caches the batch-relevant target subset under a
+stable global temp view, so every `__current` consumer reads it once instead of re-scanning storage.
+Checks the plumbing with a mocked session: one uncache, one cache, and a final query that targets the
+cached view rather than the raw table. The scan-count proof is
+tests/spark/apache/test_merge_query_target_scan_count.py.
 """
 
 from unittest.mock import MagicMock
 
-from pyspark.sql import DataFrame
 from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1
-
-
-def _src(columns):
-    df = MagicMock(spec=DataFrame)
-    df.columns = columns
-    df.isEmpty.return_value = False
-    return df
+from tests.unit.config._helpers import src
 
 
 def _fake_spark():
@@ -51,7 +34,9 @@ def test_update_query_targets_the_cached_view_not_the_raw_table():
     spark = _fake_spark()
     cdc = SCD1("cdc", "target_cache_shape", spark=spark)
 
-    sql = cdc.get_query(_src(["id", "name", "__source"]), mode="update", slice="update", add_key=True, add_hash=True)
+    sql = cdc.get_query(
+        src(["id", "name", "__source"], is_empty=False), mode="update", slice="update", add_key=True, add_hash=True
+    )
 
     calls = [c.args[0] for c in spark.sql.call_args_list]
     uncache_calls = [c for c in calls if c.strip().lower().startswith("uncache table")]

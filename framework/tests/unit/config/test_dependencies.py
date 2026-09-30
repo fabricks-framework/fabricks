@@ -1,24 +1,11 @@
-"""Dependency-resolution decision logic, three layers:
+"""Dependency-resolution decision logic, two layers:
 
-- Gold.get_dependencies() (framework/fabricks/core/jobs/gold.py:183-216) and
-  Silver.get_dependencies() (framework/fabricks/core/jobs/silver.py:172-189):
-  parents/wait_for -> JobDependency list. Stays on the parents/wait_for path
-  only - the notebook-dependency branch needs a real
-  `spark.sql("explain extended...")` (out of scope for this tier) and the
-  SQL-parsed branch (no parents/wait_for at all) is already covered
-  pure-Python by tests/unit/plain/test_sql_dependencies.py.
-
-- BaseStep._get_dependencies_internal() (framework/fabricks/core/steps/
-  base.py:162-207): the (df, errors) aggregation around run_in_parallel -
-  proven by monkeypatching the per-row worker (`_get_dependencies`, a
-  module-level function in fabricks.core.steps.base) directly, sidestepping
-  the full get_job_internal()/YAML-lookup chain (Gold/Bronze.from_job_id
-  don't forward an injected `conf`, so a synthetic "bad" job_id can't be
-  fed through it without either a real bad YAML entry or raising before the
-  per-row try/except even runs). get_jobs() is monkeypatched to a plain
-  list (not a DataFrame) - include_manual=True sidesteps the `df.where(...)`
-  call _get_dependencies_internal makes on non-manual jobs, which a plain
-  list doesn't support.
+- Gold/Silver `get_dependencies()`: parents/wait_for -> JobDependency list. Only the parents/wait_for
+  path; the notebook branch needs real Spark (see test_notebook_dependencies_wiring.py) and the
+  SQL-parsed branch is covered by tests/unit/plain/test_sql_dependencies.py.
+- `BaseStep._get_dependencies_internal()`: the (df, errors) aggregation around `run_in_parallel`,
+  proven by monkeypatching the per-row worker `_get_dependencies` and `get_jobs()` (a plain list, with
+  include_manual=True to skip the `df.where(...)` call a list does not support).
 """
 
 from unittest.mock import MagicMock
