@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
 from enum import StrEnum
 import hashlib
@@ -96,15 +97,28 @@ class LogFormatter(logging.Formatter):
 
 class AzureTableLogHandler(logging.Handler):
     def __init__(
-        self, table: AzureTable, debugmode: bool | None = False, timezone: str | ZoneInfo | None = None
+        self,
+        table: AzureTable | Callable[[], AzureTable],
+        debugmode: bool | None = False,
+        timezone: str | ZoneInfo | None = None,
     ) -> None:
         super().__init__()
 
         self.buffer = []
-        self.table = table
+        # a factory defers storage-account and secret resolution until the first write, so importing
+        # fabricks.core.dags.log does no I/O
+        self._table_factory = None if isinstance(table, AzureTable) else table
+        self._table: AzureTable | None = table if isinstance(table, AzureTable) else None
 
         self.debugmode = False if debugmode is None else debugmode
         self.timezone = ZoneInfo(timezone) if isinstance(timezone, str) else (timezone or UTC)
+
+    @property
+    def table(self) -> AzureTable:
+        if self._table is None:
+            assert self._table_factory is not None
+            self._table = self._table_factory()
+        return self._table
 
     def format_time(self, record: LogRecord) -> str:
         ct = datetime.fromtimestamp(record.created, tz=UTC).astimezone(self.timezone)
@@ -214,7 +228,7 @@ class CustomConsoleHandler(logging.StreamHandler):
 def get_logger(
     name: str,
     level: int,
-    table: AzureTable | None = None,
+    table: AzureTable | Callable[[], AzureTable] | None = None,
     debugmode: bool | None = False,
     timezone: str | ZoneInfo | None = None,
 ) -> tuple[logging.Logger, AzureTableLogHandler | None]:
