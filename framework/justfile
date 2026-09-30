@@ -16,6 +16,10 @@ format:
     uv run sqlfmt fabricks/ tests/
     uv run yamlfix fabricks/ tests/
 
+# Install the plugins listed in skills.json that aren't in the local plugin cache yet.
+install-skills:
+    uv run python scripts/install_skills.py
+
 # Refresh marketplaces, then re-sync .claude/skills/ from the plugin cache (per skills.json).
 update-skills:
     uv run python scripts/update_skills.py
