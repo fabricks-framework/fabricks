@@ -204,6 +204,8 @@ class AzureTableLogHandler(logging.Handler):
             pass
 
     def flush(self) -> None:
+        if not self.buffer:  # resolving the lazy table just to upsert nothing is I/O (also at logging.shutdown)
+            return
         self.table.upsert(self.buffer)
         self.buffer.clear()
 
