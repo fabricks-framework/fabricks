@@ -22,9 +22,9 @@ Two independent real-Spark construction paths have to be defused:
    but WITHOUT also replacing fabricks.context itself, since this tier
    wants fabricks.context's real STEPS/CONF_RUNTIME parsing to run.
 
-`databricks.sdk.runtime` is still replaced in sys.modules below, as a tripwire: nothing imports it at
-module level any more (Step 0 seam), but a stray real import would try to authenticate against a
-workspace. Per-test runtime fakes come from the `semblance` fixture (tests/semblance/).
+`databricks.sdk.runtime` is still replaced in sys.modules below as a safety net: nothing imports it at
+module level any more, but a stray real import would try to authenticate against a workspace. Tests
+that need a `dbutils` patch the attribute on this module.
 `fabricks.core.dags.log` is NOT faked: its table is resolved lazily, so it imports safely.
 
 IMPORTANT: same import-order rule as tests/spark/apache/conftest.py - the
@@ -49,8 +49,9 @@ import os
 from pathlib import Path
 import sys
 import time
-from unittest.mock import MagicMock
+from unittest.mock import DEFAULT, MagicMock, NonCallableMock
 
+from pyspark.sql import SparkSession
 import pytest
 
 _FRAMEWORK_ROOT = Path(__file__).resolve().parents[3]
@@ -58,6 +59,20 @@ _FRAMEWORK_ROOT = Path(__file__).resolve().parents[3]
 from tests.tier_policy import activate_tier  # noqa: E402
 
 activate_tier("config")
+
+# --- capture what the bootstrap below overwrites, so the session finalizer can restore it ---
+_ENV_KEYS = (
+    "FABRICKS_BASE",
+    "FABRICKS_RUNTIME",
+    "FABRICKS_CONFIG",
+    "FABRICKS_ENVIRONMENT",
+    "FABRICKS_IS_DEBUGMODE",
+    "FABRICKS_IS_JOB_CONFIG_FROM_YAML",
+)
+_ORIGINAL_ENV = {key: os.environ.get(key) for key in _ENV_KEYS}
+_REPLACED_MODULES = ("fabricks.utils.spark", "databricks.sdk.runtime")
+_ORIGINAL_MODULES = {name: sys.modules.get(name) for name in _REPLACED_MODULES}
+_ORIGINAL_BUILDER = SparkSession.__dict__["builder"]
 
 os.environ["FABRICKS_BASE"] = str(_FRAMEWORK_ROOT)
 os.environ["FABRICKS_RUNTIME"] = "tests/spark/runtime"
@@ -80,14 +95,63 @@ sys.modules["databricks.sdk.runtime"] = MagicMock(
     name="fake_databricks_sdk_runtime", spark=_fake_spark_session, dbutils=_fake_dbutils
 )
 
-from pyspark.sql import SparkSession  # noqa: E402 - must follow the setup above
 
-_fake_builder = MagicMock(name="fake_spark_session_builder")
-_fake_builder.appName.return_value = _fake_builder
-_fake_builder.config.return_value = _fake_builder
-_fake_builder.enableHiveSupport.return_value = _fake_builder
-_fake_builder.getOrCreate.return_value = _fake_spark_session
-SparkSession.builder = _fake_builder
+def _make_builder() -> MagicMock:
+    builder = MagicMock(name="fake_spark_session_builder")
+    builder.appName.return_value = builder
+    builder.config.return_value = builder
+    builder.enableHiveSupport.return_value = builder
+    builder.getOrCreate.return_value = _fake_spark_session
+    return builder
+
+
+SparkSession.builder = _make_builder()  # fabricks.context builds SPARK at import, before any fixture runs
+
+
+def _clear_configured_results(mock: NonCallableMock) -> None:
+    """Drop what a test configured (return_value, side_effect) on `mock` and its attribute children.
+
+    Not `reset_mock(return_value=True, side_effect=True)`: that also resets the magic-method defaults
+    (`__bool__` -> True), after which `if not SPARK` raises TypeError. Dunder children are left alone."""
+    mock.side_effect = None
+    mock.return_value = DEFAULT
+    for name, child in list(mock._mock_children.items()):
+        if not name.startswith("__") and isinstance(child, NonCallableMock):
+            _clear_configured_results(child)
+
+
+def _reset_bootstrap_mocks() -> None:
+    """The shared bootstrap mocks cannot be replaced per test (21 modules hold `SPARK` by value)."""
+    for mock in (_fake_spark_session, _fake_dbutils):
+        mock.reset_mock()  # call records
+        _clear_configured_results(mock)
+
+
+@pytest.fixture(autouse=True)
+def _reset_bootstrap_mocks_fixture(monkeypatch):
+    _reset_bootstrap_mocks()
+    monkeypatch.setattr(SparkSession, "builder", _make_builder())
+    yield
+    _reset_bootstrap_mocks()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _restore_process_state():
+    """Only matters when pytest runs more than once in a process (REPL, IDE runner, nested run): the
+    runtests.py runners call pytest.main once, so this is otherwise a no-op. Kept so this conftest
+    leaves no process-wide state behind."""
+    yield
+    SparkSession.builder = _ORIGINAL_BUILDER
+    for name, original in _ORIGINAL_MODULES.items():
+        if original is None:
+            sys.modules.pop(name, None)
+        else:
+            sys.modules[name] = original
+    for key, value in _ORIGINAL_ENV.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
 
 
 @pytest.fixture

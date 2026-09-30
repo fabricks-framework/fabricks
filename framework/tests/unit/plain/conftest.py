@@ -15,6 +15,9 @@ from tests.tier_policy import activate_tier
 
 activate_tier("plain")
 
+_REPLACED_MODULES = ("fabricks.utils.spark", "fabricks.context", "fabricks.context.spark_session")
+_ORIGINAL_MODULES = {name: sys.modules.get(name) for name in _REPLACED_MODULES}
+
 
 def mock_spark():
     """Mock Spark and related dependencies for tests/unit/plain."""
@@ -39,6 +42,17 @@ def mock_spark():
 
 # Mock must run at module level before any imports occur
 mock_spark()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _restore_process_state():
+    """See tests/unit/config/conftest.py: only matters for a process that runs pytest more than once."""
+    yield
+    for name, original in _ORIGINAL_MODULES.items():
+        if original is None:
+            sys.modules.pop(name, None)
+        else:
+            sys.modules[name] = original
 
 
 @pytest.fixture
