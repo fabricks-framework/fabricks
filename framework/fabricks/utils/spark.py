@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from databricks.sdk.dbutils import RemoteDbUtils
 from pyspark.sql import DataFrame, SparkSession
@@ -95,6 +96,7 @@ def display(df: DataFrame, limit: int | None = None) -> None:
 
 def get_dbutils(spark: SparkSession | None = None) -> RemoteDbUtils | None:
     try:
+        dbutils: Any  # RemoteDbUtils (remote) or the runtime's DBUtils (databricks/docker)
         if FABRICKS_ENVIRONMENT == "remote":
             from databricks.sdk import WorkspaceClient
 

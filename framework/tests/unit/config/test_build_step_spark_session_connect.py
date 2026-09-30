@@ -10,6 +10,7 @@ than crashing. See https://github.com/fabricks-framework/fabricks/issues/215.
 from unittest.mock import MagicMock
 
 from pyspark.errors.exceptions.base import PySparkAttributeError
+import pytest
 
 from fabricks.core.jobs.base import resolver
 from fabricks.models import SparkOptions
@@ -31,9 +32,16 @@ class _ConnectLikeSparkSession(MagicMock):
 def test_build_step_spark_session_under_spark_connect(monkeypatch):
     connect_spark = _ConnectLikeSparkSession(name="connect_spark_session")
     monkeypatch.setattr(resolver, "SPARK", connect_spark)
-    resolver._STEP_SESSIONS.pop("connect_test_step", None)
+    monkeypatch.setattr(resolver, "_STEP_SESSIONS", {})
 
     session = resolver.build_step_spark_session("connect_test_step", SparkOptions(conf={"some.conf": "value"}))
 
     assert session is connect_spark, "falls back to the parent session when newSession() isn't supported"
     session.conf.set.assert_any_call("some.conf", "value")
+
+
+def test_resolver_cache_is_left_unchanged_by_the_connect_test():
+    before = dict(resolver._STEP_SESSIONS)
+    with pytest.MonkeyPatch.context() as mp:
+        test_build_step_spark_session_under_spark_connect(mp)
+    assert before == resolver._STEP_SESSIONS

@@ -24,3 +24,49 @@ Deploy the bundle before running it; local runs cannot validate this tier.
 For a new behavior, add the smallest regression test that would fail if the
 behavior regressed. Do not add a Databricks test when a unit or Apache test can
 prove the same behavior.
+
+## Mocking strategy
+
+- Mock external boundaries only (Azure SDK clients, `dbutils`, the Spark session in the config
+  tier); keep Fabricks' business behavior real.
+- A fake must honor the parameters under test. Prefer a strict fake (fails on anything it does not
+  model) over a permissive `MagicMock`.
+- Spark semantics (merge, CDC, SQL results) are tested with real Spark and Delta in the Apache tier,
+  never with a mocked session.
+- Restore process-wide state. Use `monkeypatch` for `sys.modules`, `os.environ`, module attributes
+  and caches; never assign them directly in a test. Anything a conftest must set at import time gets
+  a finalizer.
+- Per-test state is fresh or reset: the shared bootstrap mocks (`SPARK`, `dbutils`) are reset around
+  every config-tier test.
+- Tier-process isolation stays: run each tier in its own pytest invocation.
+
+### Writing a local test with `semblance`
+
+Request the `semblance` fixture; it patches the Azure SDK clients and `databricks.sdk.runtime`, points
+the DAG log table at an in-memory table, and makes `time.sleep` instant. Import `DagProcessor` (and
+anything else from `fabricks.core.dags`) at the top of the test module so the fixture can see it.
+
+```python
+def test_dispatch(semblance):
+    semblance.widgets["schedule_id"] = "s1"                      # dbutils.widgets.get
+    semblance.secrets[("scope", "key")] = "value"                # dbutils.secrets.get
+    semblance.task_values["schedule"] = "daily"                  # dbutils.jobs.taskValues
+    semblance.on_notebook_run(returns="ok")                      # scripts dbutils.notebook.run
+    semblance.queue("qsilvers1").create()
+    semblance.table("ts1").seed([status_row("job-1")])          # from tests.semblance.schedule
+
+    ...  # drive real Fabricks code
+
+    semblance.table("ts1").rows(PartitionKey="statuses", Status="waiting")   # list[dict]
+    semblance.queue("qsilvers1").sent      # every message ever sent, in order
+    semblance.queue("qsilvers1").pending   # not yet received
+    semblance.notebook_calls               # [NotebookCall(path, timeout_seconds, arguments)]
+```
+
+The fakes are strict: an unsupported filter, a missing table or queue, an unknown `dbutils` method, or
+a wrong argument name raises. They model contracts only; Spark and Delta behavior stays in the Apache
+tier and Databricks-only behavior in the Databricks tier.
+
+`tests/unit/plain/test_azure_contract.py` runs the same scenarios against a real Azurite emulator when
+`FABRICKS_TEST_AZURITE_CONNECTION_STRING` is set (`npx azurite --silent --location "$(mktemp -d)"`,
+connection string `UseDevelopmentStorage=true`). It needs Node, not Docker.

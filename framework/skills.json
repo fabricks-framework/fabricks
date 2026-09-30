@@ -2,7 +2,7 @@
   "superpowers": {
     "marketplace": "superpowers-marketplace",
     "plugin": "superpowers",
-    "version": "6.3.0",
+    "version": "6.4.2",
     "skills": [
       "brainstorming",
       "dispatching-parallel-agents",
@@ -23,7 +23,7 @@
   "ponytail": {
     "marketplace": "ponytail",
     "plugin": "ponytail",
-    "version": "4.9.0",
+    "version": "4.10.0",
     "skills": [
       "ponytail",
       "ponytail-audit",
@@ -36,7 +36,7 @@
   "python-library-complete": {
     "marketplace": "dev-skills",
     "plugin": "python-library-complete",
-    "version": "81abccd68eb1",
+    "version": "954796b7fc28",
     "skills": [
       {
         "src": "python/documentation",
@@ -92,7 +92,7 @@
     "marketplace": "bmsuisse-skills",
     "plugin": "coding",
     "layout": "marketplace",
-    "version": "08e5658",
+    "version": "0e77bdf",
     "skills": [
       "coding-guidelines-python"
     ]

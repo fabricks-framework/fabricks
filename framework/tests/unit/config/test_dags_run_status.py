@@ -1,3 +1,4 @@
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -7,7 +8,8 @@ from fabricks.core.jobs.base.exception import CheckWarning, PreRunCheckException
 
 
 def _run_with_mocked_dbutils(fake_job):
-    with patch("fabricks.core.dags.run.dbutils") as fake_dbutils:
+    # run() imports dbutils lazily from databricks.sdk.runtime (faked by this tier's conftest)
+    with patch.object(sys.modules["databricks.sdk.runtime"], "dbutils") as fake_dbutils:
         fake_dbutils.jobs.taskValues.get.return_value = "sched-1"
         fake_dbutils.notebook.entry_point.getDbutils.side_effect = Exception("no notebook context in a unit test")
         return run(job=fake_job, schedule_id="sched-1", schedule="daily")

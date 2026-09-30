@@ -4,8 +4,9 @@ from typing import Final
 from fabricks.core.dags.utils import get_table
 from fabricks.utils.log import AzureTableLogHandler, get_logger
 
-table = get_table()
-Logger, TableLogHandler = get_logger("dags", logging.INFO, table=table, debugmode=False)
+# get_table is passed as a factory: resolving the storage account at import would need a real
+# Azure FileSharePath, which local runs (LocalFileSharePath) do not have
+Logger, TableLogHandler = get_logger("dags", logging.INFO, table=get_table, debugmode=False)
 
 LOGGER: Final[logging.Logger] = Logger
 assert TableLogHandler is not None

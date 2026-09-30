@@ -2,7 +2,6 @@ from collections.abc import Callable
 import json
 from typing import Any, Literal, overload
 
-from databricks.sdk.runtime import dbutils
 from pyspark.errors.exceptions.base import IllegalArgumentException
 
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
@@ -81,12 +80,16 @@ def run(
             raise ValueError("either job or step+job_id or step+topic+item must be provided")
 
     if schedule_id is None:
+        from databricks.sdk.runtime import dbutils
+
         try:
             schedule_id = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule_id")
         except (TypeError, IllegalArgumentException, ValueError):
             schedule_id = dbutils.widgets.get("schedule_id")
 
     if schedule is None:
+        from databricks.sdk.runtime import dbutils
+
         try:
             schedule = dbutils.jobs.taskValues.get(taskKey="initialize", key="schedule")
         except (TypeError, IllegalArgumentException, ValueError):
@@ -94,6 +97,8 @@ def run(
 
     if notebook_id is None:
         try:
+            from databricks.sdk.runtime import dbutils
+
             context = json.loads(dbutils.notebook.entry_point.getDbutils().notebook().getContext().toJson())  # type: ignore
             notebook_id = context.get("tags").get("jobId")
         except:  # noqa: E722

@@ -1,42 +1,16 @@
-"""End-to-end proof (real Spark/Delta) that Tasks 1-4's changes to
-bronze.py/silver.py/gold.py/job.py/dags/run.py didn't regress ordinary
-Silver runs, and that a genuinely empty batch now surfaces as a "stale"
-RunStatus through the real dags.run.run() wrapper, not job.run() directly
-(job.run() itself has no return value -- it just raises UnchangedWarning,
-per Task 3).
+"""End-to-end proof (real Spark/Delta) that ordinary Silver runs did not regress and that a genuinely
+empty batch surfaces as a "stale" RunStatus through the real dags.run.run() wrapper.
 
-Importing fabricks.core.dags.run pulls in fabricks.core.dags.log, whose
-module body calls FABRICKS_STORAGE.get_storage_account() -- only
-implemented on the real Azure FileSharePath, not the LocalFileSharePath
-this tier's FABRICKS_ENVIRONMENT=docker uses (see tests/unit/config/
-conftest.py's own docstring for the same issue in that tier). Faking that
-one module out, the same way that tier does, is the smallest fix -- no
-real Azure Table is needed for this test, only LOGGER/TABLE_LOG_HANDLER.
-
-fabricks.core.dags.run/processor also do a top-level
-`from databricks.sdk.runtime import dbutils`, whose import tries to
-authenticate against a real workspace -- fine on a machine with a
-~/.databrickscfg, a collection error on CI. Faked the same way.
+run() reads dbutils lazily from databricks.sdk.runtime and flushes the real dags log handler in its
+`finally`; both need a fake outside Databricks (no workspace to authenticate against, no Azure storage
+account). The `semblance` fixture provides them and restores everything after each test.
 """
 
-import sys
-from unittest.mock import MagicMock
-
-if "fabricks.core.dags.log" not in sys.modules:
-    sys.modules["fabricks.core.dags.log"] = MagicMock(
-        name="fake_dags_log",
-        LOGGER=MagicMock(name="fake_dags_logger"),
-        TABLE_LOG_HANDLER=MagicMock(name="fake_table_log_handler"),
-    )
-
-if "databricks.sdk.runtime" not in sys.modules:
-    sys.modules["databricks.sdk.runtime"] = MagicMock(name="fake_databricks_sdk_runtime")
-
-from fabricks.core import get_job  # must follow the sys.modules fake above
+from fabricks.core import get_job
 from fabricks.core.dags.run import run
 
 
-def test_dags_run_returns_stale_for_a_genuinely_empty_silver_batch(local_spark, monkeypatch):
+def test_dags_run_returns_stale_for_a_genuinely_empty_silver_batch(local_spark, monkeypatch, semblance):
     # append_test's own configured data source isn't wired up in this test
     # runtime -- get_data() is the one seam job.run()/for_each_run() use to
     # source a batch, so controlling it here still exercises the real
