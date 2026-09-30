@@ -5,7 +5,6 @@ import time
 from typing import Self
 
 from azure.core.exceptions import AzureError
-from databricks.sdk.runtime import dbutils
 from pyspark.sql import DataFrame
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
@@ -153,6 +152,8 @@ class DagProcessor(BaseDags):
                     status: RunStatus = "stale"
                     try:
                         if self.notebook:
+                            from databricks.sdk.runtime import dbutils
+
                             path: str = PATH_NOTEBOOKS.joinpath("run").get_notebook_path()
                             result = dbutils.notebook.run(
                                 path=path,  # ty:ignore[unknown-argument]

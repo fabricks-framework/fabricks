@@ -1,4 +1,3 @@
-from databricks.sdk.runtime import dbutils, spark
 from pyspark.errors.exceptions.base import IllegalArgumentException
 from pyspark.sql import DataFrame
 
@@ -16,6 +15,7 @@ def standalone(schedule: str | None = None) -> None:
     Args:
         schedule (str | None): The schedule to run. If None, it will be retrieved from task values or widgets.
     """
+    from databricks.sdk.runtime import dbutils, spark
 
     if schedule is None:
         DEFAULT_LOGGER.debug("schedule not provided, trying task value or widget", extra={"label": "scheduler"})
@@ -47,6 +47,8 @@ def terminate(schedule_id: str | None = None) -> None:
         schedule_id (str): The ID of the schedule to terminate. If None, it will be retrieved from
             task values or widgets.
     """
+    from databricks.sdk.runtime import dbutils
+
     if schedule_id is None:
         DEFAULT_LOGGER.debug("schedule_id not provided, trying task value or widget", extra={"label": "scheduler"})
         try:
@@ -71,6 +73,8 @@ def process(step: str | None = None, schedule_id: str | None = None, schedule: s
         schedule (str | None): The schedule to process. If None, it will be retrieved from task values or widgets.
         step (str | None): The step to process. If None, it will be retrieved from widgets.
     """
+    from databricks.sdk.runtime import dbutils
+
     if schedule_id is None:
         DEFAULT_LOGGER.debug("schedule_id not provided, trying task value or widget", extra={"label": "scheduler"})
         try:
@@ -111,6 +115,8 @@ def generate(schedule: str | None = None) -> tuple[str, DataFrame, DataFrame]:
     Returns:
         Tuple[str, DataFrame, DataFrame]: A tuple containing the schedule ID, job dataframe, and dependency dataframe.
     """
+    from databricks.sdk.runtime import dbutils
+
     if schedule is None:
         schedule = dbutils.widgets.get("schedule")
 
