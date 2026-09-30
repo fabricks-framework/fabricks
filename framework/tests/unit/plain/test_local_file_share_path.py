@@ -50,8 +50,7 @@ def test_joinpath_preserves_class(tmp_path: Path):
     assert isinstance(child, LocalFileSharePath)
 
 
-@pytest.fixture
-def set_environment(monkeypatch):
+def _environment_setter(monkeypatch):
     from fabricks.utils import environment as environment_module
     from fabricks.utils.path import file_share as file_share_module
 
@@ -63,9 +62,16 @@ def set_environment(monkeypatch):
 
     yield _set
 
-    monkeypatch.delenv("FABRICKS_ENVIRONMENT", raising=False)
+    # Restore the environment BEFORE the final reloads: monkeypatch's own teardown runs after this
+    # finalizer, so reloading first would freeze the modules against a deleted variable.
+    monkeypatch.undo()
     importlib.reload(environment_module)
     importlib.reload(file_share_module)
+
+
+@pytest.fixture
+def set_environment(monkeypatch):
+    yield from _environment_setter(monkeypatch)
 
 
 def test_resolve_fileshare_path_docker_returns_local(tmp_path, set_environment):
@@ -89,3 +95,22 @@ def test_resolve_fileshare_path_databricks_rejects_non_abfss(set_environment):
     fs = set_environment("databricks")
     with pytest.raises(AssertionError):
         fs.resolve_fileshare_path("/not/an/abfss/path")
+
+
+def test_finalizer_reloads_modules_against_the_restored_environment(monkeypatch):
+    from fabricks.utils import environment as environment_module
+    from fabricks.utils.path import file_share as file_share_module
+
+    monkeypatch.setenv("FABRICKS_ENVIRONMENT", "remote")  # non-default: an unset variable reloads to "databricks"
+    inner = pytest.MonkeyPatch()
+    setter = _environment_setter(inner)
+    try:
+        next(setter)("docker")
+        assert environment_module.FABRICKS_ENVIRONMENT == "docker"
+        with pytest.raises(StopIteration):
+            next(setter)
+        assert environment_module.FABRICKS_ENVIRONMENT == "remote"
+    finally:
+        monkeypatch.undo()
+        importlib.reload(environment_module)
+        importlib.reload(file_share_module)
