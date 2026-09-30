@@ -99,11 +99,12 @@ def no_real_sleep(monkeypatch):
 @pytest.fixture(autouse=True)
 def _fake_dags_log_table(monkeypatch):
     """Give the real dags log handler a fake table so nothing resolves the lazy one (local storage has no
-    get_storage_account) and drain what the real LOGGER buffered, so logging.shutdown() has nothing to flush."""
-    log = sys.modules.get("fabricks.core.dags.log")  # only if a test module imported the DAG code at collection
-    if log is None:
-        yield
-        return
-    monkeypatch.setattr(log.TABLE_LOG_HANDLER, "_table", MagicMock(name="fake_dags_log_table"))
+    get_storage_account) and drain what the real LOGGER buffered, so logging.shutdown() has nothing to flush.
+
+    dags.log is imported here, not looked up in sys.modules, so the seam does not depend on which test
+    modules were collected (some import the DAG code only inside the test body)."""
+    from fabricks.core.dags.log import TABLE_LOG_HANDLER  # this tier uses the real fabricks.context: safe
+
+    monkeypatch.setattr(TABLE_LOG_HANDLER, "_table", MagicMock(name="fake_dags_log_table"))
     yield
-    log.TABLE_LOG_HANDLER.clear_buffer()
+    TABLE_LOG_HANDLER.clear_buffer()
