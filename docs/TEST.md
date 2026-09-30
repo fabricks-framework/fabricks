@@ -24,3 +24,18 @@ Deploy the bundle before running it; local runs cannot validate this tier.
 For a new behavior, add the smallest regression test that would fail if the
 behavior regressed. Do not add a Databricks test when a unit or Apache test can
 prove the same behavior.
+
+## Mocking strategy
+
+- Mock external boundaries only (Azure SDK clients, `dbutils`, the Spark session in the config
+  tier); keep Fabricks' business behavior real.
+- A fake must honor the parameters under test. Prefer a strict fake (fails on anything it does not
+  model) over a permissive `MagicMock`.
+- Spark semantics (merge, CDC, SQL results) are tested with real Spark and Delta in the Apache tier,
+  never with a mocked session.
+- Restore process-wide state. Use `monkeypatch` for `sys.modules`, `os.environ`, module attributes
+  and caches; never assign them directly in a test. Anything a conftest must set at import time gets
+  a finalizer.
+- Per-test state is fresh or reset: the shared bootstrap mocks (`SPARK`, `dbutils`) are reset around
+  every config-tier test.
+- Tier-process isolation stays: run each tier in its own pytest invocation.
