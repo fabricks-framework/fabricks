@@ -81,7 +81,7 @@ os.environ["FABRICKS_ENVIRONMENT"] = "docker"
 os.environ["FABRICKS_IS_DEBUGMODE"] = "FALSE"
 os.environ["FABRICKS_IS_JOB_CONFIG_FROM_YAML"] = "TRUE"
 
-_fake_spark_session = MagicMock(name="fake_spark_session")
+_fake_spark_session = MagicMock(spec=SparkSession, name="fake_spark_session")
 _fake_dbutils = MagicMock(name="fake_dbutils")
 
 sys.modules["fabricks.utils.spark"] = MagicMock(
@@ -97,7 +97,7 @@ sys.modules["databricks.sdk.runtime"] = MagicMock(
 
 
 def _make_builder() -> MagicMock:
-    builder = MagicMock(name="fake_spark_session_builder")
+    builder = MagicMock(spec=SparkSession.Builder, name="fake_spark_session_builder")
     builder.appName.return_value = builder
     builder.config.return_value = builder
     builder.enableHiveSupport.return_value = builder
