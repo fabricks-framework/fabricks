@@ -94,3 +94,16 @@ SparkSession.builder = _fake_builder
 def no_real_sleep(monkeypatch):
     """Skip a real tenacity retry wait (e.g. invoker.py's wait_fixed(60))."""
     monkeypatch.setattr(time, "sleep", lambda *_a, **_kw: None)
+
+
+@pytest.fixture(autouse=True)
+def _fake_dags_log_table(monkeypatch):
+    """Give the real dags log handler a fake table so nothing resolves the lazy one (local storage has no
+    get_storage_account) and drain what the real LOGGER buffered, so logging.shutdown() has nothing to flush."""
+    log = sys.modules.get("fabricks.core.dags.log")  # only if a test module imported the DAG code at collection
+    if log is None:
+        yield
+        return
+    monkeypatch.setattr(log.TABLE_LOG_HANDLER, "_table", MagicMock(name="fake_dags_log_table"))
+    yield
+    log.TABLE_LOG_HANDLER.clear_buffer()

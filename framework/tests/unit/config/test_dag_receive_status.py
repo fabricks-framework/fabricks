@@ -1,15 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from tests.unit.config._dag_processor_helpers import fake_processor
-
-
-@pytest.fixture(autouse=True)
-def _no_real_log_table():
-    # receive() logs to the table (target="table") and flushes it: the real handler would resolve a real Azure table
-    with patch("fabricks.core.dags.processor.LOGGER"), patch("fabricks.core.dags.processor.TABLE_LOG_HANDLER"):
-        yield
 
 
 def _receive(job_response: dict, run_result, run_raises=None):

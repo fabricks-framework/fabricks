@@ -7,13 +7,6 @@ from fabricks.core.dags.run import run
 from fabricks.core.jobs.base.exception import CheckWarning, PreRunCheckException, SkipWarning, UnchangedWarning
 
 
-@pytest.fixture(autouse=True)
-def _no_real_log_table():
-    # run() flushes the real TABLE_LOG_HANDLER in its `finally`, which would resolve a real Azure table
-    with patch("fabricks.core.dags.run.TABLE_LOG_HANDLER"):
-        yield
-
-
 def _run_with_mocked_dbutils(fake_job):
     # run() imports dbutils lazily from databricks.sdk.runtime (faked by this tier's conftest)
     with patch.object(sys.modules["databricks.sdk.runtime"], "dbutils") as fake_dbutils:

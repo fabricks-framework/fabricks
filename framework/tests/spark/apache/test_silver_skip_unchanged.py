@@ -2,25 +2,32 @@
 empty batch surfaces as a "stale" RunStatus through the real dags.run.run() wrapper.
 
 run() reads dbutils lazily from databricks.sdk.runtime; outside Databricks that import tries to
-authenticate, so the fixture below swaps in a fake for the duration of each test (auto-restored).
-It also swaps out TABLE_LOG_HANDLER, which run() flushes in its `finally`: flushing the real handler
-would resolve a real Azure table, which the local storage root of this tier does not have.
+authenticate, so a fixture swaps in a fake for the duration of each test (auto-restored).
+run() also flushes the real dags log handler in its `finally`, which would resolve the lazy Azure table,
+and this tier's local storage root has none: a second fixture gives the handler a fake table and drains
+what the real LOGGER buffered.
 """
 
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from fabricks.core import get_job
+from fabricks.core.dags.log import TABLE_LOG_HANDLER
 from fabricks.core.dags.run import run
 
 
 @pytest.fixture(autouse=True)
 def _fake_databricks_runtime(monkeypatch):
     monkeypatch.setitem(sys.modules, "databricks.sdk.runtime", MagicMock(name="fake_databricks_sdk_runtime"))
-    with patch("fabricks.core.dags.run.TABLE_LOG_HANDLER"):
-        yield
+
+
+@pytest.fixture(autouse=True)
+def _fake_dags_log_table(monkeypatch):
+    monkeypatch.setattr(TABLE_LOG_HANDLER, "_table", MagicMock(name="fake_dags_log_table"))
+    yield
+    TABLE_LOG_HANDLER.clear_buffer()
 
 
 def test_dags_run_returns_stale_for_a_genuinely_empty_silver_batch(local_spark, monkeypatch):
