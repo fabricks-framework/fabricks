@@ -8,6 +8,11 @@ include:
   - databricks.targets.yml
 bundle:  # Required.
   name: fabricks_test
+sync:
+  # dependency.py and dependency.ipynb map to the same remote notebook path,
+  # which fails the sync; unit fixtures are not used by the Databricks job.
+  exclude:
+    - tests/unit/**
 artifacts:
   fabricks_tool:
     # Pinned fake version (not pyproject's real version) so the wheel's

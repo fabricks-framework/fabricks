@@ -103,6 +103,11 @@ packages = ["fabricks"]
 [tool.ty.rules]
 deprecated = "ignore"
 
+# Notebook fixtures are parsed as text by the dependency tests; they use the
+# Databricks-provided `spark` global and raw SQL cells, so they don't type-check.
+[tool.ty.src]
+exclude = ["tests/unit/plain/fixtures/notebooks/"]
+
 # Tests deliberately narrow past the annotations: get_job() returns a
 # Bronze | Gold | Silver union whose step-specific members each test knows it
 # has, and the fake-Spark suites pass stand-in DataFrames.
