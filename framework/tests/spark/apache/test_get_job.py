@@ -12,8 +12,10 @@ from pathlib import Path
 from pyspark.sql.functions import col
 import pytest
 
-from fabricks.core import get_job
+from fabricks.context import PATHS_STORAGE
+from fabricks.core import get_job, get_step
 from fabricks.utils.path import resolve_fileshare_path
+from fabricks.utils.path.local import LocalFileSharePath
 
 
 @pytest.fixture(scope="session")
@@ -44,3 +46,21 @@ def test_get_job_bronze_queen_only_reads_real_registered_delta_table(local_spark
     df = job.parse(stream=False)
     assert df.count() == 6, "expected all 6 rows from iter1/bronze_queen.jsonl"
     assert "id" in df.columns
+
+
+# --- runtime config: the storage roots and steps resolve from the real YAML.
+
+
+def test_bronze_silver_gold_expected_resolve_to_local_storage():
+    for name in ("bronze", "silver", "gold", "expected"):
+        storage = PATHS_STORAGE.get(name)
+        assert storage is not None, f"{name} not found in PATHS_STORAGE"
+        assert isinstance(storage, LocalFileSharePath)
+
+
+def test_get_step_resolves_bronze_and_silver():
+    bronze = get_step(step="bronze")
+    silver = get_step(step="silver")
+
+    assert bronze.name == "bronze"
+    assert silver.name == "silver"
