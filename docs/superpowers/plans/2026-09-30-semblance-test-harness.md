@@ -41,12 +41,19 @@ Branch `claude/github-issue-220-447fc0`; every commit below used `--no-verify` a
 | 2 lazy `dags.log` table | done, review clean | `9749cc39` |
 | 2b (added) `flush()` early return on empty buffer | done, review clean | `a1135d75` |
 | 3 delete wholesale `dags.log`/runtime fakes | done after 2 fix rounds, review clean; **Apache edit unverified by execution** | `c195ec3c`, `e68a2ab7`, `63568b72` |
-| 4 per-test reset + process-state finalizers | implemented; **task review not completed** (two reviewer runs were cut off when the session ended) | `c1f5d663` |
-| 5 Spark Connect cache | not started | — |
-| 6 env-reload fixture | not started | — |
-| 7 `docs/TEST.md` + Change 1 verification | not started | — |
+| 4 per-test reset + process-state finalizers | done, review clean (inline review 2026-09-30: config 205 / plain 131 green, ruff clean; nits: test name claims "assigned_children" but assigned children/plain attrs survive the reset, `_mock_children` is private API) | `c1f5d663` |
+| 5 Spark Connect cache | done (config 206 green; ruff SIM300 needed `before == resolver._STEP_SESSIONS` operand order) | `0d3dcce9` |
+| 6 env-reload fixture | done (plain 132, config 206 green); the plan's test was vacuous, so it restores to `"remote"` instead of `"databricks"` (an unset variable reloads to `"databricks"` by default); mutation-checked | `f9ad1014` |
+| 7 `docs/TEST.md` + Change 1 verification | docs done; plain 132 / config 206 green; **Apache tier green: 88 passed** (incl. the Task 3-edited `test_silver_skip_unchanged.py`), run on Temurin JDK 21.0.12 via `JAVA_HOME=~/.local/jdk/jdk-21.0.12.1+1` (JDK 25 fails: pyspark 4.1.x bundles Hadoop 3.4.2, whose `Subject.getSubject` call JDK 23+ rejects; pyspark 4.2.0 is blocked by `sparkdantic`'s `<4.2.0` guard). `just lint` fails only on 3 pre-existing `ty` diagnostics in `fabricks/utils/spark.py` | `38269b23` |
 | Docs (user request) | CONSTITUTION §2: import `databricks.sdk.runtime` inside functions | `0c377196` |
-| 8-15 (Change 2) | not started | — |
+| 8 strict Spark mock | done, zero fallout (config 207 green) | see `git log` |
+| 9 stub + dbutils fake | done (plain 141, config 207 green; file-level `noqa: N802,N803` because names mirror the camelCase SDK stub) | see `git log` |
+| 10 Azure Table/Queue fakes | done (plain 156, config 207 green; lint-only edits to the plan code: PT018 split asserts, `match=` on ValueError, `_ = view.sent`) | see `git log` |
+| 11 semblance fixture + schedule rows | done (plain 161, config 210 green, Apache collects 88). Deviation: `test_semblance_leak.py` overrides the autouse `_fake_dags_log_table` by name (like `test_dags_log_import.py`), else its "unresolved outside the fixture" test sees the conftest MagicMock. `_fake_dags_log_table` stays in the config conftest until Task 12 removes its last dependents | see `git log` |
+| 12 migrate DagProcessor fakes | done with user approval (CONSTITUTION §4); config 211 green; all 7 old test names kept + 1 new. `_fake_dags_log_table` must stay: `test_dags_run_status.py` (7 tests) still needs it | see `git log` |
+| 13 local schedule test | done (config 213 green) | see `git log` |
+| 14 Azurite contract test | done; fake backend 5 pass, **Azurite 10/10 pass** (`npx azurite`, Node present). Contract found one disagreement: Azurite raises `ResourceExistsError` for `create_queue` on an existing queue (the fake no-op'd); fake + its test fixed, contract test now goes through `AzureQueue.create_if_not_exists()` (what Fabricks calls). plain 166 + 5 skipped, config 213 | see `git log` |
+| 15 Apache uses semblance + docs + final verification | done. Final: plain 166 + 5 skipped (Azurite cases), config 213, **Apache 88 (JDK 21)**, Azurite contract 10/10. `just lint` red only on the pre-existing `ty` baseline (3 in `fabricks/utils/spark.py`, 39 in `tests/unit/plain/fixtures/notebooks/`); no new diagnostics | see `git log` |
 
 Baseline now (config/plain only; Apache never run): plain 131 passed, config 205 passed.
 
