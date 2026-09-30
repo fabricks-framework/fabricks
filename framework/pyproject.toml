@@ -113,6 +113,10 @@ include = ["tests/**"]
 invalid-argument-type = "ignore"
 unresolved-attribute = "ignore"
 
+# Notebook fixtures are parsed as data by the dependency tests; `spark` only exists inside Databricks.
+[tool.ty.src]
+exclude = ["tests/unit/plain/fixtures/notebooks"]
+
 [tool.ty.terminal]
 output-format = "full"
 
