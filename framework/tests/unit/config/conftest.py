@@ -48,7 +48,6 @@ replaced it. Run each tier as its own separate pytest invocation.
 import os
 from pathlib import Path
 import sys
-import time
 from unittest.mock import DEFAULT, MagicMock, NonCallableMock
 
 from pyspark.sql import SparkSession
@@ -152,12 +151,6 @@ def _restore_process_state():
             os.environ.pop(key, None)
         else:
             os.environ[key] = value
-
-
-@pytest.fixture
-def no_real_sleep(monkeypatch):
-    """Skip a real tenacity retry wait (e.g. invoker.py's wait_fixed(60))."""
-    monkeypatch.setattr(time, "sleep", lambda *_a, **_kw: None)
 
 
 @pytest.fixture(autouse=True)
