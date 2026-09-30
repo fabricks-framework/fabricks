@@ -20,6 +20,12 @@ the `coding-guidelines-python` skill for typing, Pyright, dataclasses,
 enums, and other Python-specific conventions, and the `code-quality` skill
 for ruff/mypy config and fail-loud/determinism anti-patterns.
 
+Import `databricks.sdk.runtime` (`dbutils`, `spark`) inside the function that
+uses it, never at module level: outside a Databricks cluster the import tries
+to authenticate against a workspace, so a module-level import makes the module
+impossible to import in tests. `tests/unit/plain/test_seams.py` enforces this;
+only the notebook entry points in `fabricks/api/notebooks/` are exempt.
+
 ## 3. Layers
 
 Runtime code imports from `api/`, not framework internals. `metastore/` never
