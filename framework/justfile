@@ -1,3 +1,6 @@
+# Load framework/.env (gitignored), e.g. FABRICKS_REMOTE for test-apache-remote
+set dotenv-load
+
 # Point git at the repo's tracked hooks (pre-commit: format+lint)
 setup-hooks:
     git -C .. config core.hooksPath .githooks
@@ -45,6 +48,19 @@ test-apache TARGET="tests/spark/apache":
     # fails to reopen (ERROR XBM0A) on the next run
     rm -rf tests/spark/apache/.worker_cwd
     uv run pytest {{TARGET}} -v
+
+# Run the Apache tier on a remote machine over ssh (rsyncs the working tree first)
+# Needs FABRICKS_REMOTE=<ssh host>; FABRICKS_REMOTE_DIR defaults to ~/Fabricks; FABRICKS_REMOTE_JAVA_HOME optionally picks the remote JDK. Remote needs Java 17+, uv, just.
+# TARGET narrows as in test-apache
+test-apache-remote TARGET="tests/spark/apache":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host="${FABRICKS_REMOTE:?set FABRICKS_REMOTE to the ssh host}"
+    dir="${FABRICKS_REMOTE_DIR:-Fabricks}"
+    rsync -az --delete --exclude .git --exclude .venv --exclude '__pycache__' --exclude .worker_cwd \
+        --exclude .pytest_cache --exclude .ruff_cache ../ "$host:$dir/"
+    java_home="${FABRICKS_REMOTE_JAVA_HOME:-}"
+    ssh -t "$host" "export PATH=\$HOME/.local/bin:\$PATH; ${java_home:+export JAVA_HOME=$java_home;} cd $dir/framework && just test-apache {{TARGET}}"
 
 # Deploy the bundle to the 'test' workspace
 deploy:
