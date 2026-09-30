@@ -6,11 +6,12 @@ TableServiceClient on each access when it has no connection string).
 """
 
 from collections import deque
+import contextlib
 import copy
 import re
 from typing import Any
 
-from azure.core.exceptions import ResourceNotFoundError
+from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 from azure.storage.queue import QueueMessage
 
 _CLAUSE = re.compile(r"^(\w+) eq '((?:[^']|'')*)'$")
@@ -167,9 +168,10 @@ class FakeQueueClient:
             raise ResourceNotFoundError(f"queue {self.queue_name!r} does not exist") from None
 
     def create_queue(self, **kwargs: Any) -> None:
-        # idempotent: Azure returns 204 for an existing queue with identical metadata (metadata is not
-        # modelled, so it is always identical) and 409 only when it differs
-        self._store.queues.setdefault(self.queue_name, _FakeQueue())
+        # Azurite (contract-tested) answers 409 QueueAlreadyExists; AzureQueue.create_if_not_exists suppresses it
+        if self.queue_name in self._store.queues:
+            raise ResourceExistsError(f"queue {self.queue_name!r} already exists")
+        self._store.queues[self.queue_name] = _FakeQueue()
 
     def send_message(self, content: str, **kwargs: Any) -> QueueMessage:
         if not isinstance(content, str):
@@ -226,7 +228,8 @@ class QueueView:
         return self._store.queues[self._name]
 
     def create(self) -> None:
-        FakeQueueClient(self._store, self._name).create_queue()
+        with contextlib.suppress(ResourceExistsError):
+            FakeQueueClient(self._store, self._name).create_queue()
 
     def send(self, content: str) -> None:
         FakeQueueClient(self._store, self._name).send_message(content)

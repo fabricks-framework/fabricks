@@ -1,4 +1,4 @@
-from azure.core.exceptions import ResourceNotFoundError
+from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 import pytest
 
 from tests.semblance.azure_fakes import (
@@ -106,13 +106,14 @@ def queues():
     return QueueStore()
 
 
-def test_queue_requires_creation_and_creating_an_existing_queue_is_a_noop(queues):
+def test_queue_requires_creation_and_creating_an_existing_queue_raises(queues):
     client = QueueClientFactory(queues).from_connection_string("x", queue_name="q")
     with pytest.raises(ResourceNotFoundError):
         client.send_message("a")
     client.create_queue()
     client.send_message("a")
-    client.create_queue()  # Azure returns 204 for an existing queue with identical metadata
+    with pytest.raises(ResourceExistsError):  # Azurite: 409 QueueAlreadyExists
+        client.create_queue()
     assert QueueView(queues, "q").pending == ["a"]
 
 
