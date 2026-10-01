@@ -1,15 +1,5 @@
-"""https://github.com/fabricks-framework/fabricks/issues/66: a staging source
-that legitimately goes fully empty has no per-key rows left to emit a
-"delete" for -- the caller shouldn't have to enumerate every existing
-primary key just to say "the source table is now empty". A single
-`__operation == 'truncate'` sentinel row closes every currently-open record
-instead. It's rewritten to a plain 'reload' row with a dummy key
-(fabricks/cdc/templates/ctes/base.sql.jinja) so it reuses rectify's existing
-per-key "not found in next reload" reconciliation
-(ctes/rectify.sql.jinja) rather than a new all-or-nothing code path -- that's
-what lets it interleave correctly with ordinary upserts across separate
-incremental batches, proven by
-test_truncate_interleaves_with_incremental_upserts below.
+"""https://github.com/fabricks-framework/fabricks/issues/66: an `__operation == 'truncate'` sentinel row closes every
+open record when a source goes fully empty; base.sql.jinja rewrites it to a 'reload' row so rectify reconciles per key.
 """
 
 from fabricks.cdc import SCD2

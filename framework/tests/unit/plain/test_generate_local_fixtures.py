@@ -20,8 +20,6 @@ _ITER1_QUEEN = RAW_FIXTURES_ROOT / "iter1" / "queen"
 def test_derive_rows_from_iter1_king():
     rows = derive_source_rows(_ITER1_KING, source="king")
 
-    # iter1/king has 2 batches (2022/01/01/0001 with 3 rows incl. a duplicate,
-    # 2022/01/02/0001 with 2 rows) — see the raw fixture files.
     assert len(rows) == 5
 
     first = rows[0]
@@ -50,8 +48,7 @@ def test_generated_ndjson_files_are_committed():
     assert queen_path.exists()
 
     lines = king_path.read_text().strip().splitlines()
-    # 5 main rows (see test_derive_rows_from_iter1_king) + 1 from the sibling
-    # iter1/king__deletelog directory, which main() concatenates in.
+    # 5 main rows + 1 from the sibling iter1/king__deletelog directory
     assert len(lines) == 6
     row = json.loads(lines[0])
     assert row["__source"] == "king"
@@ -61,34 +58,21 @@ def test_generated_ndjson_files_are_committed():
 
 
 def test_derive_rows_is_deterministic_across_calls():
-    # Same call, twice, must produce byte-for-byte identical rows — this
-    # output gets committed to git, so any source of nondeterminism (dict
-    # ordering, unstable glob ordering across filesystems/OSes) would show
-    # up as spurious diffs every time someone regenerates the fixtures.
+    # Committed to git: nondeterminism (dict or glob ordering) would show up as spurious diffs on regeneration.
     first = derive_source_rows(_ITER1_KING, source="king")
     second = derive_source_rows(_ITER1_KING, source="king")
     assert first == second
 
 
 def test_derive_rows_order_matches_sorted_file_path_order():
-    # derive_rows sorts entity_dir.rglob("*.jsonl") before reading, so row
-    # order should follow the YYYY/MM/DD/NNNN path order chronologically —
-    # batch 2022/01/01/0001's 3 rows (incl. a duplicate) before batch
-    # 2022/01/02/0001's 2 rows. Order matters here: run_cdc_scenario
-    # (Task 9) feeds these rows straight into NoCDC.overwrite() as one
-    # DataFrame, and a silently reordered batch would change which row
-    # "wins" a same-key dedup without changing the row count, so a count-only
-    # assertion wouldn't catch it.
+    # A reordered batch changes which row wins a same-key dedup without changing the row count.
     rows = derive_source_rows(_ITER1_KING, source="king")
     timestamps = [r["__timestamp"] for r in rows]
     assert timestamps == sorted(timestamps)
 
 
 def test_king_and_queen_rows_share_the_same_schema():
-    # Task 9's run_cdc_scenario fixture unions king's and queen's
-    # DataFrames (unionByName). A key mismatch between the two entities'
-    # derived rows would only surface there as a confusing Spark error —
-    # catching it here, at the pure-Python level, is cheaper and clearer.
+    # A key mismatch would otherwise surface only as a confusing Spark error when the entities are unioned by name.
     king_rows = derive_source_rows(_ITER1_KING, source="king")
     queen_rows = derive_source_rows(_ITER1_QUEEN, source="queen")
 
@@ -109,13 +93,7 @@ def test_write_ndjson_round_trips_without_loss(tmp_path):
 
 @pytest.mark.parametrize("iter_num", ITERATIONS)
 def test_king_queen_jsonl_matches_concatenation_of_king_and_queen(iter_num):
-    # king_queen.jsonl is meant to always be exactly bronze_king.jsonl's rows
-    # followed by bronze_queen.jsonl's rows (see main() in generate_fixtures.py)
-    # -- a single combined-topic file, mimicking the real "monarch" topic's
-    # shape. Nothing enforces that invariant at write time beyond "don't edit
-    # generate_fixtures.py wrong", so this guards against the two drifting
-    # apart (e.g. a future change that filters/reorders one of the per-entity
-    # files without updating king_queen.jsonl to match).
+    # king_queen.jsonl mimics the combined "monarch" topic; nothing enforces at write time that it matches the parts.
     iter_dir = APACHE_FIXTURES_ROOT / f"iter{iter_num}"
     king_queen_rows = [json.loads(line) for line in (iter_dir / "king_queen.jsonl").read_text().splitlines()]
 
@@ -132,11 +110,7 @@ def test_king_queen_jsonl_matches_concatenation_of_king_and_queen(iter_num):
 
 
 def test_regenerating_fixtures_twice_is_byte_identical(tmp_path):
-    # The strongest form of "consistent across iterations": running the
-    # full generation twice into two separate directories must produce
-    # byte-for-byte identical files, not just equal-when-parsed rows —
-    # dict key ordering inside json.dumps() is one way this could silently
-    # drift even if test_derive_rows_is_deterministic_across_calls passes.
+    # Byte-identical, not just equal when parsed: json.dumps key ordering could drift unnoticed.
     rows = derive_source_rows(_ITER1_KING, source="king")
 
     first_path = tmp_path / "run1" / "king.jsonl"

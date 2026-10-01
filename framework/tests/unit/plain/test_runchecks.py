@@ -337,10 +337,7 @@ def test_invoke_and_register_modes_never_need_a_sql_file(tmp_path: Path, mode: s
 
 
 def test_unset_parents_does_not_need_to_match_sql(tmp_path: Path) -> None:
-    """parents: is an override, not a contract the SQL must satisfy -- a job that
-    leaves it unset gets its dependency deducted from the SQL instead, and a job
-    that sets it is free to narrow it (e.g. gating on a trigger job) without that
-    being an error."""
+    """parents: is an override, not a contract: unset it is deduced from the SQL, and a set value may narrow it."""
     _write(
         tmp_path / "silver" / "sales" / "_config.sales.yml",
         """

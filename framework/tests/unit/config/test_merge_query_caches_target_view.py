@@ -1,8 +1,7 @@
 """https://github.com/fabricks-framework/fabricks/issues/202:
-the merge query caches the batch-relevant target subset under a
-stable global temp view, so every `__current` consumer reads it once instead of re-scanning storage.
-Checks the plumbing with a mocked session: one uncache, one cache, and a final query that targets the
-cached view rather than the raw table. The scan-count proof is
+the merge query caches the batch-relevant target subset under a stable global temp view, so every `__current`
+consumer reads it once instead of re-scanning storage. Checks the plumbing with a mocked session: one uncache,
+one cache, and a final query on the cached view. The scan-count proof is
 tests/spark/apache/test_merge_query_target_scan_count.py.
 """
 

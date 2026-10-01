@@ -1,4 +1,4 @@
-"""Checker (framework/fabricks/core/jobs/base/checker.py): the pass/fail decision logic behind gold.check_*,
+"""JobChecker (fabricks/core/jobs/base/checker.py): the pass/fail decision logic behind gold.check_*,
 i.e. min_rows/max_rows/count_must_equal comparisons and their exact error messages, the __action/__skip
 row decisions, and the before/after run-time window.
 
@@ -57,9 +57,8 @@ def _job_with_check_options(**check_options):
 
 
 def _check_job(rows: list[Row], **check_options):
-    # gold.fact.check: no check_options in its own YAML, only exists so
-    # check.pre_run.sql/check.skip.sql (Checker.check_pre_run/check_skip_run assert these files exist)
-    # have a job to attach to.
+    # gold.fact.check has no check_options in its YAML; it exists so JobChecker.pre_run/skip_run find their
+    # check.pre_run.sql/check.skip.sql files.
     job = get_job(step="gold", topic="fact", item="check")
     job.conf = job.conf.model_copy(update={"check_options": CheckOptions(**check_options)})
     job.spark.sql.return_value = _RowsDF(rows)
@@ -101,8 +100,7 @@ def test_check_post_run_extra_passes_within_bounds(options, count):
 
 def test_check_post_run_extra_skips_entirely_when_no_check_options_set():
     job = _with_row_count(_job_with_check_options(), count=0)
-    # job.spark is a lazily-built property that issues a couple of `set ...` calls the first time it is
-    # accessed; force that now so the assertion below is only about post_run_extra().
+    # job.spark issues `set ...` calls on first access; force it now so the assertion covers post_run_extra() only.
     job.spark.sql.reset_mock()
 
     job._checker.post_run_extra()
@@ -237,7 +235,6 @@ def test_check_skip_run_passes_when_no_skip_rows():
     job._checker.skip_run()
 
 
-# post_run uses the same __action mechanism as pre_run, driven off check.post_run.sql.
 def test_check_post_run_raises_on_fail_action():
     job = _check_job([Row(__action="fail", __message="post run boom")], post_run=True)
 

@@ -1,10 +1,6 @@
 """Shared test doubles for the spark/config tier.
 
-`_FakeDF` stands in for a DataFrame wherever only `.columns`/`.dtypes` are
-accessed (no isinstance(..., DataFrameLike) check involved) - pure Python,
-no Spark needed. Used by test_column_selection.py, test_cdc_context.py and
-test_create_table_defaults.py.
-"""
+`_FakeDF` stands in for a DataFrame wherever only `.columns`/`.dtypes` are read (no isinstance check involved)."""
 
 from dataclasses import dataclass, field
 from unittest.mock import MagicMock

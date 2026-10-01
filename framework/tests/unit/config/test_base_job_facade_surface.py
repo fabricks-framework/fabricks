@@ -1,14 +1,6 @@
-"""Guards BaseJob's facade surface: the attributes/methods external
-consumers this repo's own test suite never exercises -- the separate
-fabricks.legacy test suite, and tests/spark/databricks/*.py -- read
-directly on a job instance (job.paths, job.mode, ...).
-
-During the job-composition refactor these were removed as apparently-dead
-ceremony (no in-repo caller), then had to be restored one by one after
-breaking real callers outside this repo. This test exists so that mistake
-doesn't repeat silently: it fails fast here instead of after a real
-Databricks deploy.
-"""
+"""Guards BaseJob's facade surface: attributes and methods that fabricks.legacy and tests/spark/databricks/*.py
+read directly on a job instance, with no in-repo caller, so they look dead and break callers outside this repo
+when removed."""
 
 from fabricks.core.jobs.base.job import BaseJob
 

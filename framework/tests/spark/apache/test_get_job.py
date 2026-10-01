@@ -1,9 +1,5 @@
-"""Proves get_job() resolves real YAML config and drives real local
-Spark+Delta state -- not just config parsing (already covered, Spark faked,
-by tests/unit/config/). test_cdc.py's own SCD1/SCD2/SCD0/NoCDC tests
-deliberately bypass get_job() entirely (see docs/adr/0001-...); this file is
-the one place in tests/spark/apache/ that goes through the real job-config-
-resolution + orchestration-adjacent path instead.
+"""get_job() resolves real YAML config and drives real local Spark+Delta state, beyond the faked-Spark config
+parsing in tests/unit/config/. test_cdc.py deliberately bypasses get_job(); this file is where the tier uses it.
 """
 
 import os
@@ -46,9 +42,6 @@ def test_get_job_bronze_queen_only_reads_real_registered_delta_table(local_spark
     df = job.parse(stream=False)
     assert df.count() == 6, "expected all 6 rows from iter1/bronze_queen.jsonl"
     assert "id" in df.columns
-
-
-# --- runtime config: the storage roots and steps resolve from the real YAML.
 
 
 def test_bronze_silver_gold_expected_resolve_to_local_storage():

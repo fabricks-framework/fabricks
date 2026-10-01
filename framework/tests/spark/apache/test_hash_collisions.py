@@ -1,7 +1,5 @@
-"""Reproductions for suspected `add_key` collisions found in the test review (TEST_REVIEW_PLAN.md, step 0).
-
-`add_key` joins the key fields with '*' and replaces nulls with '-1', so distinct business keys can
-share a __key. These tests encode the correct behavior: distinct keys hash differently.
+"""Reproduces https://github.com/fabricks-framework/fabricks/issues/235: `add_key` joins the key fields with '*'
+and replaces nulls with '-1', so distinct business keys can share a __key. Encodes the correct behavior.
 """
 
 import pytest

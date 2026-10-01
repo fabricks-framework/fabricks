@@ -1,8 +1,6 @@
-"""Conftest for tests/unit/plain - pure-Python tests with no Spark/
-fabricks.context dependency, automatically applies the 'plain' marker.
-Everything under this directory gets fabricks.context replaced wholesale;
-for tests that need the *real* fabricks.context with only Spark faked, see
-tests/unit/config/.
+"""Plain tier: pure Python, with fabricks.context and fabricks.utils.spark replaced wholesale.
+
+Tests that need the real fabricks.context with only Spark faked live in tests/unit/config/.
 """
 
 import os

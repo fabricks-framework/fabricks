@@ -1,4 +1,4 @@
-"""Row builders for the dependency and status partitions DagGenerator writes (generator.py)."""
+"""Row builders for the dependency and status partitions DagGenerator writes (fabricks/core/dags/generator.py)."""
 
 
 def status_row(

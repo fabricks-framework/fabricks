@@ -1,8 +1,7 @@
 """Dependency-resolution decision logic, two layers:
 
 - Gold/Silver `get_dependencies()`: parents/wait_for -> JobDependency list. Only the parents/wait_for
-  path; the notebook branch needs real Spark (see test_notebook_dependencies_wiring.py) and the
-  SQL-parsed branch is covered by tests/unit/plain/test_sql_dependencies.py.
+  path; the parser itself is covered by tests/unit/plain/test_dependency_parsing.py.
 - `BaseStep._get_dependencies_internal()`: the (df, errors) aggregation around `run_in_parallel`,
   proven by monkeypatching the per-row worker `_get_dependencies` and `get_jobs()` (a plain list, with
   include_manual=True to skip the `df.where(...)` call a list does not support).
@@ -78,8 +77,7 @@ def test_silver_dependencies_default_to_the_parser_convention_without_parents():
 
 
 def test_silver_dependencies_parents_and_wait_for():
-    # unlike Gold, Silver.get_dependencies() has no "already covered by
-    # parents" guard on wait_for - every entry is appended unconditionally.
+    # unlike Gold, Silver has no "already covered by parents" guard on wait_for: every entry is appended
     job = _silver_job(parents=["bronze.fact_other"], wait_for=["bronze.fact_other", "bronze.fact_third"])
 
     deps = job.get_dependencies()
@@ -147,12 +145,9 @@ def test_get_dependencies_internal_aggregates_dependencies_from_every_job(monkey
     ]
 
 
-# --- Gold._get_notebook_dependencies(): the static-parse-first / execution-fallback dispatch. The parser itself is
-# --- covered by tests/unit/plain/test_dependency_parsing.py; this covers only which path is tried and in what order,
-# --- by pointing a real Gold job's `_notebook_path()` at a tmp_path notebook and stubbing
-# --- `_get_notebook_dependencies_by_execution()` so the real-Spark-only fallback is observed, never run.
-# --- Static parsing is opt-in (runtime.yml's options.static_notebook_dependencies, off by default), so every test
-# --- here except the first monkeypatches `_use_static_notebook_parser` on.
+# Gold._get_notebook_dependencies() dispatch (static parse first, execution fallback): only the order of paths is
+# tested here. The fallback is stubbed because it needs real Spark. Static parsing is opt-in
+# (options.static_notebook_dependencies), so all but the first test turn `_use_static_notebook_parser` on.
 
 
 _FALLBACK_SENTINEL = ["fallback.was_used"]
@@ -179,8 +174,7 @@ def _job_with_notebook_at(tmp_path, monkeypatch):
 
 
 def test_execution_is_used_by_default_even_for_a_resolvable_ipynb(tmp_path, monkeypatch):
-    # static_notebook_dependencies is opt-in -- with it unset, a perfectly parseable notebook
-    # must still go through the execution fallback, not the static parser.
+    # with static_notebook_dependencies unset, a parseable notebook must still take the execution fallback
     (tmp_path / "nb.ipynb").write_text(_nb('spark.sql("select * from gold.dim_time")'))
     job = get_job(step="gold", topic="fact", item="step_option")
     monkeypatch.setattr(job, "_notebook_path", lambda: GitPath(str(tmp_path / "nb")))
@@ -211,9 +205,7 @@ def test_falls_back_immediately_when_only_py_notebook_exists(tmp_path, monkeypat
 
 
 def test_prefers_the_real_py_fixture_over_its_ipynb_sibling(monkeypatch):
-    # dependency.py and dependency.ipynb coexist in fixtures/notebooks/ on purpose (see
-    # dependency.py's header comment) -- exercises the precedence rule against real fixture
-    # files rather than synthetic tmp_path stand-ins.
+    # dependency.py and dependency.ipynb coexist in fixtures/notebooks/ on purpose (see dependency.py's header)
     job = get_job(step="gold", topic="fact", item="step_option")
     monkeypatch.setattr(job, "_notebook_path", lambda: GitPath(str(_FIXTURE_BASE)))
     monkeypatch.setattr(job, "_get_notebook_dependencies_by_execution", lambda: _FALLBACK_SENTINEL)
@@ -223,9 +215,8 @@ def test_prefers_the_real_py_fixture_over_its_ipynb_sibling(monkeypatch):
 
 
 def test_prefers_py_over_a_stale_ipynb_sibling(tmp_path, monkeypatch):
-    # invoker._run_notebook tries [None, ".py", ".ipynb"] in that order -- if a ".py" file
-    # exists, that's what actually runs, so dependency resolution must not statically parse a
-    # co-located ".ipynb" that invoker would never touch.
+    # JobInvoker._run_notebook tries [None, ".py", ".ipynb"] in order, so a co-located ".ipynb" never runs and
+    # must not be statically parsed
     (tmp_path / "nb.py").write_text("pass")
     (tmp_path / "nb.ipynb").write_text(_nb('spark.sql("select * from gold.should_be_ignored")'))
     job = _job_with_notebook_at(tmp_path, monkeypatch)

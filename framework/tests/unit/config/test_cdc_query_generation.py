@@ -1,12 +1,9 @@
 """Generated-SQL coverage for Processor.get_query() and Merger.get_merge_query(), the query-generation
 half of CDC behavior (the Apache tier compares materialized results only).
 
-CDC objects are built directly with a bare MagicMock in place of Spark. `src` is a
-`MagicMock(spec=DataFrame)`: Configurator.get_src() needs a real `isinstance(src, DataFrameLike)`, and
-a spec'd mock passes it while `.columns` stays a plain list. Assertions anchor to CTE/column names that
-are unique to each cdc type in the jinja templates (e.g. `__scd0_next_operation`,
-`__scd2_next_timestamp`), not to the final projection, so they hold whichever of
-__key/__hash/__operation lands in the final SELECT.
+CDC objects use a bare MagicMock for Spark; `src` is a `MagicMock(spec=DataFrame)` so get_src()'s isinstance check
+passes while `.columns` stays a plain list. Assertions anchor to CTE names unique to each cdc type (e.g.
+`__scd0_next_operation`), not the final projection, so they hold whichever of __key/__hash/__operation is selected.
 """
 
 import re
@@ -64,9 +61,7 @@ def test_get_query_complete_mode_scd2_has_only_scd2_markers():
 
 
 def test_get_query_order_duplicate_by_adds_dedup_cte():
-    # order_duplicate_by forces deduplicate_key=True unconditionally
-    # (Processor.get_query_context), even for nocdc, which otherwise has no
-    # deduplication at all - isolates the CTE's presence cleanly.
+    # order_duplicate_by forces deduplicate_key=True even for nocdc, which otherwise has no dedup.
     cdc = _cdc(NoCDC)
 
     sql = cdc.get_query(src(["id", "name"]), mode="complete", order_duplicate_by={"name": "asc"})
@@ -85,13 +80,8 @@ def test_get_query_without_order_duplicate_by_has_no_dedup_cte():
 
 
 def test_get_query_scd2_update_mode_takes_incremental_branch():
-    # mode="update" always renders scd2's __merge_condition branch instead
-    # of the complete-mode __complete branch, regardless of has_rows (which
-    # only gates an inner sub-CTE) - forcing slice="update" directly as a
-    # kwarg (mirroring what Gold/Silver's own build_cdc_context would compute)
-    # sidesteps needing Table.rows/registered to behave like a real table.
-    # fix_context()'s own spark.sql(...).collect()[0] probe (the
-    # slice-filter's row/source count) is what needs a deterministic Row.
+    # slice="update" is passed directly so Table.rows/registered need not behave like a real table;
+    # fix_context()'s spark.sql(...).collect()[0] probe still needs a deterministic Row.
     spark = fake_spark()
     spark.sql.return_value.collect.return_value = [Row(slices=["s.__timestamp > '2024-01-01'"], sources=None)]
     cdc = _cdc(SCD2, spark=spark)
@@ -132,9 +122,6 @@ def test_get_query_update_mode_takes_the_incremental_branch_for_scd1_and_nocdc_t
         assert "__merge_condition" not in complete, cls.__name__
 
 
-# ============================= get_merge_query ==============================
-
-
 def _merge_src(columns):
     df = MagicMock(spec=DataFrame)
     df.columns = columns
@@ -149,8 +136,7 @@ def _merge_cdc(cls):
 
 
 def test_get_merge_query_scd0_has_no_when_matched_clause():
-    # scd0's merge template has only "when not matched ... insert" - a key
-    # already in the target is never touched again by a later merge.
+    # scd0 only inserts unmatched keys; an existing key is never touched again.
     cdc = _merge_cdc(SCD0)
 
     sql = cdc.get_merge_query(_merge_src(["id", "__merge_key", "__merge_condition", "__key"]))

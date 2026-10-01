@@ -1,15 +1,7 @@
 """Real DAG ordering, forced-failure/skip bookkeeping, real fabricks.last_schedule state.
 
-The runtime's tag="test" schedule itself runs once per session via
-conftest.py's autouse _schedule_run fixture (the same generate -> process
-(per step, real dbutils.notebook.run) -> terminate sequence
-fabricks_run_job's tasks in databricks.yml drive) -- every tagged job runs
-there, in parallel where the DAG allows, rather than one at a time via a
-direct get_job(...).run() in an individual test. This module just asserts
-against the resulting fabricks.last_schedule catalog state.
-
-One test per runtime job/feature -- each tagged job gets exactly one
-assertion naming what it proves, rather than one test per SQL query shape.
+The tag="test" schedule runs once per session in conftest.py's _schedule_run fixture; each test asserts one
+tagged job's outcome in the resulting fabricks.last_schedule state.
 """
 
 from fabricks.context import SPARK
@@ -36,9 +28,6 @@ def _succeeded(job: str) -> bool:
 
 
 def test_bronze_register_mode_king():
-    # bronze.king_scd1: external-table registration against its seeded Delta
-    # table -- the dummy-parser plugin itself is proven separately by
-    # bronze.feature_parser below.
     assert _succeeded("bronze.king_scd1")
 
 
@@ -47,17 +36,11 @@ def test_bronze_register_mode_queen():
 
 
 def test_bronze_feature_parser():
-    # bronze.feature_parser: real file parsing via the "dummy" custom parser
-    # plugin (fabricks/parsers/dummy.py) -- register mode (king/queen above)
-    # never calls get_parser(), so this is the only place that proves plugin
-    # loading works. test_feature.py's checkpoint-idempotency test does a
-    # second, direct get_job(...).run() after the schedule -- this just
-    # confirms the schedule's own (first) run succeeded.
+    # Register mode (king/queen) never calls get_parser(), so only this job proves parser plugin loading.
     assert _succeeded("bronze.feature_parser")
 
 
 def test_cross_layer_dependency():
-    # silver.king_scd1 (parents: [bronze.king_scd1]) only runs after its parent.
     assert _row("bronze.king_scd1").end_time < _row("silver.king_scd1").start_time
 
 
@@ -70,79 +53,57 @@ def test_silver_feature_parser():
 
 
 def test_auto_detected_gold_dependency():
-    # gold.fact_dependency's SQL joins gold.dim_time + silver.king_scd1__current;
-    # both parents are auto-detected via sqlglot, no wait_for needed.
+    # Both parents are auto-detected from the job's SQL (sqlglot); no wait_for.
     assert _row("gold.dim_time").end_time < _row("gold.fact_dependency").start_time
     assert _row("silver.king_scd1").end_time < _row("gold.fact_dependency").start_time
 
 
 def test_gold_dependency_multi_parent_status_propagation():
-    # gold.dependency_sql joins 4 parents across 3 steps (bronze-derived
-    # gold.dim_time, two silver __current views, transf.fact_memory) --
-    # proves DagProcessor._propagate_status() sets Status "ok" on every
-    # incoming edge, not just the first, before dispatching a job with
-    # more than one parent.
+    # DagProcessor._propagate_status() must mark every incoming edge ok, not just the first, before dispatch.
     assert _succeeded("gold.dependency_sql")
     for parent in ("gold.dim_time", "silver.king_scd1", "silver.queen_scd1", "transf.fact_memory"):
         assert _row(parent).end_time < _row("gold.dependency_sql").start_time
 
 
 def test_feature_wait_for_dependency():
-    # gold.feature_wait_for: explicit wait_for=[gold.dim_time], no notebook
-    # invocation involved -- isolates plain dependency ordering from
-    # notebook-mode's dbutils.notebook.run handoff (gold.dependency_notebook).
+    # Explicit wait_for with no notebook: isolates plain ordering from dependency_notebook's notebook.run handoff.
     assert _succeeded("gold.feature_wait_for")
     assert _row("gold.dim_time").end_time < _row("gold.feature_wait_for").start_time
 
 
 def test_gold_dependency_notebook():
-    # gold.dependency_notebook: notebook-derived dependency, schema inferred
-    # via a real dbutils.notebook.run child-notebook invocation -- see
-    # test_dependencies.py for the separate persisted-dependency-graph check.
+    # Schema is inferred via a real dbutils.notebook.run child notebook (persisted graph: test_dependencies.py).
     assert _succeeded("gold.dependency_notebook")
 
 
 def test_gold_feature_extender():
-    # gold.feature_extender: job-level extender_options applies the "dummy"
-    # extender (fabricks/extenders/dummy.py) via Invoker.extend_job().
     assert _succeeded("gold.feature_extender")
     rows = SPARK.sql("select distinct extended_by from gold.feature_extender").collect()
     assert [r["extended_by"] for r in rows] == ["dummy"]
 
 
 def test_gold_feature_udf():
-    # gold.feature_udf: udf_dummy (fabricks/udfs/dummy.sql) registered via
-    # register_all_udfs() and called directly in the job's SQL.
     assert _succeeded("gold.feature_udf")
     rows = SPARK.sql("select dummy from gold.feature_udf order by dummy").collect()
     assert [r["dummy"] for r in rows] == ["dummy_1", "dummy_2"]
 
 
 def test_gold_feature_mask():
-    # gold.feature_mask: table_options.masks.dummy applies mask_dummy
-    # (fabricks/masks/dummy.sql) -- unconditionally (no caller-identity
-    # check), so the real masked value is visible to any query, proving the
-    # mask function actually runs, not just that the DDL was issued.
+    # The mask applies unconditionally (no caller-identity check), so the masked value proves it ran, not just the DDL.
     assert _succeeded("gold.feature_mask")
     rows = SPARK.sql("select dummy from gold.feature_mask order by dummy").collect()
     assert [r["dummy"] for r in rows] == ["***", "2"]
 
 
 def test_gold_feature_cluster_by():
-    # gold.feature_cluster_by: table_options.cluster_by enables real liquid
-    # clustering -- Table.liquid_clustering_enabled reads the Delta table
-    # feature back to confirm it actually took effect, not just that the
-    # option was set (that DDL-shape half is already covered by
-    # unit/config/test_create_table_defaults.py).
+    # Reads the Delta table feature back; the DDL shape is covered by unit/config/test_create_table_defaults.py.
     assert _succeeded("gold.feature_cluster_by")
     job = get_job(step="gold", topic="feature", item="cluster_by")
     assert job.table.liquid_clustering_enabled
 
 
 def test_gold_type_widening_overwrite():
-    # gold.type_widening_overwrite: schedule provides the (int) first write;
-    # test_feature.py's follow-up test feeds a widened (double) batch after
-    # and checks the physical column type actually changed.
+    # The schedule writes the int batch; test_feature.py then feeds a widened double batch.
     assert _succeeded("gold.type_widening_overwrite")
 
 
@@ -159,9 +120,7 @@ def test_gold_invoke_post_run():
 
 
 def test_gold_invoke_failed_pre_run():
-    # gold.invoke_failed_pre_run: invoker_options.pre_run notebook
-    # deliberately raises -- proves pre-run invoker failure propagates as a
-    # job failure (see EXPECTED_FAILURES).
+    # The pre_run notebook raises on purpose; its failure must propagate as a job failure.
     assert _row("gold.invoke_failed_pre_run").failed
 
 
@@ -170,14 +129,8 @@ def test_forced_failure():
 
 
 def test_gold_check_zstd():
-    # gold.check_zstd: job-level spark_options (spark.sql.parquet.
-    # compression.codec: zstd) forces JobResolver.spark to derive a session
-    # via _derive_session (resolver.py) -- on this cluster's Spark Connect
-    # session, newSession() isn't supported, so it falls back to the parent
-    # session instead of crashing (issue #215). Checks the physical parquet
-    # file name (Delta's writer embeds the codec there), same as the
-    # pre-reorg test_semantic_fact_zstd, rather than just the session conf
-    # -- proves the option was actually applied, not just propagated.
+    # Spark Connect has no newSession(), so _derive_session (resolver.py) falls back to the parent (issue #215).
+    # Asserts on the parquet file name (Delta embeds the codec) rather than the session conf, to prove it was applied.
     assert _succeeded("gold.check_zstd")
     job = get_job(step="gold", topic="check", item="zstd")
     file_names = [
@@ -202,12 +155,8 @@ def test_forced_skip():
 
 
 def test_forced_warning():
-    # fabricks/core/dags/run.py catches CheckWarning separately from a plain
-    # Exception and logs 'warned', not 'failed' -- logs_pivot's own
-    # `done = array_contains(statuses, 'done') or warned` means a warned job
-    # reads as failed=False here, same as a clean run. for_each_run() still
-    # executes before the warning is raised (Processor.run() only raises it
-    # at the very end), so the table is populated despite the warning.
+    # dags/run.py logs a CheckWarning as 'warned', not 'failed', and logs_pivot counts warned as done; the table is
+    # still populated because Processor.run() raises the warning only at the very end.
     row = _row(EXPECTED_WARNING)
     assert row.warned
     assert row.done
@@ -216,8 +165,6 @@ def test_forced_warning():
 
 
 def test_custom_view():
-    # fabricks.dummy (fabricks/views/dummy.sql): create_or_replace_views()
-    # deploys custom views from PATH_VIEWS at armageddon time.
     df = SPARK.sql("select * from fabricks.dummy")
     assert df.count() > 0
 

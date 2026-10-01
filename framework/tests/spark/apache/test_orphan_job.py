@@ -1,12 +1,8 @@
 """Reproduces https://github.com/fabricks-framework/fabricks/issues/198:
-a job removed from the runtime without calling drop() first leaves its
-Delta table/view and schema/checkpoint folders orphaned -- get_job()
-can no longer build a real job object for it (no config to resolve), so
-the regular drop() path (fabricks/core/jobs/base/generator.py) is
-unreachable. OrphanJob (fabricks/core/jobs/orphan.py) is built purely
-from step/topic/item -- no config lookup -- so it can drop these even
-when no runtime config for the job exists at all, which this test never
-creates one for.
+a job removed from the runtime without drop() leaves its table/view and schema/checkpoint
+folders orphaned, and get_job() can no longer build it (no config).
+
+Invariant: OrphanJob (fabricks/core/jobs/orphan.py) drops them from step/topic/item alone, with no runtime config.
 """
 
 from fabricks.cdc import NoCDC

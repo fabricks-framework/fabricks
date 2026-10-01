@@ -15,12 +15,7 @@ def _hash_macros():
 
 
 def _eval_sql(local_spark, sql_expr: str, row_sql: str) -> str:
-    # add_key/add_hash render a trailing comma inside array(...) (see the
-    # macro's own {% for %} loop) -- harmless in production because
-    # get_data() always runs generated SQL through fix() (processor.py's
-    # `sql = self.get_query(src, fix=True, **kwargs)`) before executing it.
-    # Doing the same here, rather than skipping it, means this test exercises
-    # the exact SQL shape a real merge would actually run.
+    # The macros render a trailing comma inside array(...); production strips it via fix(), so do the same here.
     sql = fix(f"select {sql_expr} as value from ({row_sql}) t")
     return local_spark.sql(sql).collect()[0][0]
 
@@ -48,9 +43,7 @@ def test_add_key_changes_when_a_key_field_value_changes(local_spark):
 
 
 def test_add_hash_treats_reload_and_upsert_as_the_same_operation(local_spark):
-    # hash.sql.jinja's own add_hash comment: reloads and upserts should
-    # have the same hash, not deletes -- __operation is folded to a
-    # delete/not-delete boolean rather than compared literally.
+    # __operation is folded to a delete/not-delete boolean so reloads and upserts hash alike.
     macros = _hash_macros()
     sql_expr = macros.add_hash(["name", "__operation"])
 

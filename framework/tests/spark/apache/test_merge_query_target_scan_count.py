@@ -1,8 +1,6 @@
 """Reproduces https://github.com/fabricks-framework/fabricks/issues/202:
-one `mode: update` SCD1 merge query must read the target
-table once, not once per pruned `__current` consumer (28 scans measured before the fix). Counts
-distinct `Scan parquet` node definitions in `explain(mode="formatted")` for the target table after a
-real `cdc.get_data(..., mode="update")` on a seeded Delta table.
+one `mode: update` SCD1 merge query must read the target table once, not once per pruned
+`__current` consumer (28 scans before the fix). Counts distinct `Scan parquet` nodes for the target in the plan.
 """
 
 import contextlib

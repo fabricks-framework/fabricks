@@ -26,7 +26,7 @@ def _nb(*cell_sources: str) -> str:
     )
 
 
-# --- notebooks: each case is (cells, expected dependencies); order is not significant, duplicates are.
+# Each case is (cells, expected dependencies); order is not significant, duplicates are.
 
 _RESOLVES = {
     "literal_spark_sql_call": (['spark.sql("select * from gold.dim_time")'], ["gold.dim_time"]),
@@ -123,18 +123,9 @@ def test_notebook_dependencies_trigger_fallback(cells):
 
 
 def test_fixture_notebook_with_every_form_triggers_fallback():
-    # dependency.ipynb exercises every supported read form (spark.sql, spark.table,
-    # spark.read/readStream.table, DeltaTable.forName, %sql, identifier({param}), comments,
-    # non-sql magics) alongside every known out-of-scope form (f-string SQL, a helper-returned
-    # table name). Because any single unresolvable construct makes the whole notebook's result
-    # untrustworthy (see get_notebook_dependencies' docstring), the fixture as a whole -- despite
-    # containing 14+ perfectly resolvable dependencies -- correctly falls back rather than
-    # silently under-reporting the two it can't resolve.
+    # Resolvable forms are mixed with two unresolvable ones (f-string SQL, helper-returned name): must fall back.
     nb = _FIXTURE_IPYNB.read_text()
     assert get_notebook_dependencies(nb, allowed_databases=_ALLOWED) is None
-
-
-# --- plain SQL
 
 
 def test_get_tables_extracts_fixture_dependencies():

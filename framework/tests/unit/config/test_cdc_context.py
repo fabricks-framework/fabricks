@@ -1,10 +1,5 @@
-"""Gold.build_cdc_context() and Silver.build_cdc_context() (fabricks/core/jobs/gold.py, silver.py): the pure
-decision layer that turns job options + the incoming dataframe's columns into the kwargs dict passed to
-cdc.get_query()/.complete()/.update().
-
-One parametrized case per branch, not a full option x cdc-type x mode cross product. Gold cases favor `nocdc` +
-mode="complete" as the "neutral" scenario when isolating an option that also has slowly-changing-dimension-only
-side effects, so only one branch moves at a time."""
+"""Gold/Silver build_cdc_context(): job options + incoming columns -> kwargs for cdc.get_query()/.complete()/.update().
+One case per branch; Gold uses nocdc + mode="complete" as the neutral base so only one branch moves at a time."""
 
 import pytest
 
@@ -21,9 +16,6 @@ def _gold_job(*, mode="complete", change_data_capture="nocdc", **option_override
     )
     job.conf = job.conf.model_copy(update={"options": options})
     return job
-
-
-# -- deduplicate / rectify_as_upserts: explicit True/False/unset ------------
 
 
 @pytest.mark.parametrize("deduplicate", [True, False, None])
@@ -48,9 +40,6 @@ def test_gold_rectify_as_upserts_option_maps_directly_to_context(rectify):
     context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
 
     assert context["rectify"] is (rectify if rectify is not None else False)
-
-
-# -- metadata: job-level vs step-level fallback ------------------------------
 
 
 def test_gold_metadata_job_level_true_wins():
@@ -104,8 +93,7 @@ def test_gold_metadata_job_level_false_beats_step_level_true():
     assert context["add_metadata"] is False
 
 
-# -- one case per branch: (job options, incoming columns, expected context items, keys that must be absent) ----------
-# nocdc + mode="complete" is the neutral scenario, so only the option under test moves a branch.
+# (job options, incoming columns, expected context items, keys that must be absent)
 
 _ID = ["id"]
 _ID_OP = ["id", "__operation"]
@@ -137,8 +125,7 @@ _GOLD_CASES = {
         (),
     ),
     # __key/__hash/__operation presence -> add_key/add_hash/add_operation
-    # (dedup unset + __operation missing downgrades deduplicate_hash from the scd default True to None;
-    # __operation present skips that block, so the default stays True)
+    # (dedup unset + __operation missing downgrades deduplicate_hash from the scd default True to None)
     "scd_adds_key_hash_operation_when_absent": (
         {"change_data_capture": "scd1"},
         _ID,
@@ -300,9 +287,6 @@ def test_gold_build_cdc_context(job_options, columns, expected, absent):
     _assert_context(context, expected, absent)
 
 
-# =============================== Silver =====================================
-
-
 def _silver_job(*, mode="update", change_data_capture="nocdc", stream=True, **option_overrides):
     conf = {
         "step": "silver",
@@ -439,12 +423,8 @@ def test_silver_build_cdc_context(job_options, columns, expected, absent, probe_
 
 
 def test_silver_reload_probe_also_matches_truncate():
-    # https://github.com/fabricks-framework/fabricks/issues/66: a 'truncate'
-    # sentinel row is rewritten to 'reload' inside the CDC query template
-    # (fabricks/cdc/templates/ctes/base.sql.jinja), but this probe runs
-    # against the raw incoming batch *before* that template renders -- it
-    # must recognize 'truncate' directly, or rectify never turns on and the
-    # truncate row is never reconciled.
+    # https://github.com/fabricks-framework/fabricks/issues/66: base.sql.jinja rewrites 'truncate' to 'reload' only
+    # after this probe sees the raw batch, so the probe must match 'truncate' itself or rectify never turns on.
     job = _silver_job(mode="update", change_data_capture="scd1", stream=True)
     job.spark.sql.return_value.isEmpty.return_value = False
 
@@ -455,8 +435,6 @@ def test_silver_reload_probe_also_matches_truncate():
 
 
 def test_silver_rectify_stays_false_for_nocdc_without_probing():
-    # nocdc -> "not nocdc" is False, so the reload probe never runs (and
-    # spark.sql is never called for it).
     job = _silver_job(mode="update", change_data_capture="nocdc")
     job.spark.sql.reset_mock()
 

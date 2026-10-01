@@ -47,10 +47,7 @@ def test_dags_run_reraises_a_real_check_exception():
 
 
 def test_dags_run_still_logs_done_when_stale_so_terminate_does_not_report_it_as_failed():
-    # DagTerminator.terminate() decides "did this job ever complete
-    # successfully" purely by scanning log messages for the literal string
-    # "done" -- a stale (no new data) outcome is not a failure from its
-    # point of view, and must not be silently reported as one.
+    # DagTerminator.terminate() judges completion by scanning log messages for the literal "done"
     fake_job = _Job(error=UnchangedWarning("no data"))
 
     with patch("fabricks.core.dags.run.LOGGER") as fake_logger:
@@ -61,11 +58,7 @@ def test_dags_run_still_logs_done_when_stale_so_terminate_does_not_report_it_as_
 
 
 def test_dags_run_still_logs_skipped_for_a_skip_warning():
-    # fabricks/deploy/views.py's logs_pivot/last_schedule views derive
-    # their own skipped/warned columns from these same log messages via
-    # array_contains -- collapsing SkipWarning/CheckWarning into a single
-    # is_stale-driven branch (this file's own production code) must not
-    # lose the distinct literal message that reporting relies on.
+    # the logs_pivot/last_schedule views (fabricks/deploy/views.py) derive skipped/warned from these literal messages
     fake_job = _Job(error=SkipWarning("explicitly skipped"))
 
     with patch("fabricks.core.dags.run.LOGGER") as fake_logger:
@@ -88,9 +81,7 @@ def test_dags_run_still_logs_warned_for_a_check_warning():
 
 
 def test_dags_run_does_not_log_skipped_or_warned_for_an_unchanged_warning():
-    # UnchangedWarning is a routine "no new data" outcome, not a problem --
-    # it must not show up in logs_pivot's skipped/warned columns the way a
-    # real SkipWarning/CheckWarning does.
+    # a routine "no new data" outcome must stay out of logs_pivot's skipped/warned columns
     fake_job = _Job(error=UnchangedWarning("no data"))
 
     with patch("fabricks.core.dags.run.LOGGER") as fake_logger:

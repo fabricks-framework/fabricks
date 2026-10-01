@@ -1,11 +1,6 @@
-"""Generator._build_partitioning_columns/_build_clustering_columns
-(framework/fabricks/core/jobs/base/generator.py:211-265): auto-detect
-partition/cluster columns from a dataframe's column names and dtypes when
-table_options doesn't declare them explicitly, otherwise use the explicit
-list unconditionally. Pure functions of `df.columns`/`df.dtypes` and
-`self.table_options` - no Spark execution happens inside either method, so
-a plain stand-in object works in place of a real DataFrame.
-"""
+"""Generator._build_partitioning_columns/_build_clustering_columns auto-detect partition/cluster columns from
+`df.columns`/`df.dtypes` unless table_options declares them, in which case the explicit list always wins.
+Neither method runs Spark, so a plain stand-in replaces the DataFrame."""
 
 from fabricks.core import get_job
 from fabricks.models.table import TableOptions

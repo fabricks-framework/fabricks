@@ -1,16 +1,9 @@
-"""Generator.create_table()'s own resolution branches (framework/fabricks/
-core/jobs/base/generator.py:267-374), distinct from the already-tested
-Table._create() DDL mapping (test_ddl_option_mapping.py): default
-`properties` by powerbi/maximum_compatibility, identity/liquid_clustering
-resolution, the `__generated_*` dunder-prefix assertion, and primary_key/
-foreign_keys passthrough.
+"""Generator.create_table()'s own resolution branches, distinct from the Table._create() DDL mapping in
+test_ddl_option_mapping.py: default `properties` by powerbi/maximum_compatibility, identity/liquid_clustering
+resolution, the `__generated_*` dunder-prefix assertion, and primary_key/foreign_keys passthrough.
 
-self.get_data/base_transform/build_cdc_context and job.cdc.create_table are
-all monkeypatched so the real chain (a real .sql fixture file, real
-CDC-context derivation, real DDL rendering - all already covered by other
-tests in this tier/test_ddl_option_mapping.py) never runs; only
-create_table()'s own kwargs-assembly is under test, captured off
-job.cdc.create_table's call kwargs.
+get_data, base_transform, build_cdc_context and job.cdc.create_table are patched; only create_table()'s
+kwargs assembly runs, captured off job.cdc.create_table's call kwargs.
 """
 
 import pytest
@@ -31,11 +24,8 @@ class _FakeCreateTableDF(_FakeDF):
 def _job(monkeypatch, *, table_options: TableOptions | None = None, columns: list[str] | None = None):
     job = get_job(step="gold", topic="fact", item="step_option")
 
-    # The "gold" step declares table_options.properties of its own
-    # (tests/spark/runtime/fabricks/conf.fabricks.yml) - option-level
-    # fallback onto that is test_option_hierarchy.py's concern, not this
-    # file's. Clear it so create_table()'s own default-properties branch is
-    # what's under test here, isolated from the job/step hierarchy.
+    # The "gold" step declares table_options.properties (conf.fabricks.yml); clear it so create_table()'s own
+    # default-properties branch is what runs.
     job.base_step_conf = job.step_conf.model_copy(update={"table_options": None})
 
     if table_options is not None:
@@ -48,9 +38,7 @@ def _job(monkeypatch, *, table_options: TableOptions | None = None, columns: lis
     monkeypatch.setattr(job, "get_data", lambda **_kwargs: df)
     monkeypatch.setattr(job, "base_transform", lambda d: d)
     monkeypatch.setattr(job, "build_cdc_context", lambda _d: {})
-    # register_udfs() (unpatched) would read self.sql -> a real runtime .sql
-    # fixture file step_option has none of, since it exists only for the
-    # option-hierarchy/timeout/check tests - out of scope here.
+    # step_option has no runtime .sql fixture, which an unpatched register_udfs() would read.
     monkeypatch.setattr(job, "register_udfs", lambda **_kwargs: None)
     monkeypatch.setattr(job.table, "exists", lambda: False)
 
