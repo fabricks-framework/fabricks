@@ -1,14 +1,14 @@
+from datetime import UTC, datetime
 import json
 from pathlib import Path
 from typing import Literal
 
 import pandas as pd
 
-from tests.spark.databricks.fixtures import registered_delta_rows  # noqa: F401
-
 ITERATIONS = tuple(range(1, 12))
 ENTITIES = ("king", "queen")
-SPARK_TEST_ROOT = Path(__file__).parent
+SPARK_TEST_ROOT = Path(__file__).resolve().parents[1] / "spark"
+EXPECTED_ROOT = SPARK_TEST_ROOT / "expected"
 RAW_FIXTURES_ROOT = SPARK_TEST_ROOT / "fixtures"
 APACHE_FIXTURES_ROOT = SPARK_TEST_ROOT / "apache" / "fixtures"
 
@@ -61,8 +61,6 @@ def load_combined_frame(spark, iteration: int):
 
 
 def validate_iteration(iteration: int) -> None:
-    from tests.spark.expected.compare import read_expected_rows
-
     expected_combined = []
     for entity in ENTITIES:
         derived = derive_entity_rows(iteration, entity)
@@ -79,6 +77,20 @@ def validate_iteration(iteration: int) -> None:
         raise ValueError(f"iteration {iteration} combined fixture is stale")
     if not read_expected_rows(iteration):
         raise ValueError(f"iteration {iteration} expected state is empty")
+
+
+def read_expected_rows(iteration: int) -> list[dict]:
+    rows = read_ndjson(EXPECTED_ROOT / "scd2" / f"iter{iteration:02}.jsonl")
+    for row in rows:
+        row["__valid_from"] = _utc_timestamp(row["__valid_from"])
+        row["__valid_to"] = _utc_timestamp(row["__valid_to"])
+        if isinstance(row.get("newField"), str):
+            row["newField"] = {"true": True, "false": False, "null": None}[row["newField"]]
+    return rows
+
+
+def _utc_timestamp(value: str) -> datetime:
+    return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
 
 
 def _timestamp_from_path(source_file: Path) -> str:

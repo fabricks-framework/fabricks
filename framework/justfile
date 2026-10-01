@@ -43,19 +43,23 @@ test-plain TARGET="tests/unit/plain":
 test-config TARGET="tests/unit/config":
     scripts/run_logged.sh config uv run pytest {{TARGET}}
 
+# Run both unit tiers: plain, then config (separate pytest processes; the tiers cannot share one), stopping on the first failure
+test-unit: test-plain test-config
+
 # Run the Apache Spark integration tests (real Spark+Delta, needs Java 17+)
 # TARGET can narrow to a file or a single test, e.g. `just test-apache tests/spark/apache/test_x.py::test_y`
-test-apache TARGET="tests/spark/apache":
+# WORKERS runs that many pytest-xdist workers (each is a Spark JVM), e.g. `just test-apache tests/spark/apache 4`; empty = serial
+test-apache TARGET="tests/spark/apache" WORKERS="":
     # a killed run can leave a worker's Derby metastore half-created, which
     # fails to reopen (ERROR XBM0A) on the next run
     rm -rf tests/spark/apache/.worker_cwd
-    scripts/run_logged.sh apache uv run pytest {{TARGET}} -v
+    scripts/run_logged.sh apache uv run pytest {{TARGET}} {{ if WORKERS == "" { "" } else { "-n " + WORKERS } }} -v
 
 # Run the Apache tier on a remote machine over ssh (rsyncs the working tree first); logged locally
 # Needs FABRICKS_REMOTE=<ssh host>; FABRICKS_REMOTE_DIR defaults to ~/Fabricks; FABRICKS_REMOTE_JAVA_HOME optionally picks the remote JDK. Remote needs Java 17-21, uv, just.
-# TARGET narrows as in test-apache
-test-apache-remote TARGET="tests/spark/apache":
-    scripts/run_logged.sh apache-remote scripts/test_apache_remote.sh {{TARGET}}
+# TARGET and WORKERS as in test-apache; WORKERS defaults to 4 here (set it to "" for a serial run)
+test-apache-remote TARGET="tests/spark/apache" WORKERS="4":
+    scripts/run_logged.sh apache-remote scripts/test_apache_remote.sh {{TARGET}} {{WORKERS}}
 
 # Deploy the bundle to the 'test' workspace
 deploy:
@@ -66,4 +70,4 @@ test-databricks: deploy
     scripts/run_logged.sh databricks databricks bundle run fabricks_test_job -t test
 
 # Run every test tier: plain, config, apache, then databricks (deploy + run against the 'test' workspace)
-test-all: test-plain test-config test-apache test-databricks
+test-all: test-unit test-apache test-databricks
