@@ -14,6 +14,7 @@ from typing import Any
 from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 from azure.storage.queue import QueueMessage
 
+_MAX_TRANSACTION_OPERATIONS = 100  # the Azure Table service limit
 _CLAUSE = re.compile(r"^(\w+) eq '((?:[^']|'')*)'$")
 
 
@@ -70,11 +71,19 @@ class FakeTableClient:
             raise NotImplementedError(f"unsupported submit_transaction arguments: {sorted(kwargs)}")
         rows = self._rows()
         ops = list(operations)
-        if len({entity["PartitionKey"] for _op, entity, *_ in ops}) > 1:
+        if len(ops) > _MAX_TRANSACTION_OPERATIONS:
+            raise ValueError(f"a transaction takes at most {_MAX_TRANSACTION_OPERATIONS} operations, got {len(ops)}")
+        extra = [op for op in ops if len(op) != 2]
+        if extra:
+            raise NotImplementedError(f"semblance models (operation, entity) pairs only, got: {extra[0]!r}")
+        if len({entity["PartitionKey"] for _op, entity in ops}) > 1:
             raise ValueError("all entities in a transaction must share a PartitionKey")
+        row_keys = [(entity["PartitionKey"], entity["RowKey"]) for _op, entity in ops]
+        if len(set(row_keys)) != len(row_keys):
+            raise ValueError("a transaction may touch each entity only once")
 
         staged = {key: dict(row) for key, row in rows.items()}  # atomic: apply to a copy, commit at the end
-        for op, entity, *_ in ops:
+        for op, entity in ops:
             key = (entity["PartitionKey"], entity["RowKey"])
             if op == "upsert":
                 staged.setdefault(key, {}).update(copy.deepcopy(dict(entity)))  # merge, the SDK's default mode
@@ -93,11 +102,11 @@ class FakeTableServiceClient:
     def __init__(self, store: TableStore) -> None:
         self._store = store
 
-    def create_table_if_not_exists(self, table_name: str, **kwargs: Any) -> FakeTableClient:
+    def create_table_if_not_exists(self, table_name: str) -> FakeTableClient:
         self._store.tables.setdefault(table_name, {})
         return FakeTableClient(self._store, table_name)
 
-    def delete_table(self, table_name: str, **kwargs: Any) -> None:
+    def delete_table(self, table_name: str) -> None:
         if table_name not in self._store.tables:
             raise ResourceNotFoundError(f"table {table_name!r} does not exist")
         del self._store.tables[table_name]
@@ -167,13 +176,13 @@ class FakeQueueClient:
         except KeyError:
             raise ResourceNotFoundError(f"queue {self.queue_name!r} does not exist") from None
 
-    def create_queue(self, **kwargs: Any) -> None:
+    def create_queue(self) -> None:
         # Azurite (contract-tested) answers 409 QueueAlreadyExists; AzureQueue.create_if_not_exists suppresses it
         if self.queue_name in self._store.queues:
             raise ResourceExistsError(f"queue {self.queue_name!r} already exists")
         self._store.queues[self.queue_name] = _FakeQueue()
 
-    def send_message(self, content: str, **kwargs: Any) -> QueueMessage:
+    def send_message(self, content: str) -> QueueMessage:
         if not isinstance(content, str):
             raise TypeError("semblance queue fake supports str content only")
         queue = self._queue()
@@ -181,17 +190,17 @@ class FakeQueueClient:
         queue.sent.append(content)
         return QueueMessage(content=content)
 
-    def receive_message(self, **kwargs: Any) -> QueueMessage | None:
+    def receive_message(self) -> QueueMessage | None:
         queue = self._queue()
         return QueueMessage(content=queue.pending.popleft()) if queue.pending else None
 
-    def delete_message(self, message: Any, pop_receipt: str | None = None, **kwargs: Any) -> None:
+    def delete_message(self, message: Any, pop_receipt: str | None = None) -> None:
         self._queue()  # the message was already removed on receive
 
-    def clear_messages(self, **kwargs: Any) -> None:
+    def clear_messages(self) -> None:
         self._queue().pending.clear()
 
-    def delete_queue(self, **kwargs: Any) -> None:
+    def delete_queue(self) -> None:
         self._queue()
         del self._store.queues[self.queue_name]
 

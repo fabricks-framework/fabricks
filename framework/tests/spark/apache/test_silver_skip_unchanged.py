@@ -6,11 +6,10 @@ run() reads dbutils lazily from databricks.sdk.runtime and flushes the real dags
 account). The `semblance` fixture provides them and restores everything after each test.
 """
 
-from fabricks.core import get_job
 from fabricks.core.dags.run import run
 
 
-def test_dags_run_returns_stale_for_a_genuinely_empty_silver_batch(local_spark, monkeypatch, semblance):
+def test_dags_run_returns_stale_for_a_genuinely_empty_silver_batch(local_spark, monkeypatch, semblance, fresh_job):
     # append_test's own configured data source isn't wired up in this test
     # runtime -- get_data() is the one seam job.run()/for_each_run() use to
     # source a batch, so controlling it here still exercises the real
@@ -19,36 +18,23 @@ def test_dags_run_returns_stale_for_a_genuinely_empty_silver_batch(local_spark, 
     # test_append_mode_accumulates_across_batches feeding for_each_batch
     # directly, just one layer up so dags.run.run()'s own return value can
     # be proven too.
-    job = get_job(step="silver", topic="append_test", item="test")
+    job = fresh_job("silver", "append_test", "test")
     first_batch = local_spark.createDataFrame([(1, "a")], ["id", "name"])
 
-    # This job/table is shared with test_job_options.py's
-    # test_append_mode_accumulates_across_batches (same session-scoped
-    # local_spark, same physical Delta table) -- drop before AND after so
-    # neither test's row counts depend on which one runs first in the same
-    # session.
-    if job.table.exists():
-        job.table.drop()
+    # is_stream defaults True (see Silver.is_stream) -- table creation
+    # would then need a real "fabricks.dummy" streaming placeholder
+    # table that isn't part of this test runtime. Not what this test
+    # is about: it's proving the stale/ok RunStatus path, independent
+    # of streaming.
+    monkeypatch.setattr(job, "is_stream", False)
+    monkeypatch.setattr(job, "get_data", lambda **_kwargs: first_batch)
+    job.create()
 
-    try:
-        # is_stream defaults True (see Silver.is_stream) -- table creation
-        # would then need a real "fabricks.dummy" streaming placeholder
-        # table that isn't part of this test runtime. Not what this test
-        # is about: it's proving the stale/ok RunStatus path, independent
-        # of streaming.
-        monkeypatch.setattr(job, "is_stream", False)
-        monkeypatch.setattr(job, "get_data", lambda **_kwargs: first_batch)
-        job.create()
+    status = run(job=job, schedule_id="unit-test", schedule="unit-test")
+    assert status == "ok"
+    assert job.table.dataframe.count() == 1
 
-        status = run(job=job, schedule_id="unit-test", schedule="unit-test")
-        assert status == "ok"
-        assert job.table.dataframe.count() == 1
-
-        monkeypatch.setattr(
-            job, "get_data", lambda **_kwargs: local_spark.createDataFrame([], schema=first_batch.schema)
-        )
-        status = run(job=job, schedule_id="unit-test", schedule="unit-test")
-        assert status == "stale"
-        assert job.table.dataframe.count() == 1
-    finally:
-        job.table.drop()
+    monkeypatch.setattr(job, "get_data", lambda **_kwargs: local_spark.createDataFrame([], schema=first_batch.schema))
+    status = run(job=job, schedule_id="unit-test", schedule="unit-test")
+    assert status == "stale"
+    assert job.table.dataframe.count() == 1
