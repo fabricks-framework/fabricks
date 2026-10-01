@@ -2,8 +2,8 @@
 this directory reads its state from.
 """
 
-import contextlib
 import os
+import re
 
 import pytest
 from tier_policy import activate_tier
@@ -19,6 +19,7 @@ activate_tier("databricks")
 # scratch test that doesn't touch schedule state) can skip both by setting
 # this env var before invoking pytest.
 _SKIP_SCHEDULE_FIXTURES = os.environ.get("FABRICKS_SKIP_FIXTURES") == "true"
+_EXPECTED_FAILURE = re.compile(r"\d+ job\(s\) failed")  # raised by DagTerminator.terminate()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -51,5 +52,10 @@ def _schedule_run(_notebooks_deployed):
     # shouldn't also fail the whole session on the expected case.
     if _SKIP_SCHEDULE_FIXTURES:
         return
-    with contextlib.suppress(ValueError):
+    try:
         standalone(schedule="test")
+    except ValueError as e:
+        # only the terminator's "N job(s) failed" is expected; any other ValueError is a broken run, and the
+        # tests below would then read the previous schedule's last_schedule rows
+        if not _EXPECTED_FAILURE.fullmatch(str(e)):
+            raise
