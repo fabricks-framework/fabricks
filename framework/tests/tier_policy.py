@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+# The real module sits beside the Databricks notebooks, whose conftest can only import it as a sibling;
+# everyone else gets it re-exported from here.
 from tests.spark.databricks.tier_policy import Tier, activate_tier  # noqa: F401
 
 _TESTS_ROOT = Path(__file__).parent.resolve()

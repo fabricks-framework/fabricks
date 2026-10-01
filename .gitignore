@@ -185,3 +185,5 @@ docs/**
 !docs/DEBUG.md
 !docs/TEST.md
 !docs/SPARK.md
+!docs/decisions/
+!docs/decisions/**
