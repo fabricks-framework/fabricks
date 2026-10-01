@@ -1,15 +1,6 @@
-"""Option resolution: job-level vs step-level precedence, the timeout fallback chain, and the gold `table` option.
-
-Job-level vs step-level option precedence: Generator._get_option_hierarchy
-(framework/fabricks/core/jobs/base/generator.py:17) resolves job options ->
-step options -> default, in that order. Mirrors
-tests/spark/databricks/runtime/semantic/fact/_config.semantic.yml's
-step_option/job_option fixtures (see tests/spark/databricks/jobs/job1/
-test_semantic.py's test_semantic_fact_step_option/test_semantic_fact_job_option),
-against the "gold" step declared locally in
-tests/spark/runtime/fabricks/conf.fabricks.yml + tests/spark/runtime/gold/
-_config.fact.yml.
-"""
+"""Option resolution: job-level vs step-level precedence (job -> step -> default, via
+Generator._get_option_hierarchy), the timeout fallback chain, and the gold `table` option. The runtime fixtures
+live in tests/spark/runtime (the "gold" step in fabricks/conf.fabricks.yml and gold/_config.fact.yml)."""
 
 from unittest.mock import sentinel
 
@@ -102,3 +93,16 @@ def test_gold_table_option_reads_configured_table():
 
     assert job.get_data() is sentinel.dataframe
     read_table.assert_called_once_with("gold.table_option_source")
+
+
+def test_option_hierarchy_falsy_job_value_still_beats_the_step_value():
+    # only None falls through to the step level: an explicit empty value is a decision
+    from fabricks.models.table import StepTableOptions
+
+    job = get_job(step="gold", topic="fact", item="step_option")
+    step_conf = job.step_conf
+    step_table_options = (step_conf.table_options or StepTableOptions()).model_copy(update={"masks": {"d": "step"}})
+    job.base_step_conf = step_conf.model_copy(update={"table_options": step_table_options})
+    job.conf = job.conf.model_copy(update={"table_options": TableOptions(masks={})})
+
+    assert job._generator._get_option_hierarchy("masks", into="table") == {}

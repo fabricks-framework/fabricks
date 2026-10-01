@@ -9,7 +9,7 @@ test_create_table_defaults.py.
 from dataclasses import dataclass, field
 from unittest.mock import MagicMock
 
-from pyspark.sql import DataFrame
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import Row
 
 
@@ -29,7 +29,7 @@ def stub_table(monkeypatch, job) -> None:
 
 
 def fake_spark() -> MagicMock:
-    return MagicMock(name="fake_spark")
+    return MagicMock(name="fake_spark", spec=SparkSession)
 
 
 def src(columns: list[str], *, is_empty: bool | None = None) -> MagicMock:
