@@ -1,7 +1,5 @@
 """Raw/Delta fixture seeding for the Databricks test tier's runtests.py.
-Split out of that notebook (and, for registered_delta_rows, out of
-tests/spark/test_data.py, which re-exports it) to keep the notebook
-orchestration-only. This notebook runs from bundle-synced workspace files,
+Split out of that notebook to keep it orchestration-only. This notebook runs from bundle-synced workspace files,
 not a Databricks Repo, so `tests` itself isn't importable there -- Databricks
 adds a notebook's own containing folder to sys.path, not distant ancestors.
 """

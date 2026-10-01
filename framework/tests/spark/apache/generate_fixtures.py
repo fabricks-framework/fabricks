@@ -2,7 +2,7 @@
 
 import argparse
 
-from tests.spark.test_data import APACHE_FIXTURES_ROOT, ENTITIES, ITERATIONS, derive_entity_rows, write_ndjson
+from tests.support.fixture_data import APACHE_FIXTURES_ROOT, ENTITIES, ITERATIONS, derive_entity_rows, write_ndjson
 
 
 def main() -> None:

@@ -1,7 +1,7 @@
 import pytest
 
-from tests.spark.apache.cdc_harness import validate_scenario
-from tests.spark.test_data import apache_fixture_paths
+from tests.support.cdc_scenario import validate_scenario
+from tests.support.fixture_data import apache_fixture_paths
 
 
 @pytest.mark.parametrize(("seed_from", "iters", "compare_to"), [(0, [1], 1), (3, [4, 5, 6, 7], 7), (10, [11], 11)])

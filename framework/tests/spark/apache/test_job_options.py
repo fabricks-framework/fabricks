@@ -10,7 +10,7 @@ import pytest
 
 from fabricks.core import get_job
 from tests.spark.expected.compare import compare_to_expected, create_expected_views
-from tests.spark.test_data import load_combined_frame
+from tests.support.fixture_data import load_combined_frame
 
 
 @pytest.fixture(scope="session")

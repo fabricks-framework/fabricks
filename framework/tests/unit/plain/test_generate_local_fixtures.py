@@ -2,12 +2,13 @@ import json
 
 import pytest
 
-from tests.spark.test_data import (
+# The one deliberate cross-tier import (see test_tier_boundary.py): the module must stay notebook-safe.
+from tests.spark.databricks.fixtures import registered_delta_rows
+from tests.support.fixture_data import (
     APACHE_FIXTURES_ROOT,
     ITERATIONS,
     RAW_FIXTURES_ROOT,
     derive_source_rows,
-    registered_delta_rows,
     validate_iteration,
     write_ndjson,
 )
