@@ -5,14 +5,15 @@ for tests that need the *real* fabricks.context with only Spark faked, see
 tests/unit/config/.
 """
 
+import os
 import sys
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
 from tests.tier_policy import activate_tier
 
+_ORIGINAL_ACTIVE_TIER = os.environ.get("FABRICKS_ACTIVE_TEST_TIER")
 activate_tier("plain")
 
 _REPLACED_MODULES = ("fabricks.utils.spark", "fabricks.context", "fabricks.context.spark_session")
@@ -24,7 +25,6 @@ def mock_spark():
     mock_spark_session = MagicMock()
     mock_dbutils_obj = MagicMock()
 
-    # Mock fabricks.utils.spark
     sys.modules["fabricks.utils.spark"] = MagicMock(
         spark=mock_spark_session,
         dbutils=mock_dbutils_obj,
@@ -32,7 +32,6 @@ def mock_spark():
         get_dbutils=MagicMock(return_value=mock_dbutils_obj),
     )
 
-    # Mock fabricks.context and related modules
     mock_context = MagicMock()
     mock_context.SPARK = mock_spark_session
     mock_context.DBUTILS = mock_dbutils_obj
@@ -48,28 +47,12 @@ mock_spark()
 def _restore_process_state():
     """See tests/unit/config/conftest.py: only matters for a process that runs pytest more than once."""
     yield
+    if _ORIGINAL_ACTIVE_TIER is None:
+        os.environ.pop("FABRICKS_ACTIVE_TEST_TIER", None)
+    else:
+        os.environ["FABRICKS_ACTIVE_TEST_TIER"] = _ORIGINAL_ACTIVE_TIER
     for name, original in _ORIGINAL_MODULES.items():
         if original is None:
             sys.modules.pop(name, None)
         else:
             sys.modules[name] = original
-
-
-@pytest.fixture
-def minimal_runtime_config() -> dict[str, Any]:
-    """Minimal valid RuntimeConf configuration for testing."""
-    return {
-        "name": "test",
-        "options": {
-            "secret_scope": "test_scope",
-            "timeouts": {"step": 3600, "job": 3600, "pre_run": 3600, "post_run": 3600},
-        },
-        "path_options": {
-            "storage": "abfss://test",
-            "udfs": "fabricks/udfs",
-            "parsers": "fabricks/parsers",
-            "schedules": "fabricks/schedules",
-            "views": "fabricks/views",
-            "requirements": "fabricks/requirements",
-        },
-    }
