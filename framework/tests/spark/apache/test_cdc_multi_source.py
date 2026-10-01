@@ -8,6 +8,7 @@ legitimately hashes every field.
 """
 
 from pyspark.sql.types import Row
+import pytest
 
 from fabricks.cdc import SCD1, SCD2
 from tests.spark.apache.cdc_frames import FAR_FUTURE, history, rows
@@ -153,3 +154,55 @@ def test_scd1_reload_of_one_source_does_not_delete_the_keys_of_the_other_sources
         (8, "h", "king"),
         (9, "i", "queen"),
     ], "only the king's id 2 is missing from a reload; queen's id 5 and prince's rows must survive"
+
+
+# What one source's batch does to its two seeded keys (base+1 "x1", base+2 "x2"), whatever the other sources do.
+MODES = ("reload", "upsert", "delete", "none")
+LIVE = {  # the (key offset -> name) pairs still current afterwards
+    "reload": {1: "x1r", 3: "x3"},  # key 2 is missing from the reload
+    "upsert": {1: "x1u", 2: "x2", 3: "x3"},
+    "delete": {2: "x2"},
+    "none": {1: "x1", 2: "x2"},
+}
+
+
+# A batch with no rows at all never reaches the CDC layer: jobs skip it (`batch_has_data`), and with `__source`
+# the slice probe asserts "no slices found".
+_BATCHES = [(king, queen) for king in MODES for queen in MODES if (king, queen) != ("none", "none")]
+
+
+def _batch_rows(source, base, mode):
+    def row(offset, name, operation):
+        return (base + offset, name, source, operation, D3)
+
+    return {
+        "reload": [row(1, "x1r", "reload"), row(3, "x3", "reload")],
+        "upsert": [row(1, "x1u", "upsert"), row(3, "x3", "upsert")],
+        "delete": [row(1, "x1", "delete")],
+        "none": [],
+    }[mode]
+
+
+@pytest.mark.parametrize("soft_delete", [False, True], ids=["hard", "soft"])
+@pytest.mark.parametrize("cdc_cls", [SCD1, SCD2], ids=["scd1", "scd2"])
+@pytest.mark.parametrize(("king", "queen"), _BATCHES, ids=[f"{k}-{q}" for k, q in _BATCHES])
+def test_each_source_follows_its_own_operations_whatever_the_other_sources_do(
+    local_spark, king, queen, cdc_cls, soft_delete
+):
+    bases = {"king": 10, "queen": 20, "prince": 30}  # prince never has rows in the batch
+    modes = {"king": king, "queen": queen, "prince": "none"}
+    cdc = cdc_cls("cdc", f"multi_source_{cdc_cls.__name__}_{soft_delete}_{king}_{queen}", spark=local_spark)
+    options = {"keys": "id", "add_key": True, "soft_delete": soft_delete}
+
+    seed = [(base + i, f"x{i}", source, "upsert", D1) for source, base in bases.items() for i in (1, 2)]
+    cdc.update(local_spark.createDataFrame(seed, SCHEMA), **options)
+    batch = [r for source, base in bases.items() for r in _batch_rows(source, base, modes[source])]
+    cdc.update(local_spark.createDataFrame(batch, SCHEMA), **options)
+
+    current = cdc.table.dataframe
+    if soft_delete or cdc_cls is SCD2:
+        current = current.where("__is_current")
+    expected = sorted(
+        (bases[source] + offset, name) for source in bases for offset, name in LIVE[modes[source]].items()
+    )
+    assert sorted((r.id, r.name) for r in current.select("id", "name").collect()) == expected, modes
