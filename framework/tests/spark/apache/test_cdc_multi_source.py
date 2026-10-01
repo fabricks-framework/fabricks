@@ -10,6 +10,7 @@ legitimately hashes every field.
 from pyspark.sql.types import Row
 
 from fabricks.cdc import SCD1, SCD2
+from tests.spark.apache.cdc_frames import FAR_FUTURE, history, rows
 
 
 def test_fix_context_update_probe_has_source_produces_correct_per_source_slice(local_spark):
@@ -82,3 +83,73 @@ def test_scd2_update_has_source_applies_per_source_watermark_and_loads_a_new_sou
         (4, "d", "queen", "2024-01-03 00:00:00", forever, True),
         (6, "f", "prince", "2024-01-02 00:00:00", forever, True),
     ], "per-source watermark: id 5 is older than the king's; ids 2 and 4 are older than it but newer than the queen's"
+
+
+D1, D3, D4 = (f"2022-01-0{d} 00:00:00" for d in (1, 3, 4))
+SCHEMA = "id int, name string, __source string, __operation string, __timestamp string"
+
+
+def _seed_and_reload_batch(spark, cdc):
+    """The target holds king (1-3), queen (4-5) and prince (6-7). One batch then carries a king reload (plus a later
+    king upsert of a reloaded key), plain queen upserts without a reload, and nothing at all for prince."""
+    seed = [
+        (1, "a", "king", "upsert", D1),
+        (2, "b", "king", "upsert", D1),
+        (3, "c", "king", "upsert", D1),
+        (4, "d", "queen", "upsert", D1),
+        (5, "e", "queen", "upsert", D1),
+        (6, "f", "prince", "upsert", D1),
+        (7, "g", "prince", "upsert", D1),
+    ]
+    cdc.update(spark.createDataFrame(seed, SCHEMA), keys="id", add_key=True)
+
+    mixed = [
+        (1, "a2", "king", "reload", D3),  # changed by the reload
+        (3, "c", "king", "reload", D3),  # unchanged by the reload
+        (8, "h", "king", "reload", D3),  # new in the reload; id 2 is missing from it
+        (1, "a3", "king", "upsert", D4),  # upsert after the reload
+        (4, "d2", "queen", "upsert", D3),  # changed; queen has no reload, so its id 5 is not in the batch
+        (9, "i", "queen", "upsert", D3),  # new
+    ]
+    cdc.update(spark.createDataFrame(mixed, SCHEMA), keys="id", add_key=True)
+
+
+def test_scd2_reload_of_one_source_does_not_close_the_keys_of_the_other_sources(local_spark):
+    scd2 = SCD2("cdc", "multi_source_scd2_reload", spark=local_spark)
+
+    _seed_and_reload_batch(local_spark, scd2)
+
+    d3_end = "2022-01-02 23:59:59"
+    d4_end = "2022-01-03 23:59:59"
+    assert history(scd2.table, 1) == [
+        ("a", D1, d3_end, False),
+        ("a2", D3, d4_end, False),
+        ("a3", D4, FAR_FUTURE, True),
+    ]
+    assert history(scd2.table, 2) == [("b", D1, d3_end, False)], "missing from the king reload: closed"
+    assert history(scd2.table, 3) == [("c", D1, FAR_FUTURE, True)], "repeated by the king reload: no new version"
+    assert history(scd2.table, 8) == [("h", D3, FAR_FUTURE, True)]
+    assert history(scd2.table, 4) == [("d", D1, d3_end, False), ("d2", D3, FAR_FUTURE, True)]
+    assert history(scd2.table, 5) == [("e", D1, FAR_FUTURE, True)], (
+        "queen has no reload: absent from the batch is not deleted"
+    )
+    assert history(scd2.table, 9) == [("i", D3, FAR_FUTURE, True)]
+    assert history(scd2.table, 6) == [("f", D1, FAR_FUTURE, True)], "prince has no rows in the batch: untouched"
+    assert history(scd2.table, 7) == [("g", D1, FAR_FUTURE, True)], "prince has no rows in the batch: untouched"
+
+
+def test_scd1_reload_of_one_source_does_not_delete_the_keys_of_the_other_sources(local_spark):
+    scd1 = SCD1("cdc", "multi_source_scd1_reload", spark=local_spark)
+
+    _seed_and_reload_batch(local_spark, scd1)
+
+    assert rows(scd1.table, "id", "name", "__source") == [
+        (1, "a3", "king"),
+        (3, "c", "king"),
+        (4, "d2", "queen"),
+        (5, "e", "queen"),
+        (6, "f", "prince"),
+        (7, "g", "prince"),
+        (8, "h", "king"),
+        (9, "i", "queen"),
+    ], "only the king's id 2 is missing from a reload; queen's id 5 and prince's rows must survive"
