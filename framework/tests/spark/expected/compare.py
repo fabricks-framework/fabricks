@@ -14,10 +14,13 @@ uses for its own heavy `fabricks.cdc` import).
 
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 import re
+import shutil
 from typing import TYPE_CHECKING
+import uuid
 
 from tests.support.expected_sql import expected_scd2_schema, make_spark_compatible
 from tests.support.fixture_data import EXPECTED_ROOT, read_expected_rows
@@ -28,6 +31,10 @@ if TYPE_CHECKING:
     from fabricks.metastore.table import Table
 
 
+# Columns Fabricks adds that the oracle files do not carry, and so are not compared row by row.
+UNCOMPARED_COLUMNS: frozenset[str] = frozenset({"__key", "__hash", "__timestamp", "__operation"})
+
+
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
     from pandas.testing import assert_frame_equal
     from pyspark.sql.functions import expr
@@ -35,6 +42,11 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
     from fabricks.utils.dataframe import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
 
     cols = df_expected.columns
+    extra = sorted(set(df.columns) - set(cols) - UNCOMPARED_COLUMNS)
+    assert not extra, f"table has columns the oracle does not: {extra}"
+    actual_types = {name: dtype for name, dtype in df.dtypes if name in cols}
+    expected_types = dict(df_expected.dtypes)
+    assert actual_types == expected_types, f"column types differ from the oracle: {actual_types} != {expected_types}"
     order_by = "id"
     if "__valid_from" in df.columns:
         order_by = f"concat_ws('|', {order_by}, __valid_from, __valid_to)"
@@ -55,6 +67,39 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
     p_df_expected = df_expected.toPandas()
 
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
+
+
+def assert_keys_match_business_key(df: DataFrame) -> None:
+    """`__key` is not in the oracle files, so check it directly: never null, and one-to-one with `id`."""
+    if "__key" not in df.columns:
+        return
+    nulls = df.where("__key is null").count()
+    assert nulls == 0, f"{nulls} rows have a null __key"
+    row = df.selectExpr(
+        "count(distinct __key) as keys", "count(distinct id) as ids", "count(distinct struct(__key, id)) as pairs"
+    ).first()
+    assert row is not None
+    assert row.keys == row.ids == row.pairs, f"__key is not one-to-one with id: {row.asDict()}"
+
+
+def _cached_oracle(df: DataFrame, source: Path, cache_root: Path, name: str) -> Path:
+    """Delta copy of an oracle frame, keyed on its source file and schema so editing the data invalidates it.
+
+    Written to a private directory and renamed into place, so xdist workers racing on the first use never
+    observe (or clobber) a half-written table."""
+    digest = hashlib.sha256(source.read_bytes() + df.schema.json().encode()).hexdigest()[:12]
+    final = cache_root / f"{name}_{digest}"
+    if (final / "_delta_log").exists():
+        return final
+
+    cache_root.mkdir(parents=True, exist_ok=True)
+    staging = cache_root / f".{name}_{digest}.{os.getpid()}.{uuid.uuid4().hex}"
+    df.write.format("delta").save(str(staging))
+    try:
+        staging.rename(final)
+    except OSError:
+        shutil.rmtree(staging, ignore_errors=True)  # another worker won the race
+    return final
 
 
 def create_expected_views(spark: SparkSession, cdc: str) -> None:
@@ -89,9 +134,7 @@ def create_expected_views(spark: SparkSession, cdc: str) -> None:
             expected_table = f"expected.scd2_iter{iter_num}"
             expected_cache = os.environ.get("FABRICKS_TEST_EXPECTED_CACHE")
             if expected_cache:
-                cache_path = Path(expected_cache) / f"scd2_iter{iter_num}"
-                if not (cache_path / "_delta_log").exists():
-                    df.write.format("delta").save(str(cache_path))
+                cache_path = _cached_oracle(df, ndjson_file, Path(expected_cache), f"scd2_iter{iter_num}")
                 spark.sql(f"create table {expected_table} using delta location '{cache_path}'")
             else:
                 df.write.mode("overwrite").saveAsTable(expected_table)
@@ -137,5 +180,10 @@ def compare_to_expected(spark: SparkSession, table: Table, cdc: str, iter: int, 
     expected_df = load_expected(spark, cdc, iter)
     if topic in ["monarch", "memory", "regent"]:
         expected_df = expected_df.drop("__source")
+    if cdc == "scd0":
+        # the scd0 oracle views select only id, name and doubleField, so columns added later (newField) and
+        # __source are not covered for scd0
+        df = df.select(*expected_df.columns)
 
+    assert_keys_match_business_key(df)
     assert_dfs_equal(df, expected_df)

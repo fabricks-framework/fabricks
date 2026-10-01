@@ -7,6 +7,15 @@ import yaml
 from fabricks.models.runtime.models import RuntimeConf
 
 
+@pytest.fixture(autouse=True)
+def _pin_variable_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`config` reads FABRICKS_VARIABLE and the config path at import; a developer's environment must not leak in."""
+    monkeypatch.setattr("fabricks.models.runtime.models.config.variable", None)
+    monkeypatch.setattr(
+        "fabricks.models.runtime.models.config.path_to_config", str(Path(__file__).parents[3] / "pyproject.toml")
+    )
+
+
 @pytest.fixture
 def fixtures_dir() -> Path:
     """Return the path to the test fixtures directory."""
@@ -29,13 +38,9 @@ def test_variable_substitution_substitutes_all_fields(fixtures_dir: Path) -> Non
     assert runtime.path_options.storage == "abfss://fabricks@account.dfs.core.windows.net/fabricks"
 
 
-def test_variable_substitution_loads_from_path_options_variables(fixtures_dir: Path, monkeypatch) -> None:
+def test_variable_substitution_loads_from_path_options_variables(fixtures_dir: Path) -> None:
     """Test loading variables from path_options.variables file."""
     conf_file = fixtures_dir / "path_variables.yml"
-
-    # Mock config.path_to_config to framework directory so relative paths work
-    framework_dir = Path(__file__).parent.parent.parent.parent
-    monkeypatch.setattr("fabricks.models.runtime.models.config.path_to_config", str(framework_dir / "pyproject.toml"))
 
     with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)
@@ -44,7 +49,8 @@ def test_variable_substitution_loads_from_path_options_variables(fixtures_dir: P
 
     assert runtime.options.workers == 12
     assert runtime.options.catalog == "stg_dev_dwh"
-    assert runtime.variables is not None
+    with (fixtures_dir / "variables.dev.yml").open(encoding="utf-8") as f:
+        assert runtime.variables == yaml.safe_load(f)
 
 
 def test_variable_substitution_path_options_takes_precedence_over_inline(fixtures_dir: Path) -> None:
@@ -98,7 +104,6 @@ def test_variable_substitution_fabricks_variable_env_overrides_path_options(fixt
     conf_file = fixtures_dir / "path_variables.yml"
     prd_variables_file = fixtures_dir / "variables.prd.yml"
 
-    # Mock config.variable to simulate FABRICKS_VARIABLE env var pointing to prd
     monkeypatch.setattr("fabricks.models.runtime.models.config.variable", str(prd_variables_file))
 
     with conf_file.open(encoding="utf-8") as f:
@@ -113,10 +118,9 @@ def test_variable_substitution_fabricks_variable_env_overrides_path_options(fixt
 def test_variable_substitution_fabricks_variable_env_overrides_inline(fixtures_dir: Path, monkeypatch) -> None:
     """Test that FABRICKS_VARIABLE env var takes precedence over inline variables."""
     conf_file = fixtures_dir / "inline_variables.yml"
-    prd_variables_file = fixtures_dir / "variables.dev.yml"
+    dev_variables_file = fixtures_dir / "variables.dev.yml"
 
-    # Mock config.variable to simulate FABRICKS_VARIABLE env var
-    monkeypatch.setattr("fabricks.models.runtime.models.config.variable", str(prd_variables_file))
+    monkeypatch.setattr("fabricks.models.runtime.models.config.variable", str(dev_variables_file))
 
     with conf_file.open(encoding="utf-8") as f:
         conf_data = yaml.safe_load(f)

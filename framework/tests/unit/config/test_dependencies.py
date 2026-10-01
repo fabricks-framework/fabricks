@@ -10,12 +10,12 @@
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
 
 from fabricks.core import get_job
 from fabricks.core.jobs.silver import Silver
 from fabricks.core.steps import get_step
 import fabricks.core.steps.base as steps_base
+from fabricks.models import JobDependency
 from fabricks.utils.path.git import GitPath
 
 
@@ -69,6 +69,14 @@ def test_silver_dependencies_parents_only():
     assert [(d.origin, d.parent) for d in deps] == [("parent", "bronze.fact_other")]
 
 
+def test_silver_dependencies_default_to_the_parser_convention_without_parents():
+    job = _silver_job(parents=None)
+
+    deps = job.get_dependencies()
+
+    assert [(d.origin, d.parent) for d in deps] == [("parser", "bronze.fact_dummy")]
+
+
 def test_silver_dependencies_parents_and_wait_for():
     # unlike Gold, Silver.get_dependencies() has no "already covered by
     # parents" guard on wait_for - every entry is appended unconditionally.
@@ -111,32 +119,32 @@ def test_get_dependencies_internal_no_errors_when_all_succeed(monkeypatch):
     assert errors == []
 
 
-# options.type == "manual" (fabricks/models/common.py's AllowedTypes) marks a
-# job as excluded from automatic scheduling/dependency resolution -- it must
-# be run out of band. _get_dependencies_internal() is where that exclusion is
-# enforced, via a `df.where(...)` call get_jobs() must return a real
-# DataFrame for -- a plain list (as used above) doesn't support `.where`, so
-# this needs a DataFrame-shaped mock instead.
-def test_get_dependencies_internal_excludes_manual_jobs_by_default(monkeypatch):
+# The options.type == "manual" exclusion is a SQL predicate on a DataFrame, so it is tested against real Spark in
+# tests/spark/apache/test_get_dependencies_manual.py.
+
+
+def test_get_dependencies_internal_aggregates_dependencies_from_every_job(monkeypatch):
     step = get_step("gold")
-    mock_jobs_df = MagicMock()
-    monkeypatch.setattr(step, "get_jobs", lambda topic=None: mock_jobs_df)
-    monkeypatch.setattr(steps_base, "run_in_parallel", lambda *args, **kwargs: [])
+    monkeypatch.setattr(step, "get_jobs", lambda topic=None: [{"job": "a"}, {"job": "b"}, {"job": "c"}])
+    by_job = {
+        "a": [JobDependency.from_parts("a", "gold.x", "parent")],
+        "b": [JobDependency.from_parts("b", "gold.x", "parent"), JobDependency.from_parts("b", "gold.y", "wait_for")],
+        "c": [],
+    }
+    monkeypatch.setattr(
+        steps_base, "_get_dependencies", lambda row: {"job": row["job"], "dependencies": by_job[row["job"]]}
+    )
+    captured: list[list[dict]] = []
+    monkeypatch.setattr(steps_base.SPARK, "createDataFrame", lambda rows, _schema: captured.append(rows))
 
-    step._get_dependencies_internal()
+    _, errors = step._get_dependencies_internal(include_manual=True)
 
-    mock_jobs_df.where.assert_called_once_with("not options.type <=> 'manual'")
-
-
-def test_get_dependencies_internal_keeps_manual_jobs_when_requested(monkeypatch):
-    step = get_step("gold")
-    mock_jobs_df = MagicMock()
-    monkeypatch.setattr(step, "get_jobs", lambda topic=None: mock_jobs_df)
-    monkeypatch.setattr(steps_base, "run_in_parallel", lambda *args, **kwargs: [])
-
-    step._get_dependencies_internal(include_manual=True)
-
-    mock_jobs_df.where.assert_not_called()
+    assert errors == []
+    assert sorted((r["job_id"], r["origin"], r["parent"]) for r in captured[0]) == [
+        ("a", "parent", "gold.x"),
+        ("b", "parent", "gold.x"),
+        ("b", "wait_for", "gold.y"),
+    ]
 
 
 # --- Gold._get_notebook_dependencies(): the static-parse-first / execution-fallback dispatch. The parser itself is

@@ -8,7 +8,6 @@ on bronze/dependency plumbing.
 
 import pytest
 
-from fabricks.core import get_job
 from tests.spark.expected.compare import compare_to_expected, create_expected_views
 from tests.support.fixture_data import load_combined_frame
 
@@ -28,8 +27,8 @@ def _iteration(spark, number: int):
     )
 
 
-def test_append_mode_accumulates_across_batches(local_spark):
-    job = get_job(step="silver", topic="append_test", item="test")
+def test_append_mode_accumulates_across_batches(local_spark, fresh_job):
+    job = fresh_job("silver", "append_test", "test")
 
     job.for_each_batch(local_spark.createDataFrame([(1, "a")], ["id", "name"]))
     assert job.table.dataframe.count() == 1
@@ -43,8 +42,8 @@ def test_append_mode_accumulates_across_batches(local_spark):
 # which OSS Spark's parser rejects but Databricks' does not -- this job sets
 # the real, supported deduplicate:false option to sidestep that, valid here
 # since neither batch below has duplicate keys within itself.
-def test_latest_mode_replaces_target_with_each_batchs_full_snapshot(local_spark):
-    job = get_job(step="silver", topic="latest_test", item="test")
+def test_latest_mode_replaces_target_with_each_batchs_full_snapshot(local_spark, fresh_job):
+    job = fresh_job("silver", "latest_test", "test")
     columns = ["id", "name", "__operation", "__timestamp"]
 
     job.for_each_batch(local_spark.createDataFrame([(1, "a", "reload", "2022-01-01 00:00:00")], columns))
@@ -69,8 +68,8 @@ def test_latest_mode_replaces_target_with_each_batchs_full_snapshot(local_spark)
 # this: without it, for_each_batch's batch_has_data() guard returns
 # early on an empty batch and the CDC layer -- where the bug lives --
 # is never reached.
-def test_latest_mode_accepts_an_empty_batch(local_spark):
-    job = get_job(step="silver", topic="latest_test", item="test")
+def test_latest_mode_accepts_an_empty_batch(local_spark, fresh_job):
+    job = fresh_job("silver", "latest_test", "test")
     columns = ["id", "name", "__operation", "__timestamp"]
 
     batch = local_spark.createDataFrame([(1, "a", "reload", "2022-01-01 00:00:00")], columns)
@@ -85,8 +84,8 @@ def test_latest_mode_accepts_an_empty_batch(local_spark):
     assert job.table.dataframe.count() == 0
 
 
-def test_silver_scd1_handles_incremental_schema_drift(local_spark, cdc_oracles):
-    job = get_job(step="silver", topic="king_and_queen", item="scd1")
+def test_silver_scd1_handles_incremental_schema_drift(local_spark, cdc_oracles, fresh_job):
+    job = fresh_job("silver", "king_and_queen", "scd1")
 
     job.for_each_batch(_iteration(local_spark, 1))
     job.update_schema(_iteration(local_spark, 2))
@@ -95,8 +94,8 @@ def test_silver_scd1_handles_incremental_schema_drift(local_spark, cdc_oracles):
     compare_to_expected(local_spark, table=job.table, cdc="scd1", iter=2, topic="king_and_queen")
 
 
-def test_silver_scd2_first_load_wires_validity_options(local_spark, cdc_oracles):
-    job = get_job(step="silver", topic="king_and_queen", item="scd2")
+def test_silver_scd2_first_load_wires_validity_options(local_spark, cdc_oracles, fresh_job):
+    job = fresh_job("silver", "king_and_queen", "scd2")
 
     job.for_each_batch(_iteration(local_spark, 1))
 

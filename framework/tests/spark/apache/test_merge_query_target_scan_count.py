@@ -37,7 +37,7 @@ def test_update_merge_query_scans_target_table_once(local_spark):
     plan = _explain_text(df)
     scan_definitions = re.findall(r"^\(\d+\) Scan parquet .*target_scan_count", plan, re.MULTILINE)
 
-    assert len(scan_definitions) <= 1, (
+    assert len(scan_definitions) == 1, (
         f"target table scanned {len(scan_definitions)} times in one merge query plan "
-        f"(issue #202) -- expected at most 1:\n{plan}"
+        f"(issue #202) -- expected exactly 1 (0 means the plan format changed and the regex matches nothing):\n{plan}"
     )

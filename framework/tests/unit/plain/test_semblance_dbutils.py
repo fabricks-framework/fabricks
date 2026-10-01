@@ -102,3 +102,10 @@ def test_notebook_exit_raises_carrying_the_value(dbutils):
     with pytest.raises(NotebookExit) as exc:
         dbutils.notebook.exit("done")
     assert exc.value.value == "done"
+
+
+def test_notebook_run_rejects_non_string_arguments(semblance):
+    semblance.on_notebook_run(returns="ok")
+
+    with pytest.raises(TypeError, match="map str to str"):
+        semblance.dbutils.notebook.run("nb", 60, {"schedule": None})
