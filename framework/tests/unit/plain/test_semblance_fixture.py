@@ -19,6 +19,15 @@ def test_azure_wrappers_run_against_the_fakes(semblance):
     assert semblance.queue("q1").pending == []
 
 
+def test_azure_table_splits_large_upserts_below_the_service_limit(semblance):
+    rows = [{"PartitionKey": "p", "RowKey": str(i), "S": "a"} for i in range(230)]
+
+    with AzureTable("t1", connection_string="UseDevelopmentStorage=true") as table:
+        table.upsert(rows)
+
+    assert len(semblance.table("t1").rows(PartitionKey="p")) == 230
+
+
 def test_runtime_module_carries_the_fake_dbutils(semblance):
     from databricks.sdk.runtime import dbutils
 
@@ -27,12 +36,15 @@ def test_runtime_module_carries_the_fake_dbutils(semblance):
     assert sys.modules["databricks.sdk.runtime"].dbutils.widgets.get("schedule") == "daily"
 
 
-def test_time_sleep_is_neutralised(semblance):
+def test_time_sleep_is_neutralised_and_recorded(semblance):
     import time
 
     start = time.monotonic()
     time.sleep(30)
+    time.sleep(1.5)
+
     assert time.monotonic() - start < 1
+    assert semblance.sleeps == [30, 1.5]
 
 
 def test_fixture_state_is_fresh_first(semblance):
