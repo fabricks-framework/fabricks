@@ -10,7 +10,6 @@ than crashing. See https://github.com/fabricks-framework/fabricks/issues/215.
 from unittest.mock import MagicMock
 
 from pyspark.errors.exceptions.base import PySparkAttributeError
-import pytest
 
 from fabricks.core.jobs.base import resolver
 from fabricks.models import SparkOptions
@@ -40,8 +39,36 @@ def test_build_step_spark_session_under_spark_connect(monkeypatch):
     session.conf.set.assert_any_call("some.conf", "value")
 
 
-def test_resolver_cache_is_left_unchanged_by_the_connect_test():
-    before = dict(resolver._STEP_SESSIONS)
-    with pytest.MonkeyPatch.context() as mp:
-        test_build_step_spark_session_under_spark_connect(mp)
-    assert before == resolver._STEP_SESSIONS
+def test_build_step_spark_session_derives_an_isolated_session_when_new_session_works(monkeypatch):
+    # Control for the Connect fallback: it must not be taken when newSession() is supported (#214 isolation).
+    parent = MagicMock(name="parent_spark_session")
+    derived = parent.newSession.return_value
+    monkeypatch.setattr(resolver, "SPARK", parent)
+    monkeypatch.setattr(resolver, "_STEP_SESSIONS", {})
+
+    session = resolver.build_step_spark_session("classic_step", SparkOptions(conf={"some.conf": "value"}))
+
+    assert session is derived
+    derived.conf.set.assert_any_call("some.conf", "value")
+    parent.conf.set.assert_not_called()
+
+
+def test_build_step_spark_session_is_cached_per_step(monkeypatch):
+    parent = MagicMock(name="parent_spark_session")
+    monkeypatch.setattr(resolver, "SPARK", parent)
+    monkeypatch.setattr(resolver, "_STEP_SESSIONS", {})
+    options = SparkOptions(conf={"some.conf": "value"})
+
+    first = resolver.build_step_spark_session("cached_step", options)
+    second = resolver.build_step_spark_session("cached_step", options)
+
+    assert first is second
+    parent.newSession.assert_called_once()
+
+
+def test_build_step_spark_session_without_options_returns_the_runtime_session(monkeypatch):
+    parent = MagicMock(name="parent_spark_session")
+    monkeypatch.setattr(resolver, "SPARK", parent)
+
+    assert resolver.build_step_spark_session("plain_step", None) is parent
+    parent.newSession.assert_not_called()

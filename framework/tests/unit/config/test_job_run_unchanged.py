@@ -3,7 +3,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from fabricks.core import get_job
+from fabricks.core.jobs.base.checker import JobChecker
 from fabricks.core.jobs.base.exception import PreRunCheckException, UnchangedWarning
+from fabricks.core.jobs.base.invoker import JobInvoker
 from tests.unit.config._helpers import stub_table
 
 
@@ -13,9 +15,9 @@ def _stubbed_silver_job(monkeypatch):
     # method added to either later doesn't silently need its own line here.
     job = get_job(step="silver", topic="append_test", item="test")
 
-    monkeypatch.setattr(job, "_checker", MagicMock())
-    monkeypatch.setattr(job, "_invoker", MagicMock())
-    monkeypatch.setattr(job, "restore", MagicMock())
+    monkeypatch.setattr(job, "_checker", MagicMock(spec=JobChecker))
+    monkeypatch.setattr(job, "_invoker", MagicMock(spec=JobInvoker))
+    monkeypatch.setattr(job, "restore", MagicMock(spec=job.restore))
     stub_table(monkeypatch, job)
 
     return job
@@ -24,10 +26,14 @@ def _stubbed_silver_job(monkeypatch):
 def test_run_reraises_unchanged_warning_without_restoring_or_retrying(monkeypatch):
     job = _stubbed_silver_job(monkeypatch)
 
-    with patch.object(job, "for_each_run", side_effect=UnchangedWarning("no data")), pytest.raises(UnchangedWarning):
+    with (
+        patch.object(job, "for_each_run", side_effect=UnchangedWarning("no data")) as for_each_run,
+        pytest.raises(UnchangedWarning),
+    ):
         job.run(invoke=False, retry=True)
 
     job.restore.assert_not_called()
+    assert for_each_run.call_count == 1, "an unchanged run must not be retried"
 
 
 def test_run_restores_on_a_real_check_exception(monkeypatch):

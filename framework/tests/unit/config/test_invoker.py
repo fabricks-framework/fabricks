@@ -7,7 +7,6 @@ retry with `retry: true` (default off). Without `retry_on_error` any exception r
 ["Py4JJavaError", "TimeoutError"]) only the named types do.
 """
 
-import sys
 from unittest.mock import MagicMock
 
 from py4j.protocol import Py4JJavaError
@@ -20,8 +19,6 @@ from fabricks.utils.path import GitPath
 from tests.unit.config._helpers import stub_table
 
 pytestmark = pytest.mark.usefixtures("no_real_sleep")
-
-dbr = sys.modules["databricks.sdk.runtime"]  # faked by tests/unit/config/conftest.py
 
 _EXCEPTIONS = {"pre_run": PreRunInvokeException, "post_run": PostRunInvokeException}
 
@@ -48,85 +45,74 @@ def _job_with_invoker(position: str, **options):
     return job
 
 
-def _failing_invoker(monkeypatch, job):
-    monkeypatch.setattr(
-        job._invoker, "_invoke_notebook", lambda *_a, **_kw: (_ for _ in ()).throw(RuntimeError("boom"))
-    )
+def _failing_invoker(monkeypatch, job) -> list[int]:
+    """Make every notebook invocation fail; the returned list gets one entry per attempted invocation."""
+    attempts: list[int] = []
+
+    def _boom(*_a, **_kw):
+        attempts.append(1)
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(job._invoker, "_invoke_notebook", _boom)
+    return attempts
 
 
 # --- _run_notebook retry -----------------------------------------------------------------------------------------
 
 
-def test_retry_off_by_default_raises_immediately(monkeypatch):
-    calls = {"n": 0}
+def _script_notebook(semblance, *outcomes: object) -> None:
+    """The Nth `dbutils.notebook.run` returns/raises outcomes[N]; the last one repeats. Calls land in semblance."""
 
-    def flaky_run(*_a, **_kw):
-        calls["n"] += 1
-        raise _py4j_error()
+    def _outcome(_call) -> object:
+        outcome = outcomes[min(len(semblance.notebook_calls), len(outcomes)) - 1]
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
 
-    monkeypatch.setattr(dbr.dbutils.notebook, "run", flaky_run)
+    semblance.on_notebook_run(returns=_outcome)
+
+
+def test_retry_off_by_default_raises_immediately(semblance):
+    _script_notebook(semblance, _py4j_error())
 
     with pytest.raises(Py4JJavaError):
         _run_notebook()
-    assert calls["n"] == 1
+    assert len(semblance.notebook_calls) == 1
 
 
-def test_retry_true_no_retry_on_error_retries_any_exception(monkeypatch):
-    calls = {"n": 0}
-
-    def flaky_run(*_a, **_kw):
-        calls["n"] += 1
-        if calls["n"] < 2:
-            raise ValueError("even a non-transient-looking error retries with no retry_on_error")
-        return "ok"
-
-    monkeypatch.setattr(dbr.dbutils.notebook, "run", flaky_run)
+def test_retry_true_no_retry_on_error_retries_any_exception(semblance):
+    # even a non-transient-looking error retries with no retry_on_error
+    _script_notebook(semblance, ValueError("flaky"), "ok")
 
     assert _run_notebook(retry=True) == "ok"
-    assert calls["n"] == 2
+    assert len(semblance.notebook_calls) == 2
 
 
-def test_retry_true_persistent_failure_still_raises(monkeypatch):
-    def always_flaky(*_a, **_kw):
-        raise _py4j_error()
-
-    monkeypatch.setattr(dbr.dbutils.notebook, "run", always_flaky)
+def test_retry_true_persistent_failure_still_raises_after_exactly_one_retry(semblance):
+    _script_notebook(semblance, _py4j_error())
 
     with pytest.raises(Py4JJavaError):
         _run_notebook(retry=True)
+    assert len(semblance.notebook_calls) == 2
 
 
-def test_retry_on_error_retries_named_type(monkeypatch):
-    calls = {"n": 0}
-
-    def flaky_run(*_a, **_kw):
-        calls["n"] += 1
-        if calls["n"] < 2:
-            raise _py4j_error()
-        return "ok"
-
-    monkeypatch.setattr(dbr.dbutils.notebook, "run", flaky_run)
+def test_retry_on_error_retries_named_type(semblance):
+    _script_notebook(semblance, _py4j_error(), "ok")
 
     assert _run_notebook(retry=True, retry_on_error=["Py4JJavaError"]) == "ok"
-    assert calls["n"] == 2
+    assert len(semblance.notebook_calls) == 2
 
 
-def test_retry_on_error_does_not_retry_unlisted_type(monkeypatch):
-    calls = {"n": 0}
-
-    def bad_config(*_a, **_kw):
-        calls["n"] += 1
-        raise ValueError("not in the retry_on_error list")
-
-    monkeypatch.setattr(dbr.dbutils.notebook, "run", bad_config)
+def test_retry_on_error_does_not_retry_unlisted_type(semblance):
+    _script_notebook(semblance, ValueError("not in the retry_on_error list"))
 
     with pytest.raises(ValueError, match="not in the retry_on_error list"):
         _run_notebook(retry=True, retry_on_error=["Py4JJavaError"])
-    assert calls["n"] == 1
+    assert len(semblance.notebook_calls) == 1
 
 
-def test_retry_on_error_unknown_name_raises(monkeypatch):
-    monkeypatch.setattr(dbr.dbutils.notebook, "run", lambda *_a, **_kw: "ok")
+def test_retry_on_error_unknown_name_raises(semblance):
+    _script_notebook(semblance, "ok")
 
     with pytest.raises(AssertionError, match="unknown exception name"):
         _run_notebook(retry=True, retry_on_error=["NotARealException"])
@@ -138,18 +124,21 @@ def test_retry_on_error_unknown_name_raises(monkeypatch):
 @pytest.mark.parametrize("position", ["post_run", "pre_run"])
 def test_failed_invoker_raises_typed_exception(monkeypatch, position):
     job = _job_with_invoker(position)
-    _failing_invoker(monkeypatch, job)
+    attempts = _failing_invoker(monkeypatch, job)
 
-    with pytest.raises(_EXCEPTIONS[position]):
+    with pytest.raises(_EXCEPTIONS[position], match="boom"):
         job._invoker.invoke_job(position=position)
+    assert attempts == [1]
 
 
 @pytest.mark.parametrize("position", ["post_run", "pre_run"])
 def test_warn_on_error_true_does_not_raise(monkeypatch, position):
     job = _job_with_invoker(position, warn_on_error=True)
-    _failing_invoker(monkeypatch, job)
+    attempts = _failing_invoker(monkeypatch, job)
 
-    job._invoker.invoke_job(position=position)  # must not raise
+    job._invoker.invoke_job(position=position)
+
+    assert attempts == [1], "the failing invoker must actually have run for 'does not raise' to mean anything"
 
 
 @pytest.mark.parametrize("warn_on_error", [None, False])
@@ -158,26 +147,17 @@ def test_warn_on_error_default_and_false_still_raise(monkeypatch, warn_on_error,
     job = _job_with_invoker(position, warn_on_error=warn_on_error)
     _failing_invoker(monkeypatch, job)
 
-    with pytest.raises(_EXCEPTIONS[position]):
+    with pytest.raises(_EXCEPTIONS[position], match="boom"):
         job._invoker.invoke_job(position=position)
 
 
 # --- retry as seen from job.run() ---------------------------------------------------------------------------------
 
 
-def _job_with_flaky_pre_run(monkeypatch, retry: bool, calls: dict):
+def _job_with_flaky_pre_run(monkeypatch, semblance, retry: bool):
     job = _job_with_invoker("pre_run", retry=retry)
-
-    def flaky_notebook_run(*_a, **_kw):
-        calls["n"] += 1
-        if calls["n"] < 2:
-            # A plain builtin, not Py4JJavaError: Py4JJavaError.__str__() needs a
-            # real java gateway and would crash str(e) in _raise_invoke_errors --
-            # a test-mock artifact, unrelated to the fix under test.
-            raise ConnectionError("connection reset by peer")
-        return "ok"
-
-    monkeypatch.setattr(dbr.dbutils.notebook, "run", flaky_notebook_run)
+    # A plain builtin, not Py4JJavaError: Py4JJavaError.__str__() needs a real java gateway.
+    _script_notebook(semblance, ConnectionError("connection reset by peer"), "ok")
 
     # Everything after pre_run is irrelevant to this claim -- stub it out so
     # only the pre_run invoker step (and job.run()'s own control flow around
@@ -195,19 +175,17 @@ def _job_with_flaky_pre_run(monkeypatch, retry: bool, calls: dict):
     return job
 
 
-def test_job_run_completes_when_pre_run_invoker_recovers_on_retry(monkeypatch):
-    calls = {"n": 0}
-    job = _job_with_flaky_pre_run(monkeypatch, retry=True, calls=calls)
+def test_job_run_completes_when_pre_run_invoker_recovers_on_retry(monkeypatch, semblance):
+    job = _job_with_flaky_pre_run(monkeypatch, semblance, retry=True)
 
-    job.run(schedule=None, schedule_id="x")  # must not raise
+    job.run(schedule=None, schedule_id="x")
 
-    assert calls["n"] == 2
+    assert len(semblance.notebook_calls) == 2
 
 
-def test_job_run_fails_when_pre_run_invoker_has_no_retry(monkeypatch):
-    calls = {"n": 0}
-    job = _job_with_flaky_pre_run(monkeypatch, retry=False, calls=calls)
+def test_job_run_fails_when_pre_run_invoker_has_no_retry(monkeypatch, semblance):
+    job = _job_with_flaky_pre_run(monkeypatch, semblance, retry=False)
 
-    with pytest.raises(Exception, match="connection reset by peer"):
+    with pytest.raises(PreRunInvokeException, match="connection reset by peer"):
         job.run(schedule=None, schedule_id="x")
-    assert calls["n"] == 1
+    assert len(semblance.notebook_calls) == 1

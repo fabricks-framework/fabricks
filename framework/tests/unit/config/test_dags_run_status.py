@@ -1,37 +1,46 @@
+from dataclasses import dataclass
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from fabricks.core.dags.run import run
 from fabricks.core.jobs.base.exception import CheckWarning, PreRunCheckException, SkipWarning, UnchangedWarning
+from fabricks.utils.log import LogStatus
+
+
+@dataclass
+class _Job:
+    """The slice of a job that dags.run touches: `run` either returns or raises `error`."""
+
+    error: Exception | None = None
+
+    def run(self, **_kwargs) -> None:
+        if self.error:
+            raise self.error
 
 
 def _run_with_mocked_dbutils(fake_job):
     # run() imports dbutils lazily from databricks.sdk.runtime (faked by this tier's conftest)
     with patch.object(sys.modules["databricks.sdk.runtime"], "dbutils") as fake_dbutils:
-        fake_dbutils.jobs.taskValues.get.return_value = "sched-1"
         fake_dbutils.notebook.entry_point.getDbutils.side_effect = Exception("no notebook context in a unit test")
         return run(job=fake_job, schedule_id="sched-1", schedule="daily")
 
 
 def test_dags_run_returns_ok_on_ordinary_completion():
-    fake_job = MagicMock()
-    fake_job.run.return_value = None
+    fake_job = _Job()
 
     assert _run_with_mocked_dbutils(fake_job) == "ok"
 
 
 def test_dags_run_returns_stale_when_job_run_raises_unchanged_warning():
-    fake_job = MagicMock()
-    fake_job.run.side_effect = UnchangedWarning("no data")
+    fake_job = _Job(error=UnchangedWarning("no data"))
 
     assert _run_with_mocked_dbutils(fake_job) == "stale"
 
 
 def test_dags_run_reraises_a_real_check_exception():
-    fake_job = MagicMock()
-    fake_job.run.side_effect = PreRunCheckException("bad data")
+    fake_job = _Job(error=PreRunCheckException("bad data"))
 
     with pytest.raises(PreRunCheckException):
         _run_with_mocked_dbutils(fake_job)
@@ -42,14 +51,13 @@ def test_dags_run_still_logs_done_when_stale_so_terminate_does_not_report_it_as_
     # successfully" purely by scanning log messages for the literal string
     # "done" -- a stale (no new data) outcome is not a failure from its
     # point of view, and must not be silently reported as one.
-    fake_job = MagicMock()
-    fake_job.run.side_effect = UnchangedWarning("no data")
+    fake_job = _Job(error=UnchangedWarning("no data"))
 
     with patch("fabricks.core.dags.run.LOGGER") as fake_logger:
         _run_with_mocked_dbutils(fake_job)
 
     logged_messages = [c.args[0] for c in fake_logger.info.call_args_list]
-    assert "done" in logged_messages
+    assert logged_messages.count(LogStatus.DONE) == 1, "a stale job must log done exactly once"
 
 
 def test_dags_run_still_logs_skipped_for_a_skip_warning():
@@ -58,35 +66,32 @@ def test_dags_run_still_logs_skipped_for_a_skip_warning():
     # array_contains -- collapsing SkipWarning/CheckWarning into a single
     # is_stale-driven branch (this file's own production code) must not
     # lose the distinct literal message that reporting relies on.
-    fake_job = MagicMock()
-    fake_job.run.side_effect = SkipWarning("explicitly skipped")
+    fake_job = _Job(error=SkipWarning("explicitly skipped"))
 
     with patch("fabricks.core.dags.run.LOGGER") as fake_logger:
         status = _run_with_mocked_dbutils(fake_job)
 
     assert status == "stale"
     logged_messages = [c.args[0] for c in fake_logger.exception.call_args_list]
-    assert logged_messages == ["skipped"]
+    assert logged_messages == [LogStatus.SKIPPED]
 
 
 def test_dags_run_still_logs_warned_for_a_check_warning():
-    fake_job = MagicMock()
-    fake_job.run.side_effect = CheckWarning("check failed a warning rule")
+    fake_job = _Job(error=CheckWarning("check failed a warning rule"))
 
     with patch("fabricks.core.dags.run.LOGGER") as fake_logger:
         status = _run_with_mocked_dbutils(fake_job)
 
     assert status == "stale"
     logged_messages = [c.args[0] for c in fake_logger.exception.call_args_list]
-    assert logged_messages == ["warned"]
+    assert logged_messages == [LogStatus.WARNED]
 
 
 def test_dags_run_does_not_log_skipped_or_warned_for_an_unchanged_warning():
     # UnchangedWarning is a routine "no new data" outcome, not a problem --
     # it must not show up in logs_pivot's skipped/warned columns the way a
     # real SkipWarning/CheckWarning does.
-    fake_job = MagicMock()
-    fake_job.run.side_effect = UnchangedWarning("no data")
+    fake_job = _Job(error=UnchangedWarning("no data"))
 
     with patch("fabricks.core.dags.run.LOGGER") as fake_logger:
         status = _run_with_mocked_dbutils(fake_job)

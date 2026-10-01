@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from unittest.mock import MagicMock
 
 from pyspark.sql.types import IntegerType, StringType, StructField, StructType
+import pytest
 
 from fabricks.metastore.table import Table
 from fabricks.models import ForeignKey, PrimaryKey
@@ -163,3 +164,72 @@ def test_create_ddl_defaults_column_mapping_when_special_chars_in_columns():
     sql = _generated_sql(mock_spark)
     assert "'delta.columnMapping.mode'='name'" in sql
     assert "'delta.minReaderVersion'='2'" in sql
+
+
+def _normalized(mock_spark: MagicMock) -> str:
+    return " ".join(_generated_sql(mock_spark).split())
+
+
+def test_create_ddl_lists_every_property_in_order():
+    table, mock_spark, df = _make_table()
+
+    table._create(df=df, properties={"a.b": "1", "c.d": "2"})
+
+    assert "TBLPROPERTIES ( 'a.b'='1' , 'c.d'='2' )" in _normalized(mock_spark)
+
+
+def test_create_ddl_accepts_cluster_by_as_a_single_string():
+    table, mock_spark, df = _make_table()
+
+    table._create(df=df, liquid_clustering=True, cluster_by="monarch")
+
+    assert "CLUSTER BY ( `monarch` )" in _normalized(mock_spark)
+
+
+def test_create_ddl_includes_partitioned_by_in_the_given_order():
+    df = _fake_df(monarch=StringType(), id=IntegerType())
+    table, mock_spark, df = _make_table(df)
+
+    table._create(df=df, partitioning=True, partition_by=["monarch", "id"])
+
+    assert "PARTITIONED BY ( `monarch` , `id` )" in _normalized(mock_spark)
+
+
+def test_create_ddl_without_partitioning_has_no_partitioned_by():
+    table, mock_spark, df = _make_table()
+
+    table._create(df=df, partition_by=["dummy"])
+
+    assert "PARTITIONED BY" not in _normalized(mock_spark).upper()
+
+
+def test_create_ddl_includes_generated_columns():
+    table, mock_spark, df = _make_table()
+
+    table._create(df=df, generated_columns={"gen": "string generated always as (upper(`dummy`))"})
+
+    assert "`gen` STRING GENERATED ALWAYS AS (upper(`dummy`))" in _normalized(mock_spark)
+
+
+def test_create_ddl_wires_each_mask_and_comment_to_its_own_column():
+    df = _fake_df(a=StringType(), b=StringType(), c=StringType())
+    table, mock_spark, df = _make_table(df)
+
+    table._create(df=df, masks={"a": "mask_a", "c": "mask_c"}, comments={"b": "about b", "c": "about c"})
+
+    column_lines = [
+        line.strip().rstrip(",") for line in _generated_sql(mock_spark).splitlines() if line.strip().startswith("`")
+    ]
+    assert column_lines == [
+        "`a` string mask mask_a",
+        "`b` string comment 'about b'",
+        "`c` string comment 'about c' mask mask_c",
+    ]
+
+
+def test_create_ddl_rejects_more_than_one_primary_key():
+    df = _fake_df(id=IntegerType(), other=IntegerType())
+    table, _mock_spark, df = _make_table(df)
+
+    with pytest.raises(AssertionError, match="only one primary key allowed"):
+        table._create(df=df, primary_key={"pk_one": PrimaryKey(keys=["id"]), "pk_two": PrimaryKey(keys=["other"])})
