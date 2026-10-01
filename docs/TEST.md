@@ -26,7 +26,8 @@ and only `tests/spark/databricks/runtests.py` runs on a cluster (see
 
 To run the Apache tier on a faster machine over ssh, use `just test-apache-remote [TARGET]`. It rsyncs
 the working tree, then runs `just test-apache` there. Set `FABRICKS_REMOTE` (ssh host),
-`FABRICKS_REMOTE_DIR` and optionally `FABRICKS_REMOTE_JAVA_HOME` in the gitignored `framework/.env`
+`FABRICKS_REMOTE_DIR` and optionally `FABRICKS_REMOTE_JAVA_HOME` and `FABRICKS_REMOTE_UV_CACHE_DIR` (when the
+remote's `UV_CACHE_DIR` points at a cache you cannot write) in the gitignored `framework/.env`
 (loaded by the justfile). The remote machine needs `uv`, `just`, `rsync` and a Java 17-21.
 
 Every `just test-*` recipe also writes its output to
