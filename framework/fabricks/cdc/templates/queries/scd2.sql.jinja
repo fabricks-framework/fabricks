@@ -8,6 +8,13 @@ __scd2_base as (
         lead(__timestamp) over (
             partition by {% if has_source %} __source, {% endif %} __key order by __timestamp
         ) as __scd2_next_timestamp
+        {% if mode == "update" %}
+            ,
+            -- same window spec as the leads above, so Spark runs one Window operator for all three
+            row_number() over (
+                partition by {% if has_source %} __source, {% endif %} __key order by __timestamp
+            ) as __scd2_rn
+        {% endif %}
     from {{ parent_cdc }}
 ),
 __scd2 as (
@@ -16,12 +23,7 @@ __scd2 as (
         __timestamp as __valid_from,
         coalesce(__scd2_next_timestamp - interval 1 second, cast('9999-12-31' as timestamp)) as __valid_to,
         __operation <> 'delete' and __valid_to <=> '9999-12-31' as __is_current,
-        __operation == 'delete' or __scd2_next_operation <=> 'delete' as __is_deleted,
-        {% if mode == "update" %}
-            row_number() over (
-                partition by __key{% if has_source %}, __source{% endif %} order by __timestamp asc
-            ) as __scd2_rn
-        {% endif %}
+        __operation == 'delete' or __scd2_next_operation <=> 'delete' as __is_deleted
     from __scd2_base
 ),
 {% if mode == "complete" %}
