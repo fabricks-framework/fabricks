@@ -1,9 +1,8 @@
 """Reproduces https://github.com/fabricks-framework/fabricks/issues/182:
-a silver `mode: latest` (nocdc) job must not generate invalid SQL when the
-incremental slice is empty (first run, or no new bronze rows). `latest.sql.jinja` yields the literal
-`" (  )"` for an empty source, which `fix_context()` injects as `where true and ( () )` (a Databricks
-PARSE_SYNTAX_ERROR). The fix resets a "latest" slice to None before `fix_context()` runs whenever the
-source has no rows, mirroring the existing `slice == "update" and not has_rows` guard.
+a silver `mode: latest` (nocdc) job must not generate invalid SQL when the incremental slice is empty (first
+run, or no new bronze rows). `latest.sql.jinja` yields the literal `" (  )"` for an empty source, which
+`fix_context()` injects as `where true and ( () )` (a Databricks PARSE_SYNTAX_ERROR). The fix resets a "latest"
+slice to None whenever the source has no rows, mirroring the `slice == "update" and not has_rows` guard.
 """
 
 from pyspark.sql.types import Row

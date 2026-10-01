@@ -86,7 +86,6 @@ def no_real_sleep(monkeypatch):
 def semblance(monkeypatch, tmp_path, no_real_sleep):
     s = Semblance(tmp_path, sleeps=no_real_sleep)
 
-    # Azure SDK boundary
     monkeypatch.setattr("fabricks.utils.azure_table.TableServiceClient", TableServiceFactory(s.tables))
     monkeypatch.setattr("fabricks.utils.azure_queue.QueueClient", QueueClientFactory(s.queues))
 

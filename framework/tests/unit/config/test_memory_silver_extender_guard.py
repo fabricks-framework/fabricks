@@ -1,9 +1,8 @@
 """Reproduces https://github.com/fabricks-framework/fabricks/issues/177:
-a `mode: memory` silver job builds a plain `select *`
-view/DataFrame with no Python step, so an extender configured on its bronze parent could never run.
-Both call sites (Silver.create_or_replace_view() and Silver.get_data()) share
-`_assert_bronze_parent_has_no_extender()` and must raise. Uses the real tests/spark/runtime fixtures:
-the guard resolves the parent via `Bronze.from_job_id()`, which an in-memory conf cannot satisfy.
+a `mode: memory` silver job builds a plain `select *` view/DataFrame with no Python step, so an extender
+configured on its bronze parent could never run. Both call sites (Silver.create_or_replace_view() and
+Silver.get_data()) share `_assert_bronze_parent_has_no_extender()` and must raise. Uses the real
+tests/spark/runtime fixtures: the guard resolves the parent via `Bronze.from_job_id()`.
 """
 
 import pytest

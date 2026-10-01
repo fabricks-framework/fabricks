@@ -1,16 +1,8 @@
 """Reproduces https://github.com/fabricks-framework/fabricks/issues/203
-(point 2): the rectify chain's `nxt` self-join against
-`__rectified_next_operation` (find, for a key, whether it has a row at the
-next "reload" batch's timestamp) was planned as a `SortMergeJoin` -- a
-shuffle+sort of the full table on both sides -- even though the candidate
-set on the `nxt` side is implicitly restricted to rows at a (normally
-small, periodic) set of reload-batch timestamps.
+(point 2): the rectify chain's `nxt` self-join against `__rectified_next_operation` was planned
+as a `SortMergeJoin` (shuffle and sort of the full table on both sides).
 
-`ctes/rectify.sql.jinja` now pre-filters that candidate set explicitly
-(`__rectified_reload_candidates`, a valid pushdown of the join's own
-equality condition -- zero semantic change) and hints both the `t` and
-`nxt` sides of the join to broadcast. This checks the resulting physical
-plan uses `BroadcastHashJoin` for that join instead of `SortMergeJoin`.
+Invariant: the executed plan uses `BroadcastHashJoin` for that join, not `SortMergeJoin`.
 """
 
 import contextlib
@@ -22,11 +14,7 @@ from fabricks.cdc import SCD2
 
 
 def _final_plan_text(df):
-    # explain(mode="formatted") prints an "== Initial Plan ==" section (
-    # Spark's static pre-AQE guess -- can still show SortMergeJoin even with
-    # a broadcast hint present) and an "== Final Plan ==" section (what
-    # actually executed, only available once the query has run at least
-    # once). Only the Final Plan section reflects real physical execution.
+    # The Initial Plan is a pre-AQE guess that can show SortMergeJoin despite a broadcast hint; only Final Plan counts.
     df.collect()
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):

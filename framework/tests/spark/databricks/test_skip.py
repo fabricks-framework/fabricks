@@ -25,9 +25,7 @@ def _status(job: str):
 def test_second_schedule_run_skips_silver_when_bronze_is_unchanged():
     standalone(schedule="skip_unchanged")
 
-    # bronze ran and was judged unchanged; both silver jobs (king_and_queen's
-    # other parent, bronze.queen_scd1, isn't in this schedule) were skipped
-    # before dispatch -- stale, and not counted as failed.
+    # king_and_queen is skipped although its other parent, bronze.queen_scd1, is not in this schedule.
     for job in ("bronze.king_scd1", "silver.king_scd1", "silver.king_and_queen_scd1"):
         status = _status(job)
         assert status.stale, f"{job} must be stale: bronze.king_scd1 didn't change between the two runs"

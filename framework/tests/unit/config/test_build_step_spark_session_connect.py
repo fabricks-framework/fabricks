@@ -1,11 +1,5 @@
-"""build_step_spark_session (fabricks/core/jobs/base/resolver.py) derives a
-per-step session via `SPARK.newSession()`. Under Spark Connect, `newSession`
-isn't a real method -- pyspark's Connect SparkSession raises
-PySparkAttributeError for it via __getattr__ (pyspark/sql/connect/
-session.py), instead of the JVM-backed classic session's real newSession().
-_derive_session falls back to the parent session (pre-#214 behavior) rather
-than crashing. See https://github.com/fabricks-framework/fabricks/issues/215.
-"""
+"""https://github.com/fabricks-framework/fabricks/issues/215: under Spark Connect `SPARK.newSession()` raises
+PySparkAttributeError, so resolver._derive_session must fall back to the parent session instead of crashing."""
 
 from unittest.mock import MagicMock
 
@@ -16,9 +10,7 @@ from fabricks.models import SparkOptions
 
 
 class _ConnectLikeSparkSession(MagicMock):
-    """Mimics pyspark.sql.connect.session.SparkSession.__getattr__, which
-    raises PySparkAttributeError for newSession instead of defining it.
-    """
+    """Mimics pyspark.sql.connect.session.SparkSession, whose __getattr__ raises for newSession."""
 
     def __getattr__(self, name: str):
         if name == "newSession":

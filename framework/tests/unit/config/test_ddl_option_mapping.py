@@ -1,15 +1,8 @@
-"""Fast checks for Table._create()'s table_options -> DDL mapping
-(tblproperties, cluster by, identity, primary/foreign keys, masks,
-comments), without a real Spark session or Delta table.
+"""Fast checks for Table._create()'s table_options -> DDL mapping (tblproperties, cluster by, identity,
+primary/foreign keys, masks, comments), without a real Spark session or Delta table.
 
-Table._create() (framework/fabricks/metastore/table.py) always executes the
-DDL it builds via self.spark.sql(sql) - it never returns the string - so
-these tests capture it off a mocked spark instead. The column-DDL half
-(_get_ddl_columns) is NOT stubbed: pyspark's type system (StructType/
-StructField) is pure Python and needs no running SparkSession to
-construct (confirmed empirically), so a small dataclass stand-in carries a
-real schema, letting masks/comments - which _get_ddl_columns applies per
-column - be tested for real instead of bypassed.
+Table._create() only executes the DDL via self.spark.sql(sql) and never returns it, so the tests capture it off a
+mocked spark. _get_ddl_columns is not stubbed: a dataclass stand-in carries a real (pure Python) StructType schema.
 """
 
 from dataclasses import dataclass, field
@@ -131,12 +124,8 @@ def test_create_ddl_includes_column_masks_and_comments():
 
     table._create(df=df, masks={"dummy": "mask_dummy"}, comments={"dummy": "This is a dummy comment"})
 
-    # sqlglot's `fix()` normalization (uppercasing, etc. - see the other
-    # tests in this file) silently fails on this particular DDL shape
-    # (contextlib.suppress(Exception) in Table._create() swallows it),
-    # leaving the raw, un-normalized SQL Table._create() itself builds -
-    # confirmed empirically. Asserting on that raw shape, not the
-    # normalized one.
+    # sqlglot normalization fails on this DDL shape (swallowed by contextlib.suppress in Table._create()), so
+    # the raw, un-normalized SQL is asserted.
     sql = _generated_sql(mock_spark)
     assert "comment 'This is a dummy comment'" in sql
     assert "mask mask_dummy" in sql

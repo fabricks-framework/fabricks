@@ -10,22 +10,11 @@ from fabricks.core.dags.run import run
 
 
 def test_dags_run_returns_stale_for_a_genuinely_empty_silver_batch(local_spark, monkeypatch, semblance, fresh_job):
-    # append_test's own configured data source isn't wired up in this test
-    # runtime -- get_data() is the one seam job.run()/for_each_run() use to
-    # source a batch, so controlling it here still exercises the real
-    # for_each_batch -> real batch_has_data -> real UnchangedWarning ->
-    # real job.run()/dags.run.run() chain end to end, same as
-    # test_append_mode_accumulates_across_batches feeding for_each_batch
-    # directly, just one layer up so dags.run.run()'s own return value can
-    # be proven too.
+    # append_test's data source isn't wired up in this runtime; get_data() is the seam job.run() sources a batch from.
     job = fresh_job("silver", "append_test", "test")
     first_batch = local_spark.createDataFrame([(1, "a")], ["id", "name"])
 
-    # is_stream defaults True (see Silver.is_stream) -- table creation
-    # would then need a real "fabricks.dummy" streaming placeholder
-    # table that isn't part of this test runtime. Not what this test
-    # is about: it's proving the stale/ok RunStatus path, independent
-    # of streaming.
+    # is_stream defaults True, which would need a "fabricks.dummy" streaming placeholder table this runtime lacks.
     monkeypatch.setattr(job, "is_stream", False)
     monkeypatch.setattr(job, "get_data", lambda **_kwargs: first_batch)
     job.create()

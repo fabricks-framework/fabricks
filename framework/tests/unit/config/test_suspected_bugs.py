@@ -1,4 +1,4 @@
-"""Reproductions for suspected bugs found in the test review (TEST_REVIEW_PLAN.md, step 0).
+"""Reproductions for suspected bugs found in a test review.
 
 Each test encodes the correct behavior; `xfail(strict=True)` marks the ones that currently fail so a
 fix turns them into an XPASS failure that forces the marker to be removed.

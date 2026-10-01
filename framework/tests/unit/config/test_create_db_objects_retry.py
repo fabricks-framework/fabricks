@@ -1,6 +1,5 @@
-"""Reproduces https://github.com/fabricks-framework/fabricks/issues/183:
-see the ordered-retry comment on BaseStep._create_db_objects_internal()
-(framework/fabricks/core/steps/base.py) for the mechanism.
+"""Reproduces https://github.com/fabricks-framework/fabricks/issues/183: see the ordered-retry comment on
+BaseStep._create_db_objects_internal() (fabricks/core/steps/base.py) for the mechanism.
 
 `get_jobs` returns a `_JobsDF` that really filters on `.where(df["job_id"].isin(...))`, and the
 module-level `run_in_parallel` is replaced by a fake that records which job ids each pass was handed, so

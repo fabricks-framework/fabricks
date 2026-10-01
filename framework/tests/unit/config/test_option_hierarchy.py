@@ -51,9 +51,8 @@ def test_option_hierarchy_masks_job_level_wins_when_both_set():
     assert masks == {"dummy": "job_mask"}
 
 
-# --- timeout: job-level options.timeout -> step-level step_options.timeouts.job -> runtime_options.timeouts.job.
-# --- The runtime fallback (3600) comes from tests/spark/runtime/fabricks/conf.fabricks.yml; the "gold" step there
-# --- declares no `timeouts` of its own.
+# The runtime timeout fallback (3600) comes from tests/spark/runtime/fabricks/conf.fabricks.yml; its "gold" step
+# declares no `timeouts` of its own.
 
 
 def _job():
@@ -80,9 +79,6 @@ def test_timeout_falls_back_to_runtime_when_neither_job_nor_step_set():
     job = _job()
 
     assert job._resolver.timeout == 3600
-
-
-# --- gold `table` option: get_data() reads the configured table.
 
 
 def test_gold_table_option_reads_configured_table():

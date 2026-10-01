@@ -1,7 +1,8 @@
-"""Real-Spark counterpart of tests/unit/config/test_fix_context_avoids_full_hash_scan.py (https://github.com/fabricks-framework/fabricks/issues/184):
-runs the real `fix_context()` for a multi-source `mode: update` scenario and asserts the incremental
-filter is a correct per-source slice (only rows newer than that source's own merged max timestamp).
-Kept narrow on purpose: the merge after the probe legitimately hashes every field.
+"""Real-Spark counterpart of tests/unit/config/test_fix_context_avoids_full_hash_scan.py
+(https://github.com/fabricks-framework/fabricks/issues/184).
+
+Invariant: for a multi-source `mode: update`, `fix_context()` filters each source to rows newer than that
+source's own merged max timestamp. Narrow on purpose: the merge after the probe legitimately hashes every field.
 """
 
 from pyspark.sql.types import Row

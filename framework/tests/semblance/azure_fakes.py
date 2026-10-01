@@ -21,7 +21,7 @@ _CLAUSE = re.compile(r"^(\w+) eq '((?:[^']|'')*)'$")
 def parse_filter(query: str) -> list[tuple[str, str]]:
     """The only grammar Fabricks generates: `` or `Field eq 'v' and Field2 eq 'w'`.
 
-    # ceiling: splits on " and ", so a value containing " and " is not supported.
+    Splits on " and ", so a value containing " and " is not supported.
     """
     query = query.strip()
     if not query:
@@ -35,9 +35,6 @@ def parse_filter(query: str) -> list[tuple[str, str]]:
             )
         clauses.append((match.group(1), match.group(2).replace("''", "'")))
     return clauses
-
-
-# ---- tables ----------------------------------------------------------------
 
 
 class TableStore:
@@ -148,9 +145,6 @@ class TableView:
                 raise TypeError(f"rows() filters by string equality only; {field}={value!r} is not a str")
         query = " and ".join(f"{f} eq '{v.replace(chr(39), chr(39) * 2)}'" for f, v in where.items())
         return list(FakeTableClient(self._store, self._name).query_entities(query))
-
-
-# ---- queues ----------------------------------------------------------------
 
 
 class _FakeQueue:

@@ -1,10 +1,8 @@
-"""JobResolver.spark (fabricks/core/jobs/base/resolver.py) builds a Spark
-session lazily per job, only deriving a new (isolated) one when a tier
-actually configures spark_options -- runtime -> step -> job, each extending
-its parent via SparkSession.newSession() rather than mutating one shared
-session in place. Fixture spark_options live in
-tests/spark/runtime/fabricks/conf.fabricks.yml (step-level, "semantic") and
-tests/spark/runtime/semantic/fact/_config.semantic.yml (job-level, "zstd").
+"""JobResolver.spark (fabricks/core/jobs/base/resolver.py) derives an isolated session via newSession() only when a
+tier (runtime -> step -> job) configures spark_options, never mutating the parent's.
+
+Fixture spark_options: tests/spark/runtime/fabricks/conf.fabricks.yml (step "semantic") and
+tests/spark/runtime/semantic/fact/_config.semantic.yml (job "zstd").
 """
 
 from fabricks.core import get_job

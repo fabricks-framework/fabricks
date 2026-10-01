@@ -10,9 +10,7 @@ from tests.unit.config._helpers import stub_table
 
 
 def _stubbed_silver_job(monkeypatch):
-    # job.run()'s exception handling around for_each_run is the one thing
-    # under test here -- checks/invokers/restore are all no-ops so a new
-    # method added to either later doesn't silently need its own line here.
+    # only job.run()'s exception handling around for_each_run is under test; checks, invokers and restore are no-ops
     job = get_job(step="silver", topic="append_test", item="test")
 
     monkeypatch.setattr(job, "_checker", MagicMock(spec=JobChecker))

@@ -5,20 +5,7 @@ import re
 
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType, StructField, StructType, TimestampType
 
-# OSS Apache Spark (this local test container) has no QUALIFY clause support
-# -- it's a Databricks SQL extension. tests/spark/expected/scd1/iter*.sql (the
-# correctness oracle, unmodified) all use it: `select * except (...) from
-# <src> qualify row_number() over (...) = N`. Verified empirically against
-# this container's real Spark session: `select * except (b) from t` parses
-# fine (OSS Spark does support star-except), but `... qualify rn = 1` raises
-# PARSE_SYNTAX_ERROR -- QUALIFY alone is the unsupported part. sqlglot's
-# generic databricks->spark QUALIFY elimination (verified via
-# sqlglot.transpile(sql, read="databricks", write="spark")) rewrites this
-# correctly for an explicit column list, but for a `select *` projection it
-# leaves its own window-function helper column exposed in the outer `SELECT
-# *`, corrupting the view's column set -- so a hand-rolled rewrite is used
-# instead, run only at load time against our local Spark session; the
-# checked-in oracle file itself is never touched.
+# OSS Spark has no QUALIFY (Databricks extension); sqlglot's rewrite leaks a helper column into `select *`.
 # ponytail: handles exactly the one recurring shape verified identical across
 # all 9 scd1 oracle files (`select * except (...) from <src> qualify
 # row_number() over (...) = N`), not a general QUALIFY-eliminating SQL
@@ -53,14 +40,7 @@ _EXPECTED_SCD2_BASE_SCHEMA = StructType(
     [
         StructField("__valid_from", TimestampType(), True),
         StructField("__valid_to", TimestampType(), True),
-        # LongType, not IntegerType: raw bronze JSON's plain integer `id`
-        # values infer to bigint under spark.read.json() (confirmed: this
-        # container's real Spark session, `id (int -> bigint)`). Comparison
-        # via assert_dfs_equal never noticed the mismatch (int vs. bigint
-        # values compare equal after its own normalization), but seeding a
-        # table from this schema (CDC scenario seeding) writes the *type*
-        # verbatim, producing a genuine int-vs-bigint schema difference the
-        # next update_schema() call detects and "fixes" for no reason.
+        # LongType: spark.read.json() infers bigint, and seeding from an int schema makes update_schema() see a diff.
         StructField("id", LongType(), True),
         StructField("name", StringType(), True),
         StructField("doubleField", DoubleType(), True),
@@ -70,29 +50,8 @@ _EXPECTED_SCD2_BASE_SCHEMA = StructType(
     ]
 )
 
-# newField: added via a per-file StructField, not folded into the base schema
-# above, and not unconditionally on every iteration's NDJSON, unlike the now-
-# deleted Databricks-cluster suite's equivalent schema (commit 8a7cb451).
-# That was correct for the Databricks-cluster suite, where
-# king_and_queen's real job config declares a fixed bronze schema
-# up front (so bronze.king already carries a NULL newField column from its
-# very first landing batch, before iter2 ever supplies a real value) -- but
-# this plan has no job config/parsers layer at all (see run_cdc_scenario
-# in conftest.py: raw spark.read.json() per iteration's own NDJSON file, one column
-# set per file, autoMerge only ever *adding* columns once a later iteration's data
-# introduces them). So a iters=[1]-only target genuinely has no
-# newField column at all (verified empirically: UNRESOLVED_COLUMN against
-# this container's real Spark session when the expected side forced newField
-# into iter1's comparison) -- matching iter1's own raw fixture, which has no
-# "newField" key in any row (verified: tests/spark/apache/fixtures/iter1/bronze_*
-# .jsonl and the original tests/spark/fixtures/iter1/king/**/*.jsonl landing fixture
-# both lack the key entirely; iter2 onward always carry it). Detecting the
-# key's presence per-file (rather than hardcoding "iter1 is the exception")
-# keeps this correct if a future iteration's fixture composition changes.
-# BooleanType, not StringType: every raw fixture's `newField` value is a
-# genuine JSON boolean (`true`/`false`, verified across all of iter2-9's
-# fixtures, never a string) -- same int-vs-bigint reasoning as `id` above,
-# this only mattered once this schema started feeding CDC scenario seeding.
+# Added per file, not in the base schema: iter1's raw fixtures have no newField key, so its target has no such column.
+# BooleanType: every raw fixture carries a JSON boolean.
 _NEW_FIELD = StructField("newField", BooleanType(), True)
 
 

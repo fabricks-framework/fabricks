@@ -1,10 +1,8 @@
 """JobInvoker behavior: notebook retry, error typing and `warn_on_error`, and the retry seen from `job.run()`.
 
-Retry, https://github.com/fabricks-framework/fabricks/issues/189: a transient `dbutils.notebook.run()`
-failure (e.g. a Py4JJavaError from a JDBC blip in a pre_run notebook) used to propagate immediately and the
-job was reported failed even if a later retry succeeded outside Fabricks. An invoker can now opt in to one
-retry with `retry: true` (default off). Without `retry_on_error` any exception retries; with it (e.g.
-["Py4JJavaError", "TimeoutError"]) only the named types do.
+Retry, https://github.com/fabricks-framework/fabricks/issues/189: an invoker opts in to one retry of a transient
+`dbutils.notebook.run()` failure (e.g. a Py4JJavaError from a JDBC blip) with `retry: true` (default off). Without
+`retry_on_error` any exception retries; with it (e.g. ["Py4JJavaError", "TimeoutError"]) only the named types do.
 """
 
 from unittest.mock import MagicMock
@@ -57,9 +55,6 @@ def _failing_invoker(monkeypatch, job) -> list[int]:
     return attempts
 
 
-# --- _run_notebook retry -----------------------------------------------------------------------------------------
-
-
 def _script_notebook(semblance, *outcomes: object) -> None:
     """The Nth `dbutils.notebook.run` returns/raises outcomes[N]; the last one repeats. Calls land in semblance."""
 
@@ -81,7 +76,6 @@ def test_retry_off_by_default_raises_immediately(semblance):
 
 
 def test_retry_true_no_retry_on_error_retries_any_exception(semblance):
-    # even a non-transient-looking error retries with no retry_on_error
     _script_notebook(semblance, ValueError("flaky"), "ok")
 
     assert _run_notebook(retry=True) == "ok"
@@ -118,9 +112,6 @@ def test_retry_on_error_unknown_name_raises(semblance):
         _run_notebook(retry=True, retry_on_error=["NotARealException"])
 
 
-# --- error typing and warn_on_error ------------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("position", ["post_run", "pre_run"])
 def test_failed_invoker_raises_typed_exception(monkeypatch, position):
     job = _job_with_invoker(position)
@@ -151,17 +142,12 @@ def test_warn_on_error_default_and_false_still_raise(monkeypatch, warn_on_error,
         job._invoker.invoke_job(position=position)
 
 
-# --- retry as seen from job.run() ---------------------------------------------------------------------------------
-
-
 def _job_with_flaky_pre_run(monkeypatch, semblance, retry: bool):
     job = _job_with_invoker("pre_run", retry=retry)
     # A plain builtin, not Py4JJavaError: Py4JJavaError.__str__() needs a real java gateway.
     _script_notebook(semblance, ConnectionError("connection reset by peer"), "ok")
 
-    # Everything after pre_run is irrelevant to this claim -- stub it out so
-    # only the pre_run invoker step (and job.run()'s own control flow around
-    # it) is actually exercised.
+    # stub everything after pre_run so only the pre_run invoker step and job.run()'s control flow run
     monkeypatch.setattr(job._checker, "run_before", lambda: None)
     monkeypatch.setattr(job._checker, "run_after", lambda: None)
     monkeypatch.setattr(job._checker, "skip_run", lambda: None)
