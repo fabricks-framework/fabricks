@@ -21,9 +21,8 @@ pick which retained `docs/` file it belongs in.
 
 ## Skills
 
-Live in `.claude/skills/` (gitignored, synced from the plugin cache via
-`just update-skills` run from `framework/`, per `framework/skills.json`), except
-`testing-fabricks` and `comment-fabricks`, which this repo owns and tracks.
+Checked into `.claude/skills/`, synced from the plugin cache via
+`just update-skills` (run from `framework/`) per `framework/skills.json`.
 Grouped by task — **when doing X, use Y**.
 
 Loaded by *default*, every task:
@@ -45,9 +44,6 @@ When *writing Python*:
   type hints, and fail-loud/determinism anti-patterns.
 - `api-design` — adding or changing a service's public methods. Python API
   shape, evolution, and deprecation patterns.
-- `comment-fabricks` — deciding whether a comment or docstring belongs, and
-  auditing existing ones. Why-only comments; longer context goes to commits,
-  `docs/decisions/` or `docs/DEBUG.md`. Repo-owned and tracked.
 
 When *writing docs*:
 
@@ -56,11 +52,8 @@ When *writing docs*:
 
 When *testing*:
 
-- `testing-fabricks` — writing, fixing or reviewing tests in this repo. Tier
-  choice, what to mock (and not), and proving a test can fail. Repo-owned and
-  tracked; read it first.
-- `testing-strategy` — generic pytest background (fixtures, parametrization,
-  Hypothesis, CI); defer to `testing-fabricks` where they differ.
+- `testing-strategy` — writing or reviewing tests. Pytest suites (fixtures,
+  parametrization, mocking, Hypothesis property-based testing, CI).
 
 When *reviewing code*:
 
