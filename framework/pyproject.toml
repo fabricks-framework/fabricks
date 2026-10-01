@@ -95,6 +95,7 @@ expand-star-imports = true
 exclude = ["_init__.py"]
 
 [tool.uv]
+default-groups = ["dev", "test"]
 native-tls = true
 keyring-provider = "subprocess"
 
