@@ -9,17 +9,25 @@ the guard resolves the parent via `Bronze.from_job_id()`, which an in-memory con
 import pytest
 
 from fabricks.core import get_job
+from fabricks.models import JobDependency
 
 
 def test_memory_silver_rejects_a_bronze_parent_with_an_extender():
     job = get_job(step="silver", topic="extender_test", item="source")
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError, match="extender"):
         job.create_or_replace_view()
 
 
 def test_memory_silver_get_data_rejects_a_bronze_parent_with_an_extender():
     job = get_job(step="silver", topic="extender_test", item="source")
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError, match="extender"):
         job.get_data()
+
+
+def test_memory_silver_accepts_a_bronze_parent_without_an_extender():
+    job = get_job(step="silver", topic="extender_test", item="source")
+    dependency = JobDependency.from_parts(job.job_id, "bronze.king_scd1", "parent")
+
+    job._assert_bronze_parent_has_no_extender(dependency)

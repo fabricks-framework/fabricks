@@ -48,10 +48,16 @@ def _job_with_invoker(position: str, **options):
     return job
 
 
-def _failing_invoker(monkeypatch, job):
-    monkeypatch.setattr(
-        job._invoker, "_invoke_notebook", lambda *_a, **_kw: (_ for _ in ()).throw(RuntimeError("boom"))
-    )
+def _failing_invoker(monkeypatch, job) -> list[int]:
+    """Make every notebook invocation fail; the returned list gets one entry per attempted invocation."""
+    attempts: list[int] = []
+
+    def _boom(*_a, **_kw):
+        attempts.append(1)
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(job._invoker, "_invoke_notebook", _boom)
+    return attempts
 
 
 # --- _run_notebook retry -----------------------------------------------------------------------------------------
@@ -86,14 +92,18 @@ def test_retry_true_no_retry_on_error_retries_any_exception(monkeypatch):
     assert calls["n"] == 2
 
 
-def test_retry_true_persistent_failure_still_raises(monkeypatch):
+def test_retry_true_persistent_failure_still_raises_after_exactly_one_retry(monkeypatch):
+    calls = {"n": 0}
+
     def always_flaky(*_a, **_kw):
+        calls["n"] += 1
         raise _py4j_error()
 
     monkeypatch.setattr(dbr.dbutils.notebook, "run", always_flaky)
 
     with pytest.raises(Py4JJavaError):
         _run_notebook(retry=True)
+    assert calls["n"] == 2
 
 
 def test_retry_on_error_retries_named_type(monkeypatch):
@@ -138,18 +148,21 @@ def test_retry_on_error_unknown_name_raises(monkeypatch):
 @pytest.mark.parametrize("position", ["post_run", "pre_run"])
 def test_failed_invoker_raises_typed_exception(monkeypatch, position):
     job = _job_with_invoker(position)
-    _failing_invoker(monkeypatch, job)
+    attempts = _failing_invoker(monkeypatch, job)
 
-    with pytest.raises(_EXCEPTIONS[position]):
+    with pytest.raises(_EXCEPTIONS[position], match="boom"):
         job._invoker.invoke_job(position=position)
+    assert attempts == [1]
 
 
 @pytest.mark.parametrize("position", ["post_run", "pre_run"])
 def test_warn_on_error_true_does_not_raise(monkeypatch, position):
     job = _job_with_invoker(position, warn_on_error=True)
-    _failing_invoker(monkeypatch, job)
+    attempts = _failing_invoker(monkeypatch, job)
 
-    job._invoker.invoke_job(position=position)  # must not raise
+    job._invoker.invoke_job(position=position)
+
+    assert attempts == [1], "the failing invoker must actually have run for 'does not raise' to mean anything"
 
 
 @pytest.mark.parametrize("warn_on_error", [None, False])
@@ -158,7 +171,7 @@ def test_warn_on_error_default_and_false_still_raise(monkeypatch, warn_on_error,
     job = _job_with_invoker(position, warn_on_error=warn_on_error)
     _failing_invoker(monkeypatch, job)
 
-    with pytest.raises(_EXCEPTIONS[position]):
+    with pytest.raises(_EXCEPTIONS[position], match="boom"):
         job._invoker.invoke_job(position=position)
 
 
@@ -199,7 +212,7 @@ def test_job_run_completes_when_pre_run_invoker_recovers_on_retry(monkeypatch):
     calls = {"n": 0}
     job = _job_with_flaky_pre_run(monkeypatch, retry=True, calls=calls)
 
-    job.run(schedule=None, schedule_id="x")  # must not raise
+    job.run(schedule=None, schedule_id="x")
 
     assert calls["n"] == 2
 
@@ -208,6 +221,6 @@ def test_job_run_fails_when_pre_run_invoker_has_no_retry(monkeypatch):
     calls = {"n": 0}
     job = _job_with_flaky_pre_run(monkeypatch, retry=False, calls=calls)
 
-    with pytest.raises(Exception, match="connection reset by peer"):
+    with pytest.raises(PreRunInvokeException, match="connection reset by peer"):
         job.run(schedule=None, schedule_id="x")
     assert calls["n"] == 1

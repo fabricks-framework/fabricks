@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from unittest.mock import MagicMock
 
 from pyspark.sql import DataFrame
+from pyspark.sql.types import Row
 
 
 @dataclass
@@ -39,3 +40,27 @@ def src(columns: list[str], *, is_empty: bool | None = None) -> MagicMock:
     if is_empty is not None:
         df.isEmpty.return_value = is_empty
     return df
+
+
+def probe_spark(
+    *, rows: int = 10, slices: str = "( s.__timestamp > '2024-01-01' )", sources: str | None = "t.__source == 'a'"
+) -> MagicMock:
+    """A fake Spark that answers the two queries `get_query_context` issues: `select count(*)` returns `rows`,
+    and the incremental-filter probe (the statement that selects `slices`) returns one slices/sources row."""
+    spark = fake_spark()
+
+    def _sql(sql: str) -> MagicMock:
+        result = MagicMock()
+        lowered = sql.strip().lower()
+        if lowered.startswith("select count(*)"):
+            result.collect.return_value = [[rows]]
+        elif "slices" in lowered:
+            result.collect.return_value = [Row(slices=slices, sources=sources)]
+        return result
+
+    spark.sql.side_effect = _sql
+    return spark
+
+
+def sql_statements(spark: MagicMock) -> list[str]:
+    return [c.args[0] for c in spark.sql.call_args_list]

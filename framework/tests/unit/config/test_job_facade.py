@@ -53,14 +53,13 @@ def test_get_job_orphan_returns_an_orphan_job():
 
 
 def test_get_job_orphan_defaults_to_false():
-    from fabricks.core.jobs.silver import Silver
-
     job = get_job(step="silver", topic="append_test", item="test")
-    assert isinstance(job, Silver)
+
+    assert type(job) is Silver
 
 
 def test_get_job_orphan_rejects_job_id():
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError, match="job_id"):
         get_job(step="silver", topic="foo", item="bar", job_id="deadbeef", orphan=True)  # ty: ignore[no-matching-overload]
 
 
@@ -81,10 +80,13 @@ def test_drop_raises_when_no_drop_is_set():
         job.drop()
 
 
-def test_drop_does_not_raise_when_no_drop_unset():
+def test_drop_runs_the_drop_statements_when_no_drop_is_unset():
     job = _job()
+    job.spark.sql.reset_mock()
 
-    job.drop()  # must not raise
+    job.drop()
+
+    assert job.spark.sql.called, "the no_drop guard must not fire when the option is unset"
 
 
 # --- silver: an empty batch is "unchanged", not an error.
