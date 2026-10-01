@@ -1,7 +1,11 @@
 import sys
 
+from azure.core.exceptions import ResourceNotFoundError
+import pytest
+
 from fabricks.utils.azure_queue import AzureQueue
 from fabricks.utils.azure_table import AzureTable
+from tests.semblance.fixture import Semblance
 
 
 def test_azure_wrappers_run_against_the_fakes(semblance):
@@ -35,21 +39,19 @@ def test_time_sleep_is_neutralised(semblance):
     assert time.monotonic() - start < 1
 
 
-def test_fixture_state_is_fresh_first(semblance):
+def test_each_semblance_starts_with_empty_state(semblance, tmp_path):
     semblance.widgets["leak"] = "1"
+    semblance.task_values["leak"] = "1"
     semblance.table("t").seed([{"PartitionKey": "p", "RowKey": "1"}])
     semblance.queue("q").create()
     semblance.queue("q").send("m")
 
+    fresh = Semblance(tmp_path)
 
-def test_fixture_state_is_fresh_second(semblance):
-    assert semblance.widgets == {}
-    assert semblance.task_values == {}
-    assert semblance.notebook_calls == []
-    from azure.core.exceptions import ResourceNotFoundError
-    import pytest
-
+    assert fresh.widgets == {}
+    assert fresh.task_values == {}
+    assert fresh.notebook_calls == []
     with pytest.raises(ResourceNotFoundError):
-        semblance.table("t").rows()
+        fresh.table("t").rows()
     with pytest.raises(ResourceNotFoundError):
-        _ = semblance.queue("q").sent
+        _ = fresh.queue("q").sent

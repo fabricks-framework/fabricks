@@ -53,13 +53,11 @@ def test_read_yaml_with_variables(fixtures_dir: Path, test_variables: dict[str, 
     first = results[0]
     second = results[1]
 
-    # First job - customers
     assert first["step"] == "bronze"
     assert first["topic"] == "customers"
     assert first["options"]["uri"] == "abfss://fabricks@testaccount.dfs.core.windows.net/testcontainer/raw/customers"
     assert first["options"]["catalog"] == "test_catalog"
 
-    # Second job - orders
     assert second["topic"] == "orders"
     assert second["options"]["uri"] == "abfss://fabricks@testaccount.dfs.core.windows.net/testcontainer/raw/orders"
     assert second["options"]["workers"] == "16"
@@ -70,12 +68,10 @@ def test_read_yaml_with_partial_variables(fixtures_dir: Path) -> None:
     path = GitPath(str(fixtures_dir / "variables.yml"))
     partial_vars = {"$storage_account": "testaccount.dfs.core.windows.net", "$container": "testcontainer"}
 
-    # Must use strict=False to allow partial variable substitution
     results = list(read_yaml(path, root="job", variables=partial_vars, strict=False))
 
     assert len(results) == 2
     first = results[0]
-    results[1]
 
     # Provided variables should be substituted
     assert "testaccount.dfs.core.windows.net" in first["options"]["uri"]
@@ -89,12 +85,10 @@ def test_read_yaml_with_empty_variables(fixtures_dir: Path) -> None:
     """Test reading YAML with empty variables dictionary (strict=False)."""
     path = GitPath(str(fixtures_dir / "variables.yml"))
 
-    # Must use strict=False to allow missing variables
     results = list(read_yaml(path, root="job", variables={}, strict=False))
 
     assert len(results) == 2
     first = results[0]
-    results[1]
 
     # All variables should remain as-is
     assert "$storage_account" in first["options"]["uri"]
@@ -102,7 +96,7 @@ def test_read_yaml_with_empty_variables(fixtures_dir: Path) -> None:
 
 
 def test_read_yaml_strict_mode_raises_on_missing_variable(fixtures_dir: Path) -> None:
-    """Test that strict mode (default) raises an error for missing variables."""
+    """strict=True raises on a variable that is not provided."""
     path = GitPath(str(fixtures_dir / "variables.yml"))
 
     # Only provide some variables, missing $catalog and $storage_account
@@ -114,11 +108,10 @@ def test_read_yaml_strict_mode_raises_on_missing_variable(fixtures_dir: Path) ->
 
 
 def test_read_yaml_strict_mode_succeeds_with_all_variables(fixtures_dir: Path, test_variables: dict[str, str]) -> None:
-    """Test that strict mode (default) succeeds when all variables are provided."""
+    """strict=True succeeds when every variable is provided."""
     path = GitPath(str(fixtures_dir / "variables.yml"))
 
-    # Should not raise when all variables are provided
-    results = list(read_yaml(path, root="job", variables=test_variables))
+    results = list(read_yaml(path, root="job", variables=test_variables, strict=True))
 
     assert len(results) == 2
     assert results[0]["options"]["catalog"] == "test_catalog"

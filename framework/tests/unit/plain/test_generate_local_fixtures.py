@@ -122,11 +122,10 @@ def test_king_queen_jsonl_matches_concatenation_of_king_and_queen(iter_num):
     expected_rows = []
     for entity in ("king", "queen"):
         path = iter_dir / f"bronze_{entity}.jsonl"
-        if not path.exists():
-            # iter11's queen: generate_fixtures.py writes no file when an
-            # entity has zero rows that iteration (see its own "if not
-            # rows: continue") -- nothing to contribute here either.
+        if (iter_num, entity) == (11, "queen"):  # generate_fixtures.py writes no file for an entity with no rows
+            assert not path.exists()
             continue
+        assert path.exists(), f"{path} is missing"
         expected_rows += [json.loads(line) for line in path.read_text().splitlines()]
 
     assert king_queen_rows == expected_rows
