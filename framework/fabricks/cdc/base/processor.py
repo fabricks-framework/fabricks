@@ -474,21 +474,21 @@ class Processor(Generator):
         return context
 
     def _materialize_current_view(self, environment: Environment, context: dict) -> str:
-        # `__current` is referenced by name from multiple downstream consumers
+        # `current_view` is read by multiple downstream consumers
         # (rectify, the scd1/scd2 merge-key anti-join), each pruning it to a
         # different column subset -- which defeats Spark's CTE-reuse detection
         # and re-reads the target table from storage once per consumer instead
         # of once overall. See
         # https://github.com/fabricks-framework/fabricks/issues/202.
         #
-        # Caching the projected and filtered rows `__current` would read
+        # Caching the projected and filtered rows the query reads
         # anyway (only the columns the query needs, only the current /
         # source-matching / update_where rows), once, under a stable global
         # temp view name, means every consumer hits the same cached blocks
         # instead of re-scanning storage. Lazy: the scan runs inside the
         # merge query's own job instead of a separate eager one.
         short_name = f"{self.qualified_name}__current"
-        sql = fix_sql(environment.get_template("ctes/current_select.sql.jinja").render(**context))
+        sql = fix_sql(environment.get_template("ctes/current.sql.jinja").render(**context))
         self.spark.sql(f"uncache table if exists global_temp.{short_name}")
         view = create_or_replace_global_temp_view(short_name, self.spark.sql(sql), job=self)
         self.spark.sql(f"cache lazy table {view}")
@@ -502,9 +502,8 @@ class Processor(Generator):
             if context.get("slice"):
                 context = self.fix_context(context, fix=fix, **kwargs)
 
-            # mirrors query.sql.jinja's own `{% if mode == "update" %}{% if
-            # has_rows %}` gate for including ctes/current.sql.jinja -- keep
-            # these two conditions in sync.
+            # the queries read `current_view` exactly when `mode == "update"` and
+            # `has_rows` -- keep these conditions in sync.
             if context.get("mode") == "update" and context.get("has_rows"):
                 context["current_view"] = self._materialize_current_view(environment, context)
 
