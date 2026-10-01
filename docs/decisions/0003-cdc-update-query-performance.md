@@ -28,6 +28,17 @@ output stays copy-pasteable and `explain`-able as a single plan.
 - **scd2**: `__scd2_rn` lives in `__scd2_base` so the `lead` and `row_number`
   windows share one Window operator. Plan-only win, no measurable timing change.
 
+Second pass, on the Python side of `get_query` (remote, `BENCH_ROWS=400000`, median of 3 runs: SCD1
+1.87 -> 1.75s, SCD2 1.90 -> 1.77s):
+
+- **`__current` is cached already projected and filtered**: `ctes/current_select.sql.jinja` is rendered by
+  `Processor._materialize_current_view` and its result is cached, so the cache holds only the columns the query
+  uses and, for SCD2 / soft-delete, only current rows (not the full history of the batch's sources). On a
+  5-version, 6-extra-column SCD2 target this was 1.44 -> 1.14s (SCD1 1.12 -> 1.01s); the narrow benchmark table
+  cannot show it.
+- **`cache lazy table`**: the target scan runs inside the merge query's job instead of a separate eager one.
+- **probe aggregates the target before joining the batch's sources**: 3-4%.
+
 Tried and rejected, no measurable gain (do not retry without new evidence):
 
 - A shared narrow CTE for the rectify timestamp and reload-candidate consumers:
@@ -36,10 +47,15 @@ Tried and rejected, no measurable gain (do not retry without new evidence):
 - Skipping the current-view cache when the batch has no reload: SCD2 -15%, SCD1
   none, but it needs a Python reload probe that costs about what it saves and
   brings back the #202 multi-scan risk for reload batches.
+- Deriving `__rectified_reload_candidates` from a plain `group by ... having max(__operation) == 'reload'`
+  instead of `__rectified_timestamps`: fewer stages, identical timing.
 - A cached Jinja `Environment` (~45ms) and `Table.has_rows` instead of
   `count(*)` in `get_query_context`: correct, but inside benchmark noise locally.
 
 ## Consequences
+
+- The local default heap (1g) runs out of memory analysing this query at roughly 25+ columns: plan size
+  scales with columns times the repeated CTE expansions. Not addressed here.
 
 - Judge a template change by the benchmark median plus plan operator counts
   (definition lines only, see `docs/SPARK.md`), not by plan counts alone: the

@@ -22,15 +22,15 @@
 {%- endmacro %}
 {% if slice == "update" %}
     {% if has_source %}
-        with __sources as (select distinct __source from {{ src_ref }})
+        with
+            __sources as (select distinct __source from {{ src_ref }}),
+            __latest as (select __source, max({{ timestamp_col }}) as __latest from {{ tgt }} group by __source)
         select array_join(collect_list(slices), ' or ') as slices, array_join(collect_list(sources), ' or ') as sources
         from
             (
-                select
-                    {{ slice_row('>', "coalesce(max(t." ~ timestamp_col ~ "), cast('0001-01-01' as timestamp))", 's.__source') }}
-                from {{ tgt }} t
-                right join __sources s on s.__source = t.__source
-                group by s.__source
+                select {{ slice_row('>', "coalesce(t.__latest, cast('0001-01-01' as timestamp))", 's.__source') }}
+                from __sources s
+                left join __latest t on s.__source = t.__source
             )
     {% else %}
         select {{ slice_row('>', "coalesce(max(" ~ timestamp_col ~ "), cast('0001-01-01' as timestamp))") }}

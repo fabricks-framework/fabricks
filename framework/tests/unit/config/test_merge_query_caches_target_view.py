@@ -10,9 +10,11 @@ import re
 from fabricks.cdc import SCD1
 from tests.unit.config._helpers import probe_spark, sql_statements, src
 
+_CACHE = r"\s*cache (?:lazy )?table (\S+)"
+
 
 def _cache_view(statement: str) -> str:
-    match = re.match(r"\s*cache table (\S+)", statement, re.IGNORECASE)
+    match = re.match(_CACHE, statement, re.IGNORECASE)
     assert match, statement
     return match.group(1)
 
@@ -27,7 +29,7 @@ def test_update_query_targets_the_cached_view_not_the_raw_table():
 
     calls = sql_statements(spark)
     uncache_calls = [c for c in calls if c.strip().lower().startswith("uncache table")]
-    cache_calls = [c for c in calls if c.strip().lower().startswith("cache table")]
+    cache_calls = [c for c in calls if re.match(_CACHE, c, re.IGNORECASE)]
     assert len(uncache_calls) == 1, f"expected exactly one uncache, got:\n{calls}"
     assert len(cache_calls) == 1, f"expected exactly one cache, got:\n{calls}"
     assert calls.index(uncache_calls[0]) < calls.index(cache_calls[0]), (
@@ -48,4 +50,4 @@ def test_complete_query_does_not_cache_the_target():
 
     cdc.get_query(src(["id", "name", "__source"], is_empty=False), mode="complete", add_key=True, add_hash=True)
 
-    assert [c for c in sql_statements(spark) if "cache table" in c.lower()] == []
+    assert [c for c in sql_statements(spark) if re.match(_CACHE, c, re.IGNORECASE)] == []
