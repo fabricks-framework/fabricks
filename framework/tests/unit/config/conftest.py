@@ -1,48 +1,27 @@
-"""Conftest for the unit/config tier: real fabricks.context/get_step/
-get_job against real YAML, with Spark faked out so no JVM (and therefore no
-Java installation) is needed. See docs/superpowers/plans/
-2026-09-03-local-get-job-get-step.md, Task 4, for the design (written when
-this tier still lived at tests/spark/config/ - see docs/TEST.md for the
-current tests/unit/config/ path).
+"""Conftest for the unit/config tier: real fabricks.context/get_step/get_job against real YAML, with Spark
+faked out so no JVM (and no Java installation) is needed.
 
-Two independent real-Spark construction paths have to be defused:
+Two independent real-Spark construction paths are defused:
 
-1. fabricks/context/spark_session.py's `SPARK = build_spark_session(...)`
-   calls `pyspark.sql.SparkSession.builder...getOrCreate()` directly - so
-   that classproperty is patched to a MagicMock below.
-2. fabricks/utils/spark.py does `spark = get_spark()` at ITS OWN import
-   time (reached transitively via fabricks.context.spark_session ->
-   fabricks.context.secret -> fabricks.utils.spark), and get_spark() does
-   `from delta import configure_spark_with_delta_pip` - which fails in
-   this venv (delta-spark's `delta/` package here has no `__init__.py`,
-   just a namespace-package stub) regardless of Java. Patching
-   SparkSession.builder doesn't reach this - fabricks.utils.spark's own
-   module body never gets that far. So the whole module is replaced in
-   sys.modules first, the same seam tests/unit/plain/conftest.py uses -
-   but WITHOUT also replacing fabricks.context itself, since this tier
-   wants fabricks.context's real STEPS/CONF_RUNTIME parsing to run.
+1. fabricks/context/spark_session.py builds `SPARK` via `SparkSession.builder...getOrCreate()`, so that
+   classproperty is patched to a MagicMock below.
+2. fabricks/utils/spark.py calls `get_spark()` at its own import time (reached via
+   fabricks.context.spark_session -> fabricks.context.secret -> fabricks.utils.spark), which imports
+   `delta.configure_spark_with_delta_pip` and fails in this venv regardless of Java. So the whole module is
+   replaced in sys.modules first, the same seam tests/unit/plain/conftest.py uses, but WITHOUT replacing
+   fabricks.context itself: this tier wants its real STEPS/CONF_RUNTIME parsing.
 
-`databricks.sdk.runtime` is still replaced in sys.modules below as a safety net: nothing imports it at
-module level any more, but a stray real import would try to authenticate against a workspace. Tests
-that need a `dbutils` patch the attribute on this module.
+`databricks.sdk.runtime` is replaced in sys.modules as a safety net (a stray real import would try to
+authenticate against a workspace); tests that need a `dbutils` patch the attribute on it.
 `fabricks.core.dags.log` is NOT faked: its table is resolved lazily, so it imports safely.
 
-IMPORTANT: same import-order rule as tests/spark/apache/conftest.py - the
-env vars and both patches below must execute before fabricks.context is
-ever imported (by this conftest or by any test file), since
-fabricks.context.SPARK is built once, at that first import, and cached at
-module level.
+IMPORTANT: the env vars and both patches must run before fabricks.context is first imported (by this conftest
+or any test file), since fabricks.context.SPARK is built once at that import and cached. Same rule as
+tests/spark/apache/conftest.py.
 
-Do NOT mix tests/unit/config with tests/unit/plain (or tests/spark/apache,
-tests/spark/databricks) in the same pytest invocation, for the same
-reason: tests/unit/plain/conftest.py replaces sys.modules["fabricks.context"]
-with a MagicMock outright, and whichever conftest's module body runs first
-wins for the whole process - this tier needs the real fabricks.context,
-tests/unit/plain needs the fake one. Confirmed empirically:
-`pytest tests/unit/plain tests/unit/config` in one run fails collecting
-tests/unit/config with `ModuleNotFoundError: fabricks.context is not a
-package`, because tests/unit/plain's mock (collected first) already
-replaced it. Run each tier as its own separate pytest invocation.
+Never mix this tier with tests/unit/plain (or the spark tiers) in one pytest run: tests/unit/plain/conftest.py
+replaces sys.modules["fabricks.context"] with a MagicMock, and whichever conftest runs first wins for the
+process. See docs/TEST.md.
 """
 
 import os

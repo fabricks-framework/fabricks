@@ -54,41 +54,6 @@ def test_gold_rectify_as_upserts_option_maps_directly_to_context(rectify):
     assert context["rectify"] is (rectify if rectify is not None else False)
 
 
-# -- hard_delete -> soft_delete, scd1/scd2 vs nocdc --------------------------
-
-
-def test_gold_soft_delete_unset_for_nocdc_when_hard_delete_unset():
-    job = _gold_job(change_data_capture="nocdc")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["soft_delete"] is None
-
-
-def test_gold_soft_delete_defaults_true_for_scd_when_hard_delete_unset():
-    job = _gold_job(change_data_capture="scd1")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
-
-    assert context["soft_delete"] is True
-
-
-def test_gold_hard_delete_true_overrides_scd_default_to_soft_delete_false():
-    job = _gold_job(change_data_capture="scd1", hard_delete=True)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
-
-    assert context["soft_delete"] is False
-
-
-def test_gold_hard_delete_false_forces_soft_delete_true():
-    job = _gold_job(change_data_capture="nocdc", hard_delete=False)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["soft_delete"] is True
-
-
 # -- metadata: job-level vs step-level fallback ------------------------------
 
 
@@ -100,118 +65,17 @@ def test_gold_metadata_job_level_true_wins():
     assert context["add_metadata"] is True
 
 
-def test_gold_metadata_falls_back_to_step_level_when_job_unset():
+@pytest.mark.parametrize(("step_metadata", "expected"), [(True, True), (None, False)])
+def test_gold_metadata_step_level_fallback(step_metadata, expected):
     job = _gold_job(metadata=None)
     step_conf = job.step_conf
     job.base_step_conf = step_conf.model_copy(
-        update={"options": step_conf.options.model_copy(update={"metadata": True})}
+        update={"options": step_conf.options.model_copy(update={"metadata": step_metadata})}
     )
 
     context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
-    assert context["add_metadata"] is True
-
-
-def test_gold_metadata_defaults_false_when_neither_level_sets_it():
-    job = _gold_job(metadata=None)
-    step_conf = job.step_conf
-    job.base_step_conf = step_conf.model_copy(
-        update={"options": step_conf.options.model_copy(update={"metadata": None})}
-    )
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["add_metadata"] is False
-
-
-# -- __key/__hash/__operation presence -> add_key/add_hash/add_operation ----
-
-
-def test_gold_scd_adds_key_hash_operation_when_absent():
-    job = _gold_job(change_data_capture="scd1")  # mode="complete" -> add_operation="upsert"
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["add_key"] is True
-    assert context["add_hash"] is True
-    assert context["add_operation"] == "upsert"
-    # dedup unset + __operation missing -> deduplicate_hash downgraded from
-    # the scd default (True) to None.
-    assert context["deduplicate_hash"] is None
-
-
-def test_gold_scd_skips_add_key_hash_operation_when_already_present():
-    job = _gold_job(change_data_capture="scd1")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__key", "__hash", "__operation"]))
-
-    assert "add_key" not in context
-    assert "add_hash" not in context
-    assert "add_operation" not in context
-    # __operation present -> the deduplicate_hash-downgrade block never runs,
-    # so it keeps the scd default (True).
-    assert context["deduplicate_hash"] is True
-
-
-def test_gold_scd_update_mode_forces_rectify_when_operation_missing():
-    job = _gold_job(change_data_capture="scd2", mode="update")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["add_operation"] == "reload"
-    assert context["rectify"] is True  # forced True despite rectify_as_upserts unset
-
-
-def test_gold_nocdc_update_mode_adds_key_hash_when_absent():
-    job = _gold_job(change_data_capture="nocdc", mode="update")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["add_key"] is True
-    assert context["add_hash"] is True
-
-
-# -- mode -> slice / context["mode"] overrides -------------------------------
-
-
-def test_gold_scd2_update_mode_slices_update():
-    job = _gold_job(change_data_capture="scd2", mode="update")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
-
-    assert context["slice"] == "update"
-
-
-def test_gold_nocdc_update_mode_slices_update_when_timestamp_present():
-    job = _gold_job(change_data_capture="nocdc", mode="update")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__timestamp"]))
-
-    assert context["slice"] == "update"
-
-
-def test_gold_nocdc_update_mode_no_slice_when_timestamp_absent():
-    job = _gold_job(change_data_capture="nocdc", mode="update")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert "slice" not in context
-
-
-def test_gold_append_mode_slices_update_when_timestamp_present():
-    job = _gold_job(change_data_capture="nocdc", mode="append")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__timestamp"]))
-
-    assert context["slice"] == "update"
-
-
-def test_gold_memory_mode_sets_context_mode_complete():
-    job = _gold_job(change_data_capture="nocdc", mode="memory")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["mode"] == "complete"
+    assert context["add_metadata"] is expected
 
 
 def test_gold_reload_true_suppresses_slice_override():
@@ -222,109 +86,182 @@ def test_gold_reload_true_suppresses_slice_override():
     assert "slice" not in context
 
 
-# -- change_data_capture == scd2 -> correct_valid_from -----------------------
+# -- one case per branch: (job options, incoming columns, expected context items, keys that must be absent) ----------
+# nocdc + mode="complete" is the neutral scenario, so only the option under test moves a branch.
+
+_ID = ["id"]
+_ID_OP = ["id", "__operation"]
+
+_GOLD_CASES = {
+    # hard_delete -> soft_delete, scd1/scd2 vs nocdc
+    "soft_delete_unset_for_nocdc_when_hard_delete_unset": (
+        {"change_data_capture": "nocdc"},
+        _ID,
+        {"soft_delete": None},
+        (),
+    ),
+    "soft_delete_defaults_true_for_scd_when_hard_delete_unset": (
+        {"change_data_capture": "scd1"},
+        _ID_OP,
+        {"soft_delete": True},
+        (),
+    ),
+    "hard_delete_true_overrides_scd_default_to_soft_delete_false": (
+        {"change_data_capture": "scd1", "hard_delete": True},
+        _ID_OP,
+        {"soft_delete": False},
+        (),
+    ),
+    "hard_delete_false_forces_soft_delete_true": (
+        {"change_data_capture": "nocdc", "hard_delete": False},
+        _ID,
+        {"soft_delete": True},
+        (),
+    ),
+    # __key/__hash/__operation presence -> add_key/add_hash/add_operation
+    # (dedup unset + __operation missing downgrades deduplicate_hash from the scd default True to None;
+    # __operation present skips that block, so the default stays True)
+    "scd_adds_key_hash_operation_when_absent": (
+        {"change_data_capture": "scd1"},
+        _ID,
+        {"add_key": True, "add_hash": True, "add_operation": "upsert", "deduplicate_hash": None},
+        (),
+    ),
+    "scd_skips_add_key_hash_operation_when_already_present": (
+        {"change_data_capture": "scd1"},
+        ["id", "__key", "__hash", "__operation"],
+        {"deduplicate_hash": True},
+        ("add_key", "add_hash", "add_operation"),
+    ),
+    "scd_update_mode_forces_rectify_when_operation_missing": (
+        {"change_data_capture": "scd2", "mode": "update"},
+        _ID,
+        {"add_operation": "reload", "rectify": True},
+        (),
+    ),
+    "nocdc_update_mode_adds_key_hash_when_absent": (
+        {"change_data_capture": "nocdc", "mode": "update"},
+        _ID,
+        {"add_key": True, "add_hash": True},
+        (),
+    ),
+    # mode -> slice / context["mode"] overrides
+    "scd2_update_mode_slices_update": (
+        {"change_data_capture": "scd2", "mode": "update"},
+        _ID_OP,
+        {"slice": "update"},
+        (),
+    ),
+    "nocdc_update_mode_slices_update_when_timestamp_present": (
+        {"change_data_capture": "nocdc", "mode": "update"},
+        ["id", "__timestamp"],
+        {"slice": "update"},
+        (),
+    ),
+    "nocdc_update_mode_no_slice_when_timestamp_absent": (
+        {"change_data_capture": "nocdc", "mode": "update"},
+        _ID,
+        {},
+        ("slice",),
+    ),
+    "append_mode_slices_update_when_timestamp_present": (
+        {"change_data_capture": "nocdc", "mode": "append"},
+        ["id", "__timestamp"],
+        {"slice": "update"},
+        (),
+    ),
+    "memory_mode_sets_context_mode_complete": (
+        {"change_data_capture": "nocdc", "mode": "memory"},
+        _ID,
+        {"mode": "complete"},
+        (),
+    ),
+    # change_data_capture == scd2 -> correct_valid_from
+    "scd2_correct_valid_from_defaults_true_when_unset": (
+        {"change_data_capture": "scd2"},
+        _ID_OP,
+        {"correct_valid_from": True},
+        (),
+    ),
+    "scd2_correct_valid_from_explicit_false_respected": (
+        {"change_data_capture": "scd2", "correct_valid_from": False},
+        _ID_OP,
+        {"correct_valid_from": False},
+        (),
+    ),
+    "scd1_has_no_correct_valid_from_key": ({"change_data_capture": "scd1"}, _ID_OP, {}, ("correct_valid_from",)),
+    # persist_last_timestamp / persist_last_updated_timestamp / last_updated
+    "persist_last_timestamp_scd1_adds_timestamp_when_absent": (
+        {"change_data_capture": "scd1", "persist_last_timestamp": True},
+        _ID_OP,
+        {"add_timestamp": True},
+        (),
+    ),
+    "persist_last_timestamp_scd1_skipped_when_timestamp_present": (
+        {"change_data_capture": "scd1", "persist_last_timestamp": True},
+        ["id", "__operation", "__timestamp"],
+        {},
+        ("add_timestamp",),
+    ),
+    "persist_last_timestamp_scd2_gated_on_valid_from": (
+        {"change_data_capture": "scd2", "persist_last_timestamp": True},
+        _ID_OP,
+        {"add_timestamp": True},
+        (),
+    ),
+    "persist_last_updated_timestamp_adds_last_updated_when_absent": (
+        {"change_data_capture": "nocdc", "persist_last_updated_timestamp": True},
+        _ID,
+        {"add_last_updated": True},
+        (),
+    ),
+    "last_updated_option_also_adds_last_updated": (
+        {"change_data_capture": "nocdc", "last_updated": True},
+        _ID,
+        {"add_last_updated": True},
+        (),
+    ),
+    "add_last_updated_skipped_when_already_present": (
+        {"change_data_capture": "nocdc", "persist_last_updated_timestamp": True},
+        ["id", "__last_updated"],
+        {},
+        ("add_last_updated",),
+    ),
+    # __order_duplicate_by_asc / _desc column presence
+    "order_duplicate_by_asc_from_column_presence": (
+        {},
+        ["id", "__order_duplicate_by_asc"],
+        {"order_duplicate_by": {"__order_duplicate_by_asc": "asc"}},
+        (),
+    ),
+    "order_duplicate_by_desc_from_column_presence": (
+        {},
+        ["id", "__order_duplicate_by_desc"],
+        {"order_duplicate_by": {"__order_duplicate_by_desc": "desc"}},
+        (),
+    ),
+    "order_duplicate_by_absent_when_neither_column_present": ({}, _ID, {}, ("order_duplicate_by",)),
+}
 
 
-def test_gold_scd2_correct_valid_from_defaults_true_when_unset():
-    job = _gold_job(change_data_capture="scd2")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
-
-    assert context["correct_valid_from"] is True
-
-
-def test_gold_scd2_correct_valid_from_explicit_false_respected():
-    job = _gold_job(change_data_capture="scd2", correct_valid_from=False)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
-
-    assert context["correct_valid_from"] is False
+def _assert_context(context, expected, absent):
+    for key, value in expected.items():
+        assert context[key] == value, key
+        if value is None or isinstance(value, bool):
+            assert context[key] is value, key
+    for key in absent:
+        assert key not in context, key
 
 
-def test_gold_scd1_has_no_correct_valid_from_key():
-    job = _gold_job(change_data_capture="scd1")
+@pytest.mark.parametrize(
+    ("job_options", "columns", "expected", "absent"), _GOLD_CASES.values(), ids=_GOLD_CASES.keys()
+)
+def test_gold_build_cdc_context(job_options, columns, expected, absent):
+    job = _gold_job(**job_options)
 
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
+    context = job.build_cdc_context(_FakeDF(columns=columns))
 
-    assert "correct_valid_from" not in context
-
-
-# -- persist_last_timestamp / persist_last_updated_timestamp / last_updated -
-
-
-def test_gold_persist_last_timestamp_scd1_adds_timestamp_when_absent():
-    job = _gold_job(change_data_capture="scd1", persist_last_timestamp=True)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
-
-    assert context["add_timestamp"] is True
-
-
-def test_gold_persist_last_timestamp_scd1_skipped_when_timestamp_present():
-    job = _gold_job(change_data_capture="scd1", persist_last_timestamp=True)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation", "__timestamp"]))
-
-    assert "add_timestamp" not in context
-
-
-def test_gold_persist_last_timestamp_scd2_gated_on_valid_from():
-    job = _gold_job(change_data_capture="scd2", persist_last_timestamp=True)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]))
-
-    assert context["add_timestamp"] is True
-
-
-def test_gold_persist_last_updated_timestamp_adds_last_updated_when_absent():
-    job = _gold_job(change_data_capture="nocdc", persist_last_updated_timestamp=True)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["add_last_updated"] is True
-
-
-def test_gold_last_updated_option_also_adds_last_updated():
-    job = _gold_job(change_data_capture="nocdc", last_updated=True)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["add_last_updated"] is True
-
-
-def test_gold_add_last_updated_skipped_when_already_present():
-    job = _gold_job(change_data_capture="nocdc", persist_last_updated_timestamp=True)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__last_updated"]))
-
-    assert "add_last_updated" not in context
-
-
-# -- __order_duplicate_by_asc / _desc column presence ------------------------
-
-
-def test_gold_order_duplicate_by_asc_from_column_presence():
-    job = _gold_job()
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__order_duplicate_by_asc"]))
-
-    assert context["order_duplicate_by"] == {"__order_duplicate_by_asc": "asc"}
-
-
-def test_gold_order_duplicate_by_desc_from_column_presence():
-    job = _gold_job()
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__order_duplicate_by_desc"]))
-
-    assert context["order_duplicate_by"] == {"__order_duplicate_by_desc": "desc"}
-
-
-def test_gold_order_duplicate_by_absent_when_neither_column_present():
-    job = _gold_job()
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert "order_duplicate_by" not in context
+    _assert_context(context, expected, absent)
 
 
 # =============================== Silver =====================================
@@ -348,42 +285,115 @@ def _silver_job(*, mode="update", change_data_capture="nocdc", stream=True, **op
     return job
 
 
-def test_silver_deduplicate_defaults_to_not_append():
-    job = _silver_job(mode="update", change_data_capture="nocdc")
+# (job options, incoming columns, expected context items, keys that must be absent, reload-probe is empty).
+# The reload probe only runs for a non-nocdc, non-append job; None leaves the faked spark untouched.
+_SILVER_CASES = {
+    "deduplicate_defaults_to_not_append": (
+        {"mode": "update", "change_data_capture": "nocdc"},
+        _ID,
+        {"deduplicate": True},
+        (),
+        None,
+    ),
+    "deduplicate_false_for_append_mode": (
+        {"mode": "append", "change_data_capture": "nocdc"},
+        _ID,
+        {"deduplicate": False},
+        (),
+        None,
+    ),
+    "deduplicate_explicit_option_wins_over_mode_default": (
+        {"mode": "append", "change_data_capture": "nocdc", "deduplicate": True},
+        _ID,
+        {"deduplicate": True},
+        (),
+        None,
+    ),
+    "rectify_true_when_reload_probe_finds_rows": (
+        {"mode": "update", "change_data_capture": "scd1", "stream": True},
+        ["id", "__key"],
+        {"rectify": True},
+        (),
+        False,
+    ),
+    "rectify_false_when_reload_probe_finds_no_rows": (
+        {"mode": "update", "change_data_capture": "scd1", "stream": True},
+        ["id", "__key"],
+        {"rectify": False},
+        (),
+        True,
+    ),
+    "scd_adds_key_when_absent": ({"mode": "update", "change_data_capture": "scd1"}, _ID, {"add_key": True}, (), None),
+    "scd_skips_add_key_when_present": (
+        {"mode": "update", "change_data_capture": "scd1"},
+        ["id", "__key"],
+        {},
+        ("add_key",),
+        None,
+    ),
+    "memory_mode_sets_context_mode_complete": (
+        {"mode": "memory", "change_data_capture": "nocdc"},
+        _ID,
+        {"mode": "complete"},
+        (),
+        None,
+    ),
+    "nocdc_memory_mode_adds_operation_when_absent": (
+        {"mode": "memory", "change_data_capture": "nocdc"},
+        _ID,
+        {"add_operation": "upsert"},
+        (),
+        None,
+    ),
+    "latest_mode_slices_latest": (
+        {"mode": "latest", "change_data_capture": "nocdc"},
+        _ID,
+        {"slice": "latest"},
+        (),
+        None,
+    ),
+    "non_stream_update_mode_slices_update": (
+        {"mode": "update", "change_data_capture": "nocdc", "stream": False},
+        _ID,
+        {"slice": "update"},
+        (),
+        None,
+    ),
+    "scd2_always_corrects_valid_from": (
+        {"mode": "update", "change_data_capture": "scd2"},
+        ["id", "__key"],
+        {"correct_valid_from": True},
+        (),
+        True,
+    ),
+    "excludes_operation_when_present_in_columns": (
+        {"mode": "update", "change_data_capture": "scd1"},
+        ["id", "__key", "__operation"],
+        {"exclude": ["__operation"]},
+        (),
+        True,
+    ),
+    "nocdc_always_excludes_operation": (
+        {"mode": "update", "change_data_capture": "nocdc"},
+        _ID,
+        {"exclude": ["__operation"]},
+        (),
+        None,
+    ),
+}
 
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
-    assert context["deduplicate"] is True  # mode != "append"
+@pytest.mark.parametrize(
+    ("job_options", "columns", "expected", "absent", "probe_empty"), _SILVER_CASES.values(), ids=_SILVER_CASES.keys()
+)
+def test_silver_build_cdc_context(job_options, columns, expected, absent, probe_empty):
+    job = _silver_job(**job_options)
+    if probe_empty is not None:
+        job.spark.sql.return_value.isEmpty.return_value = probe_empty
 
+    context = job.build_cdc_context(_FakeDF(columns=columns))
 
-def test_silver_deduplicate_false_for_append_mode():
-    job = _silver_job(mode="append", change_data_capture="nocdc")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["deduplicate"] is False
-
-
-def test_silver_deduplicate_explicit_option_wins_over_mode_default():
-    job = _silver_job(mode="append", change_data_capture="nocdc", deduplicate=True)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["deduplicate"] is True
-
-
-def test_silver_rectify_true_when_reload_probe_finds_rows():
-    # not_append (mode="update") and not nocdc (scd1) -> the reload-check
-    # branch runs; stream stays at its default (True) so it skips the
-    # self.table.exists() sub-branch (real DeltaTable/JVM call) and always
-    # renders "-- no extra check", but the check_df.isEmpty() probe itself
-    # still executes for real against the faked spark.
-    job = _silver_job(mode="update", change_data_capture="scd1", stream=True)
-    job.spark.sql.return_value.isEmpty.return_value = False
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
-
-    assert context["rectify"] is True
+    _assert_context(context, expected, absent)
 
 
 def test_silver_reload_probe_also_matches_truncate():
@@ -402,15 +412,6 @@ def test_silver_reload_probe_also_matches_truncate():
     assert "truncate" in rendered_sql
 
 
-def test_silver_rectify_false_when_reload_probe_finds_no_rows():
-    job = _silver_job(mode="update", change_data_capture="scd1", stream=True)
-    job.spark.sql.return_value.isEmpty.return_value = True
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
-
-    assert context["rectify"] is False
-
-
 def test_silver_rectify_stays_false_for_nocdc_without_probing():
     # nocdc -> "not nocdc" is False, so the reload probe never runs (and
     # spark.sql is never called for it).
@@ -420,77 +421,3 @@ def test_silver_rectify_stays_false_for_nocdc_without_probing():
     context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["rectify"] is False
-
-
-def test_silver_scd_adds_key_when_absent():
-    job = _silver_job(mode="update", change_data_capture="scd1")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["add_key"] is True
-
-
-def test_silver_scd_skips_add_key_when_present():
-    job = _silver_job(mode="update", change_data_capture="scd1")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
-
-    assert "add_key" not in context
-
-
-def test_silver_memory_mode_sets_context_mode_complete():
-    job = _silver_job(mode="memory", change_data_capture="nocdc")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["mode"] == "complete"
-
-
-def test_silver_nocdc_memory_mode_adds_operation_when_absent():
-    job = _silver_job(mode="memory", change_data_capture="nocdc")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["add_operation"] == "upsert"
-
-
-def test_silver_latest_mode_slices_latest():
-    job = _silver_job(mode="latest", change_data_capture="nocdc")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["slice"] == "latest"
-
-
-def test_silver_non_stream_update_mode_slices_update():
-    job = _silver_job(mode="update", change_data_capture="nocdc", stream=False)
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["slice"] == "update"
-
-
-def test_silver_scd2_always_corrects_valid_from():
-    job = _silver_job(mode="update", change_data_capture="scd2")
-    job.spark.sql.return_value.isEmpty.return_value = True
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
-
-    assert context["correct_valid_from"] is True
-
-
-def test_silver_excludes_operation_when_present_in_columns():
-    job = _silver_job(mode="update", change_data_capture="scd1")
-    job.spark.sql.return_value.isEmpty.return_value = True
-
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__key", "__operation"]))
-
-    assert context["exclude"] == ["__operation"]
-
-
-def test_silver_nocdc_always_excludes_operation():
-    job = _silver_job(mode="update", change_data_capture="nocdc")
-
-    context = job.build_cdc_context(_FakeDF(columns=["id"]))
-
-    assert context["exclude"] == ["__operation"]

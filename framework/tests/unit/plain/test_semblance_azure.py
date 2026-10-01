@@ -34,22 +34,10 @@ def test_parse_filter_rejects_anything_else(bad):
         parse_filter(bad)
 
 
-def test_upsert_query_round_trip_sorted_by_partition_and_row_key(table_client):
-    table_client.submit_transaction([("upsert", {"PartitionKey": "b", "RowKey": "2", "V": "x"})])
-    table_client.submit_transaction([("upsert", {"PartitionKey": "a", "RowKey": "9", "V": "y"})])
-    table_client.submit_transaction([("upsert", {"PartitionKey": "a", "RowKey": "1", "V": "z"})])
-
-    rows = list(table_client.query_entities(""))
-    assert [(r["PartitionKey"], r["RowKey"]) for r in rows] == [("a", "1"), ("a", "9"), ("b", "2")]
-    assert [r["V"] for r in table_client.query_entities("PartitionKey eq 'a' and V eq 'y'")] == ["y"]
-
-
-def test_upsert_merges_and_returned_rows_are_copies(table_client):
-    table_client.submit_transaction([("upsert", {"PartitionKey": "p", "RowKey": "1", "A": "1", "B": "1"})])
-    table_client.submit_transaction([("upsert", {"PartitionKey": "p", "RowKey": "1", "B": "2"})])
+def test_returned_rows_are_copies(table_client):
+    # ordering, filtering and merge-on-upsert are covered through the wrapper in test_azure_contract.py
+    table_client.submit_transaction([("upsert", {"PartitionKey": "p", "RowKey": "1", "A": "1"})])
     row = next(iter(table_client.query_entities("")))
-    assert row["A"] == "1"
-    assert row["B"] == "2"
 
     row["A"] = "mutated"
     assert next(iter(table_client.query_entities("")))["A"] == "1"

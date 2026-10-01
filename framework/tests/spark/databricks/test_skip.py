@@ -1,24 +1,12 @@
-"""The pre-dispatch skip check, proven against a real Databricks workspace:
-a small dedicated schedule (bronze.king_scd1 and the two silver jobs tagged
-"skip_unchanged" in runtime/fabricks/schedules/schedule.yml) run once here,
-as the second run after the full "test" schedule this directory's
-conftest.py already runs once per session. That schedule's `variables.iter: 0`
-makes bronze.king_scd1's pre_run notebook write an empty commit, so nothing
-changed. The first run's counterpart is test_cdc.py: silver.king_scd1 holding
-real rows proves bronze wasn't wrongly flagged unchanged then.
+"""The pre-dispatch skip check against a real workspace: a dedicated schedule (bronze.king_scd1 and the
+two silver jobs tagged "skip_unchanged" in runtime/fabricks/schedules/schedule.yml) runs once, after the
+full "test" schedule that this directory's conftest.py runs per session. `variables.iter: 0` makes
+bronze.king_scd1's pre_run notebook write an empty commit, so nothing changed. test_cdc.py is the
+counterpart: silver.king_scd1 holds real rows, so bronze was not wrongly flagged unchanged.
 
-Read back through fabricks.last_schedule's `stale` column, not the schedule's
-own Azure Table: DagTerminator.terminate() drops that table as part of the
-same standalone() call, whereas fabricks.last_schedule is fed by the log
-literals it already flushed. That view (fabricks/deploy/views.py's
-create_or_replace_last_schedule_view) is a global "whichever schedule_id has
-the most recent start_time" view, not scoped by schedule name -- running the
-skip_unchanged schedule here would become the new "last schedule" and break
-test_schedule.py's own real-schedule assertions if this ran first.
-@pytest.mark.order("last") (see test_init.py for the same pytest-order
-pattern used the other direction) forces this test to run after
-test_schedule.py has already read last_schedule for the "test" schedule,
-regardless of file collection order.
+Read through fabricks.last_schedule's `stale` column, not the schedule's Azure Table (dropped by
+DagTerminator.terminate()). That view is global ("most recent schedule_id"), so running this schedule
+first would break test_schedule.py; `@pytest.mark.order("last")` forces it to run after.
 """
 
 import pytest
