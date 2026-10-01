@@ -1,14 +1,10 @@
-"""Real get_job()-driven job-orchestration behaviors that don't fit
-test_cdc.py (CDC-class-level) or test_feature.py (DDL-level) -- one test per
-feature, matching tests/spark/databricks/test_schedule.py's convention.
-Each job here is called directly through BaseJob.for_each_batch()/similar
-real methods (not a full scheduled run) since these behaviors don't depend
-on bronze/dependency plumbing.
+"""Real get_job()-driven job behaviors that don't fit test_cdc.py (CDC-class level) or test_feature.py (DDL level).
+
+Jobs are driven directly through BaseJob.for_each_batch(), not a scheduled run.
 """
 
 import pytest
 
-from fabricks.core import get_job
 from tests.spark.expected.compare import compare_to_expected, create_expected_views
 from tests.support.fixture_data import load_combined_frame
 
@@ -28,8 +24,8 @@ def _iteration(spark, number: int):
     )
 
 
-def test_append_mode_accumulates_across_batches(local_spark):
-    job = get_job(step="silver", topic="append_test", item="test")
+def test_append_mode_accumulates_across_batches(local_spark, fresh_job):
+    job = fresh_job("silver", "append_test", "test")
 
     job.for_each_batch(local_spark.createDataFrame([(1, "a")], ["id", "name"]))
     assert job.table.dataframe.count() == 1
@@ -38,21 +34,15 @@ def test_append_mode_accumulates_across_batches(local_spark):
     assert job.table.dataframe.count() == 2
 
 
-# "latest" mode's default (dedup on) always hits NoCDC's qualify-based dedup
-# CTE (see test_cdc.py's test_order_duplicate_by/test_deduplicate comment),
-# which OSS Spark's parser rejects but Databricks' does not -- this job sets
-# the real, supported deduplicate:false option to sidestep that, valid here
-# since neither batch below has duplicate keys within itself.
-def test_latest_mode_replaces_target_with_each_batchs_full_snapshot(local_spark):
-    job = get_job(step="silver", topic="latest_test", item="test")
+# The job sets deduplicate:false because NoCDC's qualify-based dedup CTE is rejected by OSS Spark's parser
+# (see test_cdc.py); safe here as neither batch has duplicate keys.
+def test_latest_mode_replaces_target_with_each_batchs_full_snapshot(local_spark, fresh_job):
+    job = fresh_job("silver", "latest_test", "test")
     columns = ["id", "name", "__operation", "__timestamp"]
 
     job.for_each_batch(local_spark.createDataFrame([(1, "a", "reload", "2022-01-01 00:00:00")], columns))
     assert job.table.dataframe.count() == 1
 
-    # "latest" mode is a full replace (NoCDC.complete() -> insert overwrite),
-    # not an incremental merge -- it's up to the caller to feed a complete
-    # current-state snapshot each batch, same as a real parser would.
     job.for_each_batch(
         local_spark.createDataFrame(
             [(1, "a", "reload", "2022-01-02 00:00:00"), (2, "b", "reload", "2022-01-02 00:00:00")], columns
@@ -61,32 +51,22 @@ def test_latest_mode_replaces_target_with_each_batchs_full_snapshot(local_spark)
     assert job.table.dataframe.count() == 2
 
 
-# https://github.com/fabricks-framework/fabricks/issues/182: an empty batch
-# for a "latest" mode job used to raise a PARSE_SYNTAX_ERROR (see
-# tests/unit/config/test_empty_slice_invalid_sql.py for the SQL-shape
-# regression test) instead of being a valid full-replace-with-nothing
-# batch. The fixture's check_options.min_rows:0 is required to reach
-# this: without it, for_each_batch's batch_has_data() guard returns
-# early on an empty batch and the CDC layer -- where the bug lives --
-# is never reached.
-def test_latest_mode_accepts_an_empty_batch(local_spark):
-    job = get_job(step="silver", topic="latest_test", item="test")
+# https://github.com/fabricks-framework/fabricks/issues/182: an empty "latest" batch raised PARSE_SYNTAX_ERROR.
+# The fixture's check_options.min_rows:0 stops batch_has_data() returning early, before the CDC layer.
+def test_latest_mode_accepts_an_empty_batch(local_spark, fresh_job):
+    job = fresh_job("silver", "latest_test", "test")
     columns = ["id", "name", "__operation", "__timestamp"]
 
     batch = local_spark.createDataFrame([(1, "a", "reload", "2022-01-01 00:00:00")], columns)
     job.for_each_batch(batch)
     assert job.table.dataframe.count() == 1
 
-    # "latest" mode is a full replace (see test_latest_mode_replaces_target_
-    # with_each_batchs_full_snapshot above) -- an empty batch is a valid
-    # "current snapshot is empty" and correctly empties the target too; the
-    # bug was that this raised instead.
     job.for_each_batch(local_spark.createDataFrame([], schema=batch.schema))
     assert job.table.dataframe.count() == 0
 
 
-def test_silver_scd1_handles_incremental_schema_drift(local_spark, cdc_oracles):
-    job = get_job(step="silver", topic="king_and_queen", item="scd1")
+def test_silver_scd1_handles_incremental_schema_drift(local_spark, cdc_oracles, fresh_job):
+    job = fresh_job("silver", "king_and_queen", "scd1")
 
     job.for_each_batch(_iteration(local_spark, 1))
     job.update_schema(_iteration(local_spark, 2))
@@ -95,8 +75,8 @@ def test_silver_scd1_handles_incremental_schema_drift(local_spark, cdc_oracles):
     compare_to_expected(local_spark, table=job.table, cdc="scd1", iter=2, topic="king_and_queen")
 
 
-def test_silver_scd2_first_load_wires_validity_options(local_spark, cdc_oracles):
-    job = get_job(step="silver", topic="king_and_queen", item="scd2")
+def test_silver_scd2_first_load_wires_validity_options(local_spark, cdc_oracles, fresh_job):
+    job = fresh_job("silver", "king_and_queen", "scd2")
 
     job.for_each_batch(_iteration(local_spark, 1))
 

@@ -1,21 +1,15 @@
-"""Fast checks for Table._create()'s table_options -> DDL mapping
-(tblproperties, cluster by, identity, primary/foreign keys, masks,
-comments), without a real Spark session or Delta table.
+"""Fast checks for Table._create()'s table_options -> DDL mapping (tblproperties, cluster by, identity,
+primary/foreign keys, masks, comments), without a real Spark session or Delta table.
 
-Table._create() (framework/fabricks/metastore/table.py) always executes the
-DDL it builds via self.spark.sql(sql) - it never returns the string - so
-these tests capture it off a mocked spark instead. The column-DDL half
-(_get_ddl_columns) is NOT stubbed: pyspark's type system (StructType/
-StructField) is pure Python and needs no running SparkSession to
-construct (confirmed empirically), so a small dataclass stand-in carries a
-real schema, letting masks/comments - which _get_ddl_columns applies per
-column - be tested for real instead of bypassed.
+Table._create() only executes the DDL via self.spark.sql(sql) and never returns it, so the tests capture it off a
+mocked spark. _get_ddl_columns is not stubbed: a dataclass stand-in carries a real (pure Python) StructType schema.
 """
 
 from dataclasses import dataclass, field
 from unittest.mock import MagicMock
 
 from pyspark.sql.types import IntegerType, StringType, StructField, StructType
+import pytest
 
 from fabricks.metastore.table import Table
 from fabricks.models import ForeignKey, PrimaryKey
@@ -130,12 +124,8 @@ def test_create_ddl_includes_column_masks_and_comments():
 
     table._create(df=df, masks={"dummy": "mask_dummy"}, comments={"dummy": "This is a dummy comment"})
 
-    # sqlglot's `fix()` normalization (uppercasing, etc. - see the other
-    # tests in this file) silently fails on this particular DDL shape
-    # (contextlib.suppress(Exception) in Table._create() swallows it),
-    # leaving the raw, un-normalized SQL Table._create() itself builds -
-    # confirmed empirically. Asserting on that raw shape, not the
-    # normalized one.
+    # sqlglot normalization fails on this DDL shape (swallowed by contextlib.suppress in Table._create()), so
+    # the raw, un-normalized SQL is asserted.
     sql = _generated_sql(mock_spark)
     assert "comment 'This is a dummy comment'" in sql
     assert "mask mask_dummy" in sql
@@ -163,3 +153,72 @@ def test_create_ddl_defaults_column_mapping_when_special_chars_in_columns():
     sql = _generated_sql(mock_spark)
     assert "'delta.columnMapping.mode'='name'" in sql
     assert "'delta.minReaderVersion'='2'" in sql
+
+
+def _normalized(mock_spark: MagicMock) -> str:
+    return " ".join(_generated_sql(mock_spark).split())
+
+
+def test_create_ddl_lists_every_property_in_order():
+    table, mock_spark, df = _make_table()
+
+    table._create(df=df, properties={"a.b": "1", "c.d": "2"})
+
+    assert "TBLPROPERTIES ( 'a.b'='1' , 'c.d'='2' )" in _normalized(mock_spark)
+
+
+def test_create_ddl_accepts_cluster_by_as_a_single_string():
+    table, mock_spark, df = _make_table()
+
+    table._create(df=df, liquid_clustering=True, cluster_by="monarch")
+
+    assert "CLUSTER BY ( `monarch` )" in _normalized(mock_spark)
+
+
+def test_create_ddl_includes_partitioned_by_in_the_given_order():
+    df = _fake_df(monarch=StringType(), id=IntegerType())
+    table, mock_spark, df = _make_table(df)
+
+    table._create(df=df, partitioning=True, partition_by=["monarch", "id"])
+
+    assert "PARTITIONED BY ( `monarch` , `id` )" in _normalized(mock_spark)
+
+
+def test_create_ddl_without_partitioning_has_no_partitioned_by():
+    table, mock_spark, df = _make_table()
+
+    table._create(df=df, partition_by=["dummy"])
+
+    assert "PARTITIONED BY" not in _normalized(mock_spark).upper()
+
+
+def test_create_ddl_includes_generated_columns():
+    table, mock_spark, df = _make_table()
+
+    table._create(df=df, generated_columns={"gen": "string generated always as (upper(`dummy`))"})
+
+    assert "`gen` STRING GENERATED ALWAYS AS (upper(`dummy`))" in _normalized(mock_spark)
+
+
+def test_create_ddl_wires_each_mask_and_comment_to_its_own_column():
+    df = _fake_df(a=StringType(), b=StringType(), c=StringType())
+    table, mock_spark, df = _make_table(df)
+
+    table._create(df=df, masks={"a": "mask_a", "c": "mask_c"}, comments={"b": "about b", "c": "about c"})
+
+    column_lines = [
+        line.strip().rstrip(",") for line in _generated_sql(mock_spark).splitlines() if line.strip().startswith("`")
+    ]
+    assert column_lines == [
+        "`a` string mask mask_a",
+        "`b` string comment 'about b'",
+        "`c` string comment 'about c' mask mask_c",
+    ]
+
+
+def test_create_ddl_rejects_more_than_one_primary_key():
+    df = _fake_df(id=IntegerType(), other=IntegerType())
+    table, _mock_spark, df = _make_table(df)
+
+    with pytest.raises(AssertionError, match="only one primary key allowed"):
+        table._create(df=df, primary_key={"pk_one": PrimaryKey(keys=["id"]), "pk_two": PrimaryKey(keys=["other"])})

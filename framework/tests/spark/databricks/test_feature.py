@@ -1,10 +1,8 @@
 """Follow-up checks for jobs the schedule already ran once.
 
-Each job here is tagged and runs as part of the schedule (conftest.py's
-_schedule_run) like any other -- these tests just do the extra, deliberate
-second action (a repeat run, a hand-crafted follow-up batch) that a single
-schedule pass can't exercise on its own, then assert on it. Simple
-"did it succeed" checks for these same jobs live in test_schedule.py.
+Each job also runs in the schedule (conftest.py's _schedule_run); these tests do the extra action a single
+schedule pass can't exercise (a repeat run, a hand-crafted follow-up batch). The "did it succeed" checks are in
+test_schedule.py.
 """
 
 from fabricks.context import SPARK
@@ -12,9 +10,7 @@ from fabricks.core import get_job
 
 
 def test_bronze_feature_parser_streams_once_per_checkpoint():
-    # bronze.feature_parser: the schedule already ran this once (see
-    # test_schedule.py's test_bronze_feature_parser); running it again here
-    # proves the checkpoint makes the second run a no-op.
+    # The schedule already ran this job once; the checkpoint must make a second run a no-op.
     j = get_job(step="bronze", topic="feature", item="parser")
     first_count = SPARK.sql("select count(*) from bronze.feature_parser").collect()[0][0]
 
@@ -27,9 +23,7 @@ def test_bronze_feature_parser_streams_once_per_checkpoint():
 
 
 def test_gold_type_widening_overwrite():
-    # gold.type_widening_overwrite: the schedule already wrote the initial
-    # (int) batch; feed a widened (double) batch and confirm the physical
-    # column type actually changed, not just that a wider value fit.
+    # The schedule wrote an int batch; check the physical column type became double, not just that the value fit.
     j = get_job(step="gold", topic="type_widening", item="overwrite")
 
     df = SPARK.sql("select cast(field as double) as field from values (1.5), (2.5) as source(field)")

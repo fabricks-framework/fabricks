@@ -1,12 +1,9 @@
 """Generated-SQL coverage for Processor.get_query() and Merger.get_merge_query(), the query-generation
 half of CDC behavior (the Apache tier compares materialized results only).
 
-CDC objects are built directly with a bare MagicMock in place of Spark. `src` is a
-`MagicMock(spec=DataFrame)`: Configurator.get_src() needs a real `isinstance(src, DataFrameLike)`, and
-a spec'd mock passes it while `.columns` stays a plain list. Assertions anchor to CTE/column names that
-are unique to each cdc type in the jinja templates (e.g. `__scd0_next_operation`,
-`__scd2_next_timestamp`), not to the final projection, so they hold whichever of
-__key/__hash/__operation lands in the final SELECT.
+CDC objects use a bare MagicMock for Spark; `src` is a `MagicMock(spec=DataFrame)` so get_src()'s isinstance check
+passes while `.columns` stays a plain list. Assertions anchor to CTE names unique to each cdc type (e.g.
+`__scd0_next_operation`), not the final projection, so they hold whichever of __key/__hash/__operation is selected.
 """
 
 import re
@@ -64,15 +61,14 @@ def test_get_query_complete_mode_scd2_has_only_scd2_markers():
 
 
 def test_get_query_order_duplicate_by_adds_dedup_cte():
-    # order_duplicate_by forces deduplicate_key=True unconditionally
-    # (Processor.get_query_context), even for nocdc, which otherwise has no
-    # deduplication at all - isolates the CTE's presence cleanly.
+    # order_duplicate_by forces deduplicate_key=True even for nocdc, which otherwise has no dedup.
     cdc = _cdc(NoCDC)
 
     sql = cdc.get_query(src(["id", "name"]), mode="complete", order_duplicate_by={"name": "asc"})
 
-    assert "__deduplicated_key" in sql
-    assert re.search(r"`?name`?\s+asc", sql, re.IGNORECASE)
+    flat = " ".join(sql.split())
+    assert "__deduplicated_key" in flat
+    assert "PARTITION BY `__key` ORDER BY `name` ASC) = 1" in flat, "the ordering must feed the per-key dedup window"
 
 
 def test_get_query_without_order_duplicate_by_has_no_dedup_cte():
@@ -84,13 +80,8 @@ def test_get_query_without_order_duplicate_by_has_no_dedup_cte():
 
 
 def test_get_query_scd2_update_mode_takes_incremental_branch():
-    # mode="update" always renders scd2's __merge_condition branch instead
-    # of the complete-mode __complete branch, regardless of has_rows (which
-    # only gates an inner sub-CTE) - forcing slice="update" directly as a
-    # kwarg (mirroring what Gold/Silver's own build_cdc_context would compute)
-    # sidesteps needing Table.rows/registered to behave like a real table.
-    # fix_context()'s own spark.sql(...).collect()[0] probe (the
-    # slice-filter's row/source count) is what needs a deterministic Row.
+    # slice="update" is passed directly so Table.rows/registered need not behave like a real table;
+    # fix_context()'s spark.sql(...).collect()[0] probe still needs a deterministic Row.
     spark = fake_spark()
     spark.sql.return_value.collect.return_value = [Row(slices=["s.__timestamp > '2024-01-01'"], sources=None)]
     cdc = _cdc(SCD2, spark=spark)
@@ -101,7 +92,34 @@ def test_get_query_scd2_update_mode_takes_incremental_branch():
     assert "__complete" not in sql
 
 
-# ============================= get_merge_query ==============================
+def _query(cls, columns=("id", "name"), **kwargs):
+    spark = fake_spark()
+    spark.sql.return_value.collect.return_value = [Row(slices="( s.__timestamp > '2024-01-01' )", sources=None)]
+    return " ".join(_cdc(cls, spark=spark).get_query(src(list(columns), is_empty=False), **kwargs).split())
+
+
+def test_get_query_slice_latest_renders_the_sliced_cte():
+    sql = _query(SCD1, columns=("id", "name", "__timestamp"), mode="complete", slice="latest")
+
+    assert "`__sliced` AS (" in sql, "the CTE must be defined, not merely referenced"
+
+
+def test_get_query_without_a_slice_has_no_sliced_cte():
+    assert "`__sliced` AS (" not in _query(SCD1, columns=("id", "name", "__timestamp"), mode="complete")
+
+
+def test_get_query_scd2_correct_valid_from_uses_the_1900_sentinel_only_when_asked():
+    assert "1900-01-01" in _query(SCD2, mode="complete", correct_valid_from=True)
+    assert "1900-01-01" not in _query(SCD2, mode="complete", correct_valid_from=False)
+
+
+def test_get_query_update_mode_takes_the_incremental_branch_for_scd1_and_nocdc_too():
+    for cls in (SCD1, NoCDC):
+        update = _query(cls, columns=("id", "name", "__timestamp"), mode="update", slice="update")
+        complete = _query(cls, columns=("id", "name", "__timestamp"), mode="complete")
+
+        assert "__merge_condition" in update, cls.__name__
+        assert "__merge_condition" not in complete, cls.__name__
 
 
 def _merge_src(columns):
@@ -118,8 +136,7 @@ def _merge_cdc(cls):
 
 
 def test_get_merge_query_scd0_has_no_when_matched_clause():
-    # scd0's merge template has only "when not matched ... insert" - a key
-    # already in the target is never touched again by a later merge.
+    # scd0 only inserts unmatched keys; an existing key is never touched again.
     cdc = _merge_cdc(SCD0)
 
     sql = cdc.get_merge_query(_merge_src(["id", "__merge_key", "__merge_condition", "__key"]))
@@ -129,45 +146,39 @@ def test_get_merge_query_scd0_has_no_when_matched_clause():
     assert "when not matched" in sql.lower()
 
 
+_COLUMNS = ["id", "__merge_key", "__merge_condition", "__key", "__hash"]
+
+
+def _merge_clauses(sql: str) -> list[tuple[str, str]]:
+    """(merge condition, action) of every WHEN clause, in order, e.g. ('delete', 'DELETE')."""
+    flat = " ".join(sql.split())
+    found = re.findall(r"WHEN (?:NOT )?MATCHED AND `__merge_condition` = '(\w+)' THEN (\w+)", flat, re.IGNORECASE)
+    return [(condition, action.upper()) for condition, action in found]
+
+
 def test_get_merge_query_nocdc_hard_deletes():
-    cdc = _merge_cdc(NoCDC)
+    sql = _merge_cdc(NoCDC).get_merge_query(_merge_src(_COLUMNS))
 
-    sql = cdc.get_merge_query(_merge_src(["id", "__merge_key", "__merge_condition", "__key"]))
-
-    assert "merge into" in sql.lower()
-    assert "when matched" in sql.lower()
-    assert "delete" in sql.lower()
+    assert _merge_clauses(sql) == [("upsert", "UPDATE"), ("delete", "DELETE"), ("upsert", "INSERT")]
     assert "__is_deleted" not in sql
 
 
 def test_get_merge_query_scd1_soft_deletes_when_is_deleted_column_present():
-    cdc = _merge_cdc(SCD1)
+    sql = _merge_cdc(SCD1).get_merge_query(_merge_src([*_COLUMNS, "__is_deleted"]))
 
-    sql = cdc.get_merge_query(
-        _merge_src(["id", "__merge_key", "__merge_condition", "__key", "__hash", "__is_deleted"])
-    )
-
-    assert "merge into" in sql.lower()
-    assert "__is_deleted" in sql
-    assert "__is_current" in sql
+    assert _merge_clauses(sql) == [("upsert", "UPDATE"), ("delete", "UPDATE"), ("upsert", "INSERT")]
+    assert "`__is_current` = FALSE , `__is_deleted` = TRUE" in " ".join(sql.split())
 
 
 def test_get_merge_query_scd1_hard_deletes_when_is_deleted_column_absent():
-    cdc = _merge_cdc(SCD1)
+    sql = _merge_cdc(SCD1).get_merge_query(_merge_src(_COLUMNS))
 
-    sql = cdc.get_merge_query(_merge_src(["id", "__merge_key", "__merge_condition", "__key", "__hash"]))
-
-    assert "merge into" in sql.lower()
-    assert "when matched" in sql.lower()
-    assert "delete" in sql.lower()
+    assert _merge_clauses(sql) == [("upsert", "UPDATE"), ("delete", "DELETE"), ("upsert", "INSERT")]
     assert "__is_deleted" not in sql
 
 
-def test_get_merge_query_scd2_always_soft_deletes_via_is_current():
-    cdc = _merge_cdc(SCD2)
+def test_get_merge_query_scd2_always_closes_versions_and_never_deletes():
+    sql = _merge_cdc(SCD2).get_merge_query(_merge_src(_COLUMNS))
 
-    sql = cdc.get_merge_query(_merge_src(["id", "__merge_key", "__merge_condition", "__key", "__hash"]))
-
-    assert "merge into" in sql.lower()
-    assert "__valid_to" in sql
-    assert "__is_current" in sql
+    assert _merge_clauses(sql) == [("update", "UPDATE"), ("delete", "UPDATE"), ("insert", "INSERT")]
+    assert "`__is_current` = FALSE" in " ".join(sql.split())

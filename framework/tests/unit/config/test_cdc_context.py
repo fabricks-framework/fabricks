@@ -1,21 +1,12 @@
-"""Gold.build_cdc_context() (framework/fabricks/core/jobs/gold.py:243-342) and
-Silver.build_cdc_context() (framework/fabricks/core/jobs/silver.py:263-332):
-the pure decision layer that turns job options + the incoming dataframe's
-columns into the kwargs dict passed to cdc.get_query()/.complete()/.update().
-
-One parametrized case per branch, not a full option x cdc-type x mode cross
-product (see the plan this file implements). Gold cases favor `nocdc` +
-mode="complete" as the "neutral" scenario when isolating an option that
-also has slowly-changing-dimension-only side effects, so only one branch
-moves at a time.
-"""
+"""Gold/Silver build_cdc_context(): job options + incoming columns -> kwargs for cdc.get_query()/.complete()/.update().
+One case per branch; Gold uses nocdc + mode="complete" as the neutral base so only one branch moves at a time."""
 
 import pytest
 
 from fabricks.core import get_job
 from fabricks.core.jobs.silver import Silver
 from fabricks.models import StepPathOptions, StepSilverConf, StepSilverOptions
-from tests.unit.config._helpers import _FakeDF
+from tests.unit.config._helpers import _FakeDF, stub_table
 
 
 def _gold_job(*, mode="complete", change_data_capture="nocdc", **option_overrides):
@@ -25,9 +16,6 @@ def _gold_job(*, mode="complete", change_data_capture="nocdc", **option_override
     )
     job.conf = job.conf.model_copy(update={"options": options})
     return job
-
-
-# -- deduplicate / rectify_as_upserts: explicit True/False/unset ------------
 
 
 @pytest.mark.parametrize("deduplicate", [True, False, None])
@@ -54,9 +42,6 @@ def test_gold_rectify_as_upserts_option_maps_directly_to_context(rectify):
     assert context["rectify"] is (rectify if rectify is not None else False)
 
 
-# -- metadata: job-level vs step-level fallback ------------------------------
-
-
 def test_gold_metadata_job_level_true_wins():
     job = _gold_job(metadata=True)
 
@@ -78,16 +63,37 @@ def test_gold_metadata_step_level_fallback(step_metadata, expected):
     assert context["add_metadata"] is expected
 
 
-def test_gold_reload_true_suppresses_slice_override():
-    job = _gold_job(change_data_capture="scd2", mode="update")
+@pytest.mark.parametrize(
+    ("mode", "change_data_capture", "columns"),
+    [
+        pytest.param("update", "scd2", ["id", "__operation"], id="scd2-update"),
+        pytest.param("update", "nocdc", ["id", "__timestamp"], id="nocdc-update"),
+        pytest.param("append", "nocdc", ["id", "__timestamp"], id="append"),
+    ],
+)
+def test_gold_reload_true_suppresses_slice_override(mode, change_data_capture, columns):
+    job = _gold_job(change_data_capture=change_data_capture, mode=mode)
 
-    context = job.build_cdc_context(_FakeDF(columns=["id", "__operation"]), reload=True)
+    without_reload = job.build_cdc_context(_FakeDF(columns=columns))
+    with_reload = job.build_cdc_context(_FakeDF(columns=columns), reload=True)
 
-    assert "slice" not in context
+    assert without_reload["slice"] == "update", "control: the slice is set when this is not a reload"
+    assert "slice" not in with_reload
 
 
-# -- one case per branch: (job options, incoming columns, expected context items, keys that must be absent) ----------
-# nocdc + mode="complete" is the neutral scenario, so only the option under test moves a branch.
+def test_gold_metadata_job_level_false_beats_step_level_true():
+    job = _gold_job(metadata=False)
+    step_conf = job.step_conf
+    job.base_step_conf = step_conf.model_copy(
+        update={"options": step_conf.options.model_copy(update={"metadata": True})}
+    )
+
+    context = job.build_cdc_context(_FakeDF(columns=["id"]))
+
+    assert context["add_metadata"] is False
+
+
+# (job options, incoming columns, expected context items, keys that must be absent)
 
 _ID = ["id"]
 _ID_OP = ["id", "__operation"]
@@ -119,8 +125,7 @@ _GOLD_CASES = {
         (),
     ),
     # __key/__hash/__operation presence -> add_key/add_hash/add_operation
-    # (dedup unset + __operation missing downgrades deduplicate_hash from the scd default True to None;
-    # __operation present skips that block, so the default stays True)
+    # (dedup unset + __operation missing downgrades deduplicate_hash from the scd default True to None)
     "scd_adds_key_hash_operation_when_absent": (
         {"change_data_capture": "scd1"},
         _ID,
@@ -209,6 +214,12 @@ _GOLD_CASES = {
         {"add_timestamp": True},
         (),
     ),
+    "persist_last_timestamp_scd2_skipped_when_valid_from_present": (
+        {"change_data_capture": "scd2", "persist_last_timestamp": True},
+        ["id", "__operation", "__valid_from"],
+        {},
+        ("add_timestamp",),
+    ),
     "persist_last_updated_timestamp_adds_last_updated_when_absent": (
         {"change_data_capture": "nocdc", "persist_last_updated_timestamp": True},
         _ID,
@@ -220,6 +231,12 @@ _GOLD_CASES = {
         _ID,
         {"add_last_updated": True},
         (),
+    ),
+    "last_updated_option_skipped_when_already_present": (
+        {"change_data_capture": "nocdc", "last_updated": True},
+        ["id", "__last_updated"],
+        {},
+        ("add_last_updated",),
     ),
     "add_last_updated_skipped_when_already_present": (
         {"change_data_capture": "nocdc", "persist_last_updated_timestamp": True},
@@ -238,6 +255,12 @@ _GOLD_CASES = {
         {},
         ["id", "__order_duplicate_by_desc"],
         {"order_duplicate_by": {"__order_duplicate_by_desc": "desc"}},
+        (),
+    ),
+    "order_duplicate_by_asc_wins_when_both_columns_present": (
+        {},
+        ["id", "__order_duplicate_by_asc", "__order_duplicate_by_desc"],
+        {"order_duplicate_by": {"__order_duplicate_by_asc": "asc"}},
         (),
     ),
     "order_duplicate_by_absent_when_neither_column_present": ({}, _ID, {}, ("order_duplicate_by",)),
@@ -264,9 +287,6 @@ def test_gold_build_cdc_context(job_options, columns, expected, absent):
     _assert_context(context, expected, absent)
 
 
-# =============================== Silver =====================================
-
-
 def _silver_job(*, mode="update", change_data_capture="nocdc", stream=True, **option_overrides):
     conf = {
         "step": "silver",
@@ -275,7 +295,6 @@ def _silver_job(*, mode="update", change_data_capture="nocdc", stream=True, **op
         "options": {"mode": mode, "change_data_capture": change_data_capture, "stream": stream, **option_overrides},
     }
     job = Silver(step="silver", topic="fact", item="dummy", conf=conf)
-    # job.spark (Configurator.spark) unconditionally reads
     # Keep the step config minimal so these tests only exercise CDC context.
     job.base_step_conf = StepSilverConf(
         name="silver",
@@ -323,13 +342,13 @@ _SILVER_CASES = {
         (),
         True,
     ),
-    "scd_adds_key_when_absent": ({"mode": "update", "change_data_capture": "scd1"}, _ID, {"add_key": True}, (), None),
+    "scd_adds_key_when_absent": ({"mode": "update", "change_data_capture": "scd1"}, _ID, {"add_key": True}, (), True),
     "scd_skips_add_key_when_present": (
         {"mode": "update", "change_data_capture": "scd1"},
         ["id", "__key"],
         {},
         ("add_key",),
-        None,
+        True,
     ),
     "memory_mode_sets_context_mode_complete": (
         {"mode": "memory", "change_data_capture": "nocdc"},
@@ -373,6 +392,13 @@ _SILVER_CASES = {
         (),
         True,
     ),
+    "scd_without_operation_column_does_not_exclude_it": (
+        {"mode": "update", "change_data_capture": "scd1"},
+        ["id", "__key"],
+        {},
+        ("exclude",),
+        True,
+    ),
     "nocdc_always_excludes_operation": (
         {"mode": "update", "change_data_capture": "nocdc"},
         _ID,
@@ -397,12 +423,8 @@ def test_silver_build_cdc_context(job_options, columns, expected, absent, probe_
 
 
 def test_silver_reload_probe_also_matches_truncate():
-    # https://github.com/fabricks-framework/fabricks/issues/66: a 'truncate'
-    # sentinel row is rewritten to 'reload' inside the CDC query template
-    # (fabricks/cdc/templates/ctes/base.sql.jinja), but this probe runs
-    # against the raw incoming batch *before* that template renders -- it
-    # must recognize 'truncate' directly, or rectify never turns on and the
-    # truncate row is never reconciled.
+    # https://github.com/fabricks-framework/fabricks/issues/66: base.sql.jinja rewrites 'truncate' to 'reload' only
+    # after this probe sees the raw batch, so the probe must match 'truncate' itself or rectify never turns on.
     job = _silver_job(mode="update", change_data_capture="scd1", stream=True)
     job.spark.sql.return_value.isEmpty.return_value = False
 
@@ -413,11 +435,37 @@ def test_silver_reload_probe_also_matches_truncate():
 
 
 def test_silver_rectify_stays_false_for_nocdc_without_probing():
-    # nocdc -> "not nocdc" is False, so the reload probe never runs (and
-    # spark.sql is never called for it).
     job = _silver_job(mode="update", change_data_capture="nocdc")
     job.spark.sql.reset_mock()
 
     context = job.build_cdc_context(_FakeDF(columns=["id"]))
 
     assert context["rectify"] is False
+    job.spark.sql.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("change_data_capture", "timestamp"),
+    [pytest.param("scd1", "__timestamp", id="scd1"), pytest.param("scd2", "__valid_from", id="scd2")],
+)
+def test_silver_non_stream_update_probe_only_counts_reloads_newer_than_the_target(
+    monkeypatch, change_data_capture, timestamp
+):
+    job = _silver_job(mode="update", change_data_capture=change_data_capture, stream=False)
+    stub_table(monkeypatch, job)
+    job.spark.sql.return_value.isEmpty.return_value = True
+
+    job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
+
+    probe = " ".join(job.spark.sql.call_args[0][0].replace("`", "").split()).lower()
+    assert f"select max({timestamp}) from" in probe
+    assert "__timestamp > coalesce(" in probe
+
+
+def test_silver_stream_update_probe_has_no_watermark_check():
+    job = _silver_job(mode="update", change_data_capture="scd1", stream=True)
+    job.spark.sql.return_value.isEmpty.return_value = True
+
+    job.build_cdc_context(_FakeDF(columns=["id", "__key"]))
+
+    assert "coalesce(" not in " ".join(job.spark.sql.call_args[0][0].split()).lower()

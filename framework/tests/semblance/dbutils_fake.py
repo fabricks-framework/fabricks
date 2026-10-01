@@ -115,6 +115,9 @@ class _Notebook:
 
     @conforms_to("notebook.run")
     def run(self, path, timeout_seconds, arguments):
+        bad = {k: v for k, v in dict(arguments).items() if not isinstance(k, str) or not isinstance(v, str)}
+        if bad:
+            raise TypeError(f"notebook arguments must map str to str, got: {bad}")
         call = NotebookCall(path, timeout_seconds, dict(arguments))
         self._state.notebook_calls.append(call)
         for match, returns in reversed(self._state.notebook_results):

@@ -1,28 +1,14 @@
 # Databricks notebook source
 
-# Sets up runtime (armageddon + raw fixture data), runs the schedule, then
-# the Databricks integration tests (test_schedule.py and friends) -- see
-# runtime/README.md and docs/superpowers/plans/2026-09-04-databricks-cut-list.md.
-#
-# The "expected" database in conf.uc.fabricks.yml is scaffolding for parity
-# with production config shape only -- this suite asserts against
-# fabricks.last_schedule/last_status, not expected.*, so no expected views
-# are created here (that comparison lives in tests/spark/apache/expected/).
-#
-# king/queen (the tagged bronze jobs) are both register mode, each reading
-# its own per-run-seeded Delta table. bronze.feature_parser (untagged, real
-# file parsing via the "dummy" parser plugin) is the one job that still
-# needs raw json files seeded.
+# The "expected" database in conf.uc.fabricks.yml is not populated: this suite asserts against
+# fabricks.last_schedule/last_status instead.
 
 import logging
 from logging import INFO
 import sys
 
-# tests/ lives on the Databricks workspace-files FUSE mount, which doesn't
-# support the filesystem ops CPython needs to write __pycache__ (OSError
-# [Errno 95] Operation not supported) -- disable bytecode caching entirely,
-# before anything under tests/ gets imported, rather than import-erroring
-# on the first conftest.py collected.
+# tests/ is on the workspace-files FUSE mount, which can't write __pycache__ (OSError 95); this must run
+# before anything under tests/ is imported.
 sys.dont_write_bytecode = True
 
 from databricks.sdk.runtime import dbutils  # noqa: E402
@@ -48,10 +34,8 @@ runtests = dbutils.widgets.get("runtests").lower() == "true"
 
 # COMMAND ----------
 
-# Checked before armageddon drops anything: assert the *live* session catalog,
-# not just CATALOG from the config -- the config only proves what
-# add_catalog_to_spark asked for, and dropping against the wrong catalog is
-# unrecoverable.
+# Check the live session catalog, not just CATALOG: the config only shows what add_catalog_to_spark asked for,
+# and armageddon on the wrong catalog is unrecoverable.
 if IS_UNITY_CATALOG:
     current_catalog = SPARK.catalog.currentCatalog()
     assert current_catalog == "bms_dna_test", (
@@ -62,10 +46,7 @@ if IS_UNITY_CATALOG:
 
 
 if seed:
-    # Sibling-module import, not `tests.spark.*` -- this notebook runs from
-    # bundle-synced workspace files, not a Databricks Repo, so `tests`
-    # itself isn't importable here. Databricks does add a notebook's own
-    # containing folder to sys.path, so this works.
+    # Sibling import: the notebook runs from bundle-synced files, not a Databricks Repo, so `tests` isn't importable.
     from fixtures import seed_raw_delta_fixtures, seed_raw_fixtures
 
     seed_raw_fixtures()
@@ -80,18 +61,11 @@ if armageddon:
 
 # COMMAND ----------
 
-# test_schedule.py's session fixture calls fabricks.core.schedules.standalone(schedule="test")
-# itself -- running it here too would just replay the same schedule twice, so
-# "call the schedule" happens as part of running the tests below, not as a
-# separate step.
+# No separate schedule step: conftest.py's _schedule_run fixture runs it, and running it here would replay it twice.
 
 if runtests:
-    # fabricks' own DEFAULT_LOGGER.info() output (set to INFO above, for
-    # seed/armageddon) is noise here -- pytest's own -vv/-s output plus
-    # _FailureCollector's summary are the useful signal during the test run.
-    # DagTerminator.terminate() logs each deliberately-failing job (e.g.
-    # check_fail, invoke_timeout) via a separate "dags" logger, not
-    # DEFAULT_LOGGER -- silence that one too.
+    # Silence fabricks logs (the "dags" logger too, which reports each deliberately failing job);
+    # pytest output and _FailureCollector's summary are the signal.
     DEFAULT_LOGGER.setLevel("CRITICAL")
     logging.getLogger("dags").setLevel("CRITICAL")
 
@@ -100,14 +74,8 @@ if runtests:
             self.failures: list[str] = []
 
         def _detail(self, report: pytest.TestReport | pytest.CollectReport) -> str:
-            # The single "first E line" this used to keep was too thin to
-            # debug anything beyond a plain assertion -- for a real
-            # exception (e.g. from an SDK call several frames down), the
-            # useful "raise ... from" line, chained-cause "E" lines, and
-            # the file:line of the actual failing call all land further
-            # down/up in longreprtext. Keep the last ~25 lines instead of
-            # just one: enough to see the real call site and every "E "
-            # line without dumping the entire traceback into the summary.
+            # The tail, not the first "E" line: for exceptions raised several frames down, the chained causes
+            # and the failing call site are not in the first line.
             lines = report.longreprtext.splitlines()
             return "\n    ".join(lines[-25:]) if lines else ""
 
@@ -116,17 +84,11 @@ if runtests:
                 self.failures.append(f"{report.nodeid}:\n    {self._detail(report)}")
 
         def pytest_collectreport(self, report: pytest.CollectReport) -> None:
-            # Collection errors (e.g. an ImportError in a test file/conftest)
-            # never reach pytest_runtest_logreport -- no test ran at all, so
-            # without this the summary would say "no failure detail" even
-            # though pytest never got past import.
+            # Collection errors never reach pytest_runtest_logreport, so the summary would have no detail.
             if report.failed:
                 self.failures.append(f"{report.nodeid} (collection):\n    {self._detail(report)}")
 
-    # -vv/--tb=long/-s: maximum detail in the notebook's own stdout (not
-    # captured by the Jobs API for notebook tasks); _FailureCollector exists
-    # because of that same gap -- it puts a one-line-per-test summary into
-    # the raised AssertionError itself, which the API does surface.
+    # The Jobs API doesn't capture a notebook task's stdout, so failures are also put in the AssertionError.
     collector = _FailureCollector()
     res = pytest.main([".", "-vv", "--tb=long", "-s", "-p", "no:cacheprovider"], plugins=[collector])
     if res != 0:

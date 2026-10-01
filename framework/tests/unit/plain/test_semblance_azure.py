@@ -133,3 +133,53 @@ def test_queue_only_supports_string_content(queues):
     client.create_queue()
     with pytest.raises(TypeError):
         client.send_message({"a": 1})
+
+
+def _op(row_key: str, *, partition: str = "p") -> tuple[str, dict]:
+    return ("upsert", {"PartitionKey": partition, "RowKey": row_key})
+
+
+def test_a_transaction_takes_at_most_100_operations(table_client):
+    table_client.submit_transaction([_op(str(i)) for i in range(100)])
+
+    with pytest.raises(ValueError, match="at most 100 operations, got 101"):
+        table_client.submit_transaction([_op(str(i)) for i in range(101)])
+
+
+def test_a_transaction_may_touch_each_entity_only_once(table_client):
+    with pytest.raises(ValueError, match="only once"):
+        table_client.submit_transaction([_op("1"), _op("1")])
+
+
+def test_a_transaction_operation_with_options_is_not_modelled(table_client):
+    with pytest.raises(NotImplementedError, match="pairs only"):
+        table_client.submit_transaction([("upsert", {"PartitionKey": "p", "RowKey": "1"}, {"mode": "replace"})])
+
+
+def test_a_transaction_across_partitions_is_rejected(table_client):
+    with pytest.raises(ValueError, match="share a PartitionKey"):
+        table_client.submit_transaction([_op("1", partition="a"), _op("2", partition="b")])
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        pytest.param(lambda c: c.create_queue(timeout=5), id="create_queue"),
+        pytest.param(lambda c: c.send_message("m", visibility_timeout=5), id="send_message"),
+        pytest.param(lambda c: c.receive_message(visibility_timeout=5), id="receive_message"),
+        pytest.param(lambda c: c.clear_messages(timeout=5), id="clear_messages"),
+        pytest.param(lambda c: c.delete_queue(timeout=5), id="delete_queue"),
+    ],
+)
+def test_queue_client_rejects_arguments_it_does_not_model(call):
+    client = QueueClientFactory(QueueStore()).from_connection_string("x", queue_name="q")
+
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        call(client)
+
+
+def test_table_service_rejects_arguments_it_does_not_model():
+    service = TableServiceFactory(TableStore()).from_connection_string("x")
+
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        service.create_table_if_not_exists(table_name="t", timeout=5)  # ty: ignore[unknown-argument]

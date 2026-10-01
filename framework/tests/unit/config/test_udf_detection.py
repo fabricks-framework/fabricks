@@ -1,13 +1,6 @@
-"""Gold.get_udfs() (framework/fabricks/core/jobs/gold.py): UDF detection
-from updater_options.columns and from the job's own SQL. Regression test
-for a real bug: the updater_options.columns path was dropped during the
-job-composition refactor on the (wrong) assumption that no job's updated
-columns ever call a UDF -- fabricks.legacy's gold.scd1.updated_column job
-does (`udf_add_now(monarch)`), so the UDF never got registered before the
-update expression ran. mode="invoke" is used for the updater_options-only
-tests to isolate that path from SQL-based matching; the SQL tests below
-monkeypatch get_sql() instead of relying on a real runtime .sql fixture.
-"""
+"""Gold.get_udfs(): UDF detection from updater_options.columns and from the job's own SQL (the updater_options
+path is the one a refactor once dropped). mode="invoke" isolates the updater_options path from SQL matching; the SQL
+tests monkeypatch get_sql() instead of relying on a runtime .sql fixture."""
 
 from fabricks.core import get_job
 from fabricks.models.common import UpdaterOptions
@@ -35,7 +28,7 @@ def test_get_udfs_detects_multiple_udfs_across_updater_options_columns():
         __updated_extra_column="udf_add_now(monarch)", __updated_other_column="udf_slugify(name)"
     )
 
-    assert set(job.get_udfs() or []) == {"add_now", "slugify"}
+    assert sorted(job.get_udfs() or []) == ["add_now", "slugify"]
 
 
 def test_get_udfs_ignores_non_udf_updater_options_column():
@@ -62,7 +55,7 @@ def test_get_udfs_detects_multiple_udfs_in_job_sql(monkeypatch):
     job = get_job(step="gold", topic="fact", item="step_option")
     monkeypatch.setattr(job, "get_sql", lambda: "select udf_add_now(monarch), udf_slugify(name) from silver.monarch")
 
-    assert set(job.get_udfs() or []) == {"add_now", "slugify"}
+    assert sorted(job.get_udfs() or []) == ["add_now", "slugify"]
 
 
 def test_get_udfs_none_when_job_sql_has_no_udf_call(monkeypatch):
@@ -79,4 +72,31 @@ def test_get_udfs_merges_updater_options_and_sql_udfs(monkeypatch):
     )
     monkeypatch.setattr(job, "get_sql", lambda: "select udf_slugify(name) from silver.monarch")
 
-    assert set(job.get_udfs() or []) == {"add_now", "slugify"}
+    assert sorted(job.get_udfs() or []) == ["add_now", "slugify"]
+
+
+def test_get_udfs_lists_a_udf_once_even_when_it_is_called_several_times(monkeypatch):
+    job = get_job(step="gold", topic="fact", item="step_option")
+    monkeypatch.setattr(job, "get_sql", lambda: "select udf_add_now(a), udf_add_now(b) from silver.monarch")
+
+    assert job.get_udfs() == ["add_now"]
+
+
+def test_get_udfs_lists_a_udf_once_when_both_updater_options_and_sql_call_it(monkeypatch):
+    job = get_job(step="gold", topic="fact", item="step_option")
+    job.conf = job.conf.model_copy(
+        update={"updater_options": UpdaterOptions(columns={"__updated_extra_column": "udf_add_now(monarch)"})}
+    )
+    monkeypatch.setattr(job, "get_sql", lambda: "select udf_add_now(name) from silver.monarch")
+
+    assert job.get_udfs() == ["add_now"]
+
+
+def test_get_udfs_ignores_job_sql_for_a_table_job():
+    # udfs are not allowed in a job that reads a table: only the updater_options columns count
+    job = get_job(step="gold", topic="fact", item="table_option")
+    job.conf = job.conf.model_copy(
+        update={"updater_options": UpdaterOptions(columns={"__updated_extra_column": "udf_add_now(monarch)"})}
+    )
+
+    assert job.get_udfs() == ["add_now"]

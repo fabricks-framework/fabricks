@@ -1,7 +1,7 @@
 from tests.support.expected_sql import expected_scd2_schema, make_spark_compatible
 
 
-def testmake_spark_compatible_rewrites_qualify_row_number():
+def test_make_spark_compatible_rewrites_qualify_row_number():
     sql = "select * except (a, b) from src qualify row_number() over (partition by id order by ts) = 1"
 
     rewritten = make_spark_compatible(sql)
@@ -13,13 +13,13 @@ def testmake_spark_compatible_rewrites_qualify_row_number():
     assert "where __qualify_rn = 1" in rewritten
 
 
-def testmake_spark_compatible_leaves_other_sql_unchanged():
+def test_make_spark_compatible_leaves_other_sql_unchanged():
     sql = "select id, name from expected.scd2_iter1 where __is_current"
 
     assert make_spark_compatible(sql) == sql
 
 
-def testexpected_scd2_schema_omits_new_field_by_default():
+def test_expected_scd2_schema_omits_new_field_by_default():
     schema = expected_scd2_schema([{"id": 1, "name": "Leopold I"}])
 
     assert [field.name for field in schema.fields] == [
@@ -34,7 +34,7 @@ def testexpected_scd2_schema_omits_new_field_by_default():
     ]
 
 
-def testexpected_scd2_schema_adds_new_field_when_any_row_has_it():
+def test_expected_scd2_schema_adds_new_field_when_any_row_has_it():
     rows = [{"id": 1, "name": "Leopold I"}, {"id": 2, "name": "Leopold II", "newField": True}]
 
     schema = expected_scd2_schema(rows)
@@ -42,7 +42,7 @@ def testexpected_scd2_schema_adds_new_field_when_any_row_has_it():
     assert schema.fields[-1].name == "newField"
 
 
-def testexpected_scd2_schema_handles_empty_rows():
+def test_expected_scd2_schema_handles_empty_rows():
     schema = expected_scd2_schema([])
 
     assert "newField" not in [field.name for field in schema.fields]

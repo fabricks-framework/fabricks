@@ -14,9 +14,6 @@ from fabricks.core.jobs.get_job_conf import _get_step_rows, clear_job_conf_cache
 from fabricks.core.jobs.silver import Silver
 from tests.unit.config._helpers import _FakeDF
 
-# --- get_job_conf caches all rows of a step on first lookup (_get_step_rows), so N calls for different jobs of
-# --- the same step re-read the step once, not N times.
-
 
 def test_get_job_conf_reuses_cached_rows_across_jobs_of_the_same_step():
     clear_job_conf_cache()
@@ -42,8 +39,7 @@ def test_clear_job_conf_cache_resets_the_cache():
     assert _get_step_rows.cache_info().currsize == 0
 
 
-# --- get_job(orphan=True) returns an OrphanJob built purely from step/topic/item, with no config lookup
-# --- (https://github.com/fabricks-framework/fabricks/issues/198).
+# get_job(orphan=True): https://github.com/fabricks-framework/fabricks/issues/198
 
 
 def test_get_job_orphan_returns_an_orphan_job():
@@ -53,19 +49,17 @@ def test_get_job_orphan_returns_an_orphan_job():
 
 
 def test_get_job_orphan_defaults_to_false():
-    from fabricks.core.jobs.silver import Silver
-
     job = get_job(step="silver", topic="append_test", item="test")
-    assert isinstance(job, Silver)
+
+    assert type(job) is Silver
 
 
 def test_get_job_orphan_rejects_job_id():
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError, match="job_id"):
         get_job(step="silver", topic="foo", item="bar", job_id="deadbeef", orphan=True)  # ty: ignore[no-matching-overload]
 
 
-# --- Generator.drop(): the `options.no_drop` guard raises before anything else runs (the `spark.sql(...)` after
-# --- it sits in a bare `except Exception: pass`, so the guard is all these tests need to isolate).
+# Generator.drop() swallows errors from its spark.sql(...) calls, so only the no_drop guard is observable.
 
 
 def _job(*, no_drop: bool | None = None):
@@ -81,13 +75,13 @@ def test_drop_raises_when_no_drop_is_set():
         job.drop()
 
 
-def test_drop_does_not_raise_when_no_drop_unset():
+def test_drop_runs_the_drop_statements_when_no_drop_is_unset():
     job = _job()
+    job.spark.sql.reset_mock()
 
-    job.drop()  # must not raise
+    job.drop()
 
-
-# --- silver: an empty batch is "unchanged", not an error.
+    assert job.spark.sql.called, "the no_drop guard must not fire when the option is unset"
 
 
 def _silver_job_with_empty_batch():
@@ -108,9 +102,6 @@ def test_silver_for_each_batch_raises_unchanged_when_batch_has_no_data():
 
     with pytest.raises(UnchangedWarning):
         job.for_each_batch(_FakeDF(columns=["id", "__key", "__operation", "__timestamp"]))
-
-
-# --- streaming: the worker recreates the job by conf instead of receiving a pickled one.
 
 
 def test_stream_batch_recreates_job_inside_worker(monkeypatch):

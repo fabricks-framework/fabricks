@@ -1,71 +1,41 @@
-import json
-from unittest.mock import MagicMock, patch
+import pytest
 
-from fabricks.core.dags.processor import DagProcessor
 from fabricks.utils.log import LogStatus
-from tests.semblance.schedule import dependency_row, status_row
-
-SCHEDULE_ID = "sched-1"
-TABLE = f"t{SCHEDULE_ID}"
-QUEUE = f"qsilver{SCHEDULE_ID}"
-
-
-def _receive(semblance, incoming_status: str | None, *, skip_if_stale: bool, run_result="ok", patch_logger=False):
-    job = status_row("job-1", status="waiting", job="silver.fact_dummy", schedule_id=SCHEDULE_ID)
-    rows = [job]
-    if incoming_status is not None:
-        rows.append(dependency_row("job-1", "parent-1", status=incoming_status, schedule_id=SCHEDULE_ID))
-    semblance.table(TABLE).seed(rows)
-    semblance.queue(QUEUE).create()
-    semblance.queue(QUEUE).send(json.dumps(job))
-    semblance.queue(QUEUE).send("SENTINEL")
-
-    fake_job = MagicMock()
-    fake_job.skip_if_stale = skip_if_stale
-    patches = [
-        patch("fabricks.core.dags.processor.get_job", return_value=fake_job),
-        patch("fabricks.core.dags.processor.run", return_value=run_result),
-    ]
-    if patch_logger:
-        patches.append(patch("fabricks.core.dags.processor.LOGGER"))
-
-    mocks = [p.start() for p in patches]
-    try:
-        with DagProcessor(schedule_id=SCHEDULE_ID, schedule="daily", step="silver", notebook=False) as processor:
-            processor.receive()
-    finally:
-        for p in patches:
-            p.stop()
-    return mocks  # [get_job, run, (LOGGER)]
+from tests.unit.config._dag import SCHEDULE_ID, edge, incoming_edges, job_status, receive
 
 
 def test_receive_skips_dispatch_when_every_dependency_is_not_ok(semblance):
-    _get_job, fake_run, fake_logger = _receive(semblance, "stale", skip_if_stale=True, patch_logger=True)
+    receive(semblance, incoming=["stale", "stale"], skip_if_stale=True, run_result="ok")
 
-    fake_run.assert_not_called()
-    logged = [call.args[0] for call in fake_logger.info.call_args_list]
-    assert LogStatus.DONE in logged
-    assert LogStatus.STALE in logged
-
-
-def test_receive_dispatches_when_any_dependency_is_ok(semblance):
-    _get_job, fake_run = _receive(semblance, "ok", skip_if_stale=True)
-
-    fake_run.assert_called_once()
+    assert job_status(semblance) == "stale", "a dispatched job would have been recorded as ok"
+    assert edge(semblance, "child-1")["Status"] == "stale", "the skip must propagate to the outgoing edges"
+    assert incoming_edges(semblance) == []
 
 
-def test_receive_dispatches_when_there_are_no_dependencies_at_all(semblance):
-    # The vacuous-truth guard: any(...) over an empty list is False, so `not any(...)` on zero
-    # incoming edges is vacuously True -- without the explicit `and incoming` guard, a root job
-    # would be treated as "none of my dependencies are ok" and skipped forever.
-    _get_job, fake_run = _receive(semblance, None, skip_if_stale=True)
+def test_receive_logs_done_and_stale_for_a_skipped_job(semblance):
+    # DagTerminator only counts a job as not failed if it sees DONE; last_schedule.stale reads STALE.
+    receive(semblance, incoming=["stale"], skip_if_stale=True)
 
-    fake_run.assert_called_once()
+    messages = [r["Message"] for r in semblance.table("dags").rows(PartitionKey=SCHEDULE_ID)]
+    assert LogStatus.DONE in messages
+    assert LogStatus.STALE in messages
 
 
-def test_receive_deletes_its_own_incoming_edges_after_reading_them_even_when_not_skipped(semblance):
-    # skip_if_stale False never triggers a skip decision but must still delete incoming edges,
-    # otherwise the 'dependencies' partition only ever grows.
-    _receive(semblance, "ok", skip_if_stale=False)
+@pytest.mark.parametrize(
+    ("incoming", "skip_if_stale"),
+    [
+        pytest.param(["ok"], True, id="ok-dependency"),
+        pytest.param(["stale", "ok"], True, id="any-ok-dependency-is-enough"),
+        pytest.param(["stale", "stale"], False, id="skip-if-stale-off"),
+        # The vacuous-truth guard: `not any(...)` over zero incoming edges is True, so without the explicit
+        # `and incoming` a root job would be treated as "none of my dependencies are ok" and skipped forever.
+        pytest.param([], True, id="no-dependencies"),
+    ],
+)
+def test_receive_dispatches_unless_every_dependency_is_stale_and_skip_if_stale_is_on(
+    semblance, incoming, skip_if_stale
+):
+    receive(semblance, incoming=incoming, skip_if_stale=skip_if_stale, run_result="ok")
 
-    assert semblance.table(TABLE).rows(PartitionKey="dependencies", JobId="job-1") == []
+    assert job_status(semblance) == "ok"
+    assert incoming_edges(semblance) == [], "incoming edges are deleted even when the job is not skipped"

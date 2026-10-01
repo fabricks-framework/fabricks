@@ -2,6 +2,8 @@ import pytest
 
 from fabricks.context import DBUTILS, SPARK
 from fabricks.core.dags.log import LOGGER, TABLE_LOG_HANDLER
+from tests.semblance.fixture import Semblance
+from tests.unit.config import conftest as config_conftest
 
 
 @pytest.fixture(autouse=True)
@@ -12,7 +14,7 @@ def _fake_dags_log_table():
     TABLE_LOG_HANDLER.clear_buffer()
 
 
-def test_first_test_dirties_everything(semblance):
+def test_semblance_and_shared_mocks_do_not_leak_across_tests(semblance, tmp_path):
     SPARK.sql.return_value = 42  # the shared bootstrap mocks: reset, not replaced, between tests
     DBUTILS.credentials.getServiceCredentialsProvider.return_value = "leak"  # ty: ignore[invalid-assignment]
     LOGGER.info(
@@ -28,12 +30,13 @@ def test_first_test_dirties_everything(semblance):
     )
     assert [r["Message"] for r in semblance.table("dags").rows(PartitionKey="s1")] == ["start"]
 
+    # what the autouse reset fixture runs between tests, applied now so one test proves the whole contract
+    config_conftest._reset_bootstrap_mocks()
+    fresh = Semblance(tmp_path)
 
-def test_second_test_sees_a_clean_slate(semblance):
     assert SPARK.sql.return_value != 42
     assert DBUTILS.credentials.getServiceCredentialsProvider.return_value != "leak"
-    assert TABLE_LOG_HANDLER._table is not None  # patched for this test only
-    assert "dags" not in semblance.tables.tables  # fresh store: no rows from the previous test
+    assert "dags" not in fresh.tables.tables, "a new Semblance must start with no rows from earlier ones"
 
 
 def test_handler_table_is_unresolved_outside_the_fixture():

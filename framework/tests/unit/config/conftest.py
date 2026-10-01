@@ -1,27 +1,18 @@
 """Conftest for the unit/config tier: real fabricks.context/get_step/get_job against real YAML, with Spark
-faked out so no JVM (and no Java installation) is needed.
+faked out so no JVM is needed.
 
-Two independent real-Spark construction paths are defused:
+Two real-Spark construction paths are defused:
 
-1. fabricks/context/spark_session.py builds `SPARK` via `SparkSession.builder...getOrCreate()`, so that
-   classproperty is patched to a MagicMock below.
-2. fabricks/utils/spark.py calls `get_spark()` at its own import time (reached via
-   fabricks.context.spark_session -> fabricks.context.secret -> fabricks.utils.spark), which imports
-   `delta.configure_spark_with_delta_pip` and fails in this venv regardless of Java. So the whole module is
-   replaced in sys.modules first, the same seam tests/unit/plain/conftest.py uses, but WITHOUT replacing
-   fabricks.context itself: this tier wants its real STEPS/CONF_RUNTIME parsing.
+1. fabricks/context/spark_session.py builds `SPARK` via `SparkSession.builder...getOrCreate()`; the builder is
+   patched to a MagicMock below.
+2. fabricks/utils/spark.py calls `get_spark()` at import time, which imports `delta.configure_spark_with_delta_pip`
+   and fails in this venv. The module is replaced in sys.modules (as tests/unit/plain/conftest.py does), but
+   fabricks.context stays real: this tier wants its STEPS/CONF_RUNTIME parsing.
 
-`databricks.sdk.runtime` is replaced in sys.modules as a safety net (a stray real import would try to
-authenticate against a workspace); tests that need a `dbutils` patch the attribute on it.
-`fabricks.core.dags.log` is NOT faked: its table is resolved lazily, so it imports safely.
+`databricks.sdk.runtime` is replaced too: a stray real import would try to authenticate against a workspace.
 
-IMPORTANT: the env vars and both patches must run before fabricks.context is first imported (by this conftest
-or any test file), since fabricks.context.SPARK is built once at that import and cached. Same rule as
-tests/spark/apache/conftest.py.
-
-Never mix this tier with tests/unit/plain (or the spark tiers) in one pytest run: tests/unit/plain/conftest.py
-replaces sys.modules["fabricks.context"] with a MagicMock, and whichever conftest runs first wins for the
-process. See docs/TEST.md.
+The env vars and both patches must run before fabricks.context is first imported, because it builds SPARK once.
+Never mix this tier with tests/unit/plain or the spark tiers in one pytest run (see docs/TEST.md).
 """
 
 import os
@@ -38,7 +29,7 @@ from tests.tier_policy import activate_tier  # noqa: E402
 
 activate_tier("config")
 
-# --- capture what the bootstrap below overwrites, so the session finalizer can restore it ---
+# captured so the session finalizer can restore what the bootstrap below overwrites
 _ENV_KEYS = (
     "FABRICKS_BASE",
     "FABRICKS_RUNTIME",
@@ -99,7 +90,7 @@ def _clear_configured_results(mock: NonCallableMock) -> None:
 
 
 def _reset_bootstrap_mocks() -> None:
-    """The shared bootstrap mocks cannot be replaced per test (21 modules hold `SPARK` by value)."""
+    """The shared bootstrap mocks cannot be replaced per test (modules import `SPARK` by value)."""
     for mock in (_fake_spark_session, _fake_dbutils):
         mock.reset_mock()  # call records
         _clear_configured_results(mock)
@@ -115,9 +106,7 @@ def _reset_bootstrap_mocks_fixture(monkeypatch):
 
 @pytest.fixture(scope="session", autouse=True)
 def _restore_process_state():
-    """Only matters when pytest runs more than once in a process (REPL, IDE runner, nested run): the
-    runtests.py runners call pytest.main once, so this is otherwise a no-op. Kept so this conftest
-    leaves no process-wide state behind."""
+    """Only matters when pytest runs more than once in a process (REPL, IDE runner, nested run)."""
     yield
     SparkSession.builder = _ORIGINAL_BUILDER
     for name, original in _ORIGINAL_MODULES.items():
@@ -135,10 +124,9 @@ def _restore_process_state():
 @pytest.fixture(autouse=True)
 def _fake_dags_log_table(monkeypatch):
     """Give the real dags log handler a fake table so nothing resolves the lazy one (local storage has no
-    get_storage_account) and drain what the real LOGGER buffered, so logging.shutdown() has nothing to flush.
+    get_storage_account), and drain the LOGGER buffer so logging.shutdown() has nothing to flush.
 
-    dags.log is imported here, not looked up in sys.modules, so the seam does not depend on which test
-    modules were collected (some import the DAG code only inside the test body)."""
+    dags.log is imported here rather than found in sys.modules, because some tests import DAG code only in the body."""
     from fabricks.core.dags.log import TABLE_LOG_HANDLER  # this tier uses the real fabricks.context: safe
 
     monkeypatch.setattr(TABLE_LOG_HANDLER, "_table", MagicMock(name="fake_dags_log_table"))

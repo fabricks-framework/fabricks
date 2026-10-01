@@ -12,9 +12,7 @@ def test_update_configurations_writes_gold_jobs(local_spark):
 
 
 def test_update_dependencies_writes_silver_dependencies(local_spark):
-    # Silver.get_dependencies() (unlike Gold's) never reads a .sql file --
-    # explicit parents or a naming-convention fallback only -- so this is
-    # safe against the DDL-only gold jobs' missing-.sql-file limitation above.
+    # Silver.get_dependencies() never reads a .sql file, so the DDL-only gold jobs' missing .sql don't matter.
     step = get_step("silver")
     step.update_configurations()
 
@@ -35,19 +33,8 @@ def test_create_db_objects_materializes_runnable_semantic_jobs(local_spark):
     assert local_spark.catalog.tableExists("semantic.fact_table")
 
 
-# https://github.com/fabricks-framework/fabricks/issues/183: mode:memory
-# views with an inter-view dependency chain (view_a -> view_b -> view_c)
-# plus view_d, which depends on two of them at once (view_b AND view_c --
-# see tests/spark/runtime/gold/_config.depchain.yml) used to fail with
-# TABLE_OR_VIEW_NOT_FOUND on first deployment, since dispatch order
-# wasn't guaranteed to create a view's dependencies before the view
-# itself. parallel=False forces the same row order get_jobs() returns
-# (view_a, view_b, view_c, view_d -- deliberately listed dependency-first
-# in the fixture), so the first pass deterministically fails view_a,
-# view_b, and view_d exactly like an unlucky real parallel race would,
-# and the retry logic must resolve all three -- including view_d, whose
-# single recorded blocker only clears once both of its dependencies
-# exist -- before returning.
+# https://github.com/fabricks-framework/fabricks/issues/183: memory views with dependencies failed with
+# TABLE_OR_VIEW_NOT_FOUND on first deployment. parallel=False makes the first pass fail deterministically.
 def test_create_db_objects_resolves_a_memory_view_dependency_chain(local_spark, monkeypatch):
     step = get_step("gold")
     get_depchain_jobs = step.get_jobs
