@@ -39,6 +39,10 @@ Runtime code imports from `api/`, not framework internals. `metastore/` never
 imports `core/`. See [ARCHITECTURE.md](./ARCHITECTURE.md) before crossing a
 layer boundary.
 
+`api/` is the stable public surface: do not remove or rename anything from it
+(modules, classes, functions, parameters) without explicit user approval —
+propose the change and wait. Adding to it is fine.
+
 ## 4. Tests
 
 Choose the smallest tier that proves the behavior. See [TEST.md](./TEST.md).
@@ -47,6 +51,11 @@ propose the change and wait. CDC tests (`test_cdc.py`, `test_gold_cdc.py`,
 `cdc_harness.py`, `test_cdc_harness.py`, `test_cdc_query_generation.py`,
 `test_cdc_context.py`) guard core framework behavior; treat changes to them
 with extra caution.
+
+Do not modify CDC logic (`framework/fabricks/cdc/`, including its Jinja
+templates and the CDC processor code) without explicit user approval —
+propose the change and wait. This holds even when a bugfix or failing test
+points at CDC code.
 
 ## 5. Documentation
 
