@@ -8,6 +8,11 @@ include:
   - databricks.targets.yml
 bundle:  # Required.
   name: fabricks_test
+sync:
+  exclude:
+    # Plain-tier fixtures include an .ipynb/.py notebook pair that bundle sync
+    # maps to the same remote path and rejects.
+    - tests/unit/**
 artifacts:
   fabricks_tool:
     # Pinned fake version (not pyproject's real version) so the wheel's

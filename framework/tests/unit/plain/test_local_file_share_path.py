@@ -1,4 +1,3 @@
-import importlib
 from pathlib import Path
 
 import pytest
@@ -50,67 +49,37 @@ def test_joinpath_preserves_class(tmp_path: Path):
     assert isinstance(child, LocalFileSharePath)
 
 
-def _environment_setter(monkeypatch):
-    from fabricks.utils import environment as environment_module
+@pytest.fixture
+def set_environment(monkeypatch):
     from fabricks.utils.path import file_share as file_share_module
 
     def _set(value: str):
-        monkeypatch.setenv("FABRICKS_ENVIRONMENT", value)
-        importlib.reload(environment_module)
-        importlib.reload(file_share_module)
+        monkeypatch.setattr(file_share_module, "FABRICKS_ENVIRONMENT", value)
         return file_share_module
 
-    yield _set
-
-    # Restore the environment BEFORE the final reloads: monkeypatch's own teardown runs after this
-    # finalizer, so reloading first would freeze the modules against a deleted variable.
-    monkeypatch.undo()
-    importlib.reload(environment_module)
-    importlib.reload(file_share_module)
-
-
-@pytest.fixture
-def set_environment(monkeypatch):
-    yield from _environment_setter(monkeypatch)
+    return _set
 
 
 def test_resolve_fileshare_path_docker_returns_local(tmp_path, set_environment):
     fs = set_environment("docker")
+
     p = fs.resolve_fileshare_path(str(tmp_path / "gold"))
-    assert isinstance(p, LocalFileSharePath)
+
+    assert type(p) is LocalFileSharePath
+    assert str(p) == str(tmp_path / "gold")
 
 
 def test_resolve_fileshare_path_databricks_returns_fileshare(set_environment):
     fs = set_environment("databricks")
+
     p = fs.resolve_fileshare_path("abfss://gold@storage.dfs.core.windows.net/gold")
-    # fs.FileSharePath, not a module-level import: `set_environment` reloads
-    # fabricks.utils.path.file_share, which rebinds FileSharePath to a new
-    # class object each time -- isinstance against a pre-reload import would
-    # spuriously fail.
-    assert isinstance(p, fs.FileSharePath)
-    assert not isinstance(p, LocalFileSharePath)
+
+    assert type(p) is fs.FileSharePath
+    assert str(p) == "abfss://gold@storage.dfs.core.windows.net/gold"
 
 
 def test_resolve_fileshare_path_databricks_rejects_non_abfss(set_environment):
     fs = set_environment("databricks")
-    with pytest.raises(AssertionError):
+
+    with pytest.raises(AssertionError, match="expected an abfss:// path"):
         fs.resolve_fileshare_path("/not/an/abfss/path")
-
-
-def test_finalizer_reloads_modules_against_the_restored_environment(monkeypatch):
-    from fabricks.utils import environment as environment_module
-    from fabricks.utils.path import file_share as file_share_module
-
-    monkeypatch.setenv("FABRICKS_ENVIRONMENT", "remote")  # non-default: an unset variable reloads to "databricks"
-    inner = pytest.MonkeyPatch()
-    setter = _environment_setter(inner)
-    try:
-        next(setter)("docker")
-        assert environment_module.FABRICKS_ENVIRONMENT == "docker"
-        with pytest.raises(StopIteration):
-            next(setter)
-        assert environment_module.FABRICKS_ENVIRONMENT == "remote"
-    finally:
-        monkeypatch.undo()
-        importlib.reload(environment_module)
-        importlib.reload(file_share_module)

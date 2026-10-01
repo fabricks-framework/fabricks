@@ -100,6 +100,11 @@ keyring-provider = "subprocess"
 [tool.hatch.build.targets.wheel]
 packages = ["fabricks"]
 
+[tool.ty.src]
+# Databricks notebook fixtures parsed as text by the dependency tests; they
+# use the notebook-injected `spark` and `%sql` cells and are never imported.
+exclude = ["tests/unit/plain/fixtures/notebooks"]
+
 [tool.ty.rules]
 deprecated = "ignore"
 
@@ -112,10 +117,6 @@ include = ["tests/**"]
 [tool.ty.overrides.rules]
 invalid-argument-type = "ignore"
 unresolved-attribute = "ignore"
-
-# Notebook fixtures are parsed as data by the dependency tests; `spark` only exists inside Databricks.
-[tool.ty.src]
-exclude = ["tests/unit/plain/fixtures/notebooks"]
 
 [tool.ty.terminal]
 output-format = "full"

@@ -1,9 +1,7 @@
-"""Raw/Delta fixture seeding for the Databricks test tier's runtests.py.
-Split out of that notebook (and, for registered_delta_rows, out of
-tests/spark/test_data.py, which re-exports it) to keep the notebook
-orchestration-only. This notebook runs from bundle-synced workspace files,
-not a Databricks Repo, so `tests` itself isn't importable there -- Databricks
-adds a notebook's own containing folder to sys.path, not distant ancestors.
+"""Raw/Delta fixture seeding for runtests.py, split out to keep the notebook orchestration-only.
+
+A sibling module because the notebook runs from bundle-synced files, not a Databricks Repo: `tests` isn't
+importable, but Databricks puts a notebook's own folder on sys.path.
 """
 
 from typing import Literal
@@ -42,12 +40,9 @@ def seed_raw_fixtures() -> None:
 
 
 def seed_raw_delta_fixtures() -> None:
-    """Write an empty (schema-only) Delta table at king/queen's raw uri --
-    Bronze.register_external_table() (bronze.py) selects from that uri
-    directly, so it needs a real table there at deploy time, same shape as
-    tests/spark/apache/conftest.py's king_and_queen_registered_sources. Real
-    rows land later, per run, via bronze.king_scd1/queen_scd1's post_run
-    notebook (runtime/bronze/bronze/post_run/notebook.py).
+    """Write an empty Delta table at king/queen's raw uri: Bronze.register_external_table() selects from it at deploy.
+
+    Real rows land per run via runtime/bronze/bronze/pre_run/notebook.py.
     """
     from pyspark.sql.functions import col, lit
 

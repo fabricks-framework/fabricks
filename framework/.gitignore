@@ -50,3 +50,6 @@ New Notebook *
 tests/spark/apache/.storage/
 tests/spark/apache/.worker_cwd/
 tests/spark/apache/.expected-cache/
+
+# Test run logs written by scripts/run_logged.sh (opt out with FABRICKS_TEST_LOG=off)
+.logs/

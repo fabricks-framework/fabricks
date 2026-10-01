@@ -29,7 +29,8 @@ _DEV_ACCOUNT = "semblance"
 class Semblance:
     """What a test sees. Seed through the dicts and views, assert through the views."""
 
-    def __init__(self, fs_root: Path) -> None:
+    def __init__(self, fs_root: Path, sleeps: list[float] | None = None) -> None:
+        self.sleeps: list[float] = [] if sleeps is None else sleeps  # every time.sleep(seconds), in order
         self._state = DbutilsState(fs_root=fs_root)
         self.dbutils = FakeDbutils(self._state)
         self.tables = TableStore()
@@ -71,14 +72,20 @@ class Semblance:
 def no_real_sleep(monkeypatch):
     """Skip real waits (tenacity backoff, DagGenerator's time.sleep(60)); yield to other threads."""
     real_sleep = time.sleep
-    monkeypatch.setattr(time, "sleep", lambda *_a, **_kw: real_sleep(0))
+    sleeps: list[float] = []
+
+    def _sleep(seconds: float = 0) -> None:
+        sleeps.append(seconds)
+        real_sleep(0)
+
+    monkeypatch.setattr(time, "sleep", _sleep)
+    return sleeps
 
 
 @pytest.fixture
 def semblance(monkeypatch, tmp_path, no_real_sleep):
-    s = Semblance(tmp_path)
+    s = Semblance(tmp_path, sleeps=no_real_sleep)
 
-    # Azure SDK boundary
     monkeypatch.setattr("fabricks.utils.azure_table.TableServiceClient", TableServiceFactory(s.tables))
     monkeypatch.setattr("fabricks.utils.azure_queue.QueueClient", QueueClientFactory(s.queues))
 

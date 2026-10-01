@@ -31,20 +31,24 @@ jobs:
         run: uv sync --all-extras --group test --group dev
         working-directory: framework
       
-      - name: Ty
-        run: uv run ty check fabricks
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      # The recipes in framework/justfile are the single definition of each tier command (see docs/TEST.md).
+      - name: Lint (ruff + ty on fabricks and tests)
+        run: just lint
         working-directory: framework
 
       # One tier per pytest process: each tier's conftest.py patches
       # sys.modules at import time, so `pytest tests/unit` would let whichever
       # conftest imports first win for the rest of the run -- see docs/TEST.md.
-      - name: Run Plain Unit Tests
-        run: uv run pytest tests/unit/plain --maxfail 3
+      # `just test-unit` runs plain then config as separate processes.
+      - name: Run Unit Tests (plain, then config)
+        run: just test-unit
         working-directory: framework
-
-      - name: Run Config Unit Tests
-        run: uv run pytest tests/unit/config --maxfail 3
-        working-directory: framework
+        env:
+          FABRICKS_TEST_LOG: "off"
+          PYTEST_ADDOPTS: "--maxfail 3"
 
   apache:
     runs-on: ubuntu-latest
@@ -80,14 +84,16 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --group test --group dev
         working-directory: framework
+      - name: Install just
+        uses: extractions/setup-just@v2
       - name: Run Apache Spark Tests
         timeout-minutes: 22
         working-directory: framework
+        env:
+          PYTEST_ADDOPTS: "-ra --tb=long --junitxml=artifacts/apache.xml"
         run: |
           mkdir -p artifacts
-          set -o pipefail
-          uv run pytest tests/spark/apache -v -ra --tb=long \
-            --junitxml=artifacts/apache.xml 2>&1 | tee artifacts/apache.log
+          just test-apache
       - name: Upload Apache failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
@@ -97,7 +103,4 @@ jobs:
           include-hidden-files: true
           path: |
             framework/artifacts/apache.xml
-            framework/artifacts/apache.log
-            framework/tests/spark/apache/.worker_cwd/**/derby.log
-            framework/**/hs_err_pid*.log
-            /tmp/hs_err_pid*.log
+            framework/.logs/apache/

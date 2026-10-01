@@ -1,3 +1,5 @@
+import pytest
+
 from fabricks.core.jobs.silver import Silver
 from fabricks.models import StepPathOptions, StepSilverConf, StepSilverOptions
 
@@ -18,19 +20,25 @@ def _silver_job(*, job_skip_if_stale=None, step_skip_if_stale=None):
     return job
 
 
-def test_skip_if_stale_defaults_to_true():
-    job = _silver_job()
-    assert job.skip_if_stale is True
+@pytest.mark.parametrize(
+    ("job_value", "step_value", "expected"),
+    [
+        pytest.param(None, None, True, id="default-true"),
+        pytest.param(None, True, True, id="step-true"),
+        pytest.param(None, False, False, id="step-false"),
+        pytest.param(True, None, True, id="job-true"),
+        pytest.param(False, None, False, id="job-false"),
+        pytest.param(True, False, True, id="job-true-beats-step-false"),
+        # a falsy job value is still a value: only None falls through to the step
+        pytest.param(False, True, False, id="job-false-beats-step-true"),
+        pytest.param(True, True, True, id="both-true"),
+        pytest.param(False, False, False, id="both-false"),
+    ],
+)
+def test_skip_if_stale_job_value_wins_over_step_and_only_none_falls_through(job_value, step_value, expected):
+    job = _silver_job(job_skip_if_stale=job_value, step_skip_if_stale=step_value)
 
-
-def test_skip_if_stale_step_level_override():
-    job = _silver_job(step_skip_if_stale=False)
-    assert job.skip_if_stale is False
-
-
-def test_skip_if_stale_job_level_wins_over_step():
-    job = _silver_job(job_skip_if_stale=True, step_skip_if_stale=False)
-    assert job.skip_if_stale is True
+    assert job.skip_if_stale is expected
 
 
 def test_bronze_and_gold_never_skip_regardless_of_dependency_status():

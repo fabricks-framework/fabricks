@@ -1,50 +1,30 @@
-"""Real-Spark (Apache-tier) comparison helpers against the shared expected/
-oracle (the "expected-state oracle" — see CONTEXT.md).
+"""Real-Spark (Apache-tier) comparison helpers against the shared expected/ oracle.
 
-See docs/adr/0001-duckdb-backend-for-local-cdc-tests.md, Stage 1 item #7.
-
-The QUALIFY-rewrite and schema-inference logic below (`_make_spark_compatible`/
-`_expected_scd2_schema`) is pure Python — no Spark session needed to exercise
-it — kept testable from `tests/unit/plain/test_compare.py` without paying for
-a JVM. The Spark-dependent functions below import `pyspark.sql`/
-`fabricks.metastore.table`/`fabricks.utils.dataframe` lazily, inside their own
-bodies, so importing this module at all doesn't require a real
-`fabricks.context` (same lazy-import pattern `tests/spark/apache/cdc_harness.py`
-uses for its own heavy `fabricks.cdc` import).
+The Spark-dependent functions import heavy `fabricks` modules lazily, so importing this module needs no real
+`fabricks.context`. The pure QUALIFY/schema helpers live in tests/support/expected_sql.py for the plain tier.
 """
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+import hashlib
 import os
 from pathlib import Path
 import re
+import shutil
 from typing import TYPE_CHECKING
+import uuid
 
-from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType, StructField, StructType, TimestampType
-
-from tests.spark.test_data import SPARK_TEST_ROOT, read_ndjson
+from tests.support.expected_sql import expected_scd2_schema, make_spark_compatible
+from tests.support.fixture_data import EXPECTED_ROOT, read_expected_rows
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame, SparkSession
 
     from fabricks.metastore.table import Table
 
-EXPECTED_ROOT = SPARK_TEST_ROOT / "expected"
 
-
-def read_expected_rows(iteration: int) -> list[dict]:
-    rows = read_ndjson(EXPECTED_ROOT / "scd2" / f"iter{iteration:02}.jsonl")
-    for row in rows:
-        row["__valid_from"] = _utc_timestamp(row["__valid_from"])
-        row["__valid_to"] = _utc_timestamp(row["__valid_to"])
-        if isinstance(row.get("newField"), str):
-            row["newField"] = {"true": True, "false": False, "null": None}[row["newField"]]
-    return rows
-
-
-def _utc_timestamp(value: str) -> datetime:
-    return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
+# Columns Fabricks adds that the oracle files do not carry, and so are not compared row by row.
+UNCOMPARED_COLUMNS: frozenset[str] = frozenset({"__key", "__hash", "__timestamp", "__operation"})
 
 
 def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
@@ -54,6 +34,11 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
     from fabricks.utils.dataframe import boolean_as_string, decimal_to_double, timestamp_as_string, value_to_none
 
     cols = df_expected.columns
+    extra = sorted(set(df.columns) - set(cols) - UNCOMPARED_COLUMNS)
+    assert not extra, f"table has columns the oracle does not: {extra}"
+    actual_types = {name: dtype for name, dtype in df.dtypes if name in cols}
+    expected_types = dict(df_expected.dtypes)
+    assert actual_types == expected_types, f"column types differ from the oracle: {actual_types} != {expected_types}"
     order_by = "id"
     if "__valid_from" in df.columns:
         order_by = f"concat_ws('|', {order_by}, __valid_from, __valid_to)"
@@ -76,150 +61,61 @@ def assert_dfs_equal(df: DataFrame, df_expected: DataFrame) -> None:
     assert_frame_equal(p_df, p_df_expected, check_dtype=False)
 
 
-# OSS Apache Spark (this local test container) has no QUALIFY clause support
-# -- it's a Databricks SQL extension. tests/spark/expected/scd1/iter*.sql (the
-# correctness oracle, unmodified) all use it: `select * except (...) from
-# <src> qualify row_number() over (...) = N`. Verified empirically against
-# this container's real Spark session: `select * except (b) from t` parses
-# fine (OSS Spark does support star-except), but `... qualify rn = 1` raises
-# PARSE_SYNTAX_ERROR -- QUALIFY alone is the unsupported part. sqlglot's
-# generic databricks->spark QUALIFY elimination (verified via
-# sqlglot.transpile(sql, read="databricks", write="spark")) rewrites this
-# correctly for an explicit column list, but for a `select *` projection it
-# leaves its own window-function helper column exposed in the outer `SELECT
-# *`, corrupting the view's column set -- so a hand-rolled rewrite is used
-# instead, run only at load time against our local Spark session; the
-# checked-in oracle file itself is never touched.
-# ponytail: handles exactly the one recurring shape verified identical across
-# all 9 scd1 oracle files (`select * except (...) from <src> qualify
-# row_number() over (...) = N`), not a general QUALIFY-eliminating SQL
-# parser -- widen the regex (or reach for a real AST-based rewrite) if a
-# future oracle file ever uses a different QUALIFY shape.
-_QUALIFY_RE = re.compile(
-    r"select \*\s*except \((?P<except_cols>[^)]*)\)\s*from (?P<src>\S+) "
-    r"qualify (?P<rn_expr>row_number\(\) over \(.*?\)) = (?P<rn_val>\d+)\s*\Z",
-    re.IGNORECASE | re.DOTALL,
-)
+def assert_keys_match_business_key(df: DataFrame) -> None:
+    """`__key` is not in the oracle files, so check it directly: never null, and one-to-one with `id`."""
+    if "__key" not in df.columns:
+        return
+    nulls = df.where("__key is null").count()
+    assert nulls == 0, f"{nulls} rows have a null __key"
+    row = df.selectExpr(
+        "count(distinct __key) as keys", "count(distinct id) as ids", "count(distinct struct(__key, id)) as pairs"
+    ).first()
+    assert row is not None
+    assert row.keys == row.ids == row.pairs, f"__key is not one-to-one with id: {row.asDict()}"
 
 
-def _make_spark_compatible(sql: str) -> str:
-    match = _QUALIFY_RE.search(sql)
-    if not match:
-        return sql
+def _cached_oracle(df: DataFrame, source: Path, cache_root: Path, name: str) -> Path:
+    """Delta copy of an oracle frame, keyed on its source file and schema so editing the data invalidates it.
 
-    exc = match.group("except_cols")
-    src = match.group("src")
-    rn_expr = match.group("rn_expr")
-    rn_val = match.group("rn_val")
-    replacement = (
-        f"select * except ({exc}, __qualify_rn) from (\n"
-        f"    select *, {rn_expr} as __qualify_rn\n"
-        f"    from {src}\n"
-        f") where __qualify_rn = {rn_val}"
-    )
-    return sql[: match.start()] + replacement + sql[match.end() :]
+    Written to a private directory and renamed into place, so xdist workers racing on the first use never
+    observe (or clobber) a half-written table."""
+    digest = hashlib.sha256(source.read_bytes() + df.schema.json().encode()).hexdigest()[:12]
+    final = cache_root / f"{name}_{digest}"
+    if (final / "_delta_log").exists():
+        return final
 
-
-_EXPECTED_SCD2_BASE_SCHEMA = StructType(
-    [
-        StructField("__valid_from", TimestampType(), True),
-        StructField("__valid_to", TimestampType(), True),
-        # LongType, not IntegerType: raw bronze JSON's plain integer `id`
-        # values infer to bigint under spark.read.json() (confirmed: this
-        # container's real Spark session, `id (int -> bigint)`). Comparison
-        # via assert_dfs_equal never noticed the mismatch (int vs. bigint
-        # values compare equal after its own normalization), but seeding a
-        # table from this schema (CDC scenario seeding) writes the *type*
-        # verbatim, producing a genuine int-vs-bigint schema difference the
-        # next update_schema() call detects and "fixes" for no reason.
-        StructField("id", LongType(), True),
-        StructField("name", StringType(), True),
-        StructField("doubleField", DoubleType(), True),
-        StructField("__is_current", BooleanType(), True),
-        StructField("__is_deleted", BooleanType(), True),
-        StructField("__source", StringType(), True),
-    ]
-)
-
-# newField: added via a per-file StructField, not folded into the base schema
-# above, and not unconditionally on every iteration's NDJSON, unlike the now-
-# deleted Databricks-cluster suite's equivalent schema (commit 8a7cb451).
-# That was correct for the Databricks-cluster suite, where
-# king_and_queen's real job config declares a fixed bronze schema
-# up front (so bronze.king already carries a NULL newField column from its
-# very first landing batch, before iter2 ever supplies a real value) -- but
-# this plan has no job config/parsers layer at all (see run_cdc_scenario
-# in conftest.py: raw spark.read.json() per iteration's own NDJSON file, one column
-# set per file, autoMerge only ever *adding* columns once a later iteration's data
-# introduces them). So a iters=[1]-only target genuinely has no
-# newField column at all (verified empirically: UNRESOLVED_COLUMN against
-# this container's real Spark session when the expected side forced newField
-# into iter1's comparison) -- matching iter1's own raw fixture, which has no
-# "newField" key in any row (verified: tests/spark/apache/fixtures/iter1/bronze_*
-# .jsonl and the original tests/spark/fixtures/iter1/king/**/*.jsonl landing fixture
-# both lack the key entirely; iter2 onward always carry it). Detecting the
-# key's presence per-file (rather than hardcoding "iter1 is the exception")
-# keeps this correct if a future iteration's fixture composition changes.
-# BooleanType, not StringType: every raw fixture's `newField` value is a
-# genuine JSON boolean (`true`/`false`, verified across all of iter2-9's
-# fixtures, never a string) -- same int-vs-bigint reasoning as `id` above,
-# this only mattered once this schema started feeding CDC scenario seeding.
-_NEW_FIELD = StructField("newField", BooleanType(), True)
-
-
-def _expected_scd2_schema(rows: list[dict]) -> StructType:
-    if any("newField" in row for row in rows):
-        return StructType([*_EXPECTED_SCD2_BASE_SCHEMA.fields, _NEW_FIELD])
-    return _EXPECTED_SCD2_BASE_SCHEMA
+    cache_root.mkdir(parents=True, exist_ok=True)
+    staging = cache_root / f".{name}_{digest}.{os.getpid()}.{uuid.uuid4().hex}"
+    df.write.format("delta").save(str(staging))
+    try:
+        staging.rename(final)
+    except OSError:
+        shutil.rmtree(staging, ignore_errors=True)  # another worker won the race
+    return final
 
 
 def create_expected_views(spark: SparkSession, cdc: str) -> None:
     views_dir = EXPECTED_ROOT / cdc
 
-    # tests/spark/databricks/utils.py, which this module's create_expected_views
-    # once mirrored fixes into (commits 8a7cb451, d4f2498e), was deleted in
-    # bdda89d6 ("remove old tests") - this is the sole create_expected_views now.
-
     if cdc == "scd2":
-        # Only iter1's file is hand-authored NDJSON data — iter2.sql onward are
-        # still real SQL, each unioning its own new VALUES rows with `select
-        # ... from expected.scd2_iter{N-1} where not __is_current`
-        # (verified: iter3.sql references iter2, iter2.sql references iter1 — a
-        # genuine sequential chain). Create iter1's NDJSON root, then fall
-        # through to the SQL loop below for iter2 onward in ascending order —
-        # an early `return` here would silently skip
-        # expected.scd2_iter{2..9} entirely, since Task 9's
-        # run_cdc_scenario only calls create_expected_views for
-        # "scd2"/"scd1", not per iteration.
+        # Only iter1 is NDJSON; iter2.sql onward chain off the previous iteration, so fall through to the SQL loop.
         for ndjson_file in sorted(views_dir.glob("*.jsonl")):
-            # str(int(...)): strip the filename's leading zero (iter01.jsonl ->
-            # "01") so it matches the un-padded table name (scd2_iter1)
-            # the scd1/iter*.sql oracle views reference -- without it,
-            # "scd2_iter01" is created but "scd2_iter1" (what iter1.sql
-            # selects from) is never found.
+            # str(int(...)) drops the leading zero: iter01.jsonl must create scd2_iter1, the name iter1.sql reads.
             match = re.search(r"\d+", ndjson_file.stem)
             assert match, f"no iteration number in {ndjson_file.name}"
             iter_num = str(int(match.group()))
             rows = read_expected_rows(int(iter_num))
-            df = spark.createDataFrame(rows, schema=_expected_scd2_schema(rows))
+            df = spark.createDataFrame(rows, schema=expected_scd2_schema(rows))
             expected_table = f"expected.scd2_iter{iter_num}"
             expected_cache = os.environ.get("FABRICKS_TEST_EXPECTED_CACHE")
             if expected_cache:
-                cache_path = Path(expected_cache) / f"scd2_iter{iter_num}"
-                if not (cache_path / "_delta_log").exists():
-                    df.write.format("delta").save(str(cache_path))
+                cache_path = _cached_oracle(df, ndjson_file, Path(expected_cache), f"scd2_iter{iter_num}")
                 spark.sql(f"create table {expected_table} using delta location '{cache_path}'")
             else:
                 df.write.mode("overwrite").saveAsTable(expected_table)
 
     if cdc == "scd0":
-        # No dedicated oracle files -- generated straight from
-        # expected.scd2_iter{N} (same data expected.scd1_iter{N}
-        # is itself derived from). CDC merge correctness doesn't depend on
-        # which database a table lives in, so scd0 is proven here exactly
-        # like scd1/scd2 are, no separate rename/duplicate oracle needed.
-        # First-insert-per-key wins, so iterN's view is iterN-1's own rows
-        # plus only the *new* ids iterN's snapshot introduces.
+        # No oracle files: derived from scd2_iter{N}; first insert per key wins, so iterN adds only new ids.
         for iter_num in range(1, 12):
             snapshot = f"""
                 select id, name, doubleField, __is_current
@@ -240,7 +136,7 @@ def create_expected_views(spark: SparkSession, cdc: str) -> None:
         return
 
     for sql_file in sorted(views_dir.glob("*.sql")):
-        spark.sql(_make_spark_compatible(sql_file.read_text()))
+        spark.sql(make_spark_compatible(sql_file.read_text()))
 
 
 def load_expected(spark: SparkSession, cdc: str, iter: int) -> DataFrame:
@@ -253,5 +149,10 @@ def compare_to_expected(spark: SparkSession, table: Table, cdc: str, iter: int, 
     expected_df = load_expected(spark, cdc, iter)
     if topic in ["monarch", "memory", "regent"]:
         expected_df = expected_df.drop("__source")
+    if cdc == "scd0":
+        # the scd0 oracle views select only id, name and doubleField, so columns added later (newField) and
+        # __source are not covered for scd0
+        df = df.select(*expected_df.columns)
 
+    assert_keys_match_business_key(df)
     assert_dfs_equal(df, expected_df)

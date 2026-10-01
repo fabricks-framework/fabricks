@@ -1,6 +1,5 @@
-"""Split out from tests/tier_policy.py (which re-exports it) so
-tests/spark/databricks/conftest.py can import it as a sibling module --
-see the comment in registered_delta_rows.py for why.
+"""Split out from tests/tier_policy.py (which re-exports it) so this directory's conftest.py can import it as a
+sibling module: the notebooks run from bundle-synced files, where `tests` isn't importable.
 """
 
 import os

@@ -1,10 +1,6 @@
 # Databricks notebook source
-# Ad-hoc single-test runner on the persistent interactive cluster, for fast
-# iteration during manual debugging -- e.g. checking a real physical plan
-# (Photon operator naming, join strategy) without paying for a full
-# runtests.py pass (seed + armageddon + the whole tests/spark/databricks
-# suite, ~20-25 min). See runjobs.py for the equivalent ad-hoc runner for
-# fabricks jobs (bronze/silver/gold), rather than pytest test files.
+# Ad-hoc pytest runner on the interactive cluster, for fast iteration without a full runtests.py pass.
+# runjobs.py is the equivalent for fabricks jobs.
 
 import logging
 import os
@@ -25,17 +21,12 @@ test_paths = [p.strip() for p in dbutils.widgets.get("test_path").split(";") if 
 
 dbutils.widgets.dropdown("run_fixtures", "False", ["True", "False"], label="Run notebook-deploy + schedule fixtures")
 if dbutils.widgets.get("run_fixtures").lower() != "true":
-    # conftest.py's _notebooks_deployed/_schedule_run fixtures are
-    # session-scoped autouse -- they'd otherwise fire for any test in this
-    # directory regardless of what it actually needs, defeating the point
-    # of a fast scoped run for a self-contained scratch test.
+    # conftest.py's session-scoped autouse fixtures would otherwise fire for every test, however self-contained.
     os.environ["FABRICKS_SKIP_FIXTURES"] = "true"
 
 # COMMAND ----------
 
-# same guard as runtests.py: assert the *live* session catalog, not just
-# CATALOG from the config -- a scratch test doing something destructive
-# against the wrong catalog is unrecoverable.
+# Same live-catalog guard as runtests.py: a destructive scratch test on the wrong catalog is unrecoverable.
 if IS_UNITY_CATALOG:
     current_catalog = SPARK.catalog.currentCatalog()
     assert current_catalog == "bms_dna_test", (
@@ -44,16 +35,13 @@ if IS_UNITY_CATALOG:
 
 # COMMAND ----------
 
-# fabricks' own DEFAULT_LOGGER output is noise here -- pytest's own -vv/-s
-# output plus _FailureCollector's summary are the useful signal.
+# Silence fabricks logs; pytest output and _FailureCollector's summary are the signal.
 DEFAULT_LOGGER.setLevel("CRITICAL")
 logging.getLogger("dags").setLevel("CRITICAL")
 
 # COMMAND ----------
 
-# same _FailureCollector pattern as runtests.py: puts per-test failure
-# detail into the raised AssertionError itself, since the Jobs API doesn't
-# surface a notebook task's plain stdout on failure.
+# Same as runtests.py: the Jobs API doesn't surface a notebook task's stdout, so failures go in the AssertionError.
 
 
 class _FailureCollector:

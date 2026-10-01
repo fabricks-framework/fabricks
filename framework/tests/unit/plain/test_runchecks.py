@@ -107,8 +107,9 @@ def test_verbose_prints_per_step_stats(tmp_path: Path, capsys: pytest.CaptureFix
 
     assert check_config(tmp_path, verbose=True) is False
     out = capsys.readouterr().out
-    assert "gold" in out
-    assert "2" in out  # 2 jobs, 2 topics, 2 sql files
+    lines = out.splitlines()
+    assert lines[0].split() == ["step", "jobs", "topics", "sql", "files"]
+    assert lines[1].split() == ["gold", "2", "2", "2"]  # 2 jobs, 2 topics, 2 sql files
 
 
 def test_sql_reference_to_nonexistent_fabricks_managed_table_is_an_error(
@@ -159,10 +160,12 @@ def test_sql_reference_to_unmanaged_database_is_a_warning_not_an_error(
     _write(tmp_path / "gold" / "sales" / "summary.sql", "select * from raw_source.external_orders")
 
     assert check_config(tmp_path) is False
-    assert "raw_source.external_orders" in capsys.readouterr().out
+    assert "Warning: SQL for gold.sales_summary references raw_source.external_orders" in capsys.readouterr().out
 
 
-def test_multi_statement_sql_is_an_error_without_script_true(tmp_path: Path) -> None:
+def test_multi_statement_sql_is_an_error_without_script_true(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     _write(
         tmp_path / "gold" / "sales" / "_config.sales.yml",
         """
@@ -180,6 +183,7 @@ def test_multi_statement_sql_is_an_error_without_script_true(tmp_path: Path) -> 
     )
 
     assert check_config(tmp_path) is True
+    assert "is not a query" in capsys.readouterr().out
 
 
 def test_multi_statement_sql_is_fine_with_script_true(tmp_path: Path) -> None:
@@ -220,7 +224,7 @@ def test_clean_runtime_has_no_errors(tmp_path: Path) -> None:
     assert check_config(tmp_path) is False
 
 
-def test_missing_sql_file_is_an_error(tmp_path: Path) -> None:
+def test_missing_sql_file_is_an_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _write(
         tmp_path / "gold" / "sales" / "_config.sales.yml",
         """
@@ -234,6 +238,7 @@ def test_missing_sql_file_is_an_error(tmp_path: Path) -> None:
     )
 
     assert check_config(tmp_path) is True
+    assert "File for " in capsys.readouterr().out
 
 
 def test_passthrough_step_does_not_need_a_sql_file(tmp_path: Path) -> None:
@@ -253,7 +258,7 @@ def test_passthrough_step_does_not_need_a_sql_file(tmp_path: Path) -> None:
     assert check_config(tmp_path, passthrough_steps=frozenset({"raw"})) is False
 
 
-def test_dangling_parent_is_an_error(tmp_path: Path) -> None:
+def test_dangling_parent_is_an_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _write(
         tmp_path / "gold" / "sales" / "_config.sales.yml",
         """
@@ -269,9 +274,10 @@ def test_dangling_parent_is_an_error(tmp_path: Path) -> None:
     _write(tmp_path / "gold" / "sales" / "summary.sql", "select 1 as x")
 
     assert check_config(tmp_path) is True
+    assert "Parent table not found" in capsys.readouterr().out
 
 
-def test_unparseable_sql_is_an_error(tmp_path: Path) -> None:
+def test_unparseable_sql_is_an_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _write(
         tmp_path / "gold" / "sales" / "_config.sales.yml",
         """
@@ -286,9 +292,10 @@ def test_unparseable_sql_is_an_error(tmp_path: Path) -> None:
     _write(tmp_path / "gold" / "sales" / "summary.sql", "select this is not sql (((")
 
     assert check_config(tmp_path) is True
+    assert "SQL parse error in" in capsys.readouterr().out
 
 
-def test_duplicate_table_name_is_an_error(tmp_path: Path) -> None:
+def test_duplicate_table_name_is_an_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _write(
         tmp_path / "gold" / "sales" / "_config.sales.yml",
         """
@@ -309,6 +316,7 @@ def test_duplicate_table_name_is_an_error(tmp_path: Path) -> None:
     _write(tmp_path / "gold" / "sales" / "summary.sql", "select 1 as x")
 
     assert check_config(tmp_path) is True
+    assert "Duplicate table name found" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("mode", ["invoke", "register"])
@@ -329,10 +337,7 @@ def test_invoke_and_register_modes_never_need_a_sql_file(tmp_path: Path, mode: s
 
 
 def test_unset_parents_does_not_need_to_match_sql(tmp_path: Path) -> None:
-    """parents: is an override, not a contract the SQL must satisfy -- a job that
-    leaves it unset gets its dependency deducted from the SQL instead, and a job
-    that sets it is free to narrow it (e.g. gating on a trigger job) without that
-    being an error."""
+    """parents: is an override, not a contract: unset it is deduced from the SQL, and a set value may narrow it."""
     _write(
         tmp_path / "silver" / "sales" / "_config.sales.yml",
         """
@@ -375,7 +380,9 @@ def test_unset_parents_does_not_need_to_match_sql(tmp_path: Path) -> None:
     assert check_config(tmp_path) is False
 
 
-def test_circular_dependency_via_declared_parents_is_an_error(tmp_path: Path) -> None:
+def test_circular_dependency_via_declared_parents_is_an_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     _write(
         tmp_path / "gold" / "a" / "_config.a.yml",
         """
@@ -404,9 +411,10 @@ def test_circular_dependency_via_declared_parents_is_an_error(tmp_path: Path) ->
     _write(tmp_path / "gold" / "b" / "two.sql", "select 1 as x")
 
     assert check_config(tmp_path) is True
+    assert "Circular dependency" in capsys.readouterr().out
 
 
-def test_circular_dependency_via_sql_is_an_error(tmp_path: Path) -> None:
+def test_circular_dependency_via_sql_is_an_error(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _write(
         tmp_path / "gold" / "a" / "_config.a.yml",
         """
@@ -433,6 +441,7 @@ def test_circular_dependency_via_sql_is_an_error(tmp_path: Path) -> None:
     _write(tmp_path / "gold" / "b" / "two.sql", "select * from gold.a_one")
 
     assert check_config(tmp_path) is True
+    assert "Circular dependency" in capsys.readouterr().out
 
 
 def test_no_cycle_is_not_an_error(tmp_path: Path) -> None:

@@ -34,22 +34,10 @@ def test_parse_filter_rejects_anything_else(bad):
         parse_filter(bad)
 
 
-def test_upsert_query_round_trip_sorted_by_partition_and_row_key(table_client):
-    table_client.submit_transaction([("upsert", {"PartitionKey": "b", "RowKey": "2", "V": "x"})])
-    table_client.submit_transaction([("upsert", {"PartitionKey": "a", "RowKey": "9", "V": "y"})])
-    table_client.submit_transaction([("upsert", {"PartitionKey": "a", "RowKey": "1", "V": "z"})])
-
-    rows = list(table_client.query_entities(""))
-    assert [(r["PartitionKey"], r["RowKey"]) for r in rows] == [("a", "1"), ("a", "9"), ("b", "2")]
-    assert [r["V"] for r in table_client.query_entities("PartitionKey eq 'a' and V eq 'y'")] == ["y"]
-
-
-def test_upsert_merges_and_returned_rows_are_copies(table_client):
-    table_client.submit_transaction([("upsert", {"PartitionKey": "p", "RowKey": "1", "A": "1", "B": "1"})])
-    table_client.submit_transaction([("upsert", {"PartitionKey": "p", "RowKey": "1", "B": "2"})])
+def test_returned_rows_are_copies(table_client):
+    # ordering, filtering and merge-on-upsert are covered through the wrapper in test_azure_contract.py
+    table_client.submit_transaction([("upsert", {"PartitionKey": "p", "RowKey": "1", "A": "1"})])
     row = next(iter(table_client.query_entities("")))
-    assert row["A"] == "1"
-    assert row["B"] == "2"
 
     row["A"] = "mutated"
     assert next(iter(table_client.query_entities("")))["A"] == "1"
@@ -145,3 +133,53 @@ def test_queue_only_supports_string_content(queues):
     client.create_queue()
     with pytest.raises(TypeError):
         client.send_message({"a": 1})
+
+
+def _op(row_key: str, *, partition: str = "p") -> tuple[str, dict]:
+    return ("upsert", {"PartitionKey": partition, "RowKey": row_key})
+
+
+def test_a_transaction_takes_at_most_100_operations(table_client):
+    table_client.submit_transaction([_op(str(i)) for i in range(100)])
+
+    with pytest.raises(ValueError, match="at most 100 operations, got 101"):
+        table_client.submit_transaction([_op(str(i)) for i in range(101)])
+
+
+def test_a_transaction_may_touch_each_entity_only_once(table_client):
+    with pytest.raises(ValueError, match="only once"):
+        table_client.submit_transaction([_op("1"), _op("1")])
+
+
+def test_a_transaction_operation_with_options_is_not_modelled(table_client):
+    with pytest.raises(NotImplementedError, match="pairs only"):
+        table_client.submit_transaction([("upsert", {"PartitionKey": "p", "RowKey": "1"}, {"mode": "replace"})])
+
+
+def test_a_transaction_across_partitions_is_rejected(table_client):
+    with pytest.raises(ValueError, match="share a PartitionKey"):
+        table_client.submit_transaction([_op("1", partition="a"), _op("2", partition="b")])
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        pytest.param(lambda c: c.create_queue(timeout=5), id="create_queue"),
+        pytest.param(lambda c: c.send_message("m", visibility_timeout=5), id="send_message"),
+        pytest.param(lambda c: c.receive_message(visibility_timeout=5), id="receive_message"),
+        pytest.param(lambda c: c.clear_messages(timeout=5), id="clear_messages"),
+        pytest.param(lambda c: c.delete_queue(timeout=5), id="delete_queue"),
+    ],
+)
+def test_queue_client_rejects_arguments_it_does_not_model(call):
+    client = QueueClientFactory(QueueStore()).from_connection_string("x", queue_name="q")
+
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        call(client)
+
+
+def test_table_service_rejects_arguments_it_does_not_model():
+    service = TableServiceFactory(TableStore()).from_connection_string("x")
+
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        service.create_table_if_not_exists(table_name="t", timeout=5)  # ty: ignore[unknown-argument]

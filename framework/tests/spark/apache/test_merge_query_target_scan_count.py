@@ -1,18 +1,6 @@
 """Reproduces https://github.com/fabricks-framework/fabricks/issues/202:
-a single `mode: update` merge query (SCD1) reads the target table many
-times from storage instead of once, because __current -- although only
-referenced once in the SQL text -- gets pruned to a different column
-subset at each consumption site, defeating Spark's CTE-reuse detection.
-
-Counts distinct physical `Scan parquet` node *definitions* for the target
-table in the real physical plan (captured via explain(mode="formatted"),
-same technique used to diagnose the issue) after a real
-`cdc.get_data(..., mode="update")` call against a seeded Delta table. A node
-definition line looks like `(14) Scan parquet ...target_scan_count`; the
-same node is then referenced by id (`+- Scan parquet ...target_scan_count
-(14)`) wherever the plan reuses it, so counting definitions -- not every
-textual mention -- is what actually measures physical re-reads from
-storage. Currently red: 28 definitions for this scenario, not 1.
+one `mode: update` SCD1 merge query must read the target table once, not once per pruned
+`__current` consumer (28 scans before the fix). Counts distinct `Scan parquet` nodes for the target in the plan.
 """
 
 import contextlib
@@ -47,7 +35,7 @@ def test_update_merge_query_scans_target_table_once(local_spark):
     plan = _explain_text(df)
     scan_definitions = re.findall(r"^\(\d+\) Scan parquet .*target_scan_count", plan, re.MULTILINE)
 
-    assert len(scan_definitions) <= 1, (
+    assert len(scan_definitions) == 1, (
         f"target table scanned {len(scan_definitions)} times in one merge query plan "
-        f"(issue #202) -- expected at most 1:\n{plan}"
+        f"(issue #202) -- expected exactly 1 (0 means the plan format changed and the regex matches nothing):\n{plan}"
     )

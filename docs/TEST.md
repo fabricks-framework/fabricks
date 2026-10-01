@@ -1,7 +1,8 @@
 # Testing
 
 Commands below run from `framework/` (`uv sync` once per checkout; the
-Apache tier also needs a local Java 17+). Run one tier per pytest invocation.
+Apache tier also needs a local Java 17-21; Java 25 fails with
+`JAVA_GATEWAY_EXITED`). Run one tier per pytest invocation.
 Each tier configures global Spark/context state during collection, so mixing
 them makes results order-dependent.
 
@@ -11,6 +12,28 @@ them makes results order-dependent.
 | `tests/unit/config/` | Real runtime YAML with a fake Spark session. | `just test-config` |
 | `tests/spark/apache/` | Real local Spark and Delta behavior. | `just test-apache` |
 | `tests/spark/databricks/` | Databricks-only behavior: notebooks, UC, streaming, masks, and liquid clustering. | `just test-databricks` (deploys the bundle to the `test` workspace). |
+
+Apache tier timing on the remote machine (24 cores), 88 tests: serial about 5m20s; `-n 4` 2m19s to 2m51s over
+four runs; `-n 6` 2m09s; `-n 8` 2m04s, all passing. Past 4 workers the gain is small, so
+`just test-apache-remote` defaults to 4; `just test-apache` stays serial by default because each worker is a
+Spark JVM. Parallel runs are safe because each worker has its own storage under `.worker_cwd/<worker>/`.
+
+The plain and config tiers are local-only: `databricks.yml` excludes `tests/unit/**` from the bundle sync,
+and only `tests/spark/databricks/runtests.py` runs on a cluster (see
+[decisions/0001](./decisions/0001-plain-and-config-tiers-are-local-only.md)).
+
+`just test-unit` runs plain then config as two separate pytest processes; `just test-all` runs every tier.
+
+To run the Apache tier on a faster machine over ssh, use `just test-apache-remote [TARGET]`. It rsyncs
+the working tree, then runs `just test-apache` there. Set `FABRICKS_REMOTE` (ssh host),
+`FABRICKS_REMOTE_DIR` and optionally `FABRICKS_REMOTE_JAVA_HOME` and `FABRICKS_REMOTE_UV_CACHE_DIR` (when the
+remote's `UV_CACHE_DIR` points at a cache you cannot write) in the gitignored `framework/.env`
+(loaded by the justfile). The remote machine needs `uv`, `just`, `rsync` and a Java 17-21.
+
+Every `just test-*` recipe also writes its output to
+`framework/.logs/<category>/<timestamp>.log` (gitignored; `latest.log` links to
+the newest, the newest 20 per category are kept). Set `FABRICKS_TEST_LOG=off`
+(for example in `framework/.env`) to disable it.
 
 Use the smallest tier that exercises the changed behavior. SQL generation and
 configuration decisions belong in unit tests. Delta correctness belongs in the

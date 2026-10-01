@@ -1,16 +1,10 @@
-"""Locks down fabricks/api/'s public re-export surface -- the facade user
-notebooks/pipelines import from (`from fabricks.api import get_job`), as
-opposed to fabricks/core/ internals which are free to change shape.
+"""Locks down fabricks/api/'s public re-export surface, which user notebooks and pipelines import from.
 
-EXPECTED_ALL is the contract: every name a module re-exports, kept in sync
-by hand. A rename, removal, or forgotten export in any fabricks/api/*.py
-file changes __all__ and fails here, forcing a deliberate update to this
-file instead of an silent, unreviewed break for anyone importing fabricks.api.
+EXPECTED_ALL is the contract, kept in sync by hand: any rename, removal or forgotten export in a
+fabricks/api/*.py file fails here instead of silently breaking importers.
 
-fabricks/api/notebooks/ is deliberately excluded: those files are Databricks
-notebook scripts referenced by path (see databricks.yml's notebook_task
-entries), not importable library modules -- they have no __all__ and run
-dbutils widget/exit side effects at import time.
+fabricks/api/notebooks/ is excluded: those are Databricks notebook scripts referenced by path (databricks.yml
+notebook_task), with no __all__ and dbutils widget/exit side effects at import time.
 """
 
 import importlib

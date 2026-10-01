@@ -19,16 +19,19 @@ def test_bronze_reads_seeded_first_iteration():
     ]
 
 
-def test_silver_materializes_first_iteration_cdc():
-    job = get_job(step="silver", topic="king", item="scd1")
-
-    rows = job.table.dataframe.where("__is_current and not __is_deleted").select("id", "name").orderBy("id").collect()
-    assert [(row.id, row.name) for row in rows] == [(1, "Leopold I"), (2, "Leopold II")]
-
-
 def test_gold_materializes_silver_dependency():
+    # gold.fact_dependency cross joins the "10" hour of gold.dim_time (one row per minute) with the current rows
+    # of silver.king_scd1
     job = get_job(step="gold", topic="fact", item="dependency")
-    assert job.table.dataframe.count() == 120
+    minutes = get_job(step="gold", topic="dim", item="time").table.dataframe.where("hour = '10'").count()
+    kings = (
+        get_job(step="silver", topic="king", item="scd1")
+        .table.dataframe.where("__is_current and not __is_deleted")
+        .count()
+    )
+
+    assert minutes * kings > 0, "the inputs must not be empty, or the product is vacuously equal"
+    assert job.table.dataframe.count() == minutes * kings
 
 
 def test_silver_cdc_matches_first_iteration_expected_state():

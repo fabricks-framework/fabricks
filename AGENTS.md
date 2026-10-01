@@ -7,12 +7,13 @@ one of the tracked `docs/` files, not appended here directly — see
 pick which retained `docs/` file it belongs in.
 
 - for system structure see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md);
-- for coding rules see [docs/CONSTITUTION.md](./docs/CONSTITUTION.md);
+- for coding rules see [docs/CONSTITUTION.md](./docs/CONSTITUTION.md): comment only the why, never the what, and only when a reader would misread the intent (see § 2);
 - for testing see [docs/TEST.md](./docs/TEST.md);
 - for recurring task runbooks (e.g. bugfixes) see [docs/WORKFLOW.md](./docs/WORKFLOW.md);
 - for CodeGraph, Serena, and Headroom usage see
   [docs/WORKFLOW.md](./docs/WORKFLOW.md#code-navigation);
 - for hard-won bug signatures see [docs/DEBUG.md](./docs/DEBUG.md);
+- for why a design is the way it is see [docs/decisions/](./docs/decisions/README.md);
 - for reading Spark physical plans / CDC performance investigations see
   [docs/SPARK.md](./docs/SPARK.md);
 - for format/lint/test commands see [framework/justfile](./framework/justfile) —
@@ -20,8 +21,9 @@ pick which retained `docs/` file it belongs in.
 
 ## Skills
 
-Checked into `.claude/skills/`, synced from the plugin cache via
-`just update-skills` (run from `framework/`) per `framework/skills.json`.
+Live in `.claude/skills/` (gitignored, synced from the plugin cache via
+`just update-skills` run from `framework/`, per `framework/skills.json`), except
+`testing-fabricks` and `comment-fabricks`, which this repo owns and tracks.
 Grouped by task — **when doing X, use Y**.
 
 Loaded by *default*, every task:
@@ -43,6 +45,9 @@ When *writing Python*:
   type hints, and fail-loud/determinism anti-patterns.
 - `api-design` — adding or changing a service's public methods. Python API
   shape, evolution, and deprecation patterns.
+- `comment-fabricks` — deciding whether a comment or docstring belongs, and
+  auditing existing ones. Why-only comments; longer context goes to commits,
+  `docs/decisions/` or `docs/DEBUG.md`. Repo-owned and tracked.
 
 When *writing docs*:
 
@@ -51,8 +56,11 @@ When *writing docs*:
 
 When *testing*:
 
-- `testing-strategy` — writing or reviewing tests. Pytest suites (fixtures,
-  parametrization, mocking, Hypothesis property-based testing, CI).
+- `testing-fabricks` — writing, fixing or reviewing tests in this repo. Tier
+  choice, what to mock (and not), and proving a test can fail. Repo-owned and
+  tracked; read it first.
+- `testing-strategy` — generic pytest background (fixtures, parametrization,
+  Hypothesis, CI); defer to `testing-fabricks` where they differ.
 
 When *reviewing code*:
 
