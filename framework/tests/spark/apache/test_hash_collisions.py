@@ -1,5 +1,6 @@
-"""Reproduces https://github.com/fabricks-framework/fabricks/issues/235: `add_key` joins the key fields with '*'
-and replaces nulls with '-1', so distinct business keys can share a __key. Encodes the correct behavior.
+"""Pins the known limitation from https://github.com/fabricks-framework/fabricks/issues/235: `add_key` joins the key
+fields with '*' and replaces nulls with '-1', so distinct business keys can share a __key. Fixing it would change every
+materialized __key/__hash, so these collisions are expected until a versioned key format exists.
 """
 
 import pytest
@@ -20,11 +21,11 @@ from tests.spark.apache.test_hashing import _eval_sql, _hash_macros
         ),
     ],
 )
-@pytest.mark.xfail(strict=True, reason="add_key joins with '*' and maps null to '-1' (#235)")
-def test_add_key_distinguishes_distinct_business_keys(local_spark, left, right):
+def test_add_key_collides_on_delimiter_and_null_known_limitation(local_spark, left, right):
+    # Flip to != only together with a key-format migration; a silent change would rewrite every stored __key.
     sql_expr = _hash_macros().add_key(["id", "name"])
 
-    assert _eval_sql(local_spark, sql_expr, left) != _eval_sql(local_spark, sql_expr, right)
+    assert _eval_sql(local_spark, sql_expr, left) == _eval_sql(local_spark, sql_expr, right)
 
 
 def test_add_key_distinguishes_ordinary_distinct_keys_control(local_spark):
