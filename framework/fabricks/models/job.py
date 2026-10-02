@@ -1,6 +1,8 @@
 """Job configuration models."""
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from typing import Self
+
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 from fabricks.models.common import (
     AllowedChangeDataCaptures,
@@ -61,6 +63,14 @@ class BaseOptions(BaseModel):
     vacuum: bool | None = None
     no_drop: bool | None = None
     timeout: int | None = None
+
+    @model_validator(mode="after")
+    def _wait_for_is_not_a_parent(self) -> Self:
+        parents = {p.lower() for p in self.parents or []}
+        overlap = {w for w in self.wait_for or [] if w.lower() in parents}
+        if overlap:
+            raise ValueError(f"wait_for entries are already parents: {sorted(overlap)}")
+        return self
 
 
 class BronzeOptions(BaseOptions):
