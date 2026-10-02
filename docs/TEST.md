@@ -1,6 +1,6 @@
 # Testing
 
-Commands below run from `framework/` (`uv sync` once per checkout; the
+Commands below run from `framework/` (`uv sync --group test` once per checkout; the
 Apache tier also needs a local Java 17-21; Java 25 fails with
 `JAVA_GATEWAY_EXITED`). Run one tier per pytest invocation.
 Each tier configures global Spark/context state during collection, so mixing
