@@ -34,3 +34,38 @@ workflows must stay inside.
 4. Run the full tier(s) the new test(s) belong to and confirm everything
    passes before considering the fix done.
 5. Run `/simplify` against the diff and apply what it finds.
+
+## Models and effort
+
+Use Haiku and Sonnet only. Complexity is handled by raising effort, never by switching to a bigger model.
+
+| Action | Model | Effort |
+|---|---|---|
+| Search the repo, read many files, summarise logs or CI output, run a command and report | Haiku | low |
+| Mechanical edits with a clear spec (lint hits, `noqa`, comment shortening, renames, docs numbers) | Haiku, or Sonnet if it spans several files | low |
+| Normal implementation and bugfixes, tests inside an existing tier | Sonnet | medium |
+| `fabricks/cdc/`, CDC guard tests, SQL templates, Spark plans | Sonnet | high |
+| Design trade-offs, reviewing a diff against the spec, multi-file refactors | Sonnet | high, xhigh for architecture-level calls |
+| Mutation gates and test pruning | Sonnet decides at high; Haiku at low runs and collects results | |
+
+Escalation:
+
+1. Start at the lowest effort whose output you can check mechanically (`just lint`, the unit tiers, a test that
+   fails first and then passes).
+2. If the check fails twice, raise Sonnet's effort one level (low, medium, high, xhigh, max) instead of retrying
+   at the same level.
+3. Haiku stays at low. If its result fails once, redo the step on Sonnet.
+
+Subagents:
+
+- Spawn one for fan-out search or reading across several files, for log and CI triage, and for independent
+  tasks that share no state. Do not spawn one for a single-fact lookup you can search directly.
+- `explorer` (Haiku, `.claude/agents/explorer.md`): read-only search and log triage. It returns a conclusion
+  with `file:line` references, not file dumps.
+- `cdc-reviewer` (Sonnet, `.claude/agents/cdc-reviewer.md`): reviews a diff under `fabricks/cdc/` or the CDC guard
+  tests against `testing-fabricks` and `docs/CONSTITUTION.md`. It proposes changes and never edits.
+- `ci-triage` (Haiku): reads a GitHub Actions run and reports failures, timings and stuck runs.
+- `mutation-gate` (Sonnet, own worktree): applies mutants and compares which old and new tests go red.
+- `test-pruner` (Sonnet): ranks merge or delete candidates from timing and coverage-overlap data; proposes only.
+- Launch independent subagents in one message so they run in parallel, and give each a self-contained prompt.
+- Subagent definitions set `model` but not effort, so effort follows the session; put the depth you need in the prompt.

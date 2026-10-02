@@ -10,7 +10,7 @@ from tenacity import Retrying, retry_if_exception, stop_after_attempt, wait_fixe
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.extenders import get_extender
-from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
+from fabricks.core.jobs.base.exception import InvokeException, PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.get_schedule import get_schedule
 from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
 from fabricks.utils.path import GitPath
@@ -48,18 +48,15 @@ def _get_invoker_option(invoker: dict | BaseInvokerOptions, key: str) -> Any:  #
 
 
 def _raise_invoke_errors(position: str, errors: list[Exception]) -> None:
-    # str(Exception(errors)) on a list of exception objects falls back to
-    # each one's repr, which drops the real message (e.g. Py4JJavaError's
-    # repr is just the bare gateway call description) -- join str() of each
-    # instead so the actual cause survives. Raise the typed exception (not a
-    # bare Exception) so job.py's run() can tell an invoker failure apart
-    # from a real run failure and skip the table restore for it.
+    # Join str() of each error: str(Exception(errors)) falls back to each repr, which drops the real message
+    # (Py4JJavaError's repr is just the gateway call). Raise the typed exception so run() can tell an invoker
+    # failure from a run failure and skip the table restore.
     message = "; ".join(str(e) for e in errors)
     if position == "pre_run":
         raise PreRunInvokeException(message)
     if position == "post_run":
         raise PostRunInvokeException(message)
-    raise Exception(message)
+    raise InvokeException(message)
 
 
 class JobInvoker:
@@ -198,6 +195,8 @@ class JobInvoker:
                 retrieved from the invoker options.
             arguments (Optional[dict]): Additional arguments to pass to the notebook job. If not
                 provided, it will be retrieved from the invoker options.
+            timeout (Optional[int]): Seconds to wait for the notebook. If not provided, the job's resolved
+                timeout is used.
             schedule (Optional[str]): The schedule for the job. If provided, schedule variables will be retrieved.
             retry (Optional[bool]): Retry once on a failure instead of raising immediately. Off by
                 default. With no `retry_on_error`, retries on any exception; with it, retries only

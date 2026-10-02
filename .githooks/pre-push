@@ -11,3 +11,6 @@ if ! git -C "$repo_root" diff --quiet -- 'job-schema*.json'; then
     echo "Regenerated in place -- review, commit, then push again." >&2
     exit 1
 fi
+
+# The unit tiers also enforce repo rules (import seams, tier boundaries, API surface).
+(cd "$repo_root/framework" && FABRICKS_TEST_LOG=off just test-unit)

@@ -189,7 +189,7 @@ class JobGenerator:
                 )
 
         except Exception:
-            pass
+            DEFAULT_LOGGER.debug("could not check for dependent jobs", exc_info=True, extra={"label": self.job})
 
         self.job.cdc.drop()
         self.rm()

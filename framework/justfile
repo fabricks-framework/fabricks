@@ -5,19 +5,29 @@ set dotenv-load
 setup-hooks:
     git -C .. config core.hooksPath .githooks
 
-# Run linter
-lint:
-    uv run ruff check fabricks/
-    uv run ruff check tests/
-    uv run ty check fabricks/
-    uv run ty check tests/
+# Run linter on PATHS, default the whole tree (CI); the pre-commit hook passes the staged files
+lint *PATHS:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    paths=({{ if PATHS == "" { "fabricks/ tests/" } else { PATHS } }})
+    py=$(printf '%s\n' "${paths[@]}" | grep -E '(\.py|/)$' || true)
+    [ -z "$py" ] || uv run ruff check --force-exclude $py
+    [ -z "$py" ] || uv run ty check --force-exclude $py
 
-# Format code
-format:
-    uv run ruff format fabricks/
-    uv run ruff format tests/
-    uv run sqlfmt fabricks/ tests/
-    uv run yamlfix fabricks/ tests/
+# Fail on comment blocks longer than 3 lines in FILES (the pre-commit hook passes the staged files)
+lint-comments *FILES:
+    uv run python scripts/check_comment_size.py {{FILES}}
+
+# Format PATHS, default the whole tree; the pre-commit hook passes the staged files (each tool only gets its own types)
+format *PATHS:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    paths=({{ if PATHS == "" { "fabricks/ tests/" } else { PATHS } }})
+    pick() { printf '%s\n' "${paths[@]}" | grep -E "$1" || true; }
+    py=$(pick '(\.py|/)$'); sql=$(pick '(\.jinja|\.sql|/)$'); yml=$(pick '(\.ya?ml|/)$')
+    [ -z "$py" ] || uv run ruff format --force-exclude $py
+    [ -z "$sql" ] || uv run sqlfmt $sql
+    [ -z "$yml" ] || uv run yamlfix $yml
 
 # Install the plugins listed in skills.json that aren't in the local plugin cache yet.
 install-skills:
@@ -43,6 +53,14 @@ test-plain TARGET="tests/unit/plain":
 test-config TARGET="tests/unit/config":
     scripts/run_logged.sh config uv run pytest {{TARGET}}
 
+# List tests that cover exactly the same lines as another test: pruning candidates, not proof (see testing-fabricks section 9)
+# TARGET is one tier, e.g. `just test-overlap tests/spark/apache` (needs Java 17-21, takes minutes); pytest-cov is fetched on the fly
+test-overlap TARGET="tests/unit/config":
+    mkdir -p .logs
+    rm -f .logs/.coverage-overlap
+    COVERAGE_FILE=.logs/.coverage-overlap uv run --with pytest-cov pytest {{TARGET}} --cov=fabricks --cov-context=test --cov-report= -q
+    uv run --with pytest-cov python scripts/test_overlap.py .logs/.coverage-overlap
+
 # Run both unit tiers: plain, then config (separate pytest processes; the tiers cannot share one), stopping on the first failure
 test-unit: test-plain test-config
 
@@ -53,7 +71,7 @@ test-apache TARGET="tests/spark/apache" WORKERS="":
     # a killed run can leave a worker's Derby metastore half-created, which
     # fails to reopen (ERROR XBM0A) on the next run
     rm -rf tests/spark/apache/.worker_cwd
-    scripts/run_logged.sh apache uv run pytest {{TARGET}} {{ if WORKERS == "" { "" } else { "-n " + WORKERS } }} -v
+    scripts/run_logged.sh apache uv run pytest {{TARGET}} {{ if WORKERS == "" { "" } else { "-n " + WORKERS } }} -v --durations=20
 
 # Run the Apache tier on a remote machine over ssh (rsyncs the working tree first); logged locally
 # Needs FABRICKS_REMOTE=<ssh host>; FABRICKS_REMOTE_DIR defaults to ~/Fabricks; FABRICKS_REMOTE_JAVA_HOME optionally picks the remote JDK. Remote needs Java 17-21, uv, just.

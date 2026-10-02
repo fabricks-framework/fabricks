@@ -60,8 +60,16 @@ Link to the note from the code only when a reader would otherwise "fix" somethin
 
 1. Try to make the comment unnecessary: rename, extract a named helper, add a type.
 2. Still needed? Write the constraint or the rejected alternative, not the mechanics.
-3. Longer than two lines? Move it per the table above and link it.
+3. Longer than three lines? Move it per the table above and link it. The pre-commit hook runs `just lint-comments` (`scripts/check_comment_size.py`) on the staged files and rejects any run of more than three whole-line comments (Python `#` and `--` in templates), including old ones in a file you touch: shorten them while you are there.
 4. Never vent, apologize or joke instead of fixing. If something is bad, fix it, or name the real constraint stopping you.
+
+## Keeping comments true
+
+A comment that is no longer true is worse than none. Before finishing a change:
+
+- Re-read the comments inside and directly above the code you changed, and any comment that names something you renamed, removed or moved. Fix or delete the ones that are now false.
+- Read a why-comment that names a constraint ("must run before X", "Spark rejects Y") as binding. If your change contradicts it, either the change or the comment is wrong: resolve that on purpose, don't leave both.
+- Check each docstring you touched against the current signature: every parameter present, none left over, `Returns` and `Raises` still accurate.
 
 ## Review mode
 
@@ -76,7 +84,12 @@ For a file or diff: `git diff -U0 <base> | grep -nE '^\+\s*(#|--|\{#|""")'` list
 ### Keep        - db.py:77 rejected alternative, exactly right
 ```
 
-If the comments are already clean, say so; don't invent findings. Deleting or rewording comments inside a test file is a change to an existing test: follow `docs/CONSTITUTION.md` § 4 (propose, wait for approval).
+If the comments are already clean, say so; don't invent findings. Also check the docstrings of touched functions against their signatures (see "Keeping comments true").
+
+Apply or propose:
+
+- **Apply** deletions of comments you verified are false or only restate the code, in files already in the diff.
+- **Propose and wait** for everything else: comments in files outside the diff, `ponytail:` markers, and anything where the intent is unclear. Deleting or rewording comments inside a test file is a change to an existing test: follow `docs/CONSTITUTION.md` § 4 (propose, wait for approval).
 
 ## Tone
 

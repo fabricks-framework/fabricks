@@ -11,33 +11,23 @@ __scd1_last_key as (
     -- take last update as it is the latest picture
     select
         *,
-        row_number() over (
-            partition by {% if has_source %} __source, {% endif %} __key order by __timestamp desc
-        ) as __scd1_rn
-    from __scd1_base
-    where true and __operation == 'upsert'
-    {% if mode == "update" %}
-        {% if has_rows %}
-            -- take first delete ONLY if no upsert is present
-            union all
-            select
-                *,
-                row_number() over (
-                    partition by {% if has_source %} __source, {% endif %} __key order by __timestamp asc
-                ) as __scd1_rn
-            from __scd1_base b
-            where
-                true
-                and __operation == 'delete'
-                and not exists (
-                    select 1
-                    from __scd1_base b2
-                    where
-                        true and b.__key == b2.__key
-                        {% if has_source %} and b.__source == b2.__source {% endif %} and b2.__operation == 'upsert'
-                )
+        {% if mode == "update" and has_rows %}
+            -- a key's last upsert wins; its first delete is taken ONLY if no upsert is present
+            row_number() over (
+                partition by {% if has_source %} __source, {% endif %} __key
+                order by if(__operation == 'upsert', __timestamp, null) desc nulls last, __timestamp asc
+            ) as __scd1_rn
+        {% else %}
+            row_number() over (
+                partition by {% if has_source %} __source, {% endif %} __key order by __timestamp desc
+            ) as __scd1_rn
         {% endif %}
-    {% endif %}
+    from __scd1_base
+    where
+        true
+        {% if mode == "update" and has_rows %} and __operation in ('upsert', 'delete')
+        {% else %} and __operation == 'upsert'
+        {% endif %}
 ),
 __scd1 as (
     select
@@ -55,24 +45,15 @@ __scd1 as (
     )
 {% else %}
     __merge_condition as (
-        select s.*, s.__key as __merge_key, o.__merge_condition
-        from __scd1 s
-        left join
-            (
-                select 'upsert' as __operation, 'upsert' as __merge_condition
-                {% if has_rows %}
-                    union all
-                    select 'delete' as __operation, 'delete' as __merge_condition
-                {% endif %}
-            ) o
-            on s.__operation = o.__operation
+        -- __scd1 only holds 'upsert' (and 'delete' when has_rows), the merge conditions themselves
+        select s.*, s.__key as __merge_key, s.__operation as __merge_condition from __scd1 s
     ),
     {% if has_rows %}
         __scd1_no_fake_update as (
             select *
             from __merge_condition m
             left anti join
-                __current c on m.__key == c.__key and m.__hash = c.__hash
+                {{ current_view }} c on m.__key == c.__key and m.__hash = c.__hash
                 {% if has_source %} and m.__source = c.__source {% endif %} and m.__operation == 'upsert'
         ),
     {% endif %}

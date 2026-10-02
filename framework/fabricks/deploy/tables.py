@@ -14,7 +14,7 @@ def deploy_tables(drop: bool = False, update: bool = False) -> None:
     create_table_step(drop=drop, update=update)
 
 
-# TODO: switch to view and use fabricks.runtime
+# Could be a view over fabricks.runtime instead of a table.
 def create_table_step(drop: bool = False, update: bool = False) -> None:
     table = Table("fabricks", "steps")
     schema = StructType(

@@ -11,7 +11,13 @@
                 {% for i in intermediates %} `{{ i }}`, {% endfor %}
                 __timestamp as __original_timestamp,
                 __operation as __original_operation,
-            from __current
+            from {{ current_view }}
+            {% if not has_no_data %}
+                -- current rows only matter to detect keys missing from a later reload (or, with no
+                -- data, to be deleted); without a reload in the batch they are filtered out below,
+                -- so skip shuffling the whole target slice through the rectify chain
+                where exists (select 1 from {{ parent_rectify }} where __operation == 'reload')
+            {% endif %}
         {% endif %}
     ),
 {% endif %}

@@ -6,7 +6,7 @@
             {% for output in outputs %} s.`{{ output }}`, {% endfor %}
         from {{ parent_cdc }} s
         left anti join
-            __current c on s.__key == c.__key and s.__hash == c.__hash
+            {{ current_view }} c on s.__key == c.__key and s.__hash == c.__hash
             {% if has_source %} and s.__source = c.__source {% endif %}
         {% if delete_missing %}
             union all
@@ -14,7 +14,7 @@
                 c.__key as __merge_key,
                 'delete' as __merge_condition,
                 {% for output in outputs %} c.`{{ output }}`, {% endfor %}
-            from __current c
+            from {{ current_view }} c
             left anti join
                 {{ parent_cdc }} s on s.__key == c.__key {% if has_source %} and s.__source = c.__source {% endif %}
         {% endif %}

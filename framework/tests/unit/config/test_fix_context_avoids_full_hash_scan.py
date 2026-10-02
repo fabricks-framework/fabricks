@@ -1,7 +1,7 @@
 """Reproduces https://github.com/fabricks-framework/fabricks/issues/184:
 for `has_source=True` jobs, `Processor.fix_context`'s incremental-filter probe must not build `__base` or
 `md5(...)` over the whole batch (that OOM'd the driver on a 2000-row, 32-column batch). Asserts the SQL sent to
-a faked Spark for the update and latest shapes; tests/spark/apache/test_fix_context_avoids_full_hash_scan.py is
+a faked Spark for the update and latest shapes; tests/spark/apache/test_cdc_multi_source.py is
 the real-Spark counterpart.
 """
 

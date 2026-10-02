@@ -5,7 +5,7 @@ import pytest
 
 from fabricks.cdc import SCD1, NoCDC
 from fabricks.cdc.scd0 import SCD0
-from tests.spark.apache.cdc_harness import run_cdc_scenario
+from tests.spark.apache.cdc_harness import prepare_expected_views, run_cdc_scenario
 from tests.spark.expected.compare import compare_to_expected, create_expected_views
 
 
@@ -113,38 +113,19 @@ def test_delete_log_marks_rows_deleted(local_spark):
     assert scd1.table.dataframe.where("__is_deleted").count() == 1
 
 
-# (seed_from, iters, compare_to): seed the table from iteration seed_from's expected output (0 = empty table), run one
-# update() per iteration in iters in order without reseeding, compare to iteration compare_to's expected state.
-_SCENARIOS = [
-    (0, [1], 1),
-    (1, [2], 2),
-    (2, [3], 3),
-    (3, [4], 4),
-    (4, [5], 5),
-    (5, [6], 6),
-    (6, [7], 7),
-    (7, [8], 8),
-    (8, [9], 9),
-    # iter10: queen has only a delete (a no-op for queen); iter11: queen has no data, so the scenario skips her.
-    (9, [10], 10),
-    (10, [11], 11),
-    (3, [4, 5, 6, 7], 7),
-    (0, [1, 2, 3, 4, 5, 6, 7, 8, 9], 9),
-]
+# One update() per iteration, in order, compared to that iteration's expected state before the next one runs. Each
+# step starts from the table the previous update() produced, not from a seed. iter10: queen has only a delete (a
+# no-op for queen); iter11: queen has no data, so the scenario skips her. Ordered early: it is the longest test.
+@pytest.mark.order(8)
+@pytest.mark.parametrize("cdc", ["scd1", "scd2"])
+def test_every_iteration_matches_the_expected_state(local_spark, cdc):
+    def compare(scd, iter_num):
+        try:
+            compare_to_expected(local_spark, table=scd.table, cdc=cdc, iter=iter_num, topic="king_and_queen")
+        except AssertionError as error:
+            raise AssertionError(f"{cdc} differs from the expected state after iteration {iter_num}") from error
 
-
-@pytest.mark.order(10)
-@pytest.mark.parametrize(("seed_from", "iters", "compare_to"), _SCENARIOS)
-def test_scd2_update(local_spark, seed_from, iters, compare_to):
-    scd2 = run_cdc_scenario(local_spark, seed_from, iters, "scd2")
-    compare_to_expected(local_spark, table=scd2.table, cdc="scd2", iter=compare_to, topic="king_and_queen")
-
-
-@pytest.mark.order(11)
-@pytest.mark.parametrize(("seed_from", "iters", "compare_to"), _SCENARIOS)
-def test_scd1_update(local_spark, seed_from, iters, compare_to):
-    scd1 = run_cdc_scenario(local_spark, seed_from, iters, "scd1")
-    compare_to_expected(local_spark, table=scd1.table, cdc="scd1", iter=compare_to, topic="king_and_queen")
+    run_cdc_scenario(local_spark, 0, list(range(1, 12)), cdc, on_iter=compare)
 
 
 @pytest.mark.order(12)
@@ -170,6 +151,7 @@ def test_scd2_correct_valid_from(local_spark):
 # SCD0 merge has no `when matched` clause: new keys are inserted, existing keys stay frozen.
 @pytest.mark.order(13)
 def test_scd0(local_spark):
+    prepare_expected_views(local_spark)
     create_expected_views(local_spark, "scd0")
 
     scd0 = SCD0("cdc", "scd0_test", "update", spark=local_spark)

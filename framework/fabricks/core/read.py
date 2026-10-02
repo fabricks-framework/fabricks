@@ -21,6 +21,7 @@ def read_yaml(
         path: Path to read YAML files from
         root: Optional root key to extract from each YAML document
         preferred_file_name: Optional preferred file name to filter by
+        strict: If True, raise ValueError when a variable is not found in the lookup (default: False)
 
     Yields:
         Dictionaries with variable substitution applied

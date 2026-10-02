@@ -149,7 +149,8 @@ Removes consecutive duplicate records based on hash value changes.
 
 ### ctes/current.sql.jinja
 
-Retrieves the current state from the target table for update operations.
+Select that builds the cached `current_view` (global temp view) the update queries read, rendered by
+`Processor._materialize_current_view` rather than included in the query.
 
 **Features:**
 

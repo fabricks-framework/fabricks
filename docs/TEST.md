@@ -1,6 +1,6 @@
 # Testing
 
-Commands below run from `framework/` (`uv sync` once per checkout; the
+Commands below run from `framework/` (`uv sync --group test` once per checkout; the
 Apache tier also needs a local Java 17-21; Java 25 fails with
 `JAVA_GATEWAY_EXITED`). Run one tier per pytest invocation.
 Each tier configures global Spark/context state during collection, so mixing
@@ -13,8 +13,9 @@ them makes results order-dependent.
 | `tests/spark/apache/` | Real local Spark and Delta behavior. | `just test-apache` |
 | `tests/spark/databricks/` | Databricks-only behavior: notebooks, UC, streaming, masks, and liquid clustering. | `just test-databricks` (deploys the bundle to the `test` workspace). |
 
-Apache tier timing on the remote machine (24 cores), 88 tests: serial about 5m20s; `-n 4` 2m19s to 2m51s over
-four runs; `-n 6` 2m09s; `-n 8` 2m04s, all passing. Past 4 workers the gain is small, so
+Apache tier timing on a 24-core machine: 163 tests pass and 2 xfail in 3m11s with `-n 4` (measured with
+coverage on, so a plain run is a little faster). Worker scaling, measured earlier on 88 tests: serial about
+5m20s; `-n 4` 2m19s to 2m51s over four runs; `-n 6` 2m09s; `-n 8` 2m04s. Past 4 workers the gain is small, so
 `just test-apache-remote` defaults to 4; `just test-apache` stays serial by default because each worker is a
 Spark JVM. Parallel runs are safe because each worker has its own storage under `.worker_cwd/<worker>/`.
 
@@ -23,6 +24,8 @@ and only `tests/spark/databricks/runtests.py` runs on a cluster (see
 [decisions/0001](./decisions/0001-plain-and-config-tiers-are-local-only.md)).
 
 `just test-unit` runs plain then config as two separate pytest processes; `just test-all` runs every tier.
+`just test-overlap [TARGET]` lists tests that cover exactly the same lines as another one: pruning candidates,
+not proof (see the `testing-fabricks` skill, section 9).
 
 To run the Apache tier on a faster machine over ssh, use `just test-apache-remote [TARGET]`. It rsyncs
 the working tree, then runs `just test-apache` there. Set `FABRICKS_REMOTE` (ssh host),

@@ -10,6 +10,8 @@ pick which retained `docs/` file it belongs in.
 - for coding rules see [docs/CONSTITUTION.md](./docs/CONSTITUTION.md): comment only the why, never the what, and only when a reader would misread the intent (see § 2);
 - for testing see [docs/TEST.md](./docs/TEST.md);
 - for recurring task runbooks (e.g. bugfixes) see [docs/WORKFLOW.md](./docs/WORKFLOW.md);
+- for which model and effort to use for which action, and when to use subagents, see
+  [docs/WORKFLOW.md](./docs/WORKFLOW.md#models-and-effort);
 - for CodeGraph, Serena, and Headroom usage see
   [docs/WORKFLOW.md](./docs/WORKFLOW.md#code-navigation);
 - for hard-won bug signatures see [docs/DEBUG.md](./docs/DEBUG.md);
@@ -17,7 +19,8 @@ pick which retained `docs/` file it belongs in.
 - for reading Spark physical plans / CDC performance investigations see
   [docs/SPARK.md](./docs/SPARK.md);
 - for format/lint/test commands see [framework/justfile](./framework/justfile) —
-  run `just --list` from `framework/` for the full recipe list.
+  run `just --list` from `framework/` for the full recipe list. Prefer a `just` recipe over
+  calling the underlying tools directly.
 
 ## Skills
 
