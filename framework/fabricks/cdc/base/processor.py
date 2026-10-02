@@ -15,6 +15,66 @@ from fabricks.utils._types import DataFrameLike
 from fabricks.utils.sqlglot import fix as fix_sql
 
 
+def _get_overwrite(inputs: list[str], *, truncate_as_reload: bool, **add: Any) -> list[str]:  # noqa: ANN401 - add_* values
+    overwrite = []
+    if add["add_operation"] and "__operation" in inputs:
+        overwrite.append("__operation")
+    if truncate_as_reload:
+        overwrite.append("__operation")
+    for name in ["timestamp", "key", "hash", "last_updated", "metadata"]:
+        if add[f"add_{name}"] and f"__{name}" in inputs:
+            overwrite.append(f"__{name}")
+    return overwrite
+
+
+def _get_parents(
+    slice: str | None, rectify: bool | None, deduplicate_key: bool | None, deduplicate_hash: bool | None
+) -> dict:
+    """Name the CTE each stage reads from, given which stages are enabled."""
+    base = "__sliced" if slice else "__base"
+    after_key = "__deduplicated_key" if deduplicate_key else base
+    after_rectify = "__rectified" if rectify else after_key
+    return {
+        "parent_slice": "__base" if slice else None,
+        "parent_rectify": after_key if rectify else None,
+        "parent_deduplicate_key": base if deduplicate_key else None,
+        "parent_deduplicate_hash": after_rectify if deduplicate_hash else None,
+        "parent_cdc": "__deduplicated_hash" if deduplicate_hash else after_rectify,
+        "parent_final": "__final",
+    }
+
+
+def _get_format(src: AllowedSources) -> str:
+    if isinstance(src, DataFrameLike):
+        return "dataframe"
+    if isinstance(src, Table):
+        return "table"
+    if isinstance(src, str):
+        return "query"
+    raise ValueError(f"{src} not allowed")
+
+
+def _resolve_deduplication(
+    deduplicate: bool | None,
+    deduplicate_key: bool | None,
+    deduplicate_hash: bool | None,
+    *,
+    default: bool,
+    ordered: bool,
+) -> tuple[bool | None, bool | None, bool | None]:
+    # always deduplicate if not set for slowly changing dimensions
+    if default and deduplicate is None:
+        deduplicate = True
+    # order duplicates by implies key deduplication
+    if ordered:
+        deduplicate_key = True
+    if deduplicate:
+        deduplicate_key = True
+        deduplicate_hash = True
+    # if any deduplication is requested, deduplicate all
+    return deduplicate or deduplicate_key or deduplicate_hash, deduplicate_key, deduplicate_hash
+
+
 class Processor(Generator):
     def get_data(self, src: AllowedSources, **kwargs: Any) -> DataFrame:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
         if isinstance(src, DataFrameLike):
@@ -26,17 +86,10 @@ class Processor(Generator):
         DEFAULT_LOGGER.debug("exec query", extra={"label": self, "sql": sql})
         return self.spark.sql(sql)
 
-    def get_query_context(self, src: AllowedSources, **kwargs: Any) -> dict:  # noqa: ANN401, C901, PLR0912, PLR0915 - options bag forwarded through the cdc query pipeline; one linear pass that builds the whole context, split tracked in #243
+    def get_query_context(self, src: AllowedSources, **kwargs: Any) -> dict:  # noqa: ANN401 - options bag forwarded through the cdc query pipeline
         DEFAULT_LOGGER.debug("deduce query context", extra={"label": self})
 
-        if isinstance(src, DataFrameLike):
-            format = "dataframe"
-        elif isinstance(src, Table):
-            format = "table"
-        elif isinstance(src, str):
-            format = "query"
-        else:
-            raise ValueError(f"{src} not allowed")
+        format = _get_format(src)
 
         inputs = self.get_columns(src, backtick=False, sort=False)
         fields = [c for c in inputs if not c.startswith("__")]
@@ -45,7 +98,6 @@ class Processor(Generator):
         mode = kwargs.get("mode", "complete")
         tgt = str(self.table) if mode == "update" or (mode == "append" and "__timestamp" in inputs) else None
 
-        overwrite = []
         exclude = kwargs.get("exclude", [])  # used by silver to exclude __operation from output if not update
         cast = kwargs.get("cast", {})  # used by silver to cast columns to target types
 
@@ -100,20 +152,13 @@ class Processor(Generator):
         else:
             has_no_data = None
 
-        # always deduplicate if not set for slowly changing dimensions
-        if self.slowly_changing_dimension and deduplicate is None:
-            deduplicate = True
-
-        # order duplicates by implies key deduplication
-        if order_duplicate_by:
-            deduplicate_key = True
-
-        if deduplicate:
-            deduplicate_key = True
-            deduplicate_hash = True
-
-        # if any deduplication is requested, deduplicate all
-        deduplicate = deduplicate or deduplicate_key or deduplicate_hash
+        deduplicate, deduplicate_key, deduplicate_hash = _resolve_deduplication(
+            deduplicate,
+            deduplicate_key,
+            deduplicate_hash,
+            default=bool(self.slowly_changing_dimension),
+            ordered=bool(order_duplicate_by),
+        )
 
         # always rectify if not set
         if self.slowly_changing_dimension and rectify is None:
@@ -136,40 +181,24 @@ class Processor(Generator):
         if slice == "latest" and not self.has_data(src):
             slice = None
 
-        # override operation if added and found in df
-        if add_operation and "__operation" in inputs:
-            overwrite.append("__operation")
-
-        # A 'truncate' row (issue #66) is rewritten to 'reload' so it reuses rectify's per-key "not found in next
-        # reload" reconciliation instead of a new code path. Moot when add_operation forces the column to a constant,
-        # and meaningless outside scd1/scd2 (nocdc/scd0 have no rectify pipeline and don't always carry a __key).
         truncate_as_reload = (
             "__operation" in inputs and not add_operation and self.change_data_capture in ["scd1", "scd2"]
         )
-        if truncate_as_reload:
-            overwrite.append("__operation")
-
-        # override timestamp if added and found in df
-        if add_timestamp and "__timestamp" in inputs:
-            overwrite.append("__timestamp")
-        elif "__timestamp" in inputs:
+        # A 'truncate' row (issue #66) is rewritten to 'reload' so it reuses rectify's per-key "not found in next
+        # reload" reconciliation instead of a new code path. Moot when add_operation forces the column to a constant,
+        # and meaningless outside scd1/scd2 (nocdc/scd0 have no rectify pipeline and don't always carry a __key).
+        overwrite = _get_overwrite(
+            inputs,
+            truncate_as_reload=truncate_as_reload,
+            add_operation=add_operation,
+            add_timestamp=add_timestamp,
+            add_key=add_key,
+            add_hash=add_hash,
+            add_last_updated=add_last_updated,
+            add_metadata=add_metadata,
+        )
+        if "__timestamp" in inputs and not add_timestamp:
             cast["__timestamp"] = "timestamp"
-
-        # override key if added and found in df (key needed for merge)
-        if add_key and "__key" in inputs:
-            overwrite.append("__key")
-
-        # override hash if added and found in df (hash needed to identify fake updates)
-        if add_hash and "__hash" in inputs:
-            overwrite.append("__hash")
-
-        # override __last_updated if added and found in df
-        if add_last_updated and "__last_updated" in inputs:
-            overwrite.append("__last_updated")
-
-        # override metadata if added and found in df
-        if add_metadata and "__metadata" in inputs:
-            overwrite.append("__metadata")
 
         advanced_ctes = ((rectify or deduplicate) and self.slowly_changing_dimension) or self.slowly_changing_dimension
         advanced_deduplication = advanced_ctes and deduplicate
@@ -209,119 +238,23 @@ class Processor(Generator):
             if "__operation" in inputs or add_operation:
                 hashes.append("__operation")
 
-        if self.change_data_capture == "nocdc":
-            intermediates = list(inputs)
-            outputs = list(inputs)
-        else:
-            intermediates = list(fields)
-            outputs = list(fields)
-
-        if has_operation and "__operation" not in outputs:
-            outputs.append("__operation")
-        if has_timestamp and "__timestamp" not in outputs:
-            outputs.append("__timestamp")
-        if has_key and "__key" not in outputs:
-            outputs.append("__key")
-        if has_hash and "__hash" not in outputs:
-            outputs.append("__hash")
-
-        if has_metadata:
-            if "__metadata" not in outputs:
-                outputs.append("__metadata")
-            if "__metadata" not in intermediates:
-                intermediates.append("__metadata")
-        if has_last_updated:
-            if "__last_updated" not in outputs:
-                outputs.append("__last_updated")
-            if "__last_updated" not in intermediates:
-                intermediates.append("__last_updated")
-        if has_source:
-            if "__source" not in outputs:
-                outputs.append("__source")
-            if "__source" not in intermediates:
-                intermediates.append("__source")
-        if has_identity:
-            if "__identity" not in outputs:
-                outputs.append("__identity")
-            if "__identity" not in intermediates:
-                intermediates.append("__identity")
-        if has_rescued_data:
-            if "__rescued_data" not in outputs:
-                outputs.append("__rescued_data")
-            if "__rescued_data" not in intermediates:
-                intermediates.append("__rescued_data")
-
-        if soft_delete:
-            if "__is_deleted" not in outputs:
-                outputs.append("__is_deleted")
-            if "__is_current" not in outputs:
-                outputs.append("__is_current")
-
-        if self.change_data_capture == "scd2":
-            if "__valid_from" not in outputs:
-                outputs.append("__valid_from")
-            if "__valid_to" not in outputs:
-                outputs.append("__valid_to")
-            if "__is_current" not in outputs:
-                outputs.append("__is_current")
-
-        if advanced_ctes:
-            if "__operation" not in intermediates:
-                intermediates.append("__operation")
-            if "__timestamp" not in intermediates:
-                intermediates.append("__timestamp")
-
-        # needed for deduplication and/or rectification
-        # might need __operation or __source
-        if "__key" not in intermediates:
-            intermediates.append("__key")
-        if "__hash" not in intermediates:
-            intermediates.append("__hash")
-
-        outputs = [o for o in outputs if o not in exclude]
-        outputs = self.sort_columns(outputs)
-
-        parent_slice = None
-        if slice:
-            parent_slice = "__base"
-
-        parent_deduplicate_key = None
-        if deduplicate_key:
-            parent_deduplicate_key = "__sliced" if slice else "__base"
-
-        parent_rectify = None
-        if rectify:
-            if deduplicate_key:
-                parent_rectify = "__deduplicated_key"
-            elif slice:
-                parent_rectify = "__sliced"
-            else:
-                parent_rectify = "__base"
-
-        parent_deduplicate_hash = None
-        if deduplicate_hash:
-            if rectify:
-                parent_deduplicate_hash = "__rectified"
-            elif deduplicate_key:
-                parent_deduplicate_hash = "__deduplicated_key"
-            elif slice:
-                parent_deduplicate_hash = "__sliced"
-            else:
-                parent_deduplicate_hash = "__base"
-
-        parent_cdc = None
-        if deduplicate_hash:
-            parent_cdc = "__deduplicated_hash"
-        elif rectify:
-            parent_cdc = "__rectified"
-        elif deduplicate_key:
-            parent_cdc = "__deduplicated_key"
-        elif slice:
-            parent_cdc = "__sliced"
-        else:
-            parent_cdc = "__base"
-
-        parent_final = "__final"
+        intermediates, outputs = self._get_layout(
+            inputs,
+            fields,
+            exclude,
+            has_operation=has_operation,
+            has_timestamp=has_timestamp,
+            has_key=has_key,
+            has_hash=has_hash,
+            has_metadata=has_metadata,
+            has_last_updated=has_last_updated,
+            has_source=has_source,
+            has_identity=has_identity,
+            has_rescued_data=has_rescued_data,
+            soft_delete=soft_delete,
+            advanced_ctes=advanced_ctes,
+        )
+        parents = _get_parents(slice, rectify, deduplicate_key, deduplicate_hash)
 
         return {
             "debugmode": IS_DEBUGMODE,
@@ -384,13 +317,70 @@ class Processor(Generator):
             "filter_where": kwargs.get("filter_where"),
             "update_where": kwargs.get("update_where"),
             # parents
-            "parent_slice": parent_slice,
-            "parent_rectify": parent_rectify,
-            "parent_deduplicate_key": parent_deduplicate_key,
-            "parent_deduplicate_hash": parent_deduplicate_hash,
-            "parent_cdc": parent_cdc,
-            "parent_final": parent_final,
+            **parents,
         }
+
+    def _get_layout(  # noqa: PLR0913
+        self,
+        inputs: list[str],
+        fields: list[str],
+        exclude: list[str],
+        *,
+        has_operation: Any,  # noqa: ANN401 - flag or add_* value
+        has_timestamp: Any,  # noqa: ANN401
+        has_key: Any,  # noqa: ANN401
+        has_hash: Any,  # noqa: ANN401
+        has_metadata: Any,  # noqa: ANN401
+        has_last_updated: Any,  # noqa: ANN401
+        has_source: Any,  # noqa: ANN401
+        has_identity: bool,
+        has_rescued_data: bool,
+        soft_delete: Any,  # noqa: ANN401
+        advanced_ctes: Any,  # noqa: ANN401
+    ) -> tuple[list[str], list[str]]:
+        if self.change_data_capture == "nocdc":
+            intermediates = list(inputs)
+            outputs = list(inputs)
+        else:
+            intermediates = list(fields)
+            outputs = list(fields)
+
+        for has, name in [
+            (has_operation, "__operation"),
+            (has_timestamp, "__timestamp"),
+            (has_key, "__key"),
+            (has_hash, "__hash"),
+        ]:
+            if has and name not in outputs:
+                outputs.append(name)
+
+        for has, name in [
+            (has_metadata, "__metadata"),
+            (has_last_updated, "__last_updated"),
+            (has_source, "__source"),
+            (has_identity, "__identity"),
+            (has_rescued_data, "__rescued_data"),
+        ]:
+            if has:
+                if name not in outputs:
+                    outputs.append(name)
+                if name not in intermediates:
+                    intermediates.append(name)
+
+        extra = ["__is_deleted", "__is_current"] if soft_delete else []
+        if self.change_data_capture == "scd2":
+            extra += ["__valid_from", "__valid_to", "__is_current"]
+        outputs += [n for n in dict.fromkeys(extra) if n not in outputs]
+
+        if advanced_ctes:
+            intermediates += [n for n in ["__operation", "__timestamp"] if n not in intermediates]
+
+        # needed for deduplication and/or rectification
+        # might need __operation or __source
+        intermediates += [n for n in ["__key", "__hash"] if n not in intermediates]
+
+        outputs = [o for o in outputs if o not in exclude]
+        return intermediates, self.sort_columns(outputs)
 
     def fix_sql(self, sql: str) -> str:
         try:
