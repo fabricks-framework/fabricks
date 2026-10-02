@@ -10,7 +10,11 @@
 import json
 from pathlib import Path
 
+from pydantic import ValidationError
+import pytest
+
 from fabricks.core import get_job
+from fabricks.core.jobs.get_job_conf import get_job_conf_internal
 from fabricks.core.jobs.silver import Silver
 from fabricks.core.steps import get_step
 import fabricks.core.steps.base as steps_base
@@ -42,12 +46,15 @@ def test_gold_dependencies_parents_and_new_wait_for():
     assert {(d.origin, d.parent) for d in deps} == {("parent", "gold.fact_other"), ("wait_for", "gold.fact_third")}
 
 
-def test_gold_dependencies_wait_for_already_covered_by_parents_is_dropped():
-    job = _gold_job(parents=["gold.fact_other"], wait_for=["GOLD.FACT_OTHER"])
+def test_loading_a_gold_job_whose_wait_for_is_a_parent_fails():
+    row = {
+        "topic": "fact",
+        "item": "overlap",
+        "options": {"mode": "append", "parents": ["gold.fact_other"], "wait_for": ["Gold.Fact_Other"]},
+    }
 
-    deps = job.get_dependencies()
-
-    assert [(d.origin, d.parent) for d in deps] == [("parent", "gold.fact_other")]
+    with pytest.raises(ValidationError, match="wait_for entries are already parents"):
+        get_job_conf_internal("gold", row)
 
 
 def _silver_job(*, parents=None, wait_for=None):
@@ -77,16 +84,11 @@ def test_silver_dependencies_default_to_the_parser_convention_without_parents():
 
 
 def test_silver_dependencies_parents_and_wait_for():
-    # unlike Gold, Silver has no "already covered by parents" guard on wait_for: every entry is appended
-    job = _silver_job(parents=["bronze.fact_other"], wait_for=["bronze.fact_other", "bronze.fact_third"])
+    job = _silver_job(parents=["bronze.fact_other"], wait_for=["bronze.fact_third"])
 
     deps = job.get_dependencies()
 
-    assert [(d.origin, d.parent) for d in deps] == [
-        ("parent", "bronze.fact_other"),
-        ("wait_for", "bronze.fact_other"),
-        ("wait_for", "bronze.fact_third"),
-    ]
+    assert [(d.origin, d.parent) for d in deps] == [("parent", "bronze.fact_other"), ("wait_for", "bronze.fact_third")]
 
 
 def test_get_dependencies_internal_collects_errors_alongside_successes(monkeypatch):

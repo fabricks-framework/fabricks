@@ -211,7 +211,7 @@ class Gold(BaseJob):
         wait_for = self.options.wait_for or []
         if wait_for:
             for w in wait_for:
-                if w.lower() not in parents and w.lower() not in parsed:
+                if w.lower() not in parsed:
                     d = JobDependency.from_parts(self.job_id, w, "wait_for")
                     dependencies.append(d)
 

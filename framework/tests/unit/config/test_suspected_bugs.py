@@ -9,18 +9,6 @@ import pytest
 import sqlglot
 
 from tests.unit.config.test_ddl_option_mapping import _fake_df, _generated_sql, _make_table
-from tests.unit.config.test_dependencies import _gold_job
-
-
-@pytest.mark.xfail(strict=True, reason="gold.py get_dependencies lowercases wait_for but not parents (#233)")
-def test_gold_wait_for_covered_by_mixed_case_parent_is_dropped():
-    job = _gold_job(parents=["Gold.Fact_Other"], wait_for=["gold.fact_other"])
-
-    deps = job.get_dependencies()
-
-    assert [(d.origin, d.parent) for d in deps] == [("parent", "gold.fact_other")], (
-        "a wait_for entry that names an existing parent must not add a second dependency"
-    )
 
 
 @pytest.mark.xfail(strict=True, reason="table.py _get_ddl_columns does not escape quotes in comments (#234)")
