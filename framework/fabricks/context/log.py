@@ -25,7 +25,7 @@ if IS_FUNMODE:
                 DEFAULT_LOGGER.info("🎄 Ho ho ho! Only 1 day until Christmas! Happy data processing! 🎅")
             elif _days_until <= 7:
                 DEFAULT_LOGGER.info(
-                    f"🎄 'Tis the season! {_days_until} days until Christmas! May your pipelines run smoothly! 🎁"
+                    "🎄 'Tis the season! %s days until Christmas! May your pipelines run smoothly! 🎁", _days_until
                 )
             else:
                 DEFAULT_LOGGER.info("🎄 Merry December! Wishing you bug-free data pipelines this holiday season! ⛄")
@@ -149,5 +149,7 @@ def send_message_to_channel(
 
     teams_message_json = json.dumps(teams_message)
 
-    response = requests.post(webhook_url, data=teams_message_json, headers={"Content-Type": "application/json"})
+    response = requests.post(
+        webhook_url, data=teams_message_json, headers={"Content-Type": "application/json"}, timeout=30
+    )
     return response.status_code == 200

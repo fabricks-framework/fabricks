@@ -359,7 +359,7 @@ class BaseJob(ABC):
 
         DEFAULT_LOGGER.debug("end (for each run)", extra={"label": self})
 
-    def run(
+    def run(  # noqa: PLR0912 - predates the limit
         self,
         retry: bool | None = True,
         schedule: str | None = None,

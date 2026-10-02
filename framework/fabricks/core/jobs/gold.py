@@ -283,7 +283,9 @@ class Gold(BaseJob):
 
         return dependencies
 
-    def build_cdc_context(self, df: DataFrame, reload: bool | None = None) -> dict:
+    def build_cdc_context(  # noqa: PLR0912 - predates the limit
+        self, df: DataFrame, reload: bool | None = None
+    ) -> dict:
         # assume no duplicate in gold (to improve performance)
         deduplicate = self.options.deduplicate
         # assume no reload in gold (to improve performance)

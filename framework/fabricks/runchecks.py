@@ -188,7 +188,9 @@ def _print_stats(jobs: dict[str, int], topics: dict[str, set[str]], sql_files: d
         print(f"{step:<20} {jobs[step]:>6} {len(topics[step]):>7} {sql_files[step]:>10}")
 
 
-def check_config(runtime: Path, passthrough_steps: frozenset[str] = frozenset(), verbose: bool = False) -> bool:
+def check_config(  # noqa: C901, PLR0912 - predates the limits
+    runtime: Path, passthrough_steps: frozenset[str] = frozenset(), verbose: bool = False
+) -> bool:
     """Returns True if any error was found (and printed)."""
     errors = 0
     tables: set[str] = set()

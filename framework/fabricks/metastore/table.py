@@ -161,7 +161,7 @@ class Table(DbObject):
         comments: dict[str, str] | None = None,
     ) -> None: ...
 
-    def create(
+    def create(  # noqa: PLR0913 - predates the limit
         self,
         df: DataFrame | None = None,
         schema: StructType | None = None,
@@ -221,7 +221,7 @@ class Table(DbObject):
 
         return out
 
-    def _create(
+    def _create(  # noqa: PLR0913 - predates the limit
         self,
         df: DataFrame | None = None,
         schema: StructType | None = None,
@@ -483,9 +483,8 @@ class Table(DbObject):
 
                 try:
                     # https://docs.databricks.com/aws/en/delta/type-widening#widen-types-with-automatic-schema-evolution
-                    # The type change is not one of byte, short, int, or long to decimal or double.
-                    # These type changes can only be applied manually using ALTER TABLE to avoid
-                    # accidental promotion of integers to decimals.
+                    # Not automatic for byte/short/int/long to decimal/double: only ALTER TABLE applies these, to avoid
+                    # accidentally promoting integers to decimals.
                     if row.data_type in ["byte", "short", "int", "long"] and row.new_data_type in [
                         "decimal",
                         "double",
@@ -503,7 +502,7 @@ class Table(DbObject):
                             .execute()
                         )
                 except Exception:
-                    pass
+                    DEFAULT_LOGGER.debug("could not widen column %s", row.column, exc_info=True, extra={"label": self})
 
     def overwrite_schema(self, df: DataFrame | None = None, schema: StructType | None = None) -> None:
         if df is None and schema is None:

@@ -26,7 +26,7 @@ class Processor(Generator):
         DEFAULT_LOGGER.debug("exec query", extra={"label": self, "sql": sql})
         return self.spark.sql(sql)
 
-    def get_query_context(self, src: AllowedSources, **kwargs: Any) -> dict:  # noqa: ANN401 - heterogeneous options bag forwarded through the cdc query pipeline
+    def get_query_context(self, src: AllowedSources, **kwargs: Any) -> dict:  # noqa: ANN401, C901, PLR0912, PLR0915 - options bag forwarded through the cdc query pipeline; one linear pass that builds the whole context, split tracked in #243
         DEFAULT_LOGGER.debug("deduce query context", extra={"label": self})
 
         if isinstance(src, DataFrameLike):
@@ -131,11 +131,8 @@ class Processor(Generator):
         if slice == "update" and not has_rows:
             slice = None
 
-        # a "latest" slice is meaningless -- and generates invalid SQL, see
-        # https://github.com/fabricks-framework/fabricks/issues/182 -- when
-        # the source itself has no rows: there is nothing to take the
-        # latest of, and an aggregate MAX() over zero rows still produces
-        # one NULL-valued row rather than none.
+        # A "latest" slice over a source with no rows generates invalid SQL (issue #182): there is nothing to take
+        # the latest of, and an aggregate MAX() over zero rows still yields one NULL row.
         if slice == "latest" and not self.has_data(src):
             slice = None
 
@@ -143,12 +140,9 @@ class Processor(Generator):
         if add_operation and "__operation" in inputs:
             overwrite.append("__operation")
 
-        # a 'truncate' row (https://github.com/fabricks-framework/fabricks/issues/66)
-        # is rewritten to 'reload' so it reuses rectify's existing per-key
-        # "not found in next reload" reconciliation instead of a new code
-        # path -- moot when add_operation forces the column to a constant
-        # anyway, and meaningless outside scd1/scd2 (nocdc/scd0 have no
-        # rectify pipeline and don't always carry a __key output at all)
+        # A 'truncate' row (issue #66) is rewritten to 'reload' so it reuses rectify's per-key "not found in next
+        # reload" reconciliation instead of a new code path. Moot when add_operation forces the column to a constant,
+        # and meaningless outside scd1/scd2 (nocdc/scd0 have no rectify pipeline and don't always carry a __key).
         truncate_as_reload = (
             "__operation" in inputs and not add_operation and self.change_data_capture in ["scd1", "scd2"]
         )
@@ -412,13 +406,8 @@ class Processor(Generator):
             raise e
 
     def _probe_source_ref(self, context: dict) -> str:
-        # Mirrors ctes/base.sql.jinja's FROM-clause branches exactly. In
-        # practice fix_context only ever sees format "table" or "query" --
-        # both real callers (Processor.get_data(), Generator.
-        # create_or_replace_view()) convert a raw DataFrame to a "query"
-        # global-temp-view string or reject DataFrames outright -- but the
-        # "dataframe" placeholder is kept for parity with the template and
-        # with existing tests that call get_query() directly with a mock
+        # Mirrors ctes/base.sql.jinja's FROM-clause branches. Real callers only pass format "table" or "query"; the
+        # "dataframe" branch is kept for parity with the template and with tests that call get_query() with a mock
         # DataFrame.
         format = context["format"]
         if format == "query":
@@ -435,12 +424,9 @@ class Processor(Generator):
         return src_ref
 
     def _probe_sql(self, context: dict) -> str:
-        # __timestamp always needs a real timestamp type for slice="latest"
-        # (matches ctes/base.sql.jinja's `cast["__timestamp"] = "timestamp"`,
-        # the only cast get_query_context ever sets) -- add_timestamp
-        # combined with slice="latest" would mean no real per-row timestamp
-        # to take the latest of, and no real caller does that, so it's not
-        # handled here.
+        # __timestamp must be a real timestamp for slice="latest" (the only cast get_query_context sets, as in
+        # ctes/base.sql.jinja). add_timestamp with slice="latest" has no per-row timestamp to take the latest of and
+        # no real caller does that, so it is not handled here.
         environment = Environment(loader=PackageLoader("fabricks.cdc", "templates"))
         template = environment.get_template("probe.sql.jinja")
         return template.render(
@@ -474,19 +460,9 @@ class Processor(Generator):
         return context
 
     def _materialize_current_view(self, environment: Environment, context: dict) -> str:
-        # `current_view` is read by multiple downstream consumers
-        # (rectify, the scd1/scd2 merge-key anti-join), each pruning it to a
-        # different column subset -- which defeats Spark's CTE-reuse detection
-        # and re-reads the target table from storage once per consumer instead
-        # of once overall. See
-        # https://github.com/fabricks-framework/fabricks/issues/202.
-        #
-        # Caching the projected and filtered rows the query reads
-        # anyway (only the columns the query needs, only the current /
-        # source-matching / update_where rows), once, under a stable global
-        # temp view name, means every consumer hits the same cached blocks
-        # instead of re-scanning storage. Lazy: the scan runs inside the
-        # merge query's own job instead of a separate eager one.
+        # current_view feeds several consumers (rectify, the scd1/scd2 merge-key anti-join), each pruning different
+        # columns, which defeats Spark's CTE reuse and re-reads the target once per consumer (issue #202). Cache the
+        # projected rows once under a stable global temp view; lazy, so the scan runs inside the merge query's own job.
         short_name = f"{self.qualified_name}__current"
         sql = fix_sql(environment.get_template("ctes/current.sql.jinja").render(**context))
         self.spark.sql(f"uncache table if exists global_temp.{short_name}")

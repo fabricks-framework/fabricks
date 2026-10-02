@@ -10,7 +10,7 @@ from tenacity import Retrying, retry_if_exception, stop_after_attempt, wait_fixe
 from fabricks.context import PATH_RUNTIME
 from fabricks.context.log import DEFAULT_LOGGER
 from fabricks.core.extenders import get_extender
-from fabricks.core.jobs.base.exception import PostRunInvokeException, PreRunInvokeException
+from fabricks.core.jobs.base.exception import InvokeException, PostRunInvokeException, PreRunInvokeException
 from fabricks.core.jobs.get_schedule import get_schedule
 from fabricks.models.common import BaseInvokerOptions, ExtenderOptions
 from fabricks.utils.path import GitPath
@@ -56,7 +56,7 @@ def _raise_invoke_errors(position: str, errors: list[Exception]) -> None:
         raise PreRunInvokeException(message)
     if position == "post_run":
         raise PostRunInvokeException(message)
-    raise Exception(message)
+    raise InvokeException(message)
 
 
 class JobInvoker:
