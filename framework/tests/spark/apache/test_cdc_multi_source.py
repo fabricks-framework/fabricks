@@ -166,11 +166,6 @@ LIVE = {  # the (key offset -> name) pairs still current afterwards
 }
 
 
-# A batch with no rows at all never reaches the CDC layer: jobs skip it (`batch_has_data`), and with `__source`
-# the slice probe asserts "no slices found".
-_BATCHES = [(king, queen) for king in MODES for queen in MODES if (king, queen) != ("none", "none")]
-
-
 def _batch_rows(source, base, mode):
     def row(offset, name, operation):
         return (base + offset, name, source, operation, D3)
@@ -183,26 +178,28 @@ def _batch_rows(source, base, mode):
     }[mode]
 
 
+# Eight sources in one batch, two per behaviour: every pair of behaviours (the same one twice included) meets in the
+# same batch, and each source must end up as it would alone. The reversed run swaps which source gets which behaviour.
+@pytest.mark.parametrize("reverse", [False, True], ids=["forward", "reversed"])
 @pytest.mark.parametrize("soft_delete", [False, True], ids=["hard", "soft"])
 @pytest.mark.parametrize("cdc_cls", [SCD1, SCD2], ids=["scd1", "scd2"])
-@pytest.mark.parametrize(("king", "queen"), _BATCHES, ids=[f"{k}-{q}" for k, q in _BATCHES])
 def test_each_source_follows_its_own_operations_whatever_the_other_sources_do(
-    local_spark, king, queen, cdc_cls, soft_delete
+    local_spark, cdc_cls, soft_delete, reverse
 ):
-    bases = {"king": 10, "queen": 20, "prince": 30}  # prince never has rows in the batch
-    modes = {"king": king, "queen": queen, "prince": "none"}
-    cdc = cdc_cls("cdc", f"multi_source_{cdc_cls.__name__}_{soft_delete}_{king}_{queen}", spark=local_spark)
+    behaviours = [mode for mode in MODES for _ in range(2)]
+    if reverse:
+        behaviours.reverse()
+    sources = {f"s{i}": (10 * (i + 1), mode) for i, mode in enumerate(behaviours)}
+    cdc = cdc_cls("cdc", f"multi_source_{cdc_cls.__name__}_{soft_delete}_{reverse}", spark=local_spark)
     options = {"keys": "id", "add_key": True, "soft_delete": soft_delete}
 
-    seed = [(base + i, f"x{i}", source, "upsert", D1) for source, base in bases.items() for i in (1, 2)]
+    seed = [(base + i, f"x{i}", source, "upsert", D1) for source, (base, _) in sources.items() for i in (1, 2)]
     cdc.update(local_spark.createDataFrame(seed, SCHEMA), **options)
-    batch = [r for source, base in bases.items() for r in _batch_rows(source, base, modes[source])]
+    batch = [row for source, (base, mode) in sources.items() for row in _batch_rows(source, base, mode)]
     cdc.update(local_spark.createDataFrame(batch, SCHEMA), **options)
 
     current = cdc.table.dataframe
     if soft_delete or cdc_cls is SCD2:
         current = current.where("__is_current")
-    expected = sorted(
-        (bases[source] + offset, name) for source in bases for offset, name in LIVE[modes[source]].items()
-    )
-    assert sorted((r.id, r.name) for r in current.select("id", "name").collect()) == expected, modes
+    expected = sorted((base + offset, name) for base, mode in sources.values() for offset, name in LIVE[mode].items())
+    assert sorted((r.id, r.name) for r in current.select("id", "name").collect()) == expected, sources
