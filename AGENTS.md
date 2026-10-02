@@ -17,7 +17,8 @@ pick which retained `docs/` file it belongs in.
 - for reading Spark physical plans / CDC performance investigations see
   [docs/SPARK.md](./docs/SPARK.md);
 - for format/lint/test commands see [framework/justfile](./framework/justfile) —
-  run `just --list` from `framework/` for the full recipe list.
+  run `just --list` from `framework/` for the full recipe list. Prefer a `just` recipe over
+  calling the underlying tools directly.
 
 ## Skills
 

@@ -93,7 +93,7 @@ jobs:
           PYTEST_ADDOPTS: "-ra --tb=long --junitxml=artifacts/apache.xml"
         run: |
           mkdir -p artifacts
-          just test-apache
+          just test-apache tests/spark/apache 3
       - name: Upload Apache failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
