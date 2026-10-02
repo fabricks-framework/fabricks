@@ -51,6 +51,8 @@ jobs:
           PYTEST_ADDOPTS: "--maxfail 3"
 
   apache:
+    # A PR whose title carries the marker opts out; the title is in the `opened` payload, unlike a label added after.
+    if: ${{ !contains(github.event.pull_request.title, '[skip apache]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
