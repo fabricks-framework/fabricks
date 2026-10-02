@@ -45,11 +45,8 @@ __rectified_timestamps as (
     group by {% if has_source %} __source, {% endif %} __timestamp
 ),
 __rectified_reload_candidates as (
-    -- nxt below only ever matches rows at a "next reload" timestamp (the
-    -- join's own equality condition) -- reload batches are periodic/rare
-    -- compared to incremental batches, so this is normally a small subset
-    -- of __rectified_next_operation regardless of target size, safe to
-    -- broadcast. See https://github.com/fabricks-framework/fabricks/issues/203.
+    -- Reload timestamps are rare, so this subset stays small and is safe to
+    -- broadcast. See issue #203.
     select *
     from __rectified_next_operation
     where
@@ -98,12 +95,8 @@ __rectified_is_deleted_next as (
         end as __rectified_is_deleted_next
     from __rectified_next_operation cur
     left join
-        -- aliased __rectify_t/__rectify_nxt (not the shorter t/nxt) so the
-        -- BROADCAST hints above can't collide with ctes/current.sql.jinja's
-        -- own `t` alias elsewhere in the same overall query -- a same-named
-        -- alias in a sibling CTE was silently defeating hint resolution
-        -- here even though the two are in different scopes (confirmed
-        -- empirically: renaming fixed it, see #203).
+        -- Not t/nxt: a sibling CTE's `t` alias silently defeated the BROADCAST
+        -- hints (docs/DEBUG.md, issue #203).
         __rectified_timestamps __rectify_t on cur.__timestamp = __rectify_t.__timestamp
         {% if has_source %} and cur.__source == __rectify_t.__source {% endif %}
     left join

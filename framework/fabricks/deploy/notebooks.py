@@ -15,13 +15,8 @@ def deploy_notebook(notebook: str, overwrite: bool = True) -> None:
     w = WorkspaceClient()
 
     target = f"{PATH_NOTEBOOKS}/{notebook}.py"
-    # Databricks converts a .py file with notebook-source content + AUTO
-    # format into a notebook object whose actual path drops the .py suffix
-    # -- checking only the .py-suffixed path (as this used to) always came
-    # up empty once converted, silently turning overwrite=False's
-    # "skip if exists" into "always re-import" on every call. import_()'s
-    # own overwrite=True already handles replacing an existing object
-    # safely, so this just needs to know whether to call it at all.
+    # Databricks drops the .py suffix once it converts the file to a notebook,
+    # so both paths must be checked or overwrite=False always re-imports.
     exists = Path(f"{PATH_NOTEBOOKS}/{notebook}").exists() or Path(target).exists()
 
     if overwrite or not exists:

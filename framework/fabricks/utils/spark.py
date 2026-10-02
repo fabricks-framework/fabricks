@@ -31,10 +31,8 @@ def get_spark() -> SparkSession:
             .config("spark.driver.allowMultipleContexts", "true")
             .enableHiveSupport()
         )
-        # spark.sql.warehouse.dir is a static config -- can only be set on the
-        # builder, not via spark.conf.set() after getOrCreate(). Only the
-        # pytest-xdist local-test harness sets this (one warehouse dir per
-        # worker, see tests/spark/apache/conftest.py); unset in every other case.
+        # Static config: only settable on the builder, not after getOrCreate().
+        # Set per xdist worker by tests/spark/apache/conftest.py.
         _warehouse_dir = os.environ.get("FABRICKS_TEST_WAREHOUSE_DIR")
         if _warehouse_dir:
             builder = builder.config("spark.sql.warehouse.dir", _warehouse_dir)
@@ -42,26 +40,8 @@ def get_spark() -> SparkSession:
         if _default_parallelism:
             builder = builder.config("spark.default.parallelism", _default_parallelism)
         spark = configure_spark_with_delta_pip(builder).getOrCreate()
-        # Iteration-sequential Silver scenarios (Task 9) merge iteration 2+'s
-        # data — which introduces columns iteration 1's schema doesn't have
-        # (verified: iteration 2 adds `newField`, still present through
-        # iteration 9) — into a table whose schema was created from an
-        # earlier iteration. This plan bypasses job orchestration entirely
-        # (no Bronze/Silver/Gold classes, no update_schema() between
-        # iterations), so without autoMerge a `MERGE INTO` referencing a new
-        # source column would fail with a real schema mismatch. Matches
-        # production's own fix for this (`add_spark_options_to_spark()`
-        # in fabricks/context/spark_session.py already sets this for every
-        # real Databricks session) rather than inventing local-only schema-
-        # reconciliation logic. Confirmed via Delta Lake's own OSS docs this
-        # is a core open-source feature (available since Delta 0.6.0), not
-        # Databricks-Runtime-only, despite the `spark.databricks.*` config
-        # namespace. Does not need resolveMergeUpdateStructsByName alongside
-        # it: this plan's fixture data has no `__metadata`/struct columns
-        # (verified — `has_metadata = "__metadata" in columns`,
-        # `fabricks/cdc/base/processor.py`), so the struct-field merge clause
-        # that setting affects is never emitted here; add it only if a future
-        # job's data actually introduces a struct column.
+        # Iteration 2+ of the Silver scenarios adds columns to an existing table and
+        # bypasses update_schema(), so MERGE needs autoMerge (same as production).
         spark.sql("set spark.databricks.delta.schema.autoMerge.enabled = true")
 
     else:

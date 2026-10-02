@@ -53,3 +53,29 @@ CTE runs on Databricks only.
 plain `row_number()` branch (`deduplicate_key.sql.jinja`). The expected-state
 oracle rewrites its `qualify` files at load time (`make_spark_compatible` in
 `tests/support/expected_sql.py`, which handles only that one query shape).
+
+## `BROADCAST` Hint Ignored in the Rectify CTE
+
+**Symptom:** The `BROADCAST` hints in `rectify.sql.jinja` have no effect and the
+join falls back to a shuffle (issue #203).
+
+**Cause:** A sibling CTE (`ctes/current.sql.jinja`) aliases a table as `t`. A
+same-named alias in the rectify join silently defeated hint resolution even
+though the two sit in different scopes.
+
+**Workaround:** The rectify join aliases are `__rectify_t` / `__rectify_nxt`.
+Keep them distinct from any alias used elsewhere in the same query.
+
+## Memory-Mode Views Race During Object Creation
+
+**Symptom:** Creating a batch of views that reference each other fails for the
+item attempted before its dependency is registered (issue #183).
+
+**Cause:** Items dispatched together are not ordered by dependency.
+`Job.get_dependencies()` would give the real graph, but it needs an
+`explain extended` per notebook-backed job on every run, for a rare race.
+
+**Workaround:** The retry loop in `core/steps/base.py` reads the missing
+table/view from each error message and retries the blocked items in later
+passes (a chain of depth N resolves in N passes). Items ready in the same pass
+still run in parallel. Table and view lists are updated after the retries.

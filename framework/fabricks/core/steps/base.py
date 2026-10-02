@@ -251,23 +251,9 @@ class BaseStep:
         if df:
             errors = _create_db_objects(df, workers=16 if parallel else 1)
 
-        # Batches with inter-item dependencies (e.g. memory-mode views
-        # referencing each other) race when dispatched together: an item
-        # can be attempted before the item it depends on has been
-        # registered. See https://github.com/fabricks-framework/fabricks/
-        # issues/183. Each failure's error message names the missing
-        # table/view, which tells us which sibling it's actually blocked
-        # on -- so retries are ordered by that instead of blindly
-        # re-dispatching the whole failing set again and hoping. Computing
-        # the real dependency graph up front (Job.get_dependencies()) would
-        # be more precise, but it's expensive for notebook-backed jobs
-        # (needs a real `spark.sql("explain extended...")` per job) and
-        # would pay that cost on every run just to guard a rare race --
-        # this stays reactive, only doing extra work when a race actually
-        # happens. An item whose blocker is itself still failing is left
-        # for a later pass; a chain of depth N resolves within N passes.
-        # Items ready in the same pass aren't blocked on each other, so
-        # they're still dispatched together, in parallel.
+        # Retries are ordered by the missing table/view named in each error,
+        # not by Job.get_dependencies(), which costs an explain per notebook
+        # job on every run. See docs/DEBUG.md (issue #183).
         if errors and retry:
             DEFAULT_LOGGER.warning("retry enabled", extra={"label": self})
             name_to_job_id = {
@@ -300,10 +286,8 @@ class BaseStep:
 
         df.unpersist()
 
-        # Runs after retries so objects created on a retry pass are still
-        # picked up (see https://github.com/fabricks-framework/fabricks/
-        # issues/183) -- listing before retries resolved would silently
-        # drop anything the retry loop had to register.
+        # After retries, so objects registered on a retry pass are listed
+        # (issue #183).
         if update_lists:
             self.update_tables_list()
             self.update_views_list()

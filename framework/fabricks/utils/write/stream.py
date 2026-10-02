@@ -8,12 +8,8 @@ from fabricks.utils.path import FileSharePath
 
 
 def _is_isolation_startup_failure(exception: BaseException) -> bool:
-    # DBR 18.0 changed how foreachBatch sets up its execution session on
-    # Shared/USER_ISOLATION clusters -- when the schedule fans out several
-    # streaming jobs in parallel, their isolated-worker sandboxes compete for
-    # startup capacity on the same cluster and one can miss the platform's
-    # 60s SandboxClientTimeoutTracker deadline (before our callback ever
-    # runs). No client-side setting raises that deadline, so retry.
+    # DBR 18 parallel streaming jobs can miss the platform's 60s sandbox startup
+    # deadline, which no client setting raises, so retry. See docs/DEBUG.md.
     message = str(exception)
     return "ISOLATION_STARTUP_FAILURE" in message or "SandboxClientTimeoutTracker" in message
 
