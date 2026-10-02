@@ -3,6 +3,12 @@
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
+
+if [ "$(git branch --show-current)" = "main" ]; then
+    echo "error: don't commit on main, create a branch first." >&2
+    exit 1
+fi
+
 staged="$(git -C "$repo_root" diff --name-only --cached --diff-filter=ACMR)"
 
 cd "$repo_root/framework"
@@ -20,3 +26,6 @@ fi
 if [ -n "$staged" ]; then
     echo "$staged" | (cd "$repo_root" && xargs -r git add --)
 fi
+
+# Conflict markers and whitespace errors in what is about to be committed (formatters already ran).
+git diff --cached --check

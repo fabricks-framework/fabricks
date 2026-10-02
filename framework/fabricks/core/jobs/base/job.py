@@ -53,10 +53,8 @@ def _for_each_stream_batch(
 ) -> None:
     from fabricks.core.jobs.get_job import get_job_internal
 
-    # conf is the driver's already-resolved JobConf, serialized -- passing it
-    # through means get_job_conf() (fabricks/core/jobs/get_job_conf.py) skips
-    # its SPARK.sql(f"select * from fabricks.{step}_jobs") lookup and reuses
-    # this instead of re-querying the metastore on every stream start.
+    # The driver's already-resolved JobConf lets get_job_conf() skip its `select * from fabricks.{step}_jobs`
+    # lookup, so the metastore isn't re-queried on every stream start.
     job = get_job_internal(step=step, topic=topic, item=item, conf=conf)
     job._for_each_batch(df, batch, schedule=schedule, reload=reload)
 
@@ -381,6 +379,12 @@ class BaseJob(ABC):
             schedule (str, optional): The schedule to run the job on. Defaults to None.
             schedule_id (str, optional): The ID of the schedule. Defaults to None.
             invoke (bool, optional): Whether to invoke pre-run and post-run methods. Defaults to True.
+            reload (bool, optional): Force a full reload: skips the run checks that would skip the run.
+                Defaults to None.
+            vacuum (bool, optional): Vacuum the table after the run. Defaults to the job option, else False.
+            optimize (bool, optional): Optimize the table after the run. Defaults to the job option, else False.
+            compute_statistics (bool, optional): Compute table statistics after the run (always done on the
+                first write). Defaults to the job option, else False.
         """
         last_version = None
         last_batch = None

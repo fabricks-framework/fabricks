@@ -34,6 +34,8 @@ select = [
     "ARG",  # flake8-unused-arguments
     "PTH",  # flake8-use-pathlib
     "ERA",  # eradicate (commented-out code)
+    "D417", # pydocstyle: every parameter of a documented signature is described
+    "TD003",  # flake8-todos: a TODO links its issue
     "RUF",  # Ruff-specific rules
 ]
 
@@ -46,6 +48,9 @@ ignore = [
 # take arguments they never read. ERA001: explanatory comments in tests quote
 # code paths and read as commented-out code.
 "tests/*" = ["ANN", "ARG", "ERA001"]
+
+[lint.pydocstyle]
+convention = "google"
 
 [lint.isort]
 known-first-party = ["fabricks", "tests"]

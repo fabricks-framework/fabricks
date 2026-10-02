@@ -118,10 +118,12 @@ def send_message_to_channel(
     Send a message to Microsoft Teams via webhook
 
     Args:
-        webhook_url (str): The webhook URL for your Teams channel
+        channel (str): The Teams channel name. Its webhook URL is read from the secret
+            "<channel>-webhook-url" (lowercased, spaces replaced by dashes).
+        title (str): Title for the message card
         message (str): The message to send
-        title (str, optional): Title for the message card
-        color (str, optional): Hex color for the message card)
+        color (str, optional): Hex color for the message card. Defaults to the color of `loglevel`.
+        loglevel (str, optional): Picks the card color when `color` is not given. Defaults to "INFO".
 
     Returns:
         bool: True if message was sent successfully, False otherwise
