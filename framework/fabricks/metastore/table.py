@@ -25,6 +25,10 @@ _NAME_PATTERN = re.compile(r"(?<='name': ')[^']+(?=',)")
 _SPECIAL_CHAR_PATTERN = re.compile(r"[^a-zA-Z0-9_]")
 
 
+def _sql_quote(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("'", "\\'")
+
+
 class Table(DbObject):
     @classmethod
     def from_step_topic_item(cls, step: str, topic: str, item: str, spark: SparkSession | None = SPARK) -> Self:
@@ -212,7 +216,7 @@ class Table(DbObject):
             col = [f"`{name}`", _backtick(name, dtype)]
 
             if comments and name in comments:
-                col.append(f"comment '{comments[name]}'")
+                col.append(f"comment '{_sql_quote(comments[name])}'")
 
             if masks and name in masks:
                 col.append(f"mask {masks[name]}")
@@ -812,7 +816,7 @@ class Table(DbObject):
         self.spark.sql(
             f"""
             comment on column {self.qualified_name}.`{column}`
-            is '{comment}';
+            is '{_sql_quote(comment)}';
             """
         )
 
@@ -823,7 +827,7 @@ class Table(DbObject):
         self.spark.sql(
             f"""
             comment on table {self.qualified_name}
-            is '{comment}';
+            is '{_sql_quote(comment)}';
             """
         )
 
