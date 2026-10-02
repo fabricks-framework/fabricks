@@ -160,24 +160,12 @@ def run(
 
     except CheckError as e:
         if e.is_stale:
-            # DagTerminator's terminate method (fabricks/core/dags/terminator.py)
-            # decides whether a job ever completed successfully purely by
-            # scanning this same LOGGER's own log messages for the literal
-            # string "done" -- see get_logs in fabricks/core/dags/base.py --
-            # a mechanism entirely separate from this function's own
-            # RunStatus return value. Stale is not a failure from that
-            # mechanism's point of view, so it still needs to see "done"
-            # logged, or it would wrongly report every unchanged job as
-            # failed.
+            # Log "done" even when stale: DagTerminator (terminator.py) scans log messages for it
+            # (get_logs in base.py), not the RunStatus, and would report unchanged jobs as failed.
             LOGGER.info(LogStatus.DONE, extra=extra)
 
-            # A second, also-separate mechanism (fabricks/deploy/views.py's
-            # logs_pivot/last_schedule views) derives its own skipped/warned
-            # columns from these same log messages via array_contains --
-            # SkipWarning and "real" CheckWarning (not UnchangedWarning,
-            # which is a routine no-new-data outcome, not a problem worth
-            # flagging) must keep logging their own distinct literal
-            # message, or that reporting silently loses the distinction.
+            # deploy/views.py (logs_pivot/last_schedule) derives skipped/warned from these literal messages, so each
+            # warning type logs its own; UnchangedWarning is a routine no-new-data outcome, not a warning.
             if isinstance(e, SkipWarning):
                 LOGGER.exception(LogStatus.SKIPPED, extra=extra)
             elif isinstance(e, UnchangedWarning):
