@@ -77,10 +77,8 @@ class JobChecker:
     def batch_has_data(self, sql: str) -> bool:
         min_rows = self.job._resolver.check_options.min_rows if self.job._resolver.check_options else None
         if min_rows == 0:
-            # explicitly opts an empty batch into the CDC layer instead of
-            # being skipped here -- see issue #182, where this is what lets
-            # a genuinely empty "latest" batch reach (and previously crash)
-            # Processor.get_query_context()'s slice handling.
+            # Opts an empty batch into the CDC layer instead of skipping it
+            # (issue #182: empty "latest" batch vs get_query_context slicing).
             DEFAULT_LOGGER.debug("check min rows is 0, skipping check", extra={"label": self.job})
             return True
 

@@ -45,11 +45,8 @@ def resolve_option(*tiers: Any, default: Any = None) -> Any:  # noqa: ANN401 - o
     return default
 
 
-# one derived session per step, built lazily and only when a step actually
-# configures spark_options -- SparkSession.newSession() shares the JVM/
-# SparkContext but isolates SQL-conf mutations from here on, unlike
-# .builder.getOrCreate() (which just returns the ambient default session,
-# so a job's own spark_options used to leak into every other job).
+# One lazily derived session per step. newSession() isolates SQL-conf changes;
+# getOrCreate() returned the shared default, leaking job spark_options.
 _STEP_SESSIONS: dict[str, SparkSession] = {}
 
 
@@ -96,10 +93,8 @@ class JobResolver:
 
     @property
     def spark(self) -> SparkSession:
-        # runtime -> step -> job, each tier only deriving a new (isolated)
-        # session via newSession() when it actually configures spark_options
-        # -- otherwise it reuses its parent's session instead of every job
-        # building (and mutating) one of its own.
+        # runtime -> step -> job; a tier derives a new session only when it
+        # configures spark_options, otherwise it reuses its parent's.
         if not self._spark:
             step_session = build_step_spark_session(self.job.step, self.step_spark_options)
 
@@ -107,10 +102,8 @@ class JobResolver:
             if job_spark:
                 DEFAULT_LOGGER.debug("derive job-level spark session", extra={"label": self.job})
                 spark = _derive_session(step_session)
-                # newSession() doesn't reliably carry forward the parent's
-                # own settings (see build_step_spark_session) -- reapply the
-                # full chain explicitly so "job extends step extends
-                # runtime" holds regardless.
+                # newSession() doesn't reliably carry the parent's settings
+                # (see build_step_spark_session); reapply the whole chain.
                 add_spark_options_to_spark(spark)
                 apply_spark_options(spark, self.step_spark_options)
                 apply_spark_options(spark, job_spark)

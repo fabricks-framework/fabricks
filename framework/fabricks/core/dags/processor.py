@@ -126,17 +126,9 @@ class DagProcessor(BaseDags):
                     job = get_job(step=str(self.step), job_id=j.get("JobId"))
 
                     incoming = azure_table.query(f"PartitionKey eq 'dependencies' and JobId eq '{j.get('JobId')}'")
-                    # send()'s readiness gate and the skip check right below
-                    # are the only two consumers of a job's own incoming
-                    # edges -- both are done with them by this point, so
-                    # delete now rather than let this partition grow
-                    # forever (Task 7 changed *outgoing* edge writes from
-                    # delete to update, since a child now needs to read its
-                    # parent's real status; this is the matching cleanup on
-                    # the read side). AzureTable.delete()/.upsert() both
-                    # reduce to submit(), which iterates zero times over an
-                    # empty operations list -- an empty `incoming` is
-                    # already a safe no-op, no `if incoming:` guard needed.
+                    # Readiness gate and skip check are the only readers of incoming
+                    # edges; delete now so the partition doesn't grow forever.
+                    # An empty `incoming` is a safe no-op, so no guard is needed.
                     azure_table.delete(incoming)
 
                     if job.skip_if_stale and incoming and not any(edge.get("Status") == "ok" for edge in incoming):

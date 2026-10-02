@@ -85,11 +85,8 @@ class RuntimeOptions(BaseModel):
     retention_days: int = 7
     timezone: str = str(UTC)
     compute_statistics_on_first_write: bool | None = None
-    # Opt-in: statically parse notebook (.ipynb) source for dependencies (ast + sqlglot) instead
-    # of executing the notebook and inspecting its resolved query plan. Off by default -- static
-    # parsing can under-report dependencies for DataFrame-API-only notebooks (see
-    # fabricks/utils/notebook.py); falls back to the execution-based approach either way when it
-    # can't confidently resolve a notebook's dependencies.
+    # Opt-in static parse (ast + sqlglot) instead of executing the notebook. Off by
+    # default: it can under-report DataFrame-API-only notebooks (fabricks/utils/notebook.py).
     static_notebook_dependencies: bool | None = None
 
 

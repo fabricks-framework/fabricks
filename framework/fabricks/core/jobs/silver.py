@@ -201,10 +201,8 @@ class Silver(BaseJob):
         return dependencies
 
     def _assert_bronze_parent_has_no_extender(self, dependency: JobDependency) -> None:
-        # only called where mode:memory already reads its parent via a plain
-        # `select * from {parent}` -- no Python execution step -- so a
-        # bronze parent's extender(s) could never actually run against it,
-        # see https://github.com/fabricks-framework/fabricks/issues/177
+        # mode:memory reads the parent via plain SQL, so a bronze parent's
+        # extenders could never run (issue #177).
         if not dependency.parent.startswith(f"{self.parent_step}."):
             return
 
