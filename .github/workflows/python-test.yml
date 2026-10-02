@@ -3,10 +3,10 @@ name: Python Test
 on:
   push:
     branches: ["main"]
-    paths-ignore: ["README.md", "docs", ".github"]
+    paths-ignore: ["**.md", "docs/**", "skills/**", ".claude/**", ".vscode/**", ".github/**", "framework/skills.json", "LICENSE"]
   pull_request:
     branches: ["main"]
-    paths-ignore: ["README.md", "docs", ".github"]
+    paths-ignore: ["**.md", "docs/**", "skills/**", ".claude/**", ".vscode/**", ".github/**", "framework/skills.json", "LICENSE"]
 
 jobs:
   build:
