@@ -6,17 +6,22 @@ from tests.support.fixture_data import load_entity_frames
 _PREPARED_SPARKS: set[int] = set()
 
 
-def run_cdc_scenario(spark, seed_from: int, iters: list[int], cdc: Literal["scd1", "scd2"]):
-    validate_scenario(seed_from, iters)
-
-    from fabricks.cdc.scd1 import SCD1
-    from fabricks.cdc.scd2 import SCD2
+def prepare_expected_views(spark) -> None:
     from tests.spark.expected.compare import create_expected_views
 
     if id(spark) not in _PREPARED_SPARKS:
         create_expected_views(spark, "scd2")
         create_expected_views(spark, "scd1")
         _PREPARED_SPARKS.add(id(spark))
+
+
+def run_cdc_scenario(spark, seed_from: int, iters: list[int], cdc: Literal["scd1", "scd2"], on_iter=None):
+    validate_scenario(seed_from, iters)
+
+    from fabricks.cdc.scd1 import SCD1
+    from fabricks.cdc.scd2 import SCD2
+
+    prepare_expected_views(spark)
 
     suffix = f"king_and_queen_seed{seed_from}_{iters[0]}to{iters[-1]}_{cdc}"
     scd = SCD2("cdc", suffix, "scd2", spark=spark) if cdc == "scd2" else SCD1("cdc", suffix, "scd1", spark=spark)
@@ -39,6 +44,8 @@ def run_cdc_scenario(spark, seed_from: int, iters: list[int], cdc: Literal["scd1
         if scd.table.exists() and set(combined.columns) - set(scd.table.columns):
             scd.update_schema(combined, **options)
         scd.update(combined, **options)
+        if on_iter:
+            on_iter(scd, iter_num)
 
     return scd
 
