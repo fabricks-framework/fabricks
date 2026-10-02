@@ -7,8 +7,13 @@ staged="$(git -C "$repo_root" diff --name-only --cached --diff-filter=ACMR)"
 
 cd "$repo_root/framework"
 
-just format
-just lint
+# Only the staged files, so unrelated files stay untouched; CI runs `just lint` on the whole tree.
+staged_here="$(git diff --name-only --cached --diff-filter=ACMR --relative -- fabricks tests)"
+if [ -n "$staged_here" ]; then
+    echo "$staged_here" | xargs just format
+    echo "$staged_here" | xargs just lint
+    echo "$staged_here" | xargs just lint-comments
+fi
 
 # format/lint may have rewritten files -- only re-stage ones that were
 # already staged for this commit, not every dirty file in the tree.
