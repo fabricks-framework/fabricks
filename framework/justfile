@@ -43,6 +43,14 @@ test-plain TARGET="tests/unit/plain":
 test-config TARGET="tests/unit/config":
     scripts/run_logged.sh config uv run pytest {{TARGET}}
 
+# List tests that cover exactly the same lines as another test: pruning candidates, not proof (see testing-fabricks section 9)
+# TARGET is one tier, e.g. `just test-overlap tests/spark/apache` (needs Java 17-21, takes minutes); pytest-cov is fetched on the fly
+test-overlap TARGET="tests/unit/config":
+    mkdir -p .logs
+    rm -f .logs/.coverage-overlap
+    COVERAGE_FILE=.logs/.coverage-overlap uv run --with pytest-cov pytest {{TARGET}} --cov=fabricks --cov-context=test --cov-report= -q
+    uv run --with pytest-cov python scripts/test_overlap.py .logs/.coverage-overlap
+
 # Run both unit tiers: plain, then config (separate pytest processes; the tiers cannot share one), stopping on the first failure
 test-unit: test-plain test-config
 
@@ -53,7 +61,7 @@ test-apache TARGET="tests/spark/apache" WORKERS="":
     # a killed run can leave a worker's Derby metastore half-created, which
     # fails to reopen (ERROR XBM0A) on the next run
     rm -rf tests/spark/apache/.worker_cwd
-    scripts/run_logged.sh apache uv run pytest {{TARGET}} {{ if WORKERS == "" { "" } else { "-n " + WORKERS } }} -v
+    scripts/run_logged.sh apache uv run pytest {{TARGET}} {{ if WORKERS == "" { "" } else { "-n " + WORKERS } }} -v --durations=20
 
 # Run the Apache tier on a remote machine over ssh (rsyncs the working tree first); logged locally
 # Needs FABRICKS_REMOTE=<ssh host>; FABRICKS_REMOTE_DIR defaults to ~/Fabricks; FABRICKS_REMOTE_JAVA_HOME optionally picks the remote JDK. Remote needs Java 17-21, uv, just.

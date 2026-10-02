@@ -1,6 +1,6 @@
 ---
 name: testing-fabricks
-description: Write, fix or review tests in the Fabricks repo (framework/tests). Picks the smallest tier, keeps Fabricks logic real and mocks only external boundaries, and proves every regression test can fail. Use for any test work here, including bugfix regression tests and requests to improve test quality.
+description: Write, fix or review tests in the Fabricks repo (framework/tests). Picks the smallest tier, keeps Fabricks logic real and mocks only external boundaries, and proves every regression test can fail. Use for any test work here, including bugfix regression tests and requests to improve test quality, or to prune, merge or speed up the suite.
 ---
 
 # Testing Fabricks
@@ -31,6 +31,7 @@ Rules for choosing:
 - SQL generation and config decisions belong in plain or config tests. Delta correctness belongs in apache. Don't add a Databricks test when an apache or unit test can prove the same thing.
 - **CDC bugs need a real engine.** A SQL-shape bug can pass a config-tier test and still fail in Spark, so any bug touching `fabricks/cdc/` needs an apache test, not only a config test.
 - You can't validate the Databricks tier locally. Say so in your report instead of claiming it passes.
+- **Cost counts.** A config test runs in milliseconds; an Apache case costs seconds of Spark time (`just test-apache` prints the 20 slowest). Before adding an Apache test, check that a config test plus an existing scenario can't prove it, and add cases to an existing scenario with distinct keys instead of a new test or parametrize row (as `test_cdc_multi_source.py` does with its 8-source batches).
 - No local Java 17-21 or too little memory for Spark? Run the apache tier with `just test-apache-remote` (needs `FABRICKS_REMOTE` in `framework/.env`; see `docs/TEST.md`).
 
 ## 2. Workflow
@@ -57,7 +58,7 @@ For a bugfix, follow `docs/WORKFLOW.md`: branch `bugfix-issue-<NR>`, test first,
 5. **Fix with the smallest change** that makes the root cause impossible, and grep every caller of the code you change.
 6. **Prove the test can fail by mutating the fix** (see section 6).
 7. **Run the whole tier, or tiers,** the new tests belong to, not just the one new test.
-8. **Report back:** the tier or tiers, which mutation each test catches, every mock or fake you used and why, anything you couldn't run (the Databricks tier, or apache without Java), and any existing test you think should change (proposed, not applied).
+8. **Report back:** the tier or tiers, which mutation each test catches, every mock or fake you used and why, the seconds your apache tests add (from `--durations`), anything you couldn't run (the Databricks tier, or apache without Java), and any existing test you think should change or go (proposed, not applied; see section 9).
 
 ## 3. Mocking: as little as possible
 
@@ -134,9 +135,22 @@ Before you change any output, grep `tests/` for a distinctive slice of the old o
 
 Only the issue, the docstring, `docs/decisions/` or `docs/DEBUG.md` can tell you whether case 2 or case 3 applies. If the intent isn't written down anywhere, writing it down is part of the fix.
 
+## 9. Pruning and consolidating
+
+The suite only shrinks if someone removes tests, and CI time follows the apache tier. Look there first, and propose every change: the hard rule on existing tests still applies.
+
+- **Removal classes:** *duplicate* (another test goes red under the same mutation), *weak* and *brittle* (section 5), *trivial* (passes against a broken implementation), *orphan* (guards code that no longer exists), *improbable* (input an upstream boundary already rejects).
+- **Delete gate, all must hold:** reverting each fix the test guards still turns another named test red; one sentence says why it is redundant; the user approved. Keep the "which mutation each test catches" line from step 8 in the PR, as it is the evidence a later prune needs.
+- **Line coverage is only a candidate list, never evidence** (section 6). `just test-overlap [TARGET]` (one tier per run) lists tests with identical line sets, for example the per-iteration `test_scd1_update` and `test_scd2_update` cases. Parametrized rows with different data land in the same group too, so check the asserted outcomes before calling a group redundant.
+- **Prefer merging to deleting:** chain cases into one scenario with distinct keys, or move the check to a cheaper tier.
+- **mutmut** is only practical on pure-Python and SQL-template code in the plain and config tiers; with Spark it is too slow.
+- **Ask of every test:** what production bug would this catch? No answer makes it a candidate.
+
 ## Checklist
 
 - [ ] Smallest tier chosen; any bug touching `fabricks/cdc/` has an apache test.
+- [ ] Apache cost justified: seconds added are stated, and cases are batched into an existing scenario where possible.
+- [ ] Each new test names the production bug it catches; pruning candidates were proposed with the section 9 gate, not applied.
 - [ ] Test written first, encodes the fixed behavior, and was seen failing for the issue's reason.
 - [ ] No new mocks of Spark or of Fabricks internals; `semblance` or typed fakes used for boundaries; every unavoidable `MagicMock` has `spec=` and a reason.
 - [ ] Exact assertions on rows and values; Spark results sorted or keyed; no conditional asserts.
