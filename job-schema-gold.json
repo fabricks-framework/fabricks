@@ -490,6 +490,19 @@
                     "default": null,
                     "title": "Hard Delete"
                 },
+                "delete_missing": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "description": "With mode update, delete target rows whose key is absent from the source. The source must be the complete dataset on every run, otherwise rows are deleted by mistake.",
+                    "title": "Delete Missing"
+                },
                 "rectify_as_upserts": {
                     "anyOf": [
                         {

@@ -361,6 +361,9 @@ class Gold(BaseJob):
             if self._resolver.mode == "append" and "__timestamp" in df.columns:
                 context["slice"] = "update"
 
+        if self.options.delete_missing:
+            context["delete_missing"] = True
+
         if self._resolver.mode == "memory":
             context["mode"] = "complete"
 

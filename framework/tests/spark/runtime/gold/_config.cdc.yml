@@ -44,6 +44,14 @@
 - job:
     step: gold
     topic: cdc
+    item: nocdc_update_delete_missing
+    options:
+      mode: update
+      change_data_capture: nocdc
+      delete_missing: true
+- job:
+    step: gold
+    topic: cdc
     item: last_timestamp_scd1
     options:
       mode: update

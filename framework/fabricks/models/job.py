@@ -118,6 +118,13 @@ class GoldOptions(BaseOptions):
     update_where: str | None = None
     deduplicate: bool | None = None
     hard_delete: bool | None = None
+    delete_missing: bool | None = Field(
+        default=None,
+        description=(
+            "With mode update, delete target rows whose key is absent from the source. "
+            "The source must be the complete dataset on every run, otherwise rows are deleted by mistake."
+        ),
+    )
     rectify_as_upserts: bool | None = None
     correct_valid_from: bool | None = None
     persist_last_timestamp: bool | None = None
