@@ -314,7 +314,7 @@ class BaseStep:
         if topic is None:
             if not include_manual:
                 update_where = (
-                    f"job_id not in (select job_id from fabricks.{self.name}_jobs where not options.type <=> 'manual')"
+                    f"job_id not in (select job_id from fabricks.{self.name}_jobs where options.type <=> 'manual')"
                 )
 
             if update_where:

@@ -3,7 +3,7 @@ write that does not duplicate them. `Silver.get_dependencies()` never reads a .s
 Databricks tier repeats it against a live workspace with its own runtime."""
 
 from fabricks.core.steps import get_step
-from fabricks.models import get_job_id
+from fabricks.models import get_dependency_id, get_job_id
 
 # (job, parent, origin): `parser` is the same-name bronze default, `parent` an explicit `parents` entry
 _EXPECTED = {
@@ -29,3 +29,28 @@ def test_update_dependencies_persists_every_silver_edge_exactly_once(local_spark
     assert {(row.job_id, row.parent, row.origin) for row in rows} == {
         (get_job_id(job=job), parent, origin) for job, parent, origin in _EXPECTED
     }
+
+
+def test_full_refresh_deletes_stale_edge_of_regular_job(local_spark):
+    """Issue #255: a reference removed from a regular job must disappear on a full (topic-less) refresh."""
+    step = get_step("silver")
+    step.update_configurations()
+    step.update_dependencies()
+
+    job_id = get_job_id(job="silver.append_test_test")
+    stale = "bronze.no_longer_read"
+    stale_id = get_dependency_id(stale, job_id)
+    local_spark.sql(
+        f"insert into fabricks.silver_dependencies (dependency_id, job_id, parent, origin) "
+        f"values ('{stale_id}', '{job_id}', '{stale}', 'parent')"
+    )
+
+    step.update_dependencies()
+
+    parents = {
+        r.parent
+        for r in local_spark.sql(
+            f"select parent from fabricks.silver_dependencies where job_id = '{job_id}'"
+        ).collect()
+    }
+    assert stale not in parents
