@@ -11,7 +11,7 @@ from pyspark.sql.types import Row
 from fabricks.cdc.nocdc import NoCDC
 from fabricks.cdc.scd0 import SCD0
 from fabricks.context.log import DEFAULT_LOGGER
-from fabricks.core.jobs.base.exception import UnchangedWarning
+from fabricks.core.jobs.base.exception import SkipRunCheckWarning, UnchangedWarning
 from fabricks.core.jobs.base.job import BaseJob
 from fabricks.core.udfs import UDF_PREFIX, is_registered, register_udf
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -406,6 +406,19 @@ class Gold(BaseJob):
 
         if not self._checker.batch_has_data(sql):
             raise UnchangedWarning("no data")
+
+        # add_timestamp stamps current_date(), so the update slice (s.__timestamp > max(t.__timestamp)) would silently
+        # drop every row of a same-day rerun (issue #254)
+        if (
+            not reload
+            and context.get("add_timestamp")
+            and self._resolver.mode == "update"
+            and self._resolver.change_data_capture == "scd1"
+            and self.table.dataframe.where("__timestamp >= current_date()").limit(1).count()
+        ):
+            message = "already ran today (persist_last_timestamp stamps the day, a same-day rerun would drop all rows)"
+            DEFAULT_LOGGER.warning(f"skip run, {message}", extra={"label": self})
+            raise SkipRunCheckWarning(message)
 
         if reload:
             DEFAULT_LOGGER.warning("force reload", extra={"label": self})

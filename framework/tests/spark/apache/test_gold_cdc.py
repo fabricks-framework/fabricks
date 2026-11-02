@@ -1,6 +1,7 @@
 import pytest
 
 from fabricks.core import get_job
+from fabricks.core.jobs.base.exception import SkipRunCheckWarning
 from tests.spark.expected.compare import compare_to_expected, create_expected_views, load_expected
 
 
@@ -141,3 +142,19 @@ def test_gold_truncate_reload_recovery(local_spark):
         (1, "changed", True, False),
         (3, "three", True, False),
     ]
+
+
+def test_gold_scd1_same_day_rerun_with_added_timestamp_is_skipped(local_spark):
+    # https://github.com/fabricks-framework/fabricks/issues/254
+    job = get_job(step="gold", topic="cdc", item="last_timestamp_scd1_added")
+    source_name = "gold_cdc_last_timestamp_scd1_added_source"
+
+    local_spark.createDataFrame([(1, "one")], ["id", "name"]).createOrReplaceGlobalTempView(source_name)
+    job.create()
+    job.run(invoke=False)
+
+    local_spark.createDataFrame([(1, "changed")], ["id", "name"]).createOrReplaceGlobalTempView(source_name)
+    with pytest.raises(SkipRunCheckWarning):
+        job.run(invoke=False)
+
+    assert [row.name for row in job.table.dataframe.collect()] == ["one"]
