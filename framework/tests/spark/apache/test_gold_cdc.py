@@ -144,17 +144,22 @@ def test_gold_truncate_reload_recovery(local_spark):
     ]
 
 
-def test_gold_scd1_same_day_rerun_with_added_timestamp_is_skipped(local_spark):
+@pytest.mark.parametrize(("cdc", "free_runs"), [("scd1", 1), ("scd2", 2)])
+def test_gold_same_day_rerun_with_added_timestamp_is_skipped(local_spark, cdc, free_runs):
     # https://github.com/fabricks-framework/fabricks/issues/254
-    job = get_job(step="gold", topic="cdc", item="last_timestamp_scd1_added")
-    source_name = "gold_cdc_last_timestamp_scd1_added_source"
+    # scd2 stamps the first load with 1900-01-01 (correct_valid_from), so only its third same-day run is dropped
+    job = get_job(step="gold", topic="cdc", item=f"last_timestamp_{cdc}_added")
+    source_name = f"gold_cdc_last_timestamp_{cdc}_added_source"
 
-    local_spark.createDataFrame([(1, "one")], ["id", "name"]).createOrReplaceGlobalTempView(source_name)
-    job.create()
-    job.run(invoke=False)
-
-    local_spark.createDataFrame([(1, "changed")], ["id", "name"]).createOrReplaceGlobalTempView(source_name)
-    with pytest.raises(SkipRunCheckWarning):
+    def run(name):
+        local_spark.createDataFrame([(1, name)], ["id", "name"]).createOrReplaceGlobalTempView(source_name)
         job.run(invoke=False)
 
-    assert [row.name for row in job.table.dataframe.collect()] == ["one"]
+    local_spark.createDataFrame([(1, "v0")], ["id", "name"]).createOrReplaceGlobalTempView(source_name)
+    job.create()
+    for i in range(free_runs):
+        run(f"v{i}")
+    with pytest.raises(SkipRunCheckWarning):
+        run("changed")
+
+    assert "changed" not in [row.name for row in job.table.dataframe.collect()]

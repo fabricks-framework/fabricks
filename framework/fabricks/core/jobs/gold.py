@@ -409,12 +409,13 @@ class Gold(BaseJob):
 
         # add_timestamp stamps current_date(), so the update slice (s.__timestamp > max(t.__timestamp)) would silently
         # drop every row of a same-day rerun (issue #254)
+        stamped = {"scd1": "__timestamp", "scd2": "__valid_from"}.get(self._resolver.change_data_capture)
         if (
             not reload
             and context.get("add_timestamp")
             and self._resolver.mode == "update"
-            and self._resolver.change_data_capture == "scd1"
-            and self.table.dataframe.where("__timestamp >= current_date()").limit(1).count()
+            and stamped
+            and self.table.dataframe.where(f"{stamped} >= current_date()").limit(1).count()
         ):
             message = "already ran today (persist_last_timestamp stamps the day, a same-day rerun would drop all rows)"
             DEFAULT_LOGGER.warning(f"skip run, {message}", extra={"label": self})
