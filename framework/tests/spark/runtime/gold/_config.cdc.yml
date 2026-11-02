@@ -72,3 +72,19 @@
     options:
       mode: complete
       type: manual
+- job:
+    step: gold
+    topic: cdc
+    item: last_timestamp_scd1_added
+    options:
+      mode: update
+      change_data_capture: scd1
+      persist_last_timestamp: true
+- job:
+    step: gold
+    topic: cdc
+    item: last_timestamp_scd2_added
+    options:
+      mode: update
+      change_data_capture: scd2
+      persist_last_timestamp: true
