@@ -131,7 +131,14 @@ class DagProcessor(BaseDags):
                     # An empty `incoming` is a safe no-op, so no guard is needed.
                     azure_table.delete(incoming)
 
-                    if job.skip_if_stale and incoming and not any(edge.get("Status") == "ok" for edge in incoming):
+                    LOGGER.debug(
+                        "incoming edges: " + ", ".join(f"{e.get('Parent')}={e.get('Status')!r}" for e in incoming),
+                        extra=self.extra(j),
+                    )
+
+                    # Skip only on an explicit "stale": a custom run notebook may exit with anything else ("exit (0)"),
+                    # and an unknown status must not make the job skip itself.
+                    if job.skip_if_stale and incoming and all(edge.get("Status") == "stale" for edge in incoming):
                         # same pair run() logs for a stale job: DagTerminator only counts
                         # a job as not failed if it sees DONE, last_schedule.stale reads STALE
                         LOGGER.info(LogStatus.DONE, extra=self.extra(j))
