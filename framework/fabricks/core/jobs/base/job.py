@@ -116,7 +116,7 @@ class BaseJob(ABC):
 
     @property
     def skip_if_stale(self) -> bool:
-        return False
+        return resolve_option(self.options.skip_if_stale, self.base_step_conf.options.skip_if_stale, default=False)
 
     @classmethod
     @abstractmethod

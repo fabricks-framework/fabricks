@@ -44,6 +44,7 @@ class StepOptions(BaseModel):
     order: int
     workers: int | None = None
     timeouts: StepTimeoutOptions | None = None
+    skip_if_stale: bool | None = None
 
 
 class BronzeOptions(StepOptions):
@@ -58,7 +59,6 @@ class SilverOptions(StepOptions):
     parent: str
     stream: bool | None = None
     local_checkpoint: bool | None = None
-    skip_if_stale: bool | None = None
 
 
 class GoldOptions(StepOptions):
