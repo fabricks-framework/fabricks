@@ -43,6 +43,7 @@
           runtime: bronze
         options:
           order: 101
+          skip_if_stale: true
     silver:
       - name: silver
         path_options:
@@ -52,6 +53,7 @@
           order: 201
           parent: bronze
           local_checkpoint: true
+          skip_if_stale: true
     gold:
       - name: transf
         path_options:
@@ -62,6 +64,7 @@
             job: 1800
           workers: 2
           order: 301
+          skip_if_stale: true
       - name: gold
         path_options:
           storage: abfss://test@$standard/gold
@@ -70,6 +73,7 @@
           timeouts:
             job: 1800
           order: 303
+          skip_if_stale: true
     databases:
       - name: expected
         path_options:
