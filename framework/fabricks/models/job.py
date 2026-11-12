@@ -63,6 +63,7 @@ class BaseOptions(BaseModel):
     vacuum: bool | None = None
     no_drop: bool | None = None
     timeout: int | None = None
+    skip_if_stale: bool | None = None
 
     @model_validator(mode="after")
     def _wait_for_is_not_a_parent(self) -> Self:
@@ -104,7 +105,6 @@ class SilverOptions(BaseOptions):
     deduplicate: bool | None = None
     stream: bool | None = None
     order_duplicate_by: dict[str, str] | None = None
-    skip_if_stale: bool | None = None
 
 
 class GoldOptions(BaseOptions):

@@ -23,7 +23,7 @@ def _silver_job(*, job_skip_if_stale=None, step_skip_if_stale=None):
 @pytest.mark.parametrize(
     ("job_value", "step_value", "expected"),
     [
-        pytest.param(None, None, True, id="default-true"),
+        pytest.param(None, None, False, id="default-false"),
         pytest.param(None, True, True, id="step-true"),
         pytest.param(None, False, False, id="step-false"),
         pytest.param(True, None, True, id="job-true"),
@@ -60,3 +60,21 @@ def test_bronze_and_gold_never_skip_regardless_of_dependency_status():
     )
     assert bronze.skip_if_stale is False
     assert gold.skip_if_stale is False
+
+
+@pytest.mark.parametrize("layer", ["bronze", "gold"])
+def test_skip_if_stale_is_opt_in_for_every_layer(layer):
+    from fabricks.core.jobs.bronze import Bronze
+    from fabricks.core.jobs.gold import Gold
+
+    cls, opts = {
+        "bronze": (Bronze, {"mode": "append", "uri": "dummy"}),
+        "gold": (Gold, {"mode": "complete"}),
+    }[layer]
+
+    def build(skip):
+        conf = {"step": layer, "topic": "fact", "item": "dummy", "options": {**opts, "skip_if_stale": skip}}
+        return cls(step=layer, topic="fact", item="dummy", conf=conf)
+
+    assert build(None).skip_if_stale is False
+    assert build(True).skip_if_stale is True
