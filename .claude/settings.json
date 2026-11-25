@@ -15,14 +15,6 @@
             "command": "echo 'Invoke the ponytail:ponytail skill before answering.'"
           }
         ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "codegraph prompt-hook"
-          }
-        ]
       }
     ],
     "SessionStart": [

@@ -24,6 +24,7 @@ from fabricks.context import (
     Silvers,
 )
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.dependencies import check_dependencies
 from fabricks.core.jobs.get_job import get_job, get_job_internal
 from fabricks.core.read import read_yaml
 from fabricks.core.steps._types import Timeouts
@@ -310,12 +311,18 @@ class BaseStep:
         DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
 
         update_where = None
+        # a failed job is absent from df; left in scope, delete_missing would wipe its existing edges (#262)
+        failed = ", ".join(f"'{e['job_id']}'" for e in errors if e.get("job_id"))
+        keep_failed = f"\nand job_id not in ({failed})" if failed else ""
 
         if topic is None:
             if not include_manual:
                 update_where = (
                     f"job_id not in (select job_id from fabricks.{self.name}_jobs where options.type <=> 'manual')"
                 )
+
+            if failed:
+                update_where = f"{update_where or 'true'}{keep_failed}"
 
             if update_where:
                 DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"label": self})
@@ -335,6 +342,7 @@ class BaseStep:
 
             update_where = (
                 f"""job_id in (select job_id from fabricks.{self.name}_jobs where {where_topic} {where_not_manual})"""
+                f"{keep_failed}"
             )
             DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"label": self})
 
@@ -342,6 +350,7 @@ class BaseStep:
                 df, keys=["dependency_id"], update_where=update_where, uuid=True
             )
 
+        self.check_dependencies()
         return df, errors
 
     # ========== Public API Methods ==========
@@ -418,6 +427,9 @@ class BaseStep:
             progress_bar=progress_bar, topic=topic, include_manual=include_manual, loglevel=loglevel
         )
         _log_and_raise_errors(errors, "update dependencies", "jobs")
+
+    def check_dependencies(self) -> list[Row]:
+        return check_dependencies(self.name)
 
     def register(self, update: bool | None = False, drop: bool | None = False) -> None:
         if drop:
@@ -527,7 +539,7 @@ def _get_dependencies(row: Row) -> dict[str, Any]:
         return {"job": str(job), "dependencies": job.get_dependencies()}
     except Exception as e:
         DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
-        return {"job": str(job), "error": e}
+        return {"job": str(job), "job_id": row["job_id"], "error": e}
 
 
 def _create_db_object(row: Row) -> dict[str, Any]:
