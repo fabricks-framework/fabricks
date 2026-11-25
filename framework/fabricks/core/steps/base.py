@@ -310,12 +310,18 @@ class BaseStep:
         DEFAULT_LOGGER.info("update dependencies", extra={"label": self})
 
         update_where = None
+        # a failed job is absent from df; left in scope, delete_missing would wipe its existing edges (#262)
+        failed = ", ".join(f"'{e['job_id']}'" for e in errors if e.get("job_id"))
+        keep_failed = f"\nand job_id not in ({failed})" if failed else ""
 
         if topic is None:
             if not include_manual:
                 update_where = (
                     f"job_id not in (select job_id from fabricks.{self.name}_jobs where options.type <=> 'manual')"
                 )
+
+            if failed:
+                update_where = f"{update_where or 'true'}{keep_failed}"
 
             if update_where:
                 DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"label": self})
@@ -335,6 +341,7 @@ class BaseStep:
 
             update_where = (
                 f"""job_id in (select job_id from fabricks.{self.name}_jobs where {where_topic} {where_not_manual})"""
+                f"{keep_failed}"
             )
             DEFAULT_LOGGER.debug(f"update where {update_where}", extra={"label": self})
 
@@ -527,7 +534,7 @@ def _get_dependencies(row: Row) -> dict[str, Any]:
         return {"job": str(job), "dependencies": job.get_dependencies()}
     except Exception as e:
         DEFAULT_LOGGER.exception("fail to get dependencies", extra={"label": job})
-        return {"job": str(job), "error": e}
+        return {"job": str(job), "job_id": row["job_id"], "error": e}
 
 
 def _create_db_object(row: Row) -> dict[str, Any]:
