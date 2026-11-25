@@ -33,7 +33,8 @@ class JobDependency(BaseModel):
 
     @staticmethod
     def from_parts(job_id: str, parent: str, origin: AllowedOrigins) -> "JobDependency":
-        parent = parent.removesuffix("__current")
+        # job ids hash the lowercase job name; SQL may reference a table in any case (#264)
+        parent = parent.lower().removesuffix("__current")
         return JobDependency(
             job_id=job_id,
             origin=origin,

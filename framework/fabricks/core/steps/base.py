@@ -24,6 +24,7 @@ from fabricks.context import (
     Silvers,
 )
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.dependencies import check_dependencies
 from fabricks.core.jobs.get_job import get_job, get_job_internal
 from fabricks.core.read import read_yaml
 from fabricks.core.steps._types import Timeouts
@@ -349,6 +350,7 @@ class BaseStep:
                 df, keys=["dependency_id"], update_where=update_where, uuid=True
             )
 
+        self.check_dependencies()
         return df, errors
 
     # ========== Public API Methods ==========
@@ -425,6 +427,9 @@ class BaseStep:
             progress_bar=progress_bar, topic=topic, include_manual=include_manual, loglevel=loglevel
         )
         _log_and_raise_errors(errors, "update dependencies", "jobs")
+
+    def check_dependencies(self) -> list[Row]:
+        return check_dependencies(self.name)
 
     def register(self, update: bool | None = False, drop: bool | None = False) -> None:
         if drop:

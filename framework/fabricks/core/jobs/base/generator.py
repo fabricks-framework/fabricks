@@ -8,6 +8,7 @@ from pyspark.sql.functions import lit
 
 from fabricks.cdc import NoCDC
 from fabricks.context.log import DEFAULT_LOGGER
+from fabricks.core.dependencies import check_dependencies
 from fabricks.core.jobs.base.resolver import resolve_option
 from fabricks.metastore.table import SchemaDiff
 from fabricks.metastore.view import create_or_replace_global_temp_view
@@ -67,6 +68,8 @@ class JobGenerator:
             df = self.job.spark.createDataFrame([d.model_dump() for d in deps])
             cdc = NoCDC("fabricks", self.job.step, "dependencies")
             cdc.delete_missing(df, keys=["dependency_id"], update_where=f"job_id = '{self.job.job_id}'", uuid=True)
+
+        check_dependencies(self.job.step, self.job.job_id)
 
     def rm(self) -> None:
         """
